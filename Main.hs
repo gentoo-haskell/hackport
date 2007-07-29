@@ -25,21 +25,22 @@ import Cache
 import Index
 import MaybeRead
 
-listAll :: HPAction ()
-listAll = do
-	cache <- getPortageTree >>= readCache
-	liftIO $ putStr $ unlines 
-		[ name++"-"++vers | (name,vers,_) <- cache ]
+list :: String -> HPAction ()
+list name = do
+	cache <- readCache =<< getPortageTree
+	let pkgs | null name = [ pkg | (_,_,pkg) <- cache ]
+		 | otherwise = searchIndex matchSubstringCaseInsensitive cache
+	      where matchSubstringCaseInsensitive str _ver =
+	              lcaseName `isInfixOf` lcase str
+		    lcaseName = lcase name
+		    lcase = map toLower
 
-query :: String -> HPAction ()
-query name = do
-	portTree <- getPortageTree
-	cache <- readCache portTree
-	let pkgs = searchIndex (\str _ -> name `isInfixOf` str) cache
 	if null pkgs
-		then throwError (PackageNotFound (Left name))
-		else (liftIO . putStr . unlines) $
-		     map (showPackageId . package) pkgs
+	  then throwError (PackageNotFound (Left name))
+	  else liftIO . putStr . unlines
+	     . map showPackageId
+	     . sort
+	     $ map package pkgs
 
 merge :: PackageIdentifier -> HPAction ()
 merge pid = do
@@ -103,8 +104,7 @@ hpmain = do
 	mode <- loadConfig
 	case mode of
 		ShowHelp -> liftIO hackageUsage
-		ListAll -> listAll
-		Query pkg -> query pkg
+		List pkg -> list pkg
 		Merge pkg -> merge pkg
 		DiffTree mode -> diff mode
 		Update -> update

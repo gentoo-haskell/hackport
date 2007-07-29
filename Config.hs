@@ -18,9 +18,8 @@ data HackPortOptions
 	| Help
 
 data OperationMode
-	= Query String
+	= List String
 	| Merge PackageIdentifier
-	| ListAll
 	| DiffTree DiffMode
 	| Update
 	| ShowHelp
@@ -74,16 +73,14 @@ parseConfig opts = let
 	                             ++ concat errs
 	     | not (null [ () | Help <- popts ]) = Right ShowHelp
 	     | otherwise = case args of
-		"query":[] -> Left "Need a package name to query.\n"
-		"query":package:[] -> Right (Query package)
-		"query":package:rest -> Left ("'query' takes one argument("++show ((length rest)+1)++" given).\n")
 		"merge":[] -> Left "Need a package's name and version to merge it.\n"
 		"merge":package:[] -> case readPMaybe parsePackageId package of
 			Nothing ->Left ("Could not parse '"++package++"' to a valid package. Valid packages use <name>-<version-number>-<version-postfix> where version consists only of numbers and points.\n")
 			Just pid -> Right (Merge pid)
 		"merge":_:rest -> Left ("'merge' takes 1 argument("++show ((length rest)+1)++" given).\n")
-		"list":[] -> Right ListAll
-		"list":rest -> Left ("'list' takes zero arguments("++show (length rest)++" given).\n")
+		"list":[] -> Right (List "")
+		"list":package:[] -> Right (List package)
+		"list":rest -> Left ("'list' takes at most one argument ("++show (length rest)++" given).\n")
 		"diff":[] -> Right (DiffTree ShowAll)
 		"diff":"all":[] -> Right (DiffTree ShowAll)
 		"diff":"missing":[] -> Right (DiffTree ShowMissing)
@@ -106,8 +103,7 @@ hackageUsage :: IO ()
 hackageUsage = putStr $ flip usageInfo hackageOptions $ unlines
 	[ "Usage:"
 	, "\t\"hackport [OPTION] MODE [MODETARGET]\""
-	, "\t\"hackport [OPTION] list\" prints all available packages"
-	, "\t\"hackport [OPTION] query PKG\" prints all versions of a package"
+	, "\t\"hackport [OPTION] list [PKG]\" lists all packages or packages matching search term"
 	, "\t\"hackport [OPTION] merge PKG-VERSION\" merges a package into the portage tree"
 	, "\t\"hackport [OPTION] diff\" prints the difference between the portage-tree and the server's packages"
 	, "\t\"hackport [OPTION] update\" updates the local cache"
