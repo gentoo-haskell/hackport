@@ -2,6 +2,7 @@ module Cache where
 
 import Action
 import Portage
+import CacheFile
 import Config
 import Error
 import Index
@@ -14,7 +15,7 @@ import System.FilePath
 import Control.Monad.Error(throwError)
 import Control.Monad.Trans(liftIO)
 import Control.Monad (unless)
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist,createDirectoryIfMissing)
 
 -- | A long time. Used in checkCacheDate
 alarmingLongTime :: TimeDiff
@@ -29,23 +30,24 @@ alarmingLongTime = TimeDiff
 	}
 
 cacheURI :: URI -> URI
-cacheURI uri = uri {uriPath = uriPath uri </> "00-index.tar.gz"}
+cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
 
 updateCache :: HPAction ()
 updateCache = do
 	tree <- getPortageTree
-	let cacheFile = tree </> "00-index.tar.gz"
 	cfg <- getCfg
 	let cache = cacheURI $ server cfg
 	res <- (liftIO $ simpleHTTP (Request cache GET [] "")) `sayNormal` ("Fetching cache from "++show cache++"...",const "done.")
 	case res of
 		Left err -> throwError (ConnectionFailed (show cache) (show err))
-		Right resp -> liftIO $ Prelude.writeFile cacheFile (rspBody resp)
+		Right resp -> liftIO $ do
+                        createDirectoryIfMissing False (tree </> hackportDir)
+                        Prelude.writeFile (cacheFile tree) (rspBody resp)
 
 readCache :: FilePath -> HPAction Index
 readCache portdir = do
-	let cacheFile = portdir </> "00-index.tar.gz"
-	exists <- liftIO $ doesFileExist cacheFile
+	let cachePath = cacheFile portdir
+	exists <- liftIO $ doesFileExist cachePath
 	unless exists $ throwError NoCache
-	str <- liftIO $ BS.readFile cacheFile
+	str <- liftIO $ BS.readFile cachePath
 	return $ readIndex str

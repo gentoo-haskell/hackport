@@ -9,6 +9,7 @@ import System.Exit
 
 import Action
 import Error
+import CacheFile
 
 getOverlay :: HPAction String
 getOverlay = do
@@ -22,7 +23,7 @@ getOverlay = do
   search mul = do
     let loop [] = throwError $ MultipleOverlays mul
         loop (x:xs) = (do
-          found <- liftIO (doesFileExist (x ++ "/00-index.tar.gz"))
+          found <- liftIO (doesFileExist (cacheFile x))
 	  	`sayDebug` ("Checking '"++x++"'...\n",\res->if res then "found.\n" else "not found.")
           if found
             then return x
