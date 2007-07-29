@@ -29,7 +29,7 @@ mergeEbuild target ebuild = do
 		`sayNormal` ("Merging to '"++epath++"'... ",const "done.")
 
 fixSrc :: PackageIdentifier -> EBuild -> HPAction EBuild
-fixSrc p ebuild | null (src_uri ebuild) = do
+fixSrc p ebuild = do
 	cfg <- getCfg
 	return $ ebuild {
 		src_uri = show $ (server cfg) {
@@ -41,7 +41,6 @@ fixSrc p ebuild | null (src_uri ebuild) = do
 				<.> "tar.gz"
 			}
 		}
-		| otherwise = return ebuild
 
 {-hackage2ebuild ::
 	(PackageIdentifier,String,String) ->	-- ^ the package
