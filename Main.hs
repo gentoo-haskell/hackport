@@ -35,7 +35,7 @@ query :: String -> HPAction ()
 query name = do
 	portTree <- getPortageTree
 	cache <- readCache portTree
-	let pkgs = searchIndex (\str _ -> str==name) cache
+	let pkgs = searchIndex (\str _ -> name `isInfixOf` str) cache
 	if null pkgs
 		then throwError (PackageNotFound (Left name))
 		else (liftIO . putStr . unlines) $
