@@ -24,7 +24,6 @@ data HackPortError
 	| NoOverlay
 	| MultipleOverlays [String]
 	| UnknownVerbosityLevel String
-	| NoCache
 	-- | WrongCacheVersion
 	-- | InvalidCache
 	| InvalidServer String
@@ -53,6 +52,5 @@ hackPortShowError err = case err of
 	MultipleOverlays overlays -> "You have the following overlays available: '"++unwords overlays++"'. Please choose one by using '-p path-to-overlay'"
 	NoOverlay -> "You don't have PORTDIR_OVERLAY set in '/etc/make.conf'. Please set it or use '-p path-to-overlay'"
 	UnknownVerbosityLevel str -> "The verbosity level '"++str++"' is invalid. Please use debug,normal or silent"
-	NoCache -> "No cache file exists. Create one using 'hackport update'."
 	--WrongCacheVersion -> "The version of the cache is too old. Please update the cache using 'hackport update'"
 	--InvalidCache -> "Could not read the cache. Please ensure that it's up to date using 'hackport update'"

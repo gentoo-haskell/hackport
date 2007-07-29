@@ -48,6 +48,8 @@ readCache :: FilePath -> HPAction Index
 readCache portdir = do
 	let cachePath = cacheFile portdir
 	exists <- liftIO $ doesFileExist cachePath
-	unless exists $ throwError NoCache
+	unless exists $ do
+		info "No cache file present, attempting to update..."
+ 		updateCache
 	str <- liftIO $ BS.readFile cachePath
 	return $ readIndex str
