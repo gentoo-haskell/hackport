@@ -157,10 +157,7 @@ coreLibs =
   ,"unix"
   ,"parsec"
   ,"stm"
-  ,"readline"
-  ,"regex-base"
-  ,"regex-compat"
-  ,"regex-posix"]
+  ,"readline"]
 
 showEBuild :: EBuild -> String
 showEBuild ebuild =
