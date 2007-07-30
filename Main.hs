@@ -12,6 +12,7 @@ import System.IO
 import Data.Char
 import Data.List
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Action
 import Error
@@ -54,16 +55,34 @@ merge pid = do
 			ebuild <- fixSrc pid (cabal2ebuild pkg)
 			mergeEbuild portTree ebuild
 
+tabs :: String -> String
+tabs str = let len = length str in str++(if len < 3*8
+	then replicate (3*8-len) ' '
+	else "")
+
+showDiffState :: String -> DiffState Version -> String
+showDiffState name st = (tabs name) ++ " [" ++ (case st of
+	Both x y -> showVersion x ++ (case compare x y of
+		EQ -> "="
+		GT -> ">"
+		LT -> "<") ++ showVersion y
+	OnlyLeft x -> showVersion x ++ ">none"
+	OnlyRight y ->  "none<"++showVersion y)++"]"
+
 diff :: DiffMode -> HPAction ()
 diff mode = do
 	cfg <- getCfg
 	portTree <- getPortageTree
 	cache <- readCache portTree
-	let serverPkgs'=map (\(_,_,pd)-> (package pd) {pkgName=map toLower (pkgName $ package pd)}) cache
+	--let serverPkgs = map (\(_,_,pd)-> (package pd) {pkgName=map toLower (pkgName $ package pd)}) cache
+	let serverPkgs = bestVersions $ indexMapFromList $ indexToPackageIdentifier cache
 	portTree <- getPortageTree
-	portagePkgs <- portageGetPackages portTree
-	let (inport,inhack,inboth)=diffSet (Set.fromList portagePkgs) (Set.fromList serverPkgs')
-	let showPkgSet set = mapM_ (\pkg->echoLn (pkgName pkg++"-"++showVersion (pkgVersion pkg))) (Set.elems set)
+	portagePkgs' <- portageGetPackages portTree
+	let portagePkgs = bestVersions $ indexMapFromList portagePkgs'
+	let diff = diffBest serverPkgs portagePkgs
+	mapM_ (\(name,st) -> info $ showDiffState name st) (Map.assocs diff)
+	--let (inport,inhack,inboth)=diffSet (Set.fromList portagePkgs) (Set.fromList serverPkgs)
+	{-let showPkgSet set = mapM_ (\pkg->echoLn (pkgName pkg++"-"++showVersion (pkgVersion pkg))) (Set.elems set)
 	let vindent = case verbosity cfg of
 		Silent -> id
 		_ -> indent
@@ -75,7 +94,7 @@ diff mode = do
 		vindent $ showPkgSet inport)
 	when (mode==ShowAll || mode==ShowCommon) (do
 		info "Packages in the overlay and hackage:"
-		vindent $ showPkgSet inboth)
+		vindent $ showPkgSet inboth)-}
 
 update :: HPAction ()
 update = do
