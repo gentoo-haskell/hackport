@@ -53,7 +53,6 @@ data EBuild = EBuild {
     features :: [String],
     -- comments on various fields for communicating stuff to the user
     licenseComments :: String,
-    cabalPath :: Maybe String, --If it's not ${WORKDIR}/${P}
     my_pn :: Maybe String --If the package's name contains upper-case
   }
 
@@ -82,7 +81,6 @@ ebuildTemplate = EBuild {
     depend = [],
     features = [],
     licenseComments = "",
-    cabalPath = Nothing,
     my_pn = Nothing
   }
 
@@ -98,7 +96,7 @@ cabal2ebuild pkg = ebuildTemplate {
     licenseComments = licenseComment (Cabal.license pkg),
     depend          = defaultDepGHC
                     : convertDependencies (Cabal.buildDepends pkg),
-    my_pn = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
+    my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = (features ebuildTemplate)
     		      ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
 		      ++ if null (Cabal.executables pkg) then [] else ["bin"]
@@ -168,7 +166,10 @@ showEBuild ebuild =
   ss "CABAL_FEATURES=". quote' (sepBy " " $ features ebuild). nl.
   ss "inherit haskell-cabal". nl.
   nl.
-  (maybe id (\x->ss "MY_PN=". quote x. nl. ss "MY_P=". quote "${MY_PN}-${PV}". nl) (my_pn ebuild)).
+  (case my_pn ebuild of
+     Nothing -> id
+     Just pn -> ss "MY_PN=". quote pn. nl.
+                ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (description ebuild). nl.
   ss "HOMEPAGE=". quote (homepage ebuild). nl.
   ss "SRC_URI=". quote (replaceVars (src_uri ebuild)).
@@ -183,7 +184,9 @@ showEBuild ebuild =
   ss "IUSE=". quote' (sepBy ", " $ iuse ebuild). nl.
   nl.
   ss "DEPEND=". quote' (sepBy "\n\t\t" $ map showDepend $ depend ebuild). nl.
-     (case cabalPath ebuild of Nothing -> id ; Just cp -> if cp==((name ebuild)++"-"++(version ebuild)) then id else nl. ss "S=". quote ("${WORKDIR}/"++(replaceVars cp)). nl)
+  (case my_pn ebuild of
+     Nothing -> id
+     Just pn -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"))
   $ []
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
 
