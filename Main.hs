@@ -75,7 +75,7 @@ diff mode = do
 	portTree <- getPortageTree
 	cache <- readCache portTree
 	--let serverPkgs = map (\(_,_,pd)-> (package pd) {pkgName=map toLower (pkgName $ package pd)}) cache
-	let serverPkgs = bestVersions $ indexMapFromList $ indexToPackageIdentifier cache
+	let serverPkgs = Map.mapKeys (map toLower) $ bestVersions $ indexMapFromList $ indexToPackageIdentifier cache
 	portTree <- getPortageTree
 	portagePkgs' <- portageGetPackages portTree
 	let portagePkgs = bestVersions $ indexMapFromList portagePkgs'
