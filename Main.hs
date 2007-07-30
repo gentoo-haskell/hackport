@@ -80,21 +80,23 @@ diff mode = do
 	portagePkgs' <- portageGetPackages portTree
 	let portagePkgs = bestVersions $ indexMapFromList portagePkgs'
 	let diff = diffBest serverPkgs portagePkgs
-	mapM_ (\(name,st) -> info $ showDiffState name st) (Map.assocs diff)
-	--let (inport,inhack,inboth)=diffSet (Set.fromList portagePkgs) (Set.fromList serverPkgs)
-	{-let showPkgSet set = mapM_ (\pkg->echoLn (pkgName pkg++"-"++showVersion (pkgVersion pkg))) (Set.elems set)
-	let vindent = case verbosity cfg of
-		Silent -> id
-		_ -> indent
-	when (mode==ShowAll || mode==ShowMissing) (do
-		info "Packages in hackage, but not in the overlay:"
-		vindent $ showPkgSet inhack)
-	when (mode==ShowAll || mode==ShowAdditions) (do
-		info "Packages in the overlay, but not in hackage:"
-		vindent $ showPkgSet inport)
-	when (mode==ShowAll || mode==ShowCommon) (do
-		info "Packages in the overlay and hackage:"
-		vindent $ showPkgSet inboth)-}
+	let showFilter st = case mode of
+		ShowAll -> True
+		ShowMissing -> case st of
+			OnlyLeft _ -> True
+			Both x y -> x > y
+			OnlyRight _ -> False
+		ShowAdditions -> case st of
+			OnlyLeft _ -> False
+			Both x y -> x < y
+			OnlyRight _ -> True
+		ShowCommon -> case st of
+			OnlyLeft _ -> False
+			Both x y -> x == y
+			OnlyRight _ -> False
+	mapM_ (\(name,st) -> if showFilter st
+		then info $ showDiffState name st
+		else return ()) (Map.assocs diff)
 
 update :: HPAction ()
 update = do
