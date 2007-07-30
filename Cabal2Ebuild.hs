@@ -186,7 +186,7 @@ showEBuild ebuild =
   ss "DEPEND=". quote' (sepBy "\n\t\t" $ map showDepend $ depend ebuild). nl.
   (case my_pn ebuild of
      Nothing -> id
-     Just pn -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}". nl))
+     Just pn -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
 
