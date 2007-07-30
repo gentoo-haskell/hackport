@@ -80,7 +80,7 @@ ebuildTemplate = EBuild {
     keywords = ["~amd64","~x86"],
     iuse = [],
     depend = [],
-    features = ["profile","haddock"],
+    features = [],
     licenseComments = "",
     cabalPath = Nothing,
     my_pn = Nothing
@@ -100,7 +100,7 @@ cabal2ebuild pkg = ebuildTemplate {
                     : convertDependencies (Cabal.buildDepends pkg),
     my_pn = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = (features ebuildTemplate)
-    		      ++ maybe [] (const ["lib"]) (Cabal.library pkg)
+    		      ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
 		      ++ if null (Cabal.executables pkg) then [] else ["bin"]
   } where
   	cabalPkgName = Cabal.pkgName (Cabal.package pkg)
