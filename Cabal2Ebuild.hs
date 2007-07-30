@@ -191,7 +191,7 @@ showEBuild ebuild =
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
 
 showDepend (AnyVersionOf               package) = package
-showDepend (ThisVersionOf      version package) = "=" ++ package ++ "-" ++ version
+showDepend (ThisVersionOf      version package) = "~" ++ package ++ "-" ++ version
 showDepend (LaterVersionOf     version package) = ">" ++ package ++ "-" ++ version
 showDepend (EarlierVersionOf   version package) = "<" ++ package ++ "-" ++ version
 showDepend (OrLaterVersionOf   version package) = ">=" ++ package ++ "-" ++ version
