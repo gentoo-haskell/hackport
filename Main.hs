@@ -48,7 +48,7 @@ merge pid = do
 	portTree <- getPortageTree
 	cache <- readCache portTree
 	whisper $ "Searching for: "++pkgName pid++"-"++showVersion (pkgVersion pid)
-	let pkgs = searchIndex (\name vers -> name == pkgName pid && vers == showVersion (pkgVersion pid)) cache
+	let pkgs = searchIndex (\name vers -> map toLower name == map toLower (pkgName pid) && vers == showVersion (pkgVersion pid)) cache
 	case pkgs of
 		[] -> throwError (PackageNotFound (Right pid))
 		[pkg] -> do 
