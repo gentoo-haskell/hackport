@@ -122,12 +122,15 @@ licenseComment Cabal.OtherLicense =
 licenseComment _ = ""
 
 convertDependencies :: [Cabal.Dependency] -> [Dependency]
-convertDependencies = catMaybes . map convertDependency
+convertDependencies = concatMap convertDependency
 
-convertDependency :: Cabal.Dependency -> Maybe Dependency
+convertDependency :: Cabal.Dependency -> [Dependency]
+convertDependency (Cabal.Dependency name _)
+  | name `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency name versionRange)
-  | name `elem` coreLibs = Nothing      -- no explicit dep on core libs
-  | otherwise            = Just $ convert versionRange
+  = case versionRange of
+      (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
+      v                                    -> [convert v]
 
   where
     ebuildName = "dev-haskell/" ++ map toLower name
@@ -143,8 +146,6 @@ convertDependency (Cabal.Dependency name versionRange)
       | v1 == v2 = OrEarlierVersionOf (Cabal.showVersion v1) ebuildName
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
---    convert (Cabal.IntersectVersionRanges r1 r2)
---      = convert r1 ++ "&&" ++ convert r2
 
 coreLibs =
   ["rts"
