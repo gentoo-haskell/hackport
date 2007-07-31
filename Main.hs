@@ -90,6 +90,10 @@ diff mode = do
 			OnlyLeft _ -> False
 			Both x y -> x < y
 			OnlyRight _ -> True
+		ShowNewer -> case st of
+			OnlyLeft _ -> False
+			Both x y -> x > y
+			OnlyRight _ -> False
 		ShowCommon -> case st of
 			OnlyLeft _ -> False
 			Both x y -> x == y

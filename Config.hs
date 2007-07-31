@@ -29,6 +29,7 @@ data DiffMode
 	= ShowAll
 	| ShowMissing
 	| ShowAdditions
+	| ShowNewer
 	| ShowCommon
 	deriving Eq
 
@@ -85,6 +86,7 @@ parseConfig opts = let
 		"diff":"all":[] -> Right (DiffTree ShowAll)
 		"diff":"missing":[] -> Right (DiffTree ShowMissing)
 		"diff":"additions":[] -> Right (DiffTree ShowAdditions)
+		"diff":"newer":[] -> Right (DiffTree ShowNewer)
 		"diff":"common":[] -> Right (DiffTree ShowCommon)
 		"diff":arg:[] -> Left ("Unknown argument to 'diff': Use all,missing,additions or common.\n")
 		"diff":arg1:args -> Left ("'diff' takes one argument("++show ((length args)+1)++" given).\n")
