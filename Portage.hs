@@ -19,7 +19,7 @@ portageGetPackages ::
 	HPAction [PackageIdentifier]
 portageGetPackages portTree = do
 	cfg <- getCfg
-	let basedir=portTree++"/"++(portageCategory cfg)++"/"
+	let basedir=portTree++"/"++(defaultPortageCategory cfg)++"/"
 	content <- liftIO $ getDirectoryContents basedir
 	pkgs <- liftIO $ filterPackages basedir content
 	identifiers <- mapM (\pkgname->
@@ -35,7 +35,7 @@ portageGetPackageVersions ::
 portageGetPackageVersions portTree name
 	= do
 		cfg <- getCfg
-		let basedir=portTree++"/"++(portageCategory cfg)++"/"++name++"/"
+		let basedir=portTree++"/"++(defaultPortageCategory cfg)++"/"++name++"/"
 		content <- liftIO $ getDirectoryContents basedir
 		let versions=map head (mapMaybe (matchRegex (ebuildVersionRegex name)) content)
  		return (mapMaybe (readPMaybe parseVersion . map underscore) versions)
@@ -72,13 +72,13 @@ filterVersions base (x:xs) = do
 --diffPackageLists 
 
 
-getPortageTree :: HPAction String
-getPortageTree = do
+getOverlayPath :: HPAction String
+getOverlayPath = do
 	cfg <- getCfg
-	case portageTree cfg of
+	case overlayPath cfg of
 		Nothing -> do
 		  tree <- getOverlay `sayDebug` ("Guessing overlay from /etc/make.conf...\n",\tree->"Found '"++tree++"'")
-		  setPortageTree $ Just tree
+		  setOverlayPath $ Just tree
 		  return tree
 		Just tree -> return tree
 

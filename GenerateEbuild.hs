@@ -21,7 +21,7 @@ import System.FilePath
 mergeEbuild :: FilePath -> EBuild -> HPAction ()
 mergeEbuild target ebuild = do
 	cfg <- getCfg
-	let edir = target </> portageCategory cfg </> name ebuild
+	let edir = target </> defaultPortageCategory cfg </> name ebuild
 	let epath = edir </> name ebuild ++"-"++ version ebuild <.> "ebuild"
 	liftIO (createDirectoryIfMissing True edir)
 		`sayDebug` ("Creating '"++edir++"'... ",const "done.")

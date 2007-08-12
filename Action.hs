@@ -57,9 +57,9 @@ whisper str = do
 getCfg :: HPAction Config
 getCfg = gets config
 
-setPortageTree :: Maybe String -> HPAction ()
-setPortageTree mt = modify $ \hps -> 
-	hps { config = (config hps) { portageTree = mt } }
+setOverlayPath :: Maybe String -> HPAction ()
+setOverlayPath mt = modify $ \hps -> 
+	hps { config = (config hps) { overlayPath = mt } }
 
 lessIndent :: HPAction ()
 lessIndent = modify $ \s -> s { indention = indention s - 1 }
@@ -100,8 +100,8 @@ loadConfig = do
 
 optionToConfig :: Config -> HackPortOptions -> HPAction Config
 optionToConfig cfg opt = case opt of
-	PortageTree str -> return cfg { portageTree = Just str }
-	Category str -> return cfg { portageCategory = str }
+	OverlayPath str -> return cfg { overlayPath = Just str }
+	Category str -> return cfg { defaultPortageCategory = str }
 	Server str -> case parseURI str of
 		Nothing -> throwError (InvalidServer str)
 		Just uri -> return cfg { server = uri }

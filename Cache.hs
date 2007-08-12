@@ -34,15 +34,15 @@ cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
 
 updateCache :: HPAction ()
 updateCache = do
-	tree <- getPortageTree
+	path <- getOverlayPath
 	cfg <- getCfg
 	let cache = cacheURI $ server cfg
 	res <- (liftIO $ simpleHTTP (Request cache GET [] "")) `sayNormal` ("Fetching cache from "++show cache++"...",const "done.")
 	case res of
 		Left err -> throwError (ConnectionFailed (show cache) (show err))
 		Right resp -> liftIO $ do
-                        createDirectoryIfMissing False (tree </> hackportDir)
-                        Prelude.writeFile (cacheFile tree) (rspBody resp)
+                        createDirectoryIfMissing False (path </> hackportDir)
+                        Prelude.writeFile (cacheFile path) (rspBody resp)
 
 readCache :: FilePath -> HPAction Index
 readCache portdir = do

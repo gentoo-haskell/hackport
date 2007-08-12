@@ -10,7 +10,7 @@ import Error
 import MaybeRead
 
 data HackPortOptions
-	= PortageTree String
+	= OverlayPath String
 	| Category String
 	| Server String
 	| TempDir String
@@ -34,8 +34,8 @@ data DiffMode
 	deriving Eq
 
 data Config = Config
-	{ portageTree		::Maybe String
-	, portageCategory	::String
+	{ overlayPath		::Maybe String
+	, defaultPortageCategory::String
 	, server		::URI
 	, tmp			::String
 	, verbosity		::Verbosity
@@ -50,8 +50,8 @@ packageRegex = mkRegex "^(.*?)-([0-9].*)$"
 
 defaultConfig :: Config
 defaultConfig = Config
-	{ portageTree = Nothing
-	, portageCategory = "dev-haskell"
+	{ overlayPath = Nothing
+	, defaultPortageCategory = "dev-haskell"
 	, server = URI "http:" (Just $ URIAuth "" "hackage.haskell.org" "") "/packages/archive/" "" ""
 	, tmp = "/tmp"
 	, verbosity = Normal
@@ -59,7 +59,7 @@ defaultConfig = Config
 
 hackageOptions :: [OptDescr HackPortOptions]
 hackageOptions =
-	[Option ['p'] ["portage-tree"] (ReqArg PortageTree "PATH") "The portage tree to merge to"
+	[Option ['o'] ["overlay-path"] (ReqArg OverlayPath "PATH") "The overlay tree to merge to"
 	,Option ['c'] ["portage-category"] (ReqArg Category "CATEGORY") "The cateory the program belongs to"
 	,Option ['s'] ["server"] (ReqArg Server "URL") "The Hackage server to query"
 	,Option ['t'] ["temp-dir"] (ReqArg TempDir "PATH") "A temp directory where tarballs can be stored"

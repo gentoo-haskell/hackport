@@ -28,7 +28,7 @@ import MaybeRead
 
 list :: String -> HPAction ()
 list name = do
-	cache <- readCache =<< getPortageTree
+	cache <- readCache =<< getOverlayPath
 	let pkgs | null name = [ pkg | (_,_,pkg) <- cache ]
 		 | otherwise = searchIndex matchSubstringCaseInsensitive cache
 	      where matchSubstringCaseInsensitive str _ver =
@@ -45,7 +45,7 @@ list name = do
 
 merge :: PackageIdentifier -> HPAction ()
 merge pid = do
-	portTree <- getPortageTree
+	portTree <- getOverlayPath
 	cache <- readCache portTree
 	whisper $ "Searching for: "++pkgName pid++"-"++showVersion (pkgVersion pid)
 	let pkgs = searchIndex (\name vers -> map toLower name == map toLower (pkgName pid) && vers == showVersion (pkgVersion pid)) cache
@@ -72,11 +72,11 @@ showDiffState name st = (tabs name) ++ " [" ++ (case st of
 diff :: DiffMode -> HPAction ()
 diff mode = do
 	cfg <- getCfg
-	portTree <- getPortageTree
+	portTree <- getOverlayPath
 	cache <- readCache portTree
 	--let serverPkgs = map (\(_,_,pd)-> (package pd) {pkgName=map toLower (pkgName $ package pd)}) cache
 	let serverPkgs = Map.mapKeys (map toLower) $ bestVersions $ indexMapFromList $ indexToPackageIdentifier cache
-	portTree <- getPortageTree
+	portTree <- getOverlayPath
 	portagePkgs' <- portageGetPackages portTree
 	let portagePkgs = bestVersions $ indexMapFromList portagePkgs'
 	let diff = diffBest serverPkgs portagePkgs
@@ -111,7 +111,7 @@ overlayonly :: Maybe String -> HPAction ()
 overlayonly pd = do
 	cfg <- getCfg
 	portdir <- maybe (getPortDir `sayDebug` ("Guessing portage main dir from /etc/make.conf...",\res->"found: "++res++".")) return pd
-	overlay <- getPortageTree
+	overlay <- getOverlayPath
 	mainlinepkgs <- portageGetPackages portdir
 		`sayDebug` ("Getting package list from "++portdir++"...",const "done.")
 	overlaypkgs <- portageGetPackages overlay
@@ -123,7 +123,7 @@ overlayonly pd = do
 		_ -> indent
 	let showPkgSet set = mapM_ (\pkg->echoLn (pkgName pkg++"-"++showVersion (pkgVersion pkg))) (Set.elems set)
 	vindent $ showPkgSet diff
-	
+
 hpmain :: HPAction ()
 hpmain = do
 	mode <- loadConfig
