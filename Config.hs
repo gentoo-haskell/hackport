@@ -88,7 +88,7 @@ parseConfig opts = let
 		"diff":"additions":[] -> Right (DiffTree ShowAdditions)
 		"diff":"newer":[] -> Right (DiffTree ShowNewer)
 		"diff":"common":[] -> Right (DiffTree ShowCommon)
-		"diff":arg:[] -> Left ("Unknown argument to 'diff': Use all,missing,additions or common.\n")
+		"diff":arg:[] -> Left ("Unknown argument to 'diff': Use all,missing,additions,newer or common.\n")
 		"diff":arg1:args -> Left ("'diff' takes one argument("++show ((length args)+1)++" given).\n")
 		"update":[] -> Right Update
 		"update":rest -> Left ("'update' takes zero arguments("++show (length rest)++" given).\n")
