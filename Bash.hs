@@ -24,15 +24,15 @@ getOverlay = do
     let loop [] = throwError $ MultipleOverlays mul
         loop (x:xs) = (do
           found <- liftIO (doesFileExist (cacheFile x))
-	  	`sayDebug` ("Checking '"++x++"'...\n",\res->if res then "found.\n" else "not found.")
+		`sayDebug` ("Checking '"++x++"'...\n",\res->if res then "found.\n" else "not found.")
           if found
             then return x
-            else loop xs) 
+            else loop xs)
     whisper "There are several overlays in your /etc/make.conf"
     mapM (\x-> whisper (" * " ++x)) mul
     whisper "Looking for one with a HackPort cache..."
     overlay <- loop mul
-    whisper ("I choose " ++ overlay) 
+    whisper ("I choose " ++ overlay)
     whisper "Override my decision with hackport -p /my/overlay"
     return overlay
 

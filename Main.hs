@@ -14,17 +14,21 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
+
 import Action
-import Error
-import Cabal2Ebuild
-import GenerateEbuild
 import Bash
+import Cabal2Ebuild
+import Cache
 import Config
 import Diff
-import Portage
-import Cache
+import Error
+import GenerateEbuild
 import Index
 import MaybeRead
+import OverlayPortageDiff
+import Portage
+
+import P2
 
 list :: String -> HPAction ()
 list name = do
@@ -107,23 +111,6 @@ update = do
 	updateCache
 	return ()
 
-overlayonly :: Maybe String -> HPAction ()
-overlayonly pd = do
-	cfg <- getCfg
-	portdir <- maybe (getPortDir `sayDebug` ("Guessing portage main dir from /etc/make.conf...",\res->"found: "++res++".")) return pd
-	overlay <- getOverlayPath
-	mainlinepkgs <- portageGetPackages portdir
-		`sayDebug` ("Getting package list from "++portdir++"...",const "done.")
-	overlaypkgs <- portageGetPackages overlay
-		`sayDebug` ("Getting package list from "++overlay++"...",const "done.")
-	info "These packages are in the overlay but not in the portage tree:"
-	let (_,diff,_) = diffSet (Set.fromList mainlinepkgs) (Set.fromList overlaypkgs)
-	let vindent = case verbosity cfg of
-		Silent -> id
-		_ -> indent
-	let showPkgSet set = mapM_ (\pkg->echoLn (pkgName pkg++"-"++showVersion (pkgVersion pkg))) (Set.elems set)
-	vindent $ showPkgSet diff
-
 hpmain :: HPAction ()
 hpmain = do
 	mode <- loadConfig
@@ -133,7 +120,7 @@ hpmain = do
 		Merge pkg -> merge pkg
 		DiffTree mode -> diff mode
 		Update -> update
-		OverlayOnly portdir -> overlayonly portdir
+		OverlayOnly -> overlayonly
 
 main :: IO ()
 main = performHPAction hpmain

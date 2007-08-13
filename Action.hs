@@ -58,7 +58,7 @@ getCfg :: HPAction Config
 getCfg = gets config
 
 setOverlayPath :: Maybe String -> HPAction ()
-setOverlayPath mt = modify $ \hps -> 
+setOverlayPath mt = modify $ \hps ->
 	hps { config = (config hps) { overlayPath = mt } }
 
 lessIndent :: HPAction ()

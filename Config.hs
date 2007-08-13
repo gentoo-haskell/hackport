@@ -23,7 +23,7 @@ data OperationMode
 	| DiffTree DiffMode
 	| Update
 	| ShowHelp
-	| OverlayOnly (Maybe String)
+	| OverlayOnly
 
 data DiffMode
 	= ShowAll
@@ -92,9 +92,8 @@ parseConfig opts = let
 		"diff":arg1:args -> Left ("'diff' takes one argument("++show ((length args)+1)++" given).\n")
 		"update":[] -> Right Update
 		"update":rest -> Left ("'update' takes zero arguments("++show (length rest)++" given).\n")
-		"overlayonly":[] -> Right (OverlayOnly Nothing)
-		"overlayonly":portdir:[] -> Right (OverlayOnly (Just portdir))
-		"overlayonly":arg:args -> Left ("'overlayonly' takes one optional argument("++show ((length args)+1)++" given).\n")
+		"overlayonly":[] -> Right OverlayOnly
+		"overlayonly":args -> Left ("'overlayonly' doesn't take any arguments. ("++show ((length args)+1)++" given).\n")
 		[] -> Right ShowHelp
 		_ -> Left "Unknown opertation mode\n"
 	in case mode of

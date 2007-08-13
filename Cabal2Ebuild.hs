@@ -134,7 +134,7 @@ convertDependency (Cabal.Dependency name versionRange)
 
   where
     ebuildName = "dev-haskell/" ++ map toLower name
-    
+
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
     convert (Cabal.ThisVersion v) = ThisVersionOf (Cabal.showVersion v) ebuildName
@@ -226,7 +226,7 @@ getRestIfPrefix _ [] = Nothing
 subStr ::
 	String ->	-- ^ the search string
 	String ->	-- ^ the string to be searched
-	Maybe (String,String)	-- ^ Just (pre,post) if string is found
+	Maybe (String,String)  -- ^ Just (pre,post) if string is found
 subStr sstr str = case getRestIfPrefix sstr str of
 	Nothing -> if null str then Nothing else case subStr sstr (tail str) of
 		Nothing -> Nothing
