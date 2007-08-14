@@ -32,6 +32,7 @@ col fg bf bg = show (fromEnum fg + 30) : bf' [show (fromEnum bg + 40)]
 
 inColor c bf bg txt = esc (col c bf bg) ++ txt ++ esc ["00"]
 
+{-
 data Doc = Doc (Bool -> String -> String)
 
 char chr = Doc (\_ c -> chr:c)
@@ -48,3 +49,4 @@ color (Doc d) color = Doc (\ b c ->
     if not b
         then d b c
         else inColor color False Default (d b ""))
+-}

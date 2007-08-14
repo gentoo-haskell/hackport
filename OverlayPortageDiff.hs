@@ -9,6 +9,7 @@ import Diff
 import Portage
 import P2
 
+import Control.Arrow
 import Control.Monad.Error
 import Control.Monad.State
 
@@ -21,6 +22,8 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import qualified Data.Traversable as T
 
 data Diff a = D
     { sameSame :: [a] -- ^ file exists in both portdirs, and are identical
@@ -39,21 +42,22 @@ overlayonly = do
     info "These packages are in the overlay but not in the portage tree:"
     let (over, both) = portageDiff overlay portage
 
-    forM_ (Map.toAscList both) $ \(package, ebuilds) -> liftIO $ do
-        print package
-        forM_ ebuilds $ \e -> do
+    both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
             let (Just e1) = lookupEbuildWith portage (ePackage e) (comparing eVersion e)
                 (Just e2) = lookupEbuildWith overlay (ePackage e) (comparing eVersion e)
             eq <- equals (eFilePath e1) (eFilePath e2)
-            let c | eq = Green
-                  | otherwise = Yellow
-            putStrLn (showDoc (color (text $ show $ eVersion e) c) True)
+            return (let ev = eVersion e in (ev, toColor (if eq then Green else Yellow) (show ev)))
 
-    liftIO $ putStrLn "**"
-    forM_ (Map.toAscList over) $ \(package, ebuilds) -> liftIO $ do
+    let over' = Map.map (map ((id &&& (toColor Red . show)).eVersion)) over
+
+        meld = Map.map (map snd) $ Map.unionWith (\a b -> List.sort (a++b)) both' over'
+
+    forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
         print package
-        forM_ ebuilds $ \e -> do print (eVersion e)
+        forM_ versions putStrLn
+
+toColor c t = inColor c False Default t
 
 -- incomplete
 portageDiff :: Portage -> Portage -> (Portage, Portage)

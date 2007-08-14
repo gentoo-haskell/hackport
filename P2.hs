@@ -1,5 +1,7 @@
 module P2 where
 
+import BlingBling
+
 import qualified Data.Set as Set
 
 import Control.Arrow
@@ -40,7 +42,6 @@ lookupEbuildWith portage package comp = do
     es <- Map.lookup package portage
     List.find comp es
 
-
 main' = do
     args <- getArgs
     portdir <- case args of
@@ -51,7 +52,7 @@ main' = do
 readPortageTree :: FilePath -> IO (Map Package [Ebuild])
 readPortageTree portdir = do
     categories <- getDirectories portdir
-    packages <- fmap concat $ forM categories $ \c -> do
+    packages <- fmap concat $ forMbling categories $ \c -> do
         putStr "."
         pkg <- getDirectories (portdir </> c)
         return (map ((,) c) pkg)
