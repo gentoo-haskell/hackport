@@ -44,10 +44,12 @@ overlayonly = do
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
+            -- also, one of them is already bound to 'e'
             let (Just e1) = lookupEbuildWith portage (ePackage e) (comparing eVersion e)
                 (Just e2) = lookupEbuildWith overlay (ePackage e) (comparing eVersion e)
             eq <- equals (eFilePath e1) (eFilePath e2)
-            return (let ev = eVersion e in (ev, toColor (if eq then Green else Yellow) (show ev)))
+            let ev = eVersion e
+            return (ev, toColor (if eq then Green else Yellow) (show ev))
 
     let over' = Map.map (map ((id &&& (toColor Red . show)).eVersion)) over
 
@@ -66,7 +68,7 @@ portageDiff p1 p2 = (in1, ins)
                     Map.intersectionWith (List.intersectBy $ comparing eVersion) p1 p2
           in1 = Map.filter (not . null) $
                     Map.differenceWith (\xs ys ->
-                        let lst = filter (\x -> any (\y -> eVersion x == eVersion y) ys) xs in
+                        let lst = foldr (List.deleteBy (comparing eVersion)) xs ys in
                         if null lst
                             then Nothing
                             else Just lst
