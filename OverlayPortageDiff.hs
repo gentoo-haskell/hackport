@@ -42,7 +42,7 @@ overlayonly = do
 
     liftIO $ putStrLn $ toColor Green "Green" ++ ": package in portage and overlay are the same"
     liftIO $ putStrLn $ toColor Yellow "Yellow" ++ ": package in portage and overlay differs"
-    liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in portage"
+    liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in the overlay"
     forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
         let (P c p) = package
         putStr $ c ++ '/':p
