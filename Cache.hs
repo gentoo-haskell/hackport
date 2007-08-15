@@ -50,6 +50,6 @@ readCache portdir = do
 	exists <- liftIO $ doesFileExist cachePath
 	unless exists $ do
 		info "No cache file present, attempting to update..."
- 		updateCache
+		updateCache
 	str <- liftIO $ BS.readFile cachePath
 	return $ readIndex str

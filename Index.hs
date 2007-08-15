@@ -17,30 +17,29 @@ type Index = [(String,String,PackageDescription)]
 type IndexMap = Map.Map String (Set.Set Version)
 
 readIndex :: ByteString -> Index
-readIndex str = let
-	unziped = decompress str
-	untared = readTarArchive unziped
-	in mapMaybe (\entr -> case splitDirectories (tarFileName (entryHeader entr)) of
-		[".",pkgname,vers,file] -> Just (pkgname,vers,
-			case parseDescription (unpack (entryData entr)) of
-				ParseOk _ descr -> descr
-				_ -> error $ "Couldn't read cabal file "++show file)
-		_ -> Nothing) (archiveEntries untared)
+readIndex str = do
+    let unziped = decompress str
+        untared = readTarArchive unziped
+    entr <- archiveEntries untared
+    case splitDirectories (tarFileName (entryHeader entr)) of
+        [".",pkgname,vers,file] -> do
+            descr <- case parseDescription (unpack (entryData entr)) of
+                ParseOk _ descr -> return descr
+                _  -> error $ "Couldn't read cabal file "++show file
+            return (pkgname,vers,descr)
+        _ -> fail "doesn't look like the proper path"
 
 searchIndex :: (String -> String -> Bool) -> Index -> [PackageDescription]
-searchIndex f ind = mapMaybe (\(name,vers,pd) -> if f name vers
-	then Just pd
-	else Nothing
-	) ind
+searchIndex f ind = map snd $ filter (uncurry f . fst) $ map (\(x,y,z) -> ((x,y),z)) ind
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList = foldl (\mp (PackageIdentifier {pkgName = name,pkgVersion = vers})
-	-> Map.alter ((Just).(maybe (Set.singleton vers) (Set.insert vers))) name mp) Map.empty
+    -> Map.alter ((Just).(maybe (Set.singleton vers) (Set.insert vers))) name mp) Map.empty
 
 indexToPackageIdentifier :: Index -> [PackageIdentifier]
 indexToPackageIdentifier = mapMaybe (\(name,vers_str,_) -> do
-	vers <- readPMaybe parseVersion vers_str
-	return $ PackageIdentifier {pkgName = name,pkgVersion = vers})
+    vers <- readPMaybe parseVersion vers_str
+    return $ PackageIdentifier {pkgName = name,pkgVersion = vers})
 
 bestVersions :: IndexMap -> Map.Map String Version
 bestVersions = Map.map Set.findMax
