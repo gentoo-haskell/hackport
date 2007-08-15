@@ -45,7 +45,7 @@ overlayonly = do
     liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in portage"
     forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
         let (P c p) = package
-        putStr $ c ++ '/':inColor White True Default p
+        putStr $ c ++ '/':p
         putStr " "
         forM_ versions (\v -> putStr v >> putChar ' ')
         putStrLn ""
