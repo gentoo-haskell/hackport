@@ -40,7 +40,7 @@ overlayonly = do
     portage <- liftIO $ readPortageTree portdir
     overlay <- liftIO $ readPortageTree overlayPath
     info "These packages are in the overlay but not in the portage tree:"
-    let (over, both) = portageDiff overlay portage
+    let (over, both, port) = portageDiff overlay portage
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
@@ -56,23 +56,27 @@ overlayonly = do
         meld = Map.map (map snd) $ Map.unionWith (\a b -> List.sort (a++b)) both' over'
 
     forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
-        print package
-        forM_ versions putStrLn
+        putStr $ inColor Default True Magenta $ show package
+        putStr " "
+        forM_ versions (\v -> putStr v >> putChar ' ')
+        putStrLn ""
 
 toColor c t = inColor c False Default t
 
 -- incomplete
-portageDiff :: Portage -> Portage -> (Portage, Portage)
-portageDiff p1 p2 = (in1, ins)
+portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
+portageDiff p1 p2 = (in1, ins, in2)
     where ins = Map.filter (not . null) $
                     Map.intersectionWith (List.intersectBy $ comparing eVersion) p1 p2
-          in1 = Map.filter (not . null) $
-                    Map.differenceWith (\xs ys ->
+          in1 = subtract p1 p2
+          in2 = subtract p2 p1
+          subtract x y = Map.filter (not . null) $
+                       Map.differenceWith (\xs ys ->
                         let lst = foldr (List.deleteBy (comparing eVersion)) xs ys in
                         if null lst
                             then Nothing
                             else Just lst
-                            ) p1 p2
+                            ) x y
 
 comparing f x y = f x == f y
 
