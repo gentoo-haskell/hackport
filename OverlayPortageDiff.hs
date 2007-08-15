@@ -1,11 +1,8 @@
 module OverlayPortageDiff where
---module OverlayPortageDiff where
 
 import Action
 import AnsiColor
 import Bash
-import Config
-import Diff
 import Portage
 import P2
 
@@ -14,33 +11,21 @@ import Control.Monad.Error
 import Control.Monad.State
 
 import qualified Data.List as List
-import Data.Version
-import Distribution.Package
 
 import qualified Data.ByteString.Lazy.Char8 as L
 
 import Data.Char
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import qualified Data.Traversable as T
 
-data Diff a = D
-    { sameSame :: [a] -- ^ file exists in both portdirs, and are identical
-    , fileDiffers :: [a] -- ^ file exists in both portdirs, but are different
-    , only1 :: [a] -- ^ only exist in the first dir
-    , only2 :: [a] -- ^ only exist in the second dir
-    }
-
 overlayonly :: HPAction ()
 overlayonly = do
-    cfg <- getCfg
     portdir <- getPortDir
     overlayPath <- getOverlayPath
-    portage <- liftIO $ readPortageTree portdir
     overlay <- liftIO $ readPortageTree overlayPath
-    info "These packages are in the overlay but not in the portage tree:"
-    let (over, both, port) = portageDiff overlay portage
+    portage <- liftIO $ readPortagePackages portdir (Map.keys overlay)
+    let (over, both, _port) = portageDiff overlay portage
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
@@ -55,8 +40,12 @@ overlayonly = do
 
         meld = Map.map (map snd) $ Map.unionWith (\a b -> List.sort (a++b)) both' over'
 
+    liftIO $ putStrLn $ toColor Green "Green" ++ ": package in portage and overlay are the same"
+    liftIO $ putStrLn $ toColor Yellow "Yellow" ++ ": package in portage and overlay differs"
+    liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in portage"
     forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
-        putStr $ inColor Default True Magenta $ show package
+        let (P c p) = package
+        putStr $ c ++ '/':inColor White True Default p
         putStr " "
         forM_ versions (\v -> putStr v >> putChar ' ')
         putStrLn ""

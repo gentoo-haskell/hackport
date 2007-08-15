@@ -1,8 +1,10 @@
 module P2 where
 
-import BlingBling
+-- Module that respect categories.
+-- Possibly to replace Portage.hs when the rest of the project has been
+-- ported to this style.
 
-import qualified Data.Set as Set
+import BlingBling
 
 import Control.Arrow
 import Control.Monad
@@ -12,7 +14,6 @@ import qualified Data.Map as Map
 import Data.Maybe
 import qualified Data.List as List
 
-import System
 import System.Directory
 import System.IO
 import System.IO.Unsafe
@@ -42,31 +43,30 @@ lookupEbuildWith portage package comp = do
     es <- Map.lookup package portage
     List.find comp es
 
-main' = do
-    args <- getArgs
-    portdir <- case args of
-        [] -> return "/usr/portage"
-        [x] -> return x
-    print =<< (readPortageTree portdir)
-
-readPortageTree :: FilePath -> IO (Map Package [Ebuild])
-readPortageTree portdir = do
+getPackageList :: FilePath -> IO [Package]
+getPackageList portdir = do
     categories <- getDirectories portdir
     packages <- fmap concat $ forMbling categories $ \c -> do
         putStr "."
         pkg <- getDirectories (portdir </> c)
-        return (map ((,) c) pkg)
+        return (map (P c) pkg)
     putStrLn ""
+    return packages
+
+readPortagePackages :: FilePath -> [Package] -> IO (Map Package [Ebuild])
+readPortagePackages portdir packages0 = do
+    packages <- filterM (doesDirectoryExist . (portdir </>) . show) packages0
     ebuild_map <- forM packages $ \package -> do
         ebuilds <- unsafeInterleaveIO (getPackageVersions package)
-        return (uncurry P package, ebuilds)
+        return (package, ebuilds)
     return $ Map.fromList ebuild_map
 
     where
-    getPackageVersions :: (String, String) -> IO [Ebuild]
-    getPackageVersions (category, package) = do
+    getPackageVersions :: Package -> IO [Ebuild]
+    getPackageVersions (P category package) = do
         files <- getDirectoryContents (portdir </> category </> package)
-        let ebuilds = [ (v, portdir </> category </> package </> fn) | (Just v, fn) <- map ((filterVersion package) &&& id) files ]
+        let ebuilds = [ (v, portdir </> category </> package </> fn)
+                      | (Just v, fn) <- map ((filterVersion package) &&& id) files ]
         return (map (uncurry (Ebuild (P category package))) ebuilds)
 
     filterVersion :: String -> String -> Maybe Version
@@ -77,6 +77,11 @@ readPortageTree portdir = do
             Right v -> return v
 
     ebuildVersionRegex name = mkRegex ("^"++name++"-(.*)\\.ebuild$")
+
+readPortageTree :: FilePath -> IO (Map Package [Ebuild])
+readPortageTree portdir = do
+    packages <- getPackageList portdir
+    readPortagePackages portdir packages
 
 getDirectories :: FilePath -> IO [String]
 getDirectories fp = do
