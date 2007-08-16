@@ -110,6 +110,7 @@ optionToConfig cfg opt = case opt of
 		Nothing -> throwError (UnknownVerbosityLevel str)
 		Just verb -> return cfg { verbosity=verb }
 	Help -> return cfg
+        RefreshCache -> return cfg { refreshCache = True }
 
 performHPAction :: HPAction a -> IO ()
 performHPAction action = do

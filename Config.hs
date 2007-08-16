@@ -16,6 +16,7 @@ data HackPortOptions
 	| TempDir String
 	| Verbosity String
 	| Help
+        | RefreshCache
 
 data OperationMode
 	= List String
@@ -39,6 +40,7 @@ data Config = Config
 	, server		::URI
 	, tmp			::String
 	, verbosity		::Verbosity
+        , refreshCache          ::Bool
 	}
 
 data Verbosity
@@ -55,6 +57,7 @@ defaultConfig = Config
 	, server = URI "http:" (Just $ URIAuth "" "hackage.haskell.org" "") "/packages/archive/" "" ""
 	, tmp = "/tmp"
 	, verbosity = Normal
+        , refreshCache = False
 	}
 
 hackageOptions :: [OptDescr HackPortOptions]
@@ -65,6 +68,7 @@ hackageOptions =
 	,Option ['t'] ["temp-dir"] (ReqArg TempDir "PATH") "A temp directory where tarballs can be stored"
 	,Option ['v'] ["verbosity"] (ReqArg Verbosity "debug|normal|silent") "Set verbosity level (default is 'normal')"
 	,Option ['h', '?'] ["help"] (NoArg Help) "Display this help message"
+        ,Option ['r'] ["refresh-cache"] (NoArg RefreshCache) "Refresh the hackport cache before running the command"
 	]
 
 parseConfig :: [String] -> Either String ([HackPortOptions],OperationMode)

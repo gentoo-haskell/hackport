@@ -102,24 +102,23 @@ diff mode = do
 			OnlyLeft _ -> False
 			Both x y -> x == y
 			OnlyRight _ -> False
-	mapM_ (\(name,st) -> if showFilter st
-		then info $ showDiffState name st
-		else return ()) (Map.assocs diff)
-
-update :: HPAction ()
-update = do
-	updateCache
-	return ()
+        let packages = filter (showFilter . snd) (Map.assocs diff)
+        mapM_ (info . uncurry showDiffState) packages
 
 hpmain :: HPAction ()
 hpmain = do
 	mode <- loadConfig
+        requestedUpdate <- fmap refreshCache getCfg
+        when requestedUpdate $
+            case mode of
+                Update -> return ()
+                _ -> updateCache
 	case mode of
 		ShowHelp -> liftIO hackageUsage
 		List pkg -> list pkg
 		Merge pkg -> merge pkg
 		DiffTree mode -> diff mode
-		Update -> update
+		Update -> updateCache
 		OverlayOnly -> overlayonly
 
 main :: IO ()

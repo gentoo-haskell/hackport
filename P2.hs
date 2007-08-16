@@ -47,10 +47,8 @@ getPackageList :: FilePath -> IO [Package]
 getPackageList portdir = do
     categories <- getDirectories portdir
     packages <- fmap concat $ forMbling categories $ \c -> do
-        putStr "."
         pkg <- getDirectories (portdir </> c)
         return (map (P c) pkg)
-    putStrLn ""
     return packages
 
 readPortagePackages :: FilePath -> [Package] -> IO (Map Package [Ebuild])
