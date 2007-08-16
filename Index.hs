@@ -1,7 +1,5 @@
 module Index where
 
-import Data.List(isSuffixOf)
-import Data.Maybe(mapMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Version (Version,parseVersion)
@@ -30,16 +28,18 @@ readIndex str = do
         _ -> fail "doesn't look like the proper path"
 
 searchIndex :: (String -> String -> Bool) -> Index -> [PackageDescription]
-searchIndex f ind = map snd $ filter (uncurry f . fst) $ map (\(x,y,z) -> ((x,y),z)) ind
+searchIndex f ind = map snd $ filter (uncurry f . fst) $ map (\(p,v,d) -> ((p,v),d)) ind
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
-indexMapFromList = foldl (\mp (PackageIdentifier {pkgName = name,pkgVersion = vers})
-    -> Map.alter ((Just).(maybe (Set.singleton vers) (Set.insert vers))) name mp) Map.empty
+indexMapFromList pids = Map.unionsWith Set.union $
+    [ Map.singleton name (Set.singleton vers)
+    | (PackageIdentifier {pkgName = name,pkgVersion = vers}) <- pids ]
 
 indexToPackageIdentifier :: Index -> [PackageIdentifier]
-indexToPackageIdentifier = mapMaybe (\(name,vers_str,_) -> do
-    vers <- readPMaybe parseVersion vers_str
-    return $ PackageIdentifier {pkgName = name,pkgVersion = vers})
+indexToPackageIdentifier index = do
+    (name,vers_str,_) <- index
+    Just vers <- return $ readPMaybe parseVersion vers_str
+    return $ PackageIdentifier {pkgName = name,pkgVersion = vers}
 
 bestVersions :: IndexMap -> Map.Map String Version
 bestVersions = Map.map Set.findMax
