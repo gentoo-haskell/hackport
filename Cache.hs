@@ -6,16 +6,22 @@ import CacheFile
 import Config
 import Error
 import Index
+import P2
+import Version
 
+import Data.Char
+import Data.List
 import Network.URI
 import Network.HTTP
-import Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy as L
 import System.Time
 import System.FilePath
 import Control.Monad.Error(throwError)
-import Control.Monad.Trans(liftIO)
+import Control.Monad.Writer
 import Control.Monad (unless)
 import System.Directory (doesFileExist,createDirectoryIfMissing)
+
+import qualified Data.Map as Map
 
 -- | A long time. Used in checkCacheDate
 alarmingLongTime :: TimeDiff
@@ -51,5 +57,25 @@ readCache portdir = do
 	unless exists $ do
 		info "No cache file present, attempting to update..."
 		updateCache
-	str <- liftIO $ BS.readFile cachePath
+	str <- liftIO $ L.readFile cachePath
 	return $ readIndex str
+
+indexToPortage :: Index -> Portage -> (Portage, [String])
+indexToPortage index port = runWriter $ do
+    pkgs <- forM index $ \(pkg_h_name, pkg_h_ver, pkg_desc) -> do
+        let pkg_name = map toLower pkg_h_name
+        pkg_cat <- lookupCat pkg_name
+        return $ Ebuild (P pkg_cat pkg_name) (getVersion pkg_h_ver) ""
+    return $ Map.map sort $ Map.fromListWith (++) [ (ePackage e, [e]) | e <- pkgs ]
+    where
+    catMap = Map.fromListWith (++) [ (p, [c]) | P c p <- Map.keys port ]
+    lookupCat :: String -> Writer [String] String
+    lookupCat p = do
+        case Map.lookup p catMap of
+            Nothing -> return "hackage"
+            Just [x] -> return x
+            Just xs -> do
+                let c | elem "dev-haskell" xs = "dev-haskell"
+                      | otherwise = head xs
+                tell ["WARNING: Category clash for package " ++ p ++ ", defaulting to " ++ c ++ ". Other categories: " ++ unwords (delete c xs)]
+                return c

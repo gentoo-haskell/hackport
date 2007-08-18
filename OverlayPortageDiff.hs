@@ -52,7 +52,6 @@ overlayonly = do
 
 toColor c t = inColor c False Default t
 
--- incomplete
 portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
 portageDiff p1 p2 = (in1, ins, in2)
     where ins = Map.filter (not . null) $

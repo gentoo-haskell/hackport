@@ -16,7 +16,6 @@ import qualified Data.List as List
 
 import System.Directory
 import System.IO
-import System.IO.Unsafe
 import System.FilePath
 
 import Text.Regex
@@ -30,7 +29,7 @@ data Ebuild = Ebuild {
     ePackage :: Package,
     eVersion :: Version,
     eFilePath :: FilePath }
-        deriving (Eq, Show)
+        deriving (Eq, Ord, Show)
 
 data Package = P String String
     deriving (Eq, Ord)
@@ -51,12 +50,13 @@ getPackageList portdir = do
         return (map (P c) pkg)
     return packages
 
-readPortagePackages :: FilePath -> [Package] -> IO (Map Package [Ebuild])
+readPortagePackages :: FilePath -> [Package] -> IO Portage
 readPortagePackages portdir packages0 = do
     packages <- filterM (doesDirectoryExist . (portdir </>) . show) packages0
-    ebuild_map <- forM packages $ \package -> do
-        ebuilds <- unsafeInterleaveIO (getPackageVersions package)
+    ebuild_map0 <- forM packages $ \package -> do
+        ebuilds <- getPackageVersions package
         return (package, ebuilds)
+    let ebuild_map = filter (not . null . snd) ebuild_map0
     return $ Map.fromList ebuild_map
 
     where
@@ -76,7 +76,7 @@ readPortagePackages portdir packages0 = do
 
     ebuildVersionRegex name = mkRegex ("^"++name++"-(.*)\\.ebuild$")
 
-readPortageTree :: FilePath -> IO (Map Package [Ebuild])
+readPortageTree :: FilePath -> IO Portage
 readPortageTree portdir = do
     packages <- getPackageList portdir
     readPortagePackages portdir packages
@@ -85,3 +85,12 @@ getDirectories :: FilePath -> IO [String]
 getDirectories fp = do
     files <- fmap (filter (`notElem` [".", ".."])) $ getDirectoryContents fp
     filterM (doesDirectoryExist . (fp </>)) files
+
+printPortage :: Portage -> IO ()
+printPortage port =
+    forM_ (Map.toAscList port) $ \(package, ebuilds) -> do
+        let (P c p) = package
+        putStr $ c ++ '/':p
+        putStr " "
+        forM_ ebuilds (\e -> putStr (show  $ eVersion e) >> putChar ' ')
+        putStrLn ""
