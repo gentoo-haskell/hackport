@@ -18,7 +18,7 @@ import Diff
 import Error
 import GenerateEbuild
 import Index
-import OverlayPortageDiff
+import Status
 import Portage
 import P2
 
@@ -76,7 +76,7 @@ hpmain = do
         Merge pkg -> merge pkg
         DiffTree mode -> diffAction mode
         Update -> updateCache
-        OverlayOnly -> overlayonly
+        Status -> status
 
 main :: IO ()
 main = performHPAction hpmain

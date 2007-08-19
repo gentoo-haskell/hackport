@@ -1,4 +1,4 @@
-module OverlayPortageDiff where
+module Status where
 
 import Action
 import AnsiColor
@@ -20,8 +20,8 @@ import qualified Data.Map as Map
 
 import qualified Data.Traversable as T
 
-overlayonly :: HPAction ()
-overlayonly = do
+status :: HPAction ()
+status = do
     portdir <- getPortDir
     overlayPath <- getOverlayPath
     overlay <- liftIO $ readPortageTree overlayPath
