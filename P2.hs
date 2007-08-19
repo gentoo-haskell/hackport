@@ -9,10 +9,13 @@ import BlingBling
 import Control.Arrow
 import Control.Monad
 
+import qualified Distribution.PackageDescription as Cabal
+
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import qualified Data.List as List
+import Data.Monoid
 
 import System.Directory
 import System.IO
@@ -21,6 +24,7 @@ import System.FilePath
 import Text.Regex
 
 import Version
+import Utils
 
 type Portage = PortageMap [Ebuild]
 type PortageMap a = Map Package a
@@ -28,14 +32,20 @@ type PortageMap a = Map Package a
 data Ebuild = Ebuild {
     ePackage :: Package,
     eVersion :: Version,
-    eFilePath :: FilePath }
-        deriving (Eq, Ord, Show)
+    eFilePath :: FilePath,
+    ePkgDesc :: Maybe Cabal.PackageDescription }
+        deriving (Eq, Show)
 
 data Package = P String String
     deriving (Eq, Ord)
 
 instance Show Package where
     show (P c p) = c ++ '/':p
+
+instance Ord Ebuild where
+    compare e1 e2 = mconcat [ compareWith ePackage e1 e2
+                            , compareWith eVersion e1 e2
+                            ]
 
 lookupEbuildWith :: Portage -> Package -> (Ebuild -> Bool) -> Maybe Ebuild
 lookupEbuildWith portage package comp = do
@@ -65,7 +75,7 @@ readPortagePackages portdir packages0 = do
         files <- getDirectoryContents (portdir </> category </> package)
         let ebuilds = [ (v, portdir </> category </> package </> fn)
                       | (Just v, fn) <- map ((filterVersion package) &&& id) files ]
-        return (map (uncurry (Ebuild (P category package))) ebuilds)
+        return (map (uncurry (\v f -> Ebuild (P category package) v f Nothing)) ebuilds)
 
     filterVersion :: String -> String -> Maybe Version
     filterVersion p fn = do

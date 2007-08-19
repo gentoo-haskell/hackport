@@ -22,9 +22,9 @@
 -- cabal2ebuild - a program for generating a Gentoo ebuild from a .cabal file
 --
 module Cabal2Ebuild
-	(EBuild(..)
-	,cabal2ebuild
-	,showEBuild) where
+        (EBuild(..)
+        ,cabal2ebuild
+        ,showEBuild) where
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..),
@@ -98,10 +98,10 @@ cabal2ebuild pkg = ebuildTemplate {
                     : convertDependencies (Cabal.buildDepends pkg),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = (features ebuildTemplate)
-    		      ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
-		      ++ if null (Cabal.executables pkg) then [] else ["bin"]
+                      ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
+                      ++ if null (Cabal.executables pkg) then [] else ["bin"]
   } where
-  	cabalPkgName = Cabal.pkgName (Cabal.package pkg)
+        cabalPkgName = Cabal.pkgName (Cabal.package pkg)
 
 defaultDepGHC     = OrLaterVersionOf "6.4.2" "dev-lang/ghc"
 

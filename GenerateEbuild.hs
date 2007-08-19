@@ -18,15 +18,12 @@ import Network.URI
 import System.Directory
 import System.FilePath
 
-mergeEbuild :: FilePath -> EBuild -> HPAction ()
-mergeEbuild target ebuild = do
-	cfg <- getCfg
-	let edir = target </> defaultPortageCategory cfg </> name ebuild
-	let epath = edir </> name ebuild ++"-"++ version ebuild <.> "ebuild"
-	liftIO (createDirectoryIfMissing True edir)
-		`sayDebug` ("Creating '"++edir++"'... ",const "done.")
-	liftIO (writeFile epath (showEBuild ebuild))
-		`sayNormal` ("Merging to '"++epath++"'... ",const "done.")
+mergeEbuild :: FilePath -> String -> EBuild -> IO ()
+mergeEbuild target category ebuild = do
+    let edir = target </> category </> name ebuild
+    let epath = edir </> name ebuild ++"-"++ version ebuild <.> "ebuild"
+    createDirectoryIfMissing True edir
+    writeFile epath (showEBuild ebuild)
 
 fixSrc :: PackageIdentifier -> EBuild -> HPAction EBuild
 fixSrc p ebuild = do

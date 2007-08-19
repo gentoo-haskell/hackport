@@ -5,6 +5,7 @@ import AnsiColor
 import Bash
 import Portage
 import P2
+import Utils
 
 import Control.Arrow
 import Control.Monad.Error
@@ -65,9 +66,6 @@ portageDiff p1 p2 = (in1, ins, in2)
                             then Nothing
                             else Just lst
                             ) x y
-
-comparing f x y = f x == f y
-
 
 -- | Compares two ebuilds, returns True if they are equal.
 --   Disregards comments.
