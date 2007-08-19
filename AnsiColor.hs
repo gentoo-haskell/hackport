@@ -32,6 +32,13 @@ col fg bf bg = show (fromEnum fg + 30) : bf' [show (fromEnum bg + 40)]
 
 inColor c bf bg txt = esc (col c bf bg) ++ txt ++ esc ["00"]
 
+bold      = ansi "1" "22"
+italic    = ansi "3" "23"
+underline = ansi "4" "24"
+inverse   = ansi "7" "27"
+
+ansi on off txt = esc [on] ++ txt ++ esc [off]
+
 {-
 data Doc = Doc (Bool -> String -> String)
 
