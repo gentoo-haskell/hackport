@@ -112,7 +112,7 @@ hackageUsage = putStr $ flip usageInfo hackageOptions $ unlines
 	, "\t\"hackport [OPTION] merge PKG-VERSION\" merges a package into the portage tree"
 	, "\t\"hackport [OPTION] diff\" prints the difference between the portage-tree and the server's packages"
 	, "\t\"hackport [OPTION] update\" updates the local cache"
-	, "\t\"hackport [OPTION] overlayonly\" prints all ebuilds that exist only in the overlay"
+	, "\t\"hackport [OPTION] status\" compares the overlay with the portage tree"
 	, "Options:"
 	]
 
