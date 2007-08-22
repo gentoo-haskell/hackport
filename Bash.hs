@@ -8,6 +8,7 @@ import System.IO
 import System.Exit
 
 import Action
+import Config
 import Error
 import CacheFile
 
@@ -39,12 +40,22 @@ getOverlay = do
 getOverlays :: HPAction [String]
 getOverlays = runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY" >>= (return.words)
 
-getPortDir :: HPAction String
-getPortDir = do
-	dir <- runBash "source /etc/make.conf;echo -n $PORTDIR"
-	case dir of
-		"" -> return "/usr/portage"
-		_ -> return dir
+getSystemPortdir :: HPAction String
+getSystemPortdir = do
+    dir <- runBash "source /etc/make.conf;echo -n $PORTDIR"
+    case dir of
+        "" -> return "/usr/portage"
+        _ -> return dir
+
+getPortdir :: HPAction String
+getPortdir = do
+    cfg <- getCfg
+    case portagePath cfg of
+        Just dir -> return dir
+        Nothing -> do
+            sys <- getSystemPortdir
+            setPortagePath (Just sys)
+            return sys
 
 runBash ::
 	String -> -- ^ The command line

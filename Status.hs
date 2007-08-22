@@ -22,7 +22,7 @@ import qualified Data.Traversable as T
 
 status :: HPAction ()
 status = do
-    portdir <- getPortDir
+    portdir <- getPortdir
     overlayPath <- getOverlayPath
     overlay <- liftIO $ readPortageTree overlayPath
     portage <- liftIO $ readPortagePackages portdir (Map.keys overlay)
