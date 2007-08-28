@@ -56,7 +56,7 @@ merge pid = do
                 case categories of
                     ["hackage"] -> return dpc
                     [c] -> return c
-            ebuild <- fixSrc pid (E.cabal2ebuild pkg)
+            ebuild <- fixSrc (package pkg) (E.cabal2ebuild pkg)
             liftIO $ do
                 putStrLn $ "Merging " ++ category ++ '/': pkgName pid ++ '-': showVersion (pkgVersion pid)
                 putStrLn $ "Destination: " ++ portdir
