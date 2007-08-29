@@ -9,6 +9,7 @@ import Index
 import P2
 import Version
 
+import Control.Arrow
 import Data.Char
 import Data.List
 import Network.URI
@@ -61,7 +62,7 @@ readCache portdir = do
 	return $ readIndex str
 
 indexToPortage :: Index -> Portage -> (Portage, [String])
-indexToPortage index port = runWriter $ do
+indexToPortage index port = second nub . runWriter $ do
     pkgs <- forM index $ \(pkg_h_name, pkg_h_ver, pkg_desc) -> do
         let pkg_name = map toLower pkg_h_name
         pkg_cat <- lookupCat pkg_name

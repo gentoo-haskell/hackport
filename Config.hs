@@ -21,7 +21,7 @@ data HackPortOptions
 
 data OperationMode
 	= List String
-	| Merge PackageIdentifier
+	| Merge String
 	| DiffTree DiffMode
 	| Update
 	| ShowHelp
@@ -38,7 +38,6 @@ data DiffMode
 data Config = Config
 	{ overlayPath		::Maybe String
         , portagePath           ::Maybe String
-	, defaultPortageCategory::String
 	, server		::URI
 	, tmp			::String
 	, verbosity		::Verbosity
@@ -56,7 +55,6 @@ defaultConfig :: Config
 defaultConfig = Config
 	{ overlayPath = Nothing
         , portagePath = Nothing
-	, defaultPortageCategory = "dev-haskell"
 	, server = URI "http:" (Just $ URIAuth "" "hackage.haskell.org" "") "/packages/archive/" "" ""
 	, tmp = "/tmp"
 	, verbosity = Normal
@@ -67,7 +65,6 @@ hackageOptions :: [OptDescr HackPortOptions]
 hackageOptions =
 	[Option ['o'] ["overlay-path"] (ReqArg OverlayPath "PATH") "The overlay tree to merge to"
         ,Option ['p'] ["portdir"] (ReqArg PortagePath "PATH") "The portage directory to use"
-	,Option ['c'] ["portage-category"] (ReqArg Category "CATEGORY") "The cateory the program belongs to"
 	,Option ['s'] ["server"] (ReqArg Server "URL") "The Hackage server to query"
 	,Option ['t'] ["temp-dir"] (ReqArg TempDir "PATH") "A temp directory where tarballs can be stored"
 	,Option ['v'] ["verbosity"] (ReqArg Verbosity "debug|normal|silent") "Set verbosity level (default is 'normal')"
@@ -83,9 +80,7 @@ parseConfig opts = let
 	     | not (null [ () | Help <- popts ]) = Right ShowHelp
 	     | otherwise = case args of
 		"merge":[] -> Left "Need a package's name and version to merge it.\n"
-		"merge":package:[] -> case readPMaybe parsePackageId package of
-			Nothing ->Left ("Could not parse '"++package++"' to a valid package. Valid packages use <name>-<version-number>-<version-postfix> where version consists only of numbers and points.\n")
-			Just pid -> Right (Merge pid)
+		"merge":package:[] -> Right (Merge package)
 		"merge":_:rest -> Left ("'merge' takes 1 argument("++show ((length rest)+1)++" given).\n")
 		"list":[] -> Right (List "")
 		"list":package:[] -> Right (List package)

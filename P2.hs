@@ -36,7 +36,7 @@ data Ebuild = Ebuild {
     ePkgDesc :: Maybe Cabal.PackageDescription }
         deriving (Eq, Show)
 
-data Package = P String String
+data Package = P { pCategory :: String, pPackage :: String }
     deriving (Eq, Ord)
 
 instance Show Package where

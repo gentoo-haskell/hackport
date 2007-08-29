@@ -106,7 +106,6 @@ optionToConfig :: Config -> HackPortOptions -> HPAction Config
 optionToConfig cfg opt = case opt of
 	OverlayPath str -> return cfg { overlayPath = Just str }
         PortagePath str -> return cfg { portagePath = Just str }
-	Category str -> return cfg { defaultPortageCategory = str }
 	Server str -> case parseURI str of
 		Nothing -> throwError (InvalidServer str)
 		Just uri -> return cfg { server = uri }

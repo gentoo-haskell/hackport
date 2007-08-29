@@ -9,7 +9,7 @@ import Control.Exception
 data HackPortError
 	= ArgumentError String
 	| ConnectionFailed String String
-	| PackageNotFound (Either String PackageIdentifier)
+	| PackageNotFound String
 	| InvalidTarballURL String String
 	| InvalidSignatureURL String String
 	| VerificationFailed String String
@@ -37,7 +37,7 @@ hackPortShowError :: HackPortError -> String
 hackPortShowError err = case err of
 	ArgumentError str -> "Argument error: "++str
 	ConnectionFailed server reason -> "Connection to hackage server '"++server++"' failed: "++reason
-	PackageNotFound pkg -> "Package '"++(either id showPackageId pkg)++"' not found on server."
+	PackageNotFound pkg -> "Package '"++ pkg ++"' not found on server."
 	InvalidTarballURL url reason -> "Error while downloading tarball '"++url++"': "++reason
 	InvalidSignatureURL url reason -> "Error while downloading signature '"++url++"': "++reason
 	VerificationFailed file signature -> "Error while checking signature('"++signature++"') of '"++file++"'"

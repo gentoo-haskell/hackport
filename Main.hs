@@ -2,12 +2,14 @@ module Main where
 
 import Control.Monad.Error
 import Data.Char
+import Data.Maybe
 import Data.List
 import Data.Version
 import Distribution.Package
 import Distribution.PackageDescription
 import System.IO
 import qualified Data.Map as Map
+import Text.ParserCombinators.Parsec
 
 
 import Action
@@ -19,8 +21,10 @@ import Error
 import GenerateEbuild
 import Index
 import Status
+import Package
 import Portage
 import P2
+import Utils
 
 list :: String -> HPAction ()
 list name = do
@@ -32,35 +36,60 @@ list name = do
                 lcaseName = lcase name
                 lcase = map toLower
     if null pkgs
-      then throwError (PackageNotFound (Left name))
+      then throwError (PackageNotFound name)
       else liftIO . putStr . unlines
          . map showPackageId
          . sort
          $ map package pkgs
 
-merge :: PackageIdentifier -> HPAction ()
-merge pid = do
+merge :: String -> HPAction ()
+merge pstr = do
+    (m_category, pname, m_version) <- case parsePVC of
+        Right v -> return v
+        Left err -> throwError (ArgumentError ("Could not parse [category/]package[-version]: " ++ show err))
     portdir <- getOverlayPath
     overlay <- liftIO $ readPortageTree portdir
     cache <- readCache portdir
     let (indexTree,clashes) = indexToPortage cache overlay
     mapM_ (liftIO . putStrLn) clashes
-    whisper $ "Searching for: "++pkgName pid++"-"++showVersion (pkgVersion pid)
-    let pkgs = searchIndex (\name vers -> map toLower name == map toLower (pkgName pid) && vers == showVersion (pkgVersion pid)) cache
-    case pkgs of
-        [] -> throwError (PackageNotFound (Right pid))
-        [pkg] -> do
-            let categories = [ c | P c p <- (Map.keys indexTree), p == pkgName pid]
-            category <- do
-                dpc <- fmap defaultPortageCategory getCfg
-                case categories of
-                    ["hackage"] -> return dpc
-                    [c] -> return c
-            ebuild <- fixSrc (package pkg) (E.cabal2ebuild pkg)
-            liftIO $ do
-                putStrLn $ "Merging " ++ category ++ '/': pkgName pid ++ '-': showVersion (pkgVersion pid)
-                putStrLn $ "Destination: " ++ portdir
-                mergeEbuild portdir category ebuild
+    whisper $ "Searching for: "++ pstr
+    let pkgs =
+          Map.elems
+            . Map.filterWithKey (\(P _ pname') _ -> map toLower pname' == map toLower pname)
+            $ indexTree
+    return ()
+    pkg <- case pkgs of
+        [] -> throwError (PackageNotFound pname)
+        [xs] -> case m_version of
+            Nothing -> return (maximum xs) -- highest version
+            Just v -> do
+                let ebuilds = filter (\e -> eVersion e == v) xs
+                case ebuilds of
+                    [] -> throwError (PackageNotFound (pname ++ '-':show v))
+                    [e] -> return e
+    category <- do
+        case m_category of
+            Just cat -> return cat
+            Nothing -> do
+                case pCategory (ePackage pkg) of
+                    "hackage" -> return "dev-haskell"
+                    c -> return c
+    let desc = fromJust $ ePkgDesc pkg
+    ebuild <- fixSrc (package desc) (E.cabal2ebuild desc)
+    liftIO $ do
+        putStrLn $ "Merging " ++ category ++ '/': pname ++ showPackageId (package desc)
+        putStrLn $ "Destination: " ++ portdir
+        mergeEbuild portdir category ebuild
+    where
+    parsePVC = parse readPVC "" pstr
+    readPVC = do
+        mc <- option Nothing $ try $ do
+            c <- readCat
+            char '/'
+            return (Just c)
+        (p, mv) <- readPkgAndVer
+        eof
+        return (mc, p, mv)
 
 hpmain :: HPAction ()
 hpmain = do
