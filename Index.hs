@@ -21,8 +21,8 @@ readIndex str = do
     entr <- archiveEntries untared
     case splitDirectories (tarFileName (entryHeader entr)) of
         [".",pkgname,vers,file] -> do
-            let descr = case parseDescription (unpack (entryData entr)) of
-                    ParseOk _ descr -> descr
+            let descr = case parsePackageDescription (unpack (entryData entr)) of
+                    ParseOk _ descr -> packageDescription descr
                     _  -> error $ "Couldn't read cabal file "++show file
             return (pkgname,vers,descr)
         _ -> fail "doesn't look like the proper path"

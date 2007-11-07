@@ -2,11 +2,18 @@ Name:		HackPort
 Version:	0.2.1
 License:	GPL
 Author:		Henning Günther
-Build-Depends:	base, network, mtl, HTTP, Cabal < 1.1.7, filepath, regex-compat, tar, zlib, parsec, haskell98
 Synopsis:	Hackage and Portage integration tool
+Build-Type:     Simple
+Cabal-Version:  >=1.2
 
-Executable:	hackport
-Main-Is:	Main.hs
+Flag split-base
 
-Executable:     cabal2ebuild
-Main-Is:        cabal2ebuild.hs
+Executable	hackport
+  Main-Is:	Main.hs
+  Build-Depends: base >= 2.0, filepath, parsec, mtl, network, regex-compat,
+                 Cabal >= 1.2 && < 1.3, HTTP >= 3000 && < 3002, zlib, tar
+  if flag(split-base)
+    Build-Depends:  base >= 3, directory, containers, process, old-time, bytestring
+  else
+    Build-Depends:  base <  3
+
