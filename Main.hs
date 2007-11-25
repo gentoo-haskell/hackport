@@ -77,7 +77,7 @@ merge pstr = do
     let desc = fromJust $ ePkgDesc pkg
     ebuild <- fixSrc (package desc) (E.cabal2ebuild desc)
     liftIO $ do
-        putStrLn $ "Merging " ++ category ++ '/': pname ++ showPackageId (package desc)
+        putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ showVersion (pkgVersion (package desc))
         putStrLn $ "Destination: " ++ portdir
         mergeEbuild portdir category ebuild
     where
