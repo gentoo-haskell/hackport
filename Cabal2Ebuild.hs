@@ -95,7 +95,9 @@ cabal2ebuild pkg = ebuildTemplate {
     license         = convertLicense (Cabal.license pkg),
     licenseComments = licenseComment (Cabal.license pkg),
     depend          = defaultDepGHC
-                    : convertDependencies (Cabal.buildDepends pkg),
+                    : convertDependency (Cabal.Dependency "Cabal"
+		                          (Cabal.descCabalVersion pkg))
+                   ++ convertDependencies (Cabal.buildDepends pkg),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = (features ebuildTemplate)
                       ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
