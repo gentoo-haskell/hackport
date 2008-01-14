@@ -148,15 +148,26 @@ convertDependency (Cabal.Dependency name versionRange)
       = DependEither (convert r1) (convert r2)
 
 coreLibs =
-  ["rts"
+  ["array"
   ,"base"
-  ,"haskell98"
-  ,"template-haskell"
+--,"bytestring"   --already has ebuild
+  ,"containers"
+  ,"directory"
+--,"filepath"     --already has ebuild
   ,"ghc"
-  ,"unix"
-  ,"parsec"
-  ,"stm"
-  ,"readline"]
+  ,"haskell98"
+  ,"hpc"
+  ,"old-locale"
+  ,"old-time"
+  ,"packedstring"
+  ,"pretty"
+  ,"process"
+  ,"random"
+  ,"readline"
+  ,"rts"
+  ,"template-haskell"
+  ,"unix"             --should have ebuild
+  ]
 
 showEBuild :: EBuild -> String
 showEBuild ebuild =
