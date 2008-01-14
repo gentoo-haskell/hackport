@@ -33,8 +33,8 @@ data Ebuild = Ebuild {
     ePackage :: Package,
     eVersion :: Version,
     eFilePath :: FilePath,
-    ePkgDesc :: Maybe Cabal.PackageDescription }
-        deriving (Eq, Show)
+    ePkgDesc :: Maybe Cabal.GenericPackageDescription }
+    deriving (Show)
 
 data Package = P { pCategory :: String, pPackage :: String }
     deriving (Eq, Ord)
@@ -42,10 +42,12 @@ data Package = P { pCategory :: String, pPackage :: String }
 instance Show Package where
     show (P c p) = c ++ '/':p
 
+instance Eq Ebuild where
+    e1 == e2 = (ePackage e1, eVersion e1) == (ePackage e2, eVersion e2)
+
 instance Ord Ebuild where
-    compare e1 e2 = mconcat [ compareWith ePackage e1 e2
-                            , compareWith eVersion e1 e2
-                            ]
+    compare e1 e2 = compare (ePackage e1, eVersion e1)
+                            (ePackage e2, eVersion e2)
 
 lookupEbuildWith :: Portage -> Package -> (Ebuild -> Bool) -> Maybe Ebuild
 lookupEbuildWith portage package comp = do

@@ -8,6 +8,7 @@ import Data.Version
 import Distribution.Package
 import Distribution.PackageDescription
 import System.IO
+import System.Info (os, arch)
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
@@ -40,7 +41,7 @@ list name = do
       else liftIO . putStr . unlines
          . map showPackageId
          . sort
-         $ map package pkgs
+         $ map (package.packageDescription) pkgs
 
 merge :: String -> HPAction ()
 merge pstr = do
@@ -74,7 +75,9 @@ merge pstr = do
                 case pCategory (ePackage pkg) of
                     "hackage" -> return "dev-haskell"
                     c -> return c
-    let desc = fromJust $ ePkgDesc pkg
+    let Just genericDesc = ePkgDesc pkg
+        Right (desc, _) = finalizePackageDescription [] Nothing os arch
+	                    ("ghc", Version [6,8,2] []) genericDesc
     ebuild <- fixSrc (package desc) (E.cabal2ebuild desc)
     liftIO $ do
         putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ showVersion (pkgVersion (package desc))

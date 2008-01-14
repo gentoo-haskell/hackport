@@ -11,7 +11,7 @@ import Distribution.Package
 import System.FilePath.Posix
 import MaybeRead (readPMaybe)
 
-type Index = [(String,String,PackageDescription)]
+type Index = [(String,String,GenericPackageDescription)]
 type IndexMap = Map.Map String (Set.Set Version)
 
 readIndex :: ByteString -> Index
@@ -22,12 +22,12 @@ readIndex str = do
     case splitDirectories (tarFileName (entryHeader entr)) of
         [".",pkgname,vers,file] -> do
             let descr = case parsePackageDescription (unpack (entryData entr)) of
-                    ParseOk _ descr -> packageDescription descr
+                    ParseOk _ descr -> descr
                     _  -> error $ "Couldn't read cabal file "++show file
             return (pkgname,vers,descr)
         _ -> fail "doesn't look like the proper path"
 
-searchIndex :: (String -> String -> Bool) -> Index -> [PackageDescription]
+searchIndex :: (String -> String -> Bool) -> Index -> [GenericPackageDescription]
 searchIndex f ind = map snd $ filter (uncurry f . fst) $ map (\(p,v,d) -> ((p,v),d)) ind
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
