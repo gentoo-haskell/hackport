@@ -105,7 +105,7 @@ cabal2ebuild pkg = ebuildTemplate {
   } where
         cabalPkgName = Cabal.pkgName (Cabal.package pkg)
 
-defaultDepGHC     = OrLaterVersionOf "6.4.2" "dev-lang/ghc"
+defaultDepGHC     = OrLaterVersionOf "6.6.1" "dev-lang/ghc"
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
