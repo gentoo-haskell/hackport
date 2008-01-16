@@ -99,9 +99,9 @@ cabal2ebuild pkg = ebuildTemplate {
 		                          (Cabal.descCabalVersion pkg))
                    ++ convertDependencies (Cabal.buildDepends pkg),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
-    features        = (features ebuildTemplate)
-                      ++ maybe [] (const ["profile","haddock", "lib"]) (Cabal.library pkg)
-                      ++ if null (Cabal.executables pkg) then [] else ["bin"]
+    features        = features ebuildTemplate
+                   ++ if null (Cabal.executables pkg) then [] else ["bin"]
+                   ++ maybe [] (const ["lib","profile","haddock"]) (Cabal.library pkg)
   } where
         cabalPkgName = Cabal.pkgName (Cabal.package pkg)
 
