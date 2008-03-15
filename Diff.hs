@@ -2,8 +2,6 @@ module Diff
     ( diffAction
     ) where
 
-import Data.Set as Set (Set)
-import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Control.Monad.Trans
@@ -11,7 +9,7 @@ import Data.Char
 
 import Action
 import Cache
-import Config
+import Config (DiffMode(..))
 import P2
 import Portage
 import Version

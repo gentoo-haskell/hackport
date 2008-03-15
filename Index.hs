@@ -22,7 +22,7 @@ readIndex str = do
     case splitDirectories (tarFileName (entryHeader entr)) of
         [".",pkgname,vers,file] -> do
             let descr = case parsePackageDescription (unpack (entryData entr)) of
-                    ParseOk _ descr -> descr
+                    ParseOk _ pkg_desc -> pkg_desc
                     _  -> error $ "Couldn't read cabal file "++show file
             return (pkgname,vers,descr)
         _ -> fail "doesn't look like the proper path"

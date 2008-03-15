@@ -1,6 +1,5 @@
 module Bash where
 
-import Control.Monad.Trans
 import Control.Monad.Error
 import System.Process
 import System.Directory
@@ -71,5 +70,5 @@ runBash command = do
 	length errors `seq` liftIO (hClose err)
 	exitCode <- liftIO $ waitForProcess pid
 	case exitCode of
-		ExitFailure err -> throwError $ BashError errors
-		ExitSuccess -> return result
+		ExitFailure _ -> throwError $ BashError errors
+		ExitSuccess   -> return result

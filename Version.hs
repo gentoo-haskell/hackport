@@ -76,10 +76,10 @@ parseVersion :: String -> Either ParseError Version
 parseVersion = parse (readVersion >>= \x -> eof >> return x) "<version number>"
 
 readVersion :: CharParser st Version
-readVersion =  do  (ver,  verr)  <-  readVer
-                   (c,    cr  )  <-  readC
-                   (suf,  sufr)  <-  readSufs
-                   (rev,  revr)  <-  readRev
+readVersion =  do  (ver,  _verr)  <-  readVer
+                   (c,    _cr  )  <-  readC
+                   (suf,  _sufr)  <-  readSufs
+                   (rev,  _revr)  <-  readRev
                    return (Version ver c suf rev)
 
 readVer      ::  CharParser st ([Int],          String)

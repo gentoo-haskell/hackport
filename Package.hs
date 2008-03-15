@@ -15,25 +15,27 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 
 import Version
-import System.FilePath
--- import Portage.Utilities
 
 type Category  =  String
 type Package   =  String
 type Slot      =  String
 
+getPV :: String -> (Category, Package, Version)
 getPV xs      =  case parsePV xs of
                    Left   e  ->
                      error $ "getPV: cat/pkg-ver parse error '" ++ xs ++ "'\n" ++ show e
                    Right  x  ->  x
 
+getP :: String -> (Category, Package)
 getP xs       =  case parseP xs of
                    Left   e  ->
                      error $ "getCatPkg: cat/pkg parse error '" ++ xs ++ "'\n" ++ show e
                    Right  x  ->  x
 
+parsePV :: String -> Either ParseError (Category, Package, Version)
 parsePV       =  parse (readPV >>= \x -> eof >> return x) "<cat/pkg-ver>"
 
+readPV :: GenParser Char st (Category, Package, Version)
 readPV        =  do  cat         <-  readCat
                      char '/'
                      (pkg,mver)  <-  readPkgAndVer
@@ -41,8 +43,10 @@ readPV        =  do  cat         <-  readCat
                        Nothing   ->  error "readPV: version expected"
                        Just ver  ->  return (cat, pkg, ver)
 
+parseP :: String -> Either ParseError (Category, Package)
 parseP        =  parse (readP >>= \x -> eof >> return x) "<cat/pkg>"
 
+readP :: GenParser Char st (Category, Package)
 readP         =  do  cat         <-  readCat
                      char '/'
                      (pkg,mver)  <-  readPkgAndVer

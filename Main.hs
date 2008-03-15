@@ -7,11 +7,11 @@ import Data.List
 import Data.Version
 import Distribution.Package
 import Distribution.PackageDescription
+        (packageDescription, finalizePackageDescription, package)
 import System.IO
 import System.Info (os, arch)
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
-
 
 import Action
 import qualified Cabal2Ebuild as E
@@ -25,7 +25,6 @@ import Status
 import Package
 import Portage
 import P2
-import Utils
 
 list :: String -> HPAction ()
 list name = do
@@ -68,6 +67,8 @@ merge pstr = do
                 case ebuilds of
                     [] -> throwError (PackageNotFound (pname ++ '-':show v))
                     [e] -> return e
+                    _ -> fail "the impossible happened"
+        _ -> fail "the impossible happened"
     category <- do
         case m_category of
             Just cat -> return cat
@@ -106,7 +107,7 @@ hpmain = do
         ShowHelp -> liftIO hackageUsage
         List pkg -> list pkg
         Merge pkg -> merge pkg
-        DiffTree mode -> diffAction mode
+        DiffTree dtmode -> diffAction dtmode
         Update -> updateCache
         Status -> status
 

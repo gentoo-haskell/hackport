@@ -15,7 +15,6 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
 import qualified Data.List as List
-import Data.Monoid
 
 import System.Directory
 import System.IO
@@ -24,7 +23,6 @@ import System.FilePath
 import Text.Regex
 
 import Version
-import Utils
 
 type Portage = PortageMap [Ebuild]
 type PortageMap a = Map Package a

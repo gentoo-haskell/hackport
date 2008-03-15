@@ -2,16 +2,10 @@ module GenerateEbuild where
 
 import Action
 import Cabal2Ebuild
---import Fetch
---import TarUtils
 import Config
-import Error
 
 import Prelude hiding (catch)
-import Control.Monad.Trans
 import Control.Monad.Error
-import Control.Exception
-import Distribution.PackageDescription
 import Distribution.Package
 import Data.Version (showVersion)
 import Network.URI

@@ -2,17 +2,11 @@ module Config where
 
 import Network.URI
 import System.Console.GetOpt
-import Control.Exception
 import Text.Regex
-import Distribution.Package
-
-import Error
-import MaybeRead
 
 data HackPortOptions
 	= OverlayPath String
         | PortagePath String
-	| Category String
 	| Server String
 	| TempDir String
 	| Verbosity String
@@ -49,6 +43,7 @@ data Verbosity
 	| Normal
 	| Silent
 
+packageRegex :: Regex
 packageRegex = mkRegex "^(.*?)-([0-9].*)$"
 
 defaultConfig :: Config
@@ -91,17 +86,17 @@ parseConfig opts = let
 		"diff":"additions":[] -> Right (DiffTree ShowAdditions)
 		"diff":"newer":[] -> Right (DiffTree ShowNewer)
 		"diff":"common":[] -> Right (DiffTree ShowCommon)
-		"diff":arg:[] -> Left ("Unknown argument to 'diff': Use all,missing,additions,newer or common.\n")
-		"diff":arg1:args -> Left ("'diff' takes one argument("++show ((length args)+1)++" given).\n")
+		"diff":arg:[] -> Left ("Unknown argument to diff: '" ++ arg ++ "'. Use all,missing,additions,newer or common.\n")
+		"diff":_:xs -> Left ("'diff' takes one argument("++show ((length xs)+1)++" given).\n")
 		"update":[] -> Right Update
 		"update":rest -> Left ("'update' takes zero arguments("++show (length rest)++" given).\n")
 		"status":[] -> Right Status
-		"status":args -> Left ("'status' doesn't take any arguments. ("++show ((length args)+1)++" given).\n")
+		"status":xs-> Left ("'status' doesn't take any arguments. ("++show ((length xs)+1)++" given).\n")
 		[] -> Right ShowHelp
 		_ -> Left "Unknown opertation mode\n"
 	in case mode of
 		Left err -> Left err
-		Right mod -> Right (popts,mod)
+		Right m -> Right (popts,m)
 
 hackageUsage :: IO ()
 hackageUsage = putStr $ flip usageInfo hackageOptions $ unlines

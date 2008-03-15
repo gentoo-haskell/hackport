@@ -1,17 +1,14 @@
 module Portage where
 
-import Control.Monad.Trans
-import Distribution.Package
 import System.Directory
 import Text.Regex
 import Data.Maybe
-import Data.Version
 
 import Bash
-import MaybeRead
 import Action
 import Config
 
+ebuildVersionRegex :: String -> Regex
 ebuildVersionRegex name = mkRegex ("^"++name++"-(.*)\\.ebuild$")
 
 filterPackages :: String -> [String] -> IO [String]

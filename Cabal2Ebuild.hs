@@ -27,8 +27,7 @@ module Cabal2Ebuild
         ,showEBuild) where
 
 import qualified Distribution.PackageDescription as Cabal
-                                                (PackageDescription(..),
-                                                 readPackageDescription)
+                                                (PackageDescription(..))
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..))
 import qualified Distribution.Version as Cabal  (showVersion, Dependency(..),
                                                  VersionRange(..))
@@ -36,8 +35,6 @@ import qualified Distribution.License as Cabal  (License(..))
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 
 import Data.Char          (toLower,isUpper)
-import Data.Maybe         (catMaybes)
-import Text.Regex
 
 data EBuild = EBuild {
     name :: String,
@@ -68,6 +65,7 @@ data Dependency = AnyVersionOf               Package
                 | DependEither Dependency Dependency   -- depend || depend
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
 
+ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
     name = "foobar",
     version = "0.1",
@@ -105,6 +103,7 @@ cabal2ebuild pkg = ebuildTemplate {
   } where
         cabalPkgName = Cabal.pkgName (Cabal.package pkg)
 
+defaultDepGHC :: Dependency
 defaultDepGHC     = OrLaterVersionOf "6.6.1" "dev-lang/ghc"
 
 -- map the cabal license type to the gentoo license string format
@@ -117,6 +116,7 @@ convertLicense Cabal.PublicDomain = "public-domain"
 convertLicense Cabal.AllRightsReserved = ""
 convertLicense _                  = ""
 
+licenseComment :: Cabal.License -> String
 licenseComment Cabal.AllRightsReserved =
   "Note: packages without a license cannot be included in portage"
 licenseComment Cabal.OtherLicense =
@@ -127,15 +127,15 @@ convertDependencies :: [Cabal.Dependency] -> [Dependency]
 convertDependencies = concatMap convertDependency
 
 convertDependency :: Cabal.Dependency -> [Dependency]
-convertDependency (Cabal.Dependency name _)
-  | name `elem` coreLibs = []      -- no explicit dep on core libs
-convertDependency (Cabal.Dependency name versionRange)
+convertDependency (Cabal.Dependency pname _)
+  | pname `elem` coreLibs = []      -- no explicit dep on core libs
+convertDependency (Cabal.Dependency pname versionRange)
   = case versionRange of
       (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
       v                                    -> [convert v]
 
   where
-    ebuildName = "dev-haskell/" ++ map toLower name
+    ebuildName = "dev-haskell/" ++ map toLower pname
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
@@ -149,6 +149,7 @@ convertDependency (Cabal.Dependency name versionRange)
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
 
+coreLibs :: [String]
 coreLibs =
   ["array"
   ,"base"
@@ -200,32 +201,41 @@ showEBuild ebuild =
   ss "DEPEND=". quote' (sepBy "\n\t\t" $ map showDepend $ depend ebuild). nl.
   (case my_pn ebuild of
      Nothing -> id
-     Just pn -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
+     Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
 
-showDepend (AnyVersionOf               package) = package
-showDepend (ThisVersionOf      version package) = "~" ++ package ++ "-" ++ version
-showDepend (LaterVersionOf     version package) = ">" ++ package ++ "-" ++ version
-showDepend (EarlierVersionOf   version package) = "<" ++ package ++ "-" ++ version
-showDepend (OrLaterVersionOf   version package) = ">=" ++ package ++ "-" ++ version
-showDepend (OrEarlierVersionOf version package) = "<=" ++ package ++ "-" ++ version
-showDepend (DependEither       depend1 depend2) = showDepend depend1
-                                     ++ " || " ++ showDepend depend2
-showDepend (DependIfUse        useflag depend@(DependEither _ _)) 
-                                                = useflag ++ "? " ++ showDepend depend
-showDepend (DependIfUse        useflag depend)  = useflag ++ "? ( " ++ showDepend depend ++ " )"
+showDepend :: Dependency -> Package
+showDepend (AnyVersionOf         p) = p
+showDepend (ThisVersionOf      v p) = "~" ++ p ++ "-" ++ v
+showDepend (LaterVersionOf     v p) = ">" ++ p ++ "-" ++ v
+showDepend (EarlierVersionOf   v p) = "<" ++ p ++ "-" ++ v
+showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ v
+showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ v
+showDepend (DependEither       dep1 dep2) = showDepend dep1
+                                     ++ " || " ++ showDepend dep2
+showDepend (DependIfUse        useflag dep@(DependEither _ _)) 
+                                                = useflag ++ "? " ++ showDepend dep
+showDepend (DependIfUse        useflag dep)  = useflag ++ "? ( " ++ showDepend dep++ " )"
 
+ss :: String -> String -> String
 ss = showString
+
+sc :: Char -> String -> String
 sc = showChar
+
+nl :: String -> String
 nl = sc '\n'
 
+quote :: String -> String -> String
 quote str = sc '"'. ss str. sc '"'
+
+quote' :: (String -> String) -> String -> String
 quote' str = sc '"'. str. sc '"'
 
 sepBy :: String -> [String] -> ShowS
-sepBy s []     = id
-sepBy s [x]    = ss x
+sepBy _ []     = id
+sepBy _ [x]    = ss x
 sepBy s (x:xs) = ss x. ss s. sepBy s xs
 
 getRestIfPrefix ::
@@ -251,9 +261,9 @@ replaceMultiVars ::
 	String ->		-- ^ string to be searched
 	String 			-- ^ the result
 replaceMultiVars [] str = str
-replaceMultiVars whole@((name,cont):rest) str = case subStr cont str of
+replaceMultiVars whole@((pname,cont):rest) str = case subStr cont str of
 	Nothing -> replaceMultiVars rest str
-	Just (pre,post) -> (replaceMultiVars rest pre)++name++(replaceMultiVars whole post)
+	Just (pre,post) -> (replaceMultiVars rest pre)++pname++(replaceMultiVars whole post)
 
 replaceCommonVars ::
 	String ->	-- ^ PN

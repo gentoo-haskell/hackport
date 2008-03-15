@@ -8,7 +8,6 @@ import P2
 import Utils
 
 import Control.Arrow
-import Control.Monad.Error
 import Control.Monad.State
 
 import qualified Data.List as List
@@ -51,15 +50,16 @@ status = do
         forM_ versions (\v -> putStr v >> putChar ' ')
         putStrLn ""
 
+toColor :: Color -> String -> String
 toColor c t = inColor c False Default t
 
 portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
 portageDiff p1 p2 = (in1, ins, in2)
     where ins = Map.filter (not . null) $
                     Map.intersectionWith (List.intersectBy $ comparing eVersion) p1 p2
-          in1 = subtract p1 p2
-          in2 = subtract p2 p1
-          subtract x y = Map.filter (not . null) $
+          in1 = difference p1 p2
+          in2 = difference p2 p1
+          difference x y = Map.filter (not . null) $
                        Map.differenceWith (\xs ys ->
                         let lst = foldr (List.deleteBy (comparing eVersion)) xs ys in
                         if null lst
