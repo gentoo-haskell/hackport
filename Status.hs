@@ -3,9 +3,9 @@ module Status where
 import Action
 import AnsiColor
 import Bash
-import Portage
 import P2
 import Utils
+import Overlays
 
 import Control.Arrow
 import Control.Monad.State

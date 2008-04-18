@@ -9,35 +9,6 @@ import System.Exit
 import Action
 import Config
 import Error
-import CacheFile
-
-getOverlay :: HPAction String
-getOverlay = do
-	overlays <- getOverlays
-	case overlays of
-		[] -> throwError NoOverlay
-		[x] -> return x
-		mul -> search mul
-  where
-  search :: [String] -> HPAction String
-  search mul = do
-    let loop [] = throwError $ MultipleOverlays mul
-        loop (x:xs) = (do
-          found <- liftIO (doesFileExist (cacheFile x))
-		`sayDebug` ("Checking '"++x++"'...\n",\res->if res then "found.\n" else "not found.")
-          if found
-            then return x
-            else loop xs)
-    whisper "There are several overlays in your /etc/make.conf"
-    mapM (\x-> whisper (" * " ++x)) mul
-    whisper "Looking for one with a HackPort cache..."
-    overlay <- loop mul
-    whisper ("I choose " ++ overlay)
-    whisper "Override my decision with hackport -p /my/overlay"
-    return overlay
-
-getOverlays :: HPAction [String]
-getOverlays = runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY" >>= (return.words)
 
 getSystemPortdir :: HPAction String
 getSystemPortdir = do

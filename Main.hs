@@ -23,7 +23,7 @@ import GenerateEbuild
 import Index
 import Status
 import Package
-import Portage
+import Overlays
 import P2
 
 list :: String -> HPAction ()

@@ -11,8 +11,8 @@ import Action
 import Cache
 import Config (DiffMode(..))
 import P2
-import Portage
 import Version
+import Overlays
 
 data DiffState a
 	= OnlyLeft a

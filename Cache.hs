@@ -1,13 +1,13 @@
 module Cache where
 
 import Action
-import Portage
 import CacheFile
 import Config
 import Error
 import Index
 import P2
 import Version
+import Overlays
 
 import Control.Arrow
 import Data.Char
