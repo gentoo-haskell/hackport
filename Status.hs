@@ -25,7 +25,7 @@ status = do
     overlayPath <- getOverlayPath
     overlay <- liftIO $ readPortageTree overlayPath
     portage <- liftIO $ readPortagePackages portdir (Map.keys overlay)
-    let (over, both, _port) = portageDiff overlay portage
+    let (over, both, port) = portageDiff overlay portage
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
@@ -37,12 +37,16 @@ status = do
             return (ev, toColor (if eq then Green else Yellow) (show ev))
 
     let over' = Map.map (map ((id &&& (toColor Red . show)).eVersion)) over
+        port' = Map.map (map ((id &&& (toColor Magenta . show)).eVersion)) port
 
-        meld = Map.map (map snd) $ Map.unionWith (\a b -> List.sort (a++b)) both' over'
+        meld = Map.map (map snd) $
+            Map.unionWith (\a b -> List.sort (a++b)) port' $
+            Map.unionWith (\a b -> List.sort (a++b)) both' over'
 
     liftIO $ putStrLn $ toColor Green "Green" ++ ": package in portage and overlay are the same"
     liftIO $ putStrLn $ toColor Yellow "Yellow" ++ ": package in portage and overlay differs"
     liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in the overlay"
+    liftIO $ putStrLn $ toColor Magenta "Magenta" ++ ": package only exist in the portage tree"
     forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
         let (P c p) = package
         putStr $ c ++ '/' : bold p
