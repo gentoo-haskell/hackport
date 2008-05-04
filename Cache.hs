@@ -9,6 +9,8 @@ import P2
 import Version
 import Overlays
 
+import qualified Distribution.Version as Cabal ( readVersion ) 
+
 import Control.Arrow
 import Data.Char
 import Data.List
@@ -66,7 +68,11 @@ indexToPortage index port = second nub . runWriter $ do
     pkgs <- forM index $ \(pkg_h_name, pkg_h_ver, pkg_desc) -> do
         let pkg_name = map toLower pkg_h_name
         pkg_cat <- lookupCat pkg_name
-        return $ Ebuild (P pkg_cat pkg_name) (getVersion pkg_h_ver) "<hackage>" (Just pkg_desc)
+        Just ver <- return . Cabal.readVersion $ pkg_h_ver
+        return $ Ebuild (P pkg_cat pkg_name)
+                        (fromCabalVersion ver)
+                        "<hackage>"
+                        (Just pkg_desc)
     return $ Map.map sort $ Map.fromListWith (++) [ (ePackage e, [e]) | e <- pkgs ]
     where
     catMap = Map.fromListWith (++) [ (p, [c]) | P c p <- Map.keys port ]

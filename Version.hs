@@ -13,6 +13,7 @@ module Version
   (
   Version(),
   Suffix(..),
+  fromCabalVersion,
   showVersion,
   showSuffix,
   readVersion,
@@ -21,6 +22,7 @@ module Version
   showRevPR
   ) where
 
+import qualified Distribution.Version as Cabal
 import Control.Monad
 import Data.List
 import Data.Maybe
@@ -64,6 +66,10 @@ showRev n = "-r" ++ show n
 
 showRevPR :: Int -> String
 showRevPR n = "r" ++ show n
+
+fromCabalVersion :: Cabal.Version -> Version
+fromCabalVersion (Cabal.Version nums _tags) =
+    Version nums Nothing [] 0
 
 -- | Function to call if you want to parse a version number.
 getVersion :: String -> Version
