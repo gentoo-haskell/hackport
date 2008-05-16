@@ -7,7 +7,7 @@ import Data.List
 import Data.Version
 import Distribution.Package
 import Distribution.PackageDescription
-        (packageDescription, finalizePackageDescription, package)
+        (finalizePackageDescription, package)
 import System.IO
 import System.Info (os, arch)
 import qualified Data.Map as Map
@@ -28,19 +28,16 @@ import P2
 
 list :: String -> HPAction ()
 list name = do
-    cache <- readCache =<< getOverlayPath
-    let pkgs | null name = [ pkg | (_,_,pkg) <- cache ]
-             | otherwise = searchIndex matchSubstringCaseInsensitive cache
-          where matchSubstringCaseInsensitive str _ver =
-                  lcaseName `isInfixOf` lcase str
-                lcaseName = lcase name
-                lcase = map toLower
+    index <- readCache =<< getOverlayPath
+    let index' | null name = index
+               | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
+        pkgs = [ package ++ "-" ++ version | (package,version,_) <- index']
     if null pkgs
       then throwError (PackageNotFound name)
-      else liftIO . putStr . unlines
-         . map showPackageId
-         . sort
-         $ map (package.packageDescription) pkgs
+      else liftIO . putStr . unlines . sort $ pkgs
+    where
+        matchSubstringCaseInsensitive pName _pVver =
+                map toLower name `isInfixOf` map toLower pName
 
 merge :: String -> HPAction ()
 merge pstr = do

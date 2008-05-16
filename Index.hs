@@ -27,8 +27,8 @@ readIndex str = do
             return (pkgname,vers,descr)
         _ -> fail "doesn't look like the proper path"
 
-searchIndex :: (String -> String -> Bool) -> Index -> [GenericPackageDescription]
-searchIndex f ind = map snd $ filter (uncurry f . fst) $ map (\(p,v,d) -> ((p,v),d)) ind
+filterIndexByPV :: (String -> String -> Bool) -> Index -> Index
+filterIndexByPV cond index = [ x | x@(p,v,d) <- index, cond p v]
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList pids = Map.unionsWith Set.union $
