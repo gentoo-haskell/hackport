@@ -1,4 +1,9 @@
-module Status where
+module Status
+    ( FileStatus(..)
+    , fromStatus
+    , status
+    , statusAction
+    ) where
 
 import Action
 import AnsiColor
@@ -7,7 +12,6 @@ import P2
 import Utils
 import Overlays
 
-import Control.Arrow
 import Control.Monad.State
 
 import qualified Data.List as List
@@ -16,10 +20,38 @@ import qualified Data.ByteString.Lazy.Char8 as L
 
 import Data.Char
 import qualified Data.Map as Map
+import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
 
-status :: HPAction ()
+
+data FileStatus a
+        = Same a
+        | Differs a
+        | OverlayOnly a
+        | PortageOnly a
+        deriving (Show,Eq)
+
+instance Ord a => Ord (FileStatus a) where
+    compare x y = compare (fromStatus x) (fromStatus y)
+
+instance Functor FileStatus where
+    fmap f st =
+        case st of
+            Same a -> Same (f a)
+            Differs a -> Differs (f a)
+            OverlayOnly a -> OverlayOnly (f a)
+            PortageOnly a -> PortageOnly (f a)
+
+fromStatus :: FileStatus a -> a
+fromStatus fs =
+    case fs of
+        Same a -> a
+        Differs a -> a
+        OverlayOnly a -> a
+        PortageOnly a -> a
+
+status :: HPAction (Map Package [FileStatus Ebuild])
 status = do
     portdir <- getPortdir
     overlayPath <- getOverlayPath
@@ -33,29 +65,43 @@ status = do
             let (Just e1) = lookupEbuildWith portage (ePackage e) (comparing eVersion e)
                 (Just e2) = lookupEbuildWith overlay (ePackage e) (comparing eVersion e)
             eq <- equals (eFilePath e1) (eFilePath e2)
-            let ev = eVersion e
-            return (ev, toColor (if eq then Green else Yellow) (show ev))
+            return $ if eq
+                        then Same e
+                        else Differs e
 
-    let over' = Map.map (map ((id &&& (toColor Red . show)).eVersion)) over
-        port' = Map.map (map ((id &&& (toColor Magenta . show)).eVersion)) port
+    let meld = Map.unionsWith (\a b -> List.sort (a++b))
+                [ Map.map (map PortageOnly) port
+                , both'
+                , Map.map (map OverlayOnly) over
+                ]
+    return meld
 
-        meld = Map.map (map snd) $
-            Map.unionWith (\a b -> List.sort (a++b)) port' $
-            Map.unionWith (\a b -> List.sort (a++b)) both' over'
+statusAction :: HPAction ()
+statusAction = status >>= statusPrinter
 
-    liftIO $ putStrLn $ toColor Green "Green" ++ ": package in portage and overlay are the same"
-    liftIO $ putStrLn $ toColor Yellow "Yellow" ++ ": package in portage and overlay differs"
-    liftIO $ putStrLn $ toColor Red "Red" ++ ": package only exist in the overlay"
-    liftIO $ putStrLn $ toColor Magenta "Magenta" ++ ": package only exist in the portage tree"
-    forM_ (Map.toAscList meld) $ \(package, versions) -> liftIO $ do
-        let (P c p) = package
+statusPrinter :: Map Package [FileStatus Ebuild] -> HPAction ()
+statusPrinter packages = do
+    liftIO $ putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
+    liftIO $ putStrLn $ toColor (Differs "Yellow") ++ ": package in portage and overlay differs"
+    liftIO $ putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
+    liftIO $ putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
+    forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> liftIO $ do
+        let (P c p) = pkg
         putStr $ c ++ '/' : bold p
         putStr " "
-        forM_ versions (\v -> putStr v >> putChar ' ')
+        forM_ ebuilds $ \e -> do
+            putStr $ toColor (fmap (show . eVersion) e)
+            putChar ' '
         putStrLn ""
 
-toColor :: Color -> String -> String
-toColor c t = inColor c False Default t
+toColor :: FileStatus String -> String
+toColor st = inColor c False Default (fromStatus st)
+    where
+    c = case st of
+        (Same _) -> Green
+        (Differs _) -> Yellow
+        (OverlayOnly _) -> Red
+        (PortageOnly _) -> Magenta
 
 portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
 portageDiff p1 p2 = (in1, ins, in2)
