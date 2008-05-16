@@ -116,11 +116,6 @@ optionToConfig cfg opt = case opt of
 	Help -> return cfg
         RefreshCache -> return cfg { refreshCache = True }
 
-performHPAction :: HPAction a -> IO ()
-performHPAction action = do
-	res <- evalStateT (runErrorT action) (HPState defaultConfig 0)
-	case res of
-		Right _ -> return ()
-		Left err -> do
-			hPutStrLn stderr "An error occurred. To get more info run with --verbosity=debug"
-			hPutStrLn stderr (hackPortShowError err)
+performHPAction :: HPAction a -> IO (Either HackPortError a)
+performHPAction action =
+    evalStateT (runErrorT action) (HPState defaultConfig 0)

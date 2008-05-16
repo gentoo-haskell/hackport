@@ -109,4 +109,10 @@ hpmain = do
         Status -> statusAction
 
 main :: IO ()
-main = performHPAction hpmain
+main = do
+    res <- performHPAction hpmain
+    case res of
+        Right _ -> return ()
+        Left err -> do
+            hPutStrLn stderr "An error occurred. To get more info run with --verbosity=debug"
+            hPutStrLn stderr (hackPortShowError err)
