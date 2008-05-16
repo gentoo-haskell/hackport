@@ -31,7 +31,7 @@ list name = do
     index <- readCache =<< getOverlayPath
     let index' | null name = index
                | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
-        pkgs = [ package ++ "-" ++ version | (package,version,_) <- index']
+        pkgs = [ pkg ++ "-" ++ ver | (pkg,ver,_) <- index']
     if null pkgs
       then throwError (PackageNotFound name)
       else liftIO . putStr . unlines . sort $ pkgs
