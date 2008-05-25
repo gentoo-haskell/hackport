@@ -106,7 +106,7 @@ hpmain = do
         Merge pkg -> merge pkg
         DiffTree dtmode -> diffAction dtmode
         Update -> updateCache
-        Status -> statusAction
+        Status action -> statusAction action
 
 main :: IO ()
 main = do

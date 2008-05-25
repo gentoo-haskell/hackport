@@ -19,7 +19,7 @@ data OperationMode
 	| DiffTree DiffMode
 	| Update
 	| ShowHelp
-	| Status
+	| Status String
 
 data DiffMode
 	= ShowAll
@@ -90,8 +90,9 @@ parseConfig opts = let
 		"diff":_:xs -> Left ("'diff' takes one argument("++show ((length xs)+1)++" given).\n")
 		"update":[] -> Right Update
 		"update":rest -> Left ("'update' takes zero arguments("++show (length rest)++" given).\n")
-		"status":[] -> Right Status
-		"status":xs-> Left ("'status' doesn't take any arguments. ("++show ((length xs)+1)++" given).\n")
+		"status":[] -> Right (Status "")
+                "status":"toportage":[] -> Right (Status "toportage")
+		"status":xs-> Left ("invalid argument(s) to 'status': " ++ show xs)
 		[] -> Right ShowHelp
 		_ -> Left "Unknown opertation mode\n"
 	in case mode of

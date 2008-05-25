@@ -24,7 +24,6 @@ import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
 
-
 data FileStatus a
         = Same a
         | Differs a a
@@ -76,8 +75,36 @@ status = do
                 ]
     return meld
 
-statusAction :: HPAction ()
-statusAction = status >>= statusPrinter
+statusAction :: String -> HPAction ()
+statusAction action = do
+    let pkgFilter =
+            case action of
+                "" -> id
+                "toportage" -> toPortageFilter
+    pkgs <- status
+    statusPrinter (pkgFilter pkgs)
+
+-- |Only return packages that seems interesting to sync to portage;
+--
+--   * Ebuild differs, or
+--   * Newer version in overlay than in portage
+-- 
+-- Filters out versions older than what portage has.
+toPortageFilter :: Map Package [FileStatus Ebuild] -> Map Package [FileStatus Ebuild]
+toPortageFilter = Map.mapMaybe $ \ sts ->
+    let inPortage = flip filter sts $ \st ->
+                        case st of
+                            OverlayOnly _ -> False
+                            _ -> True
+        latestPortageVersion = List.maximum $ map (eVersion . fromStatus) inPortage
+        interestingPackages = flip filter sts $ \st ->
+            case st of
+                Differs _ _ -> True
+                _ | eVersion (fromStatus st) > latestPortageVersion -> True
+                  | otherwise -> False
+    in if not (null inPortage) && not (null interestingPackages)
+        then Just interestingPackages
+        else Nothing
 
 statusPrinter :: Map Package [FileStatus Ebuild] -> HPAction ()
 statusPrinter packages = do
