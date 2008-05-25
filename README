@@ -1,0 +1,64 @@
+Hackport
+========
+
+About
+-----
+
+Hackport is a utility application for Gentoo Linux to ease the tasks for the
+Haskell Project.
+
+The main purpose for Hackport is to interact with Hackage and create
+Ebuilds from Cabal packages. It also does handy functions to compare
+hackage, the overlay and the portage tree.
+
+Features
+--------
+    
+    'hackport list [FILTER]'
+        Print packages from hackage, with optional substring matching.
+
+    'hackport merge <package>'
+        Create a Gentoo Linux Ebuild for hackage package named <package>.
+        The category defaults to dev-haskell, but is overridden if an older
+        version has been merged previously to another category. The category
+        can also be overridden with the syntax category/package. Example:
+
+            $ hackport merge x11-wm/xmonad
+
+        Hackport will make an ebuild that uses the haskell-cabal eclass, and
+        set the following properties:
+
+        PN (package name)
+            Package name converted into lower case
+        PV (package version)
+            Package version with tags dropped.
+        KEYWORDS
+            Defaults to ~amd64 ~x86
+        CABAL_FEATURES
+            Set to "bin" for executables, and "lib haddock profile" for
+            libraries. Packages that contains both a binary and library will
+            get the union.
+        DEPEND
+            GHC dependency defaults to >=dev-lang/ghc-6.6.1.
+            Cabal dependency is fetched from Cabal field 'Cabal-Version'.
+            All other package dependencies are converted into gentoo syntax.
+            Range dependencies are flattened and usually needs manual
+            tweaking.
+        DESCRIPTION
+            From Synopsis if it is non-empty, otherwise Description.
+        HOMEPAGE
+            From Homepage
+        SRC_URI
+            From package url
+        LICENSE 
+            From cabal version converted into gentoo licenses
+        SLOT
+            Defaults to "0"
+
+
+Authors
+-------
+
+    Henning Günther
+    Duncan Coutts
+    Lennart Kolmodin
