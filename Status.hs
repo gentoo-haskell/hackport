@@ -27,7 +27,7 @@ import qualified Data.Traversable as T
 
 data FileStatus a
         = Same a
-        | Differs a
+        | Differs a a
         | OverlayOnly a
         | PortageOnly a
         deriving (Show,Eq)
@@ -39,7 +39,7 @@ instance Functor FileStatus where
     fmap f st =
         case st of
             Same a -> Same (f a)
-            Differs a -> Differs (f a)
+            Differs a b -> Differs (f a) (f b)
             OverlayOnly a -> OverlayOnly (f a)
             PortageOnly a -> PortageOnly (f a)
 
@@ -47,7 +47,7 @@ fromStatus :: FileStatus a -> a
 fromStatus fs =
     case fs of
         Same a -> a
-        Differs a -> a
+        Differs a _ -> a -- second status is lost
         OverlayOnly a -> a
         PortageOnly a -> a
 
@@ -67,7 +67,7 @@ status = do
             eq <- equals (eFilePath e1) (eFilePath e2)
             return $ if eq
                         then Same e
-                        else Differs e
+                        else Differs e1 e2
 
     let meld = Map.unionsWith (\a b -> List.sort (a++b))
                 [ Map.map (map PortageOnly) port
@@ -82,7 +82,7 @@ statusAction = status >>= statusPrinter
 statusPrinter :: Map Package [FileStatus Ebuild] -> HPAction ()
 statusPrinter packages = do
     liftIO $ putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
-    liftIO $ putStrLn $ toColor (Differs "Yellow") ++ ": package in portage and overlay differs"
+    liftIO $ putStrLn $ toColor (Differs "Yellow" "") ++ ": package in portage and overlay differs"
     liftIO $ putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
     liftIO $ putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
     forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> liftIO $ do
@@ -99,7 +99,7 @@ toColor st = inColor c False Default (fromStatus st)
     where
     c = case st of
         (Same _) -> Green
-        (Differs _) -> Yellow
+        (Differs _ _) -> Yellow
         (OverlayOnly _) -> Red
         (PortageOnly _) -> Magenta
 
