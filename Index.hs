@@ -28,7 +28,7 @@ readIndex str = do
         _ -> fail "doesn't look like the proper path"
 
 filterIndexByPV :: (String -> String -> Bool) -> Index -> Index
-filterIndexByPV cond index = [ x | x@(p,v,d) <- index, cond p v]
+filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond p v]
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList pids = Map.unionsWith Set.union $
