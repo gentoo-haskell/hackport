@@ -66,12 +66,12 @@ Features
 
 
         Optional parameters:
-            default action
+            'all', the default action
                 List all packages.
             'missing'
                 List packages that exist in hackage but not in the overlay,
                 or where the hackage version is more recent.
-            'additions' 
+            'additions'
                 List packages only in the overlay, or where the overlay has
                 a more recent version.
             'newer'
@@ -80,7 +80,25 @@ Features
                 List packages where hackage and the overlay has the same
                 version.
 
-Authors
+    'hackport status [toportage]'
+        Provides an overview comparing the overlay to the portage tree.
+        It will teel you, for each package and version, if the package exist
+
+            - only in the portage tree
+            - only in the overlay
+            - both in the portage tree and the overlay
+            - both in the portage tree and the overlay,
+                but the ebuilds are not identical
+
+        Optional parameters:
+            'toportage'
+                Only print packages that are likely to be interesting to
+                move to the portage tree.
+                It will print packages when they exist in both portage and
+                the overlay, and:
+                    - the ebuilds differ, or
+                    - the overlay has a more recent version
+
 -------
 
     Henning Günther
