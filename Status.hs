@@ -88,8 +88,6 @@ statusAction action = do
 --
 --   * Ebuild differs, or
 --   * Newer version in overlay than in portage
--- 
--- Filters out versions older than what portage has.
 toPortageFilter :: Map Package [FileStatus Ebuild] -> Map Package [FileStatus Ebuild]
 toPortageFilter = Map.mapMaybe $ \ sts ->
     let inPortage = flip filter sts $ \st ->
@@ -103,7 +101,7 @@ toPortageFilter = Map.mapMaybe $ \ sts ->
                 _ | eVersion (fromStatus st) > latestPortageVersion -> True
                   | otherwise -> False
     in if not (null inPortage) && not (null interestingPackages)
-        then Just interestingPackages
+        then Just sts
         else Nothing
 
 statusPrinter :: Map Package [FileStatus Ebuild] -> HPAction ()
