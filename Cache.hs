@@ -63,6 +63,11 @@ readCache portdir = do
 	str <- liftIO $ L.readFile cachePath
 	return $ readIndex str
 
+readDefaultCache :: HPAction Index
+readDefaultCache = do
+    overlayPath <- getOverlayPath
+    readCache overlayPath
+
 indexToPortage :: Index -> Portage -> (Portage, [String])
 indexToPortage index port = second nub . runWriter $ do
     pkgs <- forM index $ \(pkg_h_name, pkg_h_ver, pkg_desc) -> do
