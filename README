@@ -13,9 +13,13 @@ hackage, the overlay and the portage tree.
 
 Features
 --------
+
+    'hackport update'
+        Update the local copy of hackage's package list. You should run this
+        every once in a while to get a more recent copy.
     
     'hackport list [FILTER]'
-        Print packages from hackage, with optional substring matching.
+        Print packages from hackage, with an optional substring matching.
 
     'hackport merge <package>'
         Create a Gentoo Linux Ebuild for hackage package named <package>.
@@ -51,10 +55,30 @@ Features
         SRC_URI
             From package url
         LICENSE 
-            From cabal version converted into gentoo licenses
+            From cabal license converted into gentoo licenses
         SLOT
             Defaults to "0"
 
+    'hackport diff [missing|additions|newer|common]'
+        Prints a list showing a diff between hackage and the overlay.
+        For each package it shows the latest version in both hackage and the
+        overlay.
+
+
+        Optional parameters:
+            default action
+                List all packages.
+            'missing'
+                List packages that exist in hackage but not in the overlay,
+                or where the hackage version is more recent.
+            'additions' 
+                List packages only in the overlay, or where the overlay has
+                a more recent version.
+            'newer'
+                List packages where hackage has a more recent version.
+            'common'
+                List packages where hackage and the overlay has the same
+                version.
 
 Authors
 -------
