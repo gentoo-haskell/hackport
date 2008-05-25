@@ -40,7 +40,7 @@ readPV        =  do  cat         <-  readCat
                      char '/'
                      (pkg,mver)  <-  readPkgAndVer
                      case mver of
-                       Nothing   ->  error "readPV: version expected"
+                       Nothing   ->  fail "readPV: version expected"
                        Just ver  ->  return (cat, pkg, ver)
 
 parseP :: String -> Either ParseError (Category, Package)
