@@ -159,17 +159,17 @@ coreLibs =
 --,"filepath"     --already has ebuild
   ,"ghc"
   ,"haskell98"
-  ,"hpc"
+  ,"hpc"          --has ebuild, but only in the overlay
   ,"old-locale"
   ,"old-time"
   ,"packedstring"
   ,"pretty"
   ,"process"
   ,"random"
-  ,"readline"
+  ,"readline"     --has ebuild, but only in the overlay
   ,"rts"
   ,"template-haskell"
-  ,"unix"             --should have ebuild
+  ,"unix"         --has ebuild, but only in the overlay
   ]
 
 showEBuild :: EBuild -> String
