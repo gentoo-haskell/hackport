@@ -65,7 +65,7 @@ readPortagePackages portdir packages0 = do
     packages <- filterM (doesDirectoryExist . (portdir </>) . show) packages0
     ebuild_map0 <- forM packages $ \package -> do
         ebuilds <- getPackageVersions package
-        return (package, ebuilds)
+        return (package, List.sort ebuilds)
     let ebuild_map = filter (not . null . snd) ebuild_map0
     return $ Map.fromList ebuild_map
 
