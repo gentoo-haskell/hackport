@@ -6,10 +6,13 @@ import Data.Maybe
 import Data.List
 import Data.Version
 import Distribution.Package
-import Distribution.PackageDescription
-        (finalizePackageDescription, package)
+import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
+import Distribution.PackageDescription.Configuration
+         ( finalizePackageDescription, flattenPackageDescription )
+import Distribution.Simple.PackageIndex (PackageIndex)
+import Distribution.Text (display)
 import System.IO
-import System.Info (os, arch)
+import Distribution.System (buildOS, buildArch)
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
@@ -78,11 +81,14 @@ merge pstr = do
                     "hackage" -> return "dev-haskell"
                     c -> return c
     let Just genericDesc = ePkgDesc pkg
-        Right (desc, _) = finalizePackageDescription [] Nothing os arch
-	                    ("ghc", Version [6,8,2] []) genericDesc
-    ebuild <- fixSrc (package desc) (E.cabal2ebuild desc)
+        Right (desc, _) = finalizePackageDescription []
+                            (Nothing :: Maybe (PackageIndex PackageIdentifier))
+                            buildOS buildArch
+                            (CompilerId GHC (Version [6,8,2] []))
+                            [] genericDesc
+    ebuild <- fixSrc (packageId desc) (E.cabal2ebuild desc)
     liftIO $ do
-        putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ showVersion (pkgVersion (package desc))
+        putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
         putStrLn $ "Destination: " ++ portdir
         mergeEbuild portdir category ebuild
     where
@@ -99,7 +105,7 @@ merge pstr = do
 makeEbuild :: String -> HPAction ()
 makeEbuild cabalFileName = liftIO $ do
     pkg <- Cabal.readPackageDescription normal cabalFileName
-    let ebuild = cabal2ebuild (Cabal.flattenPackageDescription pkg)
+    let ebuild = cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
     writeFile ebuildFileName (showEBuild ebuild)
 

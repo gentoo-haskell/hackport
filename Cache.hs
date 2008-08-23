@@ -9,7 +9,7 @@ import P2
 import Version
 import Overlays
 
-import qualified Distribution.Version as Cabal ( readVersion ) 
+import Distribution.Text ( simpleParse )
 
 import Control.Arrow
 import Data.Char
@@ -73,7 +73,7 @@ indexToPortage index port = second nub . runWriter $ do
     pkgs <- forM index $ \(pkg_h_name, pkg_h_ver, pkg_desc) -> do
         let pkg_name = map toLower pkg_h_name
         pkg_cat <- lookupCat pkg_name
-        Just ver <- return . Cabal.readVersion $ pkg_h_ver
+        Just ver <- return . simpleParse $ pkg_h_ver
         return $ Ebuild (P pkg_cat pkg_name)
                         (fromCabalVersion ver)
                         "<hackage>"

@@ -28,11 +28,13 @@ module Cabal2Ebuild
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
-import qualified Distribution.Package as Cabal  (PackageIdentifier(..))
-import qualified Distribution.Version as Cabal  (showVersion, Dependency(..),
-                                                 VersionRange(..))
+import qualified Distribution.Package as Cabal
+         ( PackageIdentifier(..), Dependency(..) )
+import qualified Distribution.Version as Cabal
+         ( VersionRange(..) )
 import qualified Distribution.License as Cabal  (License(..))
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
+import Distribution.Text (display)
 
 import Data.Char          (toLower,isUpper)
 
@@ -85,7 +87,7 @@ ebuildTemplate = EBuild {
 cabal2ebuild :: Cabal.PackageDescription -> EBuild
 cabal2ebuild pkg = ebuildTemplate {
     name        = map toLower cabalPkgName,
-    version     = Cabal.showVersion (Cabal.pkgVersion (Cabal.package pkg)),
+    version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
     homepage        = Cabal.homepage pkg,
@@ -139,13 +141,13 @@ convertDependency (Cabal.Dependency pname versionRange)
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
-    convert (Cabal.ThisVersion v) = ThisVersionOf (Cabal.showVersion v) ebuildName
-    convert (Cabal.LaterVersion v)   = LaterVersionOf (Cabal.showVersion v) ebuildName
-    convert (Cabal.EarlierVersion v) = EarlierVersionOf (Cabal.showVersion v) ebuildName
+    convert (Cabal.ThisVersion v) = ThisVersionOf (display v) ebuildName
+    convert (Cabal.LaterVersion v)   = LaterVersionOf (display v) ebuildName
+    convert (Cabal.EarlierVersion v) = EarlierVersionOf (display v) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.LaterVersion v2))
-      | v1 == v2 = OrLaterVersionOf (Cabal.showVersion v1) ebuildName
+      | v1 == v2 = OrLaterVersionOf (display v1) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.EarlierVersion v2))
-      | v1 == v2 = OrEarlierVersionOf (Cabal.showVersion v1) ebuildName
+      | v1 == v2 = OrEarlierVersionOf (display v1) ebuildName
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
 

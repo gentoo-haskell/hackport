@@ -21,7 +21,7 @@ Executable	hackport
     mtl,
     network,
     regex-compat,
-    Cabal >= 1.2 && < 1.3,
+    Cabal >= 1.4 && < 1.5,
     HTTP >= 3000 && < 3002,
     zlib,
     tar
