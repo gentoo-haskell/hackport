@@ -28,15 +28,15 @@ module Cabal2Ebuild
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
-import qualified Distribution.Package as Cabal
-         ( PackageIdentifier(..), Dependency(..) )
-import qualified Distribution.Version as Cabal
-         ( VersionRange(..) )
+import qualified Distribution.Package as Cabal  (PackageIdentifier(..))
+import qualified Distribution.Version as Cabal  (showVersion, Dependency(..),
+                                                 VersionRange(..))
 import qualified Distribution.License as Cabal  (License(..))
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 import Distribution.Text (display)
 
 import Data.Char          (toLower,isUpper)
+import Data.List          (intercalate)
 
 data EBuild = EBuild {
     name :: String,
@@ -56,7 +56,7 @@ data EBuild = EBuild {
   }
 
 type Package = String
-type Version = String
+newtype Version = Version [Int]
 type UseFlag = String
 data Dependency = AnyVersionOf               Package
                 | ThisVersionOf      Version Package   -- =package-version
@@ -66,6 +66,7 @@ data Dependency = AnyVersionOf               Package
                 | OrEarlierVersionOf Version Package   -- <=package-version
                 | DependEither Dependency Dependency   -- depend || depend
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
+                | ThisMajorOf        Version Package   -- =package-version*
 
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
@@ -106,7 +107,7 @@ cabal2ebuild pkg = ebuildTemplate {
         cabalPkgName = Cabal.pkgName (Cabal.package pkg)
 
 defaultDepGHC :: Dependency
-defaultDepGHC     = OrLaterVersionOf "6.6.1" "dev-lang/ghc"
+defaultDepGHC     = OrLaterVersionOf (Version [6,6,1]) "dev-lang/ghc"
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
@@ -141,15 +142,22 @@ convertDependency (Cabal.Dependency pname versionRange)
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
-    convert (Cabal.ThisVersion v) = ThisVersionOf (display v) ebuildName
-    convert (Cabal.LaterVersion v)   = LaterVersionOf (display v) ebuildName
-    convert (Cabal.EarlierVersion v) = EarlierVersionOf (display v) ebuildName
+    convert (Cabal.ThisVersion v) = ThisVersionOf (Cabal.showVersion v) ebuildName
+    convert (Cabal.LaterVersion v)   = LaterVersionOf (Cabal.showVersion v) ebuildName
+    convert (Cabal.EarlierVersion v) = EarlierVersionOf (Cabal.showVersion v) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.LaterVersion v2))
-      | v1 == v2 = OrLaterVersionOf (display v1) ebuildName
+      | v1 == v2 = OrLaterVersionOf (Cabal.showVersion v1) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.EarlierVersion v2))
-      | v1 == v2 = OrEarlierVersionOf (display v1) ebuildName
+      | v1 == v2 = OrEarlierVersionOf (Cabal.showVersion v1) ebuildName
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
+
+-- converts Cabal versiion type to hackopr version
+cabalVtoHPv :: Cabal.Version -> Version
+cabalVtoHPv = Version . Cabal.versionBranch
+
+instance Show Version where
+    show (Version v) = intercalate "." $ map show v
 
 coreLibs :: [String]
 coreLibs =
@@ -209,16 +217,17 @@ showEBuild ebuild =
 
 showDepend :: Dependency -> Package
 showDepend (AnyVersionOf         p) = p
-showDepend (ThisVersionOf      v p) = "~" ++ p ++ "-" ++ v
-showDepend (LaterVersionOf     v p) = ">" ++ p ++ "-" ++ v
-showDepend (EarlierVersionOf   v p) = "<" ++ p ++ "-" ++ v
-showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ v
-showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ v
+showDepend (ThisVersionOf      v p) = "~" ++ p ++ "-" ++ show v
+showDepend (LaterVersionOf     v p) = ">" ++ p ++ "-" ++ show v
+showDepend (EarlierVersionOf   v p) = "<" ++ p ++ "-" ++ show v
+showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ show v
+showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ show v
 showDepend (DependEither       dep1 dep2) = showDepend dep1
                                      ++ " || " ++ showDepend dep2
 showDepend (DependIfUse        useflag dep@(DependEither _ _)) 
                                                 = useflag ++ "? " ++ showDepend dep
 showDepend (DependIfUse        useflag dep)  = useflag ++ "? ( " ++ showDepend dep++ " )"
+showDepend (ThisMajorOf        v p) = "=" ++ p ++ "-" ++ show v ++ "*"
 
 ss :: String -> String -> String
 ss = showString
