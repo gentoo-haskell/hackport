@@ -20,6 +20,7 @@ data OperationMode
 	| Update
 	| ShowHelp
 	| Status String
+	| MakeEbuild String
 
 data DiffMode
 	= ShowAll
@@ -93,6 +94,10 @@ parseConfig opts = let
 		"status":[] -> Right (Status "")
                 "status":"toportage":[] -> Right (Status "toportage")
 		"status":xs-> Left ("invalid argument(s) to 'status': " ++ show xs)
+		"make-ebuild":[] -> Left "Need .cabal file to make ebuild."
+		"make-ebuild":package:[] -> Right (MakeEbuild package)
+		"make-ebuild":_:rest -> Left ("'make-ebuild' takes 1 argument("++show ((length rest)+1)++" given).\n")
+
 		[] -> Right ShowHelp
 		_ -> Left "Unknown opertation mode\n"
 	in case mode of
@@ -108,6 +113,7 @@ hackageUsage = putStr $ flip usageInfo hackageOptions $ unlines
 	, "\t\"hackport [OPTION] diff\" prints the difference between the portage-tree and the server's packages"
 	, "\t\"hackport [OPTION] update\" updates the local cache"
 	, "\t\"hackport [OPTION] status\" compares the overlay with the portage tree"
+	, "\t\"hackport [OPTION] make-ebuild\" creates standalone ebuild from given .cabal file"
 	, "Options:"
 	]
 

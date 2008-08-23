@@ -26,6 +26,10 @@ import Package
 import Overlays
 import P2
 
+import qualified Distribution.PackageDescription as Cabal
+import Distribution.Verbosity (normal)
+import Cabal2Ebuild
+
 list :: String -> HPAction ()
 list name = do
     index <- readCache =<< getOverlayPath
@@ -92,6 +96,13 @@ merge pstr = do
         eof
         return (mc, p, mv)
 
+makeEbuild :: String -> HPAction ()
+makeEbuild cabalFileName = liftIO $ do
+    pkg <- Cabal.readPackageDescription normal cabalFileName
+    let ebuild = cabal2ebuild (Cabal.flattenPackageDescription pkg)
+    let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
+    writeFile ebuildFileName (showEBuild ebuild)
+
 hpmain :: HPAction ()
 hpmain = do
     mode <- loadConfig
@@ -107,6 +118,7 @@ hpmain = do
         DiffTree dtmode -> diffAction dtmode
         Update -> updateCache
         Status action -> statusAction action
+        MakeEbuild cabalFileName -> makeEbuild cabalFileName
 
 main :: IO ()
 main = do
