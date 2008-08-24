@@ -28,15 +28,16 @@ module Cabal2Ebuild
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
-import qualified Distribution.Package as Cabal  (PackageIdentifier(..))
-import qualified Distribution.Version as Cabal  (showVersion, Dependency(..),
-                                                 VersionRange(..))
+import qualified Distribution.Package as Cabal  (PackageIdentifier(..), Dependency(..))
+import qualified Distribution.Version as Cabal  (VersionRange(..), versionBranch, Version)
 import qualified Distribution.License as Cabal  (License(..))
+import qualified Distribution.Text as Cabal  (display)
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
-import Distribution.Text (display)
 
 import Data.Char          (toLower,isUpper)
-import Data.List          (intercalate)
+import Data.List          (intercalate, groupBy, partition, nub, sortBy, init, last)
+import Data.Ord           (comparing)
+import Data.Maybe         (catMaybes, fromJust)
 
 data EBuild = EBuild {
     name :: String,
@@ -56,7 +57,7 @@ data EBuild = EBuild {
   }
 
 type Package = String
-newtype Version = Version [Int]
+newtype Version = Version [Int] deriving (Ord, Eq)
 type UseFlag = String
 data Dependency = AnyVersionOf               Package
                 | ThisVersionOf      Version Package   -- =package-version
@@ -67,6 +68,7 @@ data Dependency = AnyVersionOf               Package
                 | DependEither Dependency Dependency   -- depend || depend
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
                 | ThisMajorOf        Version Package   -- =package-version*
+    deriving Eq
 
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
@@ -85,10 +87,12 @@ ebuildTemplate = EBuild {
     my_pn = Nothing
   }
 
+
+
 cabal2ebuild :: Cabal.PackageDescription -> EBuild
 cabal2ebuild pkg = ebuildTemplate {
     name        = map toLower cabalPkgName,
-    version     = display (Cabal.pkgVersion (Cabal.package pkg)),
+    version     = Cabal.display (Cabal.pkgVersion (Cabal.package pkg)),
     description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
     homepage        = Cabal.homepage pkg,
@@ -96,9 +100,10 @@ cabal2ebuild pkg = ebuildTemplate {
     license         = convertLicense (Cabal.license pkg),
     licenseComments = licenseComment (Cabal.license pkg),
     depend          = defaultDepGHC
-                    : convertDependency (Cabal.Dependency "Cabal"
-		                          (Cabal.descCabalVersion pkg))
-                   ++ convertDependencies (Cabal.buildDepends pkg),
+                    : (simplify_deps $
+                         convertDependency (Cabal.Dependency "Cabal"
+                                           (Cabal.descCabalVersion pkg))
+                        ++ convertDependencies (Cabal.buildDepends pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = features ebuildTemplate
                    ++ (if null (Cabal.executables pkg) then [] else ["bin"])
@@ -142,13 +147,13 @@ convertDependency (Cabal.Dependency pname versionRange)
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
-    convert (Cabal.ThisVersion v) = ThisVersionOf (Cabal.showVersion v) ebuildName
-    convert (Cabal.LaterVersion v)   = LaterVersionOf (Cabal.showVersion v) ebuildName
-    convert (Cabal.EarlierVersion v) = EarlierVersionOf (Cabal.showVersion v) ebuildName
+    convert (Cabal.ThisVersion v) = ThisVersionOf (cabalVtoHPv v) ebuildName
+    convert (Cabal.LaterVersion v)   = LaterVersionOf (cabalVtoHPv v) ebuildName
+    convert (Cabal.EarlierVersion v) = EarlierVersionOf (cabalVtoHPv v) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.LaterVersion v2))
-      | v1 == v2 = OrLaterVersionOf (Cabal.showVersion v1) ebuildName
+      | v1 == v2 = OrLaterVersionOf (cabalVtoHPv v1) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.EarlierVersion v2))
-      | v1 == v2 = OrEarlierVersionOf (Cabal.showVersion v1) ebuildName
+      | v1 == v2 = OrEarlierVersionOf (cabalVtoHPv v1) ebuildName
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
 
@@ -289,3 +294,108 @@ replaceCommonVars pn mypn pv str
 		++[("${PN}",pn)]
 		++ maybe [] (\x->[("${MY_PN}",x)]) mypn
 		++[("${PV}",pv)]) str
+
+
+{- Here goes code for dependencies simplification -}
+
+simplify_group_table :: Package ->
+                        Maybe Version ->
+                        Maybe Version ->
+                        Maybe Version ->
+                        Maybe Version ->
+                        Maybe Version -> [Dependency]
+
+-- simplify_group_table p ol       l        e        oe       exact 
+-- 1) trivial cases:
+simplify_group_table    p Nothing  Nothing  Nothing  Nothing  Nothing  = error $ p ++ ": unsolvable constraints"
+simplify_group_table    p (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p]
+simplify_group_table    p Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p]
+simplify_group_table    p Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p]
+simplify_group_table    p Nothing  Nothing  Nothing  (Just v) Nothing  = [OrEarlierVersionOf v p]
+simplify_group_table    p Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVersionOf v p]
+
+-- 2) simplification passes
+simplify_group_table    p (Just (Version v1)) Nothing (Just (Version v2)) Nothing Nothing
+    -- specian case: >=a-v.N a<v.(N+1)   => =a-v.N*
+    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1) p]
+    | otherwise                                        = [OrLaterVersionOf (Version v1) p, EarlierVersionOf (Version v2) p]
+
+-- TODO: simplify constraints of type: >=a-v1; > a-v2 and such
+
+-- o3) therwise sink:
+simplify_group_table    p (Just v)     l@(_)       e@(_)        oe@(_)       exact@(_) =   OrLaterVersionOf v p : simplify_group_table p Nothing  l e oe exact
+simplify_group_table    p ol@(Nothing) (Just v)    e@(_)        oe@(_)       exact@(_) =     LaterVersionOf v p : simplify_group_table p ol Nothing e oe exact
+simplify_group_table    p ol@(Nothing) l@(Nothing) (Just v)     oe@(_)       exact@(_) =   EarlierVersionOf v p : simplify_group_table p ol l Nothing oe exact
+simplify_group_table    p ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)     exact@(_) = OrEarlierVersionOf v p : simplify_group_table p ol l e Nothing  exact
+-- already defined earlier
+-- simplify_group_table    p ol@(Nothing) l@(Nothing) e@(Nothing)  oe@(Nothing) (Just v)  = OrEarlierVersionOf v p : simplify_group_table p ol l e oe Nothing
+
+--  >a-v1 >a-v2         => >a-(max v1 v2)
+-- key idea: all constraints are enforcing constraints, so we can't get
+-- more, than one interval.
+simplify_group :: [Dependency] -> [Dependency]
+simplify_group [dep@(AnyVersionOf _package)] = [dep]
+simplify_group deps = simplify_group_table package
+                                           min_or_later_v   -- >=
+                                           min_later_v      -- >
+                                           max_earlier_v    -- <
+                                           max_or_earlier_v -- <=
+                                           exact_this_v     -- ==
+    where
+          package = fromJust.getPackage $ head deps
+          max_earlier_v    = safe_minimum $ map earlier_v deps
+          max_or_earlier_v = safe_minimum $ map or_earlier_v deps
+          min_later_v      = safe_maximum $ map later_v deps
+          min_or_later_v   = safe_maximum $ map or_later_v deps
+          exact_this_v     = case catMaybes (map this_v deps) of
+                                  []  -> Nothing
+                                  [v] -> Just v
+                                  xs  -> error $ "too many exact versions:" ++ show xs
+          --
+          earlier_v (EarlierVersionOf v _p) = Just v
+          earlier_v _                       = Nothing
+
+          or_earlier_v (OrEarlierVersionOf v _p) = Just v
+          or_earlier_v _                         = Nothing
+
+          later_v (LaterVersionOf v _p) = Just v
+          later_v _                     = Nothing
+
+          or_later_v (OrLaterVersionOf v _p) = Just v
+          or_later_v _                     = Nothing
+
+          this_v (ThisVersionOf v  _p) = Just v
+          this_v _                     = Nothing
+          --
+          safe_minimum xs = case catMaybes xs of
+                                 [] -> Nothing
+                                 xs' -> Just $ minimum xs'
+          safe_maximum xs = case catMaybes xs of
+                                 [] -> Nothing
+                                 xs' -> Just $ maximum xs'
+
+-- divide packages to groups (by package name), simplify groups, merge again
+simplify_deps :: [Dependency] -> [Dependency]
+simplify_deps deps = (concatMap (simplify_group.nub) $
+                       groupBy cmpPkgName $
+                         sortBy (comparing getPackageString) groupable)
+                     ++ ungroupable
+    where (ungroupable, groupable) = partition ((==Nothing).getPackage) deps
+          --
+          cmpPkgName p1 p2 = cmpMaybe (getPackage p1) (getPackage p2)
+          cmpMaybe (Just p1) (Just p2) = p1 == p2
+          cmpMaybe _         _         = False
+          --
+getPackage :: Dependency -> Maybe Package
+getPackage (AnyVersionOf package) = Just package
+getPackage (ThisVersionOf      _version package) = Just package
+getPackage (LaterVersionOf     _version package) = Just package
+getPackage (EarlierVersionOf   _version package) = Just package
+getPackage (OrLaterVersionOf   _version package) = Just package
+getPackage (OrEarlierVersionOf _version package) = Just package
+getPackage (DependEither _dependency _Dependency) = Nothing
+getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
+getPackage (ThisMajorOf        _version package) = Just package
+--
+getPackageString :: Dependency -> Package
+getPackageString dep = maybe "" id $ getPackage dep
