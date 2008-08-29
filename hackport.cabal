@@ -1,7 +1,7 @@
 Name:           hackport
 Version:	0.2.1
 License:	GPL
-Author:		Henning Günther
+Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
 Category:       Distribution
 Synopsis:	Hackage and Portage integration tool
