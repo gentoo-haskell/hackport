@@ -38,3 +38,28 @@ Executable	hackport
     Build-Depends:  base <  3
 
   ghc-options: -Wall
+  other-modules:
+    Action
+    AnsiColor
+    Bash
+    BlingBling
+    Cabal2Ebuild
+    Cache
+    CacheFile
+    Config
+    Diff
+    Error
+    Fetch
+    GenerateEbuild
+    Index
+    Main
+    MaybeRead
+    Overlays
+    P2
+    Package
+    Portage
+    Setup
+    Status
+    Utils
+    Version
+    Merge
