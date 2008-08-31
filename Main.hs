@@ -1,136 +1,327 @@
 module Main where
 
-import Control.Monad.Error
+import Control.Monad
 import Data.Char
 import Data.Maybe
 import Data.List
-import Data.Version
-import Distribution.Package
-import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
-import Distribution.PackageDescription.Configuration
-         ( finalizePackageDescription, flattenPackageDescription )
-import Distribution.Simple.PackageIndex (PackageIndex)
-import Distribution.Text (display)
-import System.IO
-import Distribution.System (buildOS, buildArch)
-import qualified Data.Map as Map
-import Text.ParserCombinators.Parsec
+import Data.Monoid
+        ( Monoid(..) )
 
-import Action
+-- cabal
+import Distribution.Simple.Setup
+        ( Flag(..), fromFlag
+        , falseArg 
+        , flagToMaybe, flagToList
+        )
+import Distribution.PackageDescription.Configuration
+         ( flattenPackageDescription )
+import Distribution.ReadE ( succeedReadE )
+import Distribution.Simple.Command -- commandsRun
+import Distribution.Simple.Utils ( die )
+import qualified Distribution.PackageDescription as Cabal
+import Distribution.Verbosity (Verbosity, normal)
+
+import Network.URI
+import System.Environment ( getArgs, getProgName )
+import System.Exit ( exitFailure )
+import System.IO
+
 import qualified Cabal2Ebuild as E
 import Cache
-import Config
 import Diff
 import Error
-import GenerateEbuild
 import Index
 import Status
-import Package
 import Overlays
-import P2
+import Merge
 
-import qualified Distribution.PackageDescription as Cabal
-import Distribution.Verbosity (normal)
 import Cabal2Ebuild
 
-list :: String -> HPAction ()
-list name = do
-    index <- readCache =<< getOverlayPath
-    let index' | null name = index
-               | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
-        pkgs = [ pkg ++ "-" ++ ver | (pkg,ver,_) <- index']
-    if null pkgs
-      then throwError (PackageNotFound name)
-      else liftIO . putStr . unlines . sort $ pkgs
-    where
-        matchSubstringCaseInsensitive pName _pVver =
-                map toLower name `isInfixOf` map toLower pName
+-----------------------------------------------------------------------
+-- List
+-----------------------------------------------------------------------
 
-merge :: String -> HPAction ()
-merge pstr = do
-    (m_category, pname, m_version) <- case parsePVC of
-        Right v -> return v
-        Left err -> throwError (ArgumentError ("Could not parse [category/]package[-version]: " ++ show err))
-    portdir <- getOverlayPath
-    overlay <- liftIO $ readPortageTree portdir
-    cache <- readCache portdir
-    let (indexTree,clashes) = indexToPortage cache overlay
-    mapM_ (liftIO . putStrLn) clashes
-    whisper $ "Searching for: "++ pstr
-    let pkgs =
-          Map.elems
-            . Map.filterWithKey (\(P _ pname') _ -> map toLower pname' == map toLower pname)
-            $ indexTree
-    return ()
-    pkg <- case pkgs of
-        [] -> throwError (PackageNotFound pname)
-        [xs] -> case m_version of
-            Nothing -> return (maximum xs) -- highest version
-            Just v -> do
-                let ebuilds = filter (\e -> eVersion e == v) xs
-                case ebuilds of
-                    [] -> throwError (PackageNotFound (pname ++ '-':show v))
-                    [e] -> return e
-                    _ -> fail "the impossible happened"
-        _ -> fail "the impossible happened"
-    category <- do
-        case m_category of
-            Just cat -> return cat
-            Nothing -> do
-                case pCategory (ePackage pkg) of
-                    "hackage" -> return "dev-haskell"
-                    c -> return c
-    let Just genericDesc = ePkgDesc pkg
-        Right (desc, _) = finalizePackageDescription []
-                            (Nothing :: Maybe (PackageIndex PackageIdentifier))
-                            buildOS buildArch
-                            (CompilerId GHC (Version [6,8,2] []))
-                            [] genericDesc
-    ebuild <- fixSrc (packageId desc) (E.cabal2ebuild desc)
-    liftIO $ do
-        putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
-        putStrLn $ "Destination: " ++ portdir
-        mergeEbuild portdir category ebuild
-    where
-    parsePVC = parse readPVC "" pstr
-    readPVC = do
-        mc <- option Nothing $ try $ do
-            c <- readCat
-            char '/'
-            return (Just c)
-        (p, mv) <- readPkgAndVer
-        eof
-        return (mc, p, mv)
+listCommand :: CommandUI ()
+listCommand = CommandUI {
+    commandName = "list",
+    commandSynopsis = "List packages",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for listCommand\n",
+    commandUsage = usagePackages "list",
+    commandDefaultFlags = (),
+    commandOptions = \showOrParseArgs ->
+      []
+  }
 
-makeEbuild :: String -> HPAction ()
-makeEbuild cabalFileName = liftIO $ do
+listAction :: () -> [String] -> GlobalFlags -> IO ()
+listAction _ args globalFlags = do
+  let verbose = fromFlag (globalVerbosity globalFlags)
+      portDirM = flagToMaybe (globalOverlayPath globalFlags)
+  overlay <-
+    case portDirM of
+      Just dir -> return dir
+      Nothing -> getOverlayPath verbose
+  index <- readCache overlay
+  let index' | null name = index
+             | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
+      pkgs = [ pkg ++ "-" ++ ver | (pkg,ver,_) <- index']
+  if null pkgs
+    then throwEx (PackageNotFound name)
+    else putStr . unlines . sort $ pkgs
+      where
+      name | null args = []
+           | otherwise = head args
+      matchSubstringCaseInsensitive otherName _pVver =
+           map toLower name `isInfixOf` map toLower otherName
+
+-----------------------------------------------------------------------
+-- Make Ebuild
+-----------------------------------------------------------------------
+
+makeEbuildAction :: () -> [String] -> GlobalFlags -> IO ()
+makeEbuildAction _ args globalFlags = do
+  when (null args) $
+    die "make-ebuild needs at least one argument"
+  forM_ args $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
     let ebuild = cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
     writeFile ebuildFileName (showEBuild ebuild)
 
-hpmain :: HPAction ()
-hpmain = do
-    mode <- loadConfig
-    requestedUpdate <- fmap refreshCache getCfg
-    when requestedUpdate $
-        case mode of
-            Update -> return ()
-            _ -> updateCache
-    case mode of
-        ShowHelp -> liftIO hackageUsage
-        List pkg -> list pkg
-        Merge pkg -> merge pkg
-        DiffTree dtmode -> diffAction dtmode
-        Update -> updateCache
-        Status action -> statusAction action
-        MakeEbuild cabalFileName -> makeEbuild cabalFileName
+makeEbuildCommand :: CommandUI ()
+makeEbuildCommand = CommandUI {
+    commandName = "make-ebuild",
+    commandSynopsis = "Make an ebuild from a .cabal file",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for makeEbuildCommand\n",
+    commandUsage = \_ -> [],
+    commandDefaultFlags = (),
+    commandOptions = \showOrParseArgs ->
+        []
+  }
 
+-----------------------------------------------------------------------
+-- Diff
+-----------------------------------------------------------------------
+
+data DiffFlags = DiffFlags {
+    diffMode :: Flag DiffMode
+  }
+
+instance Monoid DiffFlags where
+  mempty = DiffFlags {
+    diffMode = mempty
+  }
+  mappend a b = DiffFlags {
+    diffMode = combine diffMode
+  }
+    where combine field = field a `mappend` field b
+
+defaultDiffFlags :: DiffFlags
+defaultDiffFlags = DiffFlags {
+    diffMode = Flag ShowAll
+  }
+
+diffCommand :: CommandUI DiffFlags
+diffCommand = CommandUI {
+    commandName = "diff",
+    commandSynopsis = "Run diff",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for diffCommand\n",
+    commandUsage = usagePackages "diff",
+    commandDefaultFlags = defaultDiffFlags,
+    commandOptions = \showOrParseArgs ->
+       []
+  }
+
+diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
+diffAction flags args globalFlags = do
+  let verbose = fromFlag (globalVerbosity globalFlags)
+      overlayPath = fromFlag (globalOverlayPath globalFlags)
+      dm = fromFlag (diffMode flags)
+  runDiff verbose overlayPath dm
+
+-----------------------------------------------------------------------
+-- Update
+-----------------------------------------------------------------------
+
+updateCommand :: CommandUI (Flag String)
+updateCommand = CommandUI {
+    commandName = "update",
+    commandSynopsis = "Update the local cache",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for updateCommand\n",
+    commandUsage = usageFlags "update",
+    commandDefaultFlags = Flag defaultHackageServerURI,
+    commandOptions = \_ ->
+      [ option [] ["server"]
+          "Set the server you'd like to update the cache from"
+          id (\v _ -> v)
+          (reqArgFlag "SERVER")
+      ]
+  }
+
+updateAction :: Flag String -> [String] -> GlobalFlags -> IO ()
+updateAction serverFlag args globalFlags = do
+  let verbose = fromFlag (globalVerbosity globalFlags)
+      server  = fromFlag serverFlag
+  case parseURI server of
+    Just uri -> updateCache verbose uri
+    Nothing -> throwEx (InvalidServer server)
+
+-----------------------------------------------------------------------
+-- Status
+-----------------------------------------------------------------------
+
+data StatusFlags = StatusFlags {
+    statusToPortage :: Flag Bool
+  }
+
+instance Monoid StatusFlags where
+  mempty = StatusFlags {
+    statusToPortage = mempty
+  }
+  mappend a b = StatusFlags {
+    statusToPortage = combine statusToPortage
+  }
+    where combine field = field a `mappend` field b
+
+defaultStatusFlags :: StatusFlags
+defaultStatusFlags = StatusFlags {
+    statusToPortage = Flag False
+  }
+
+statusCommand :: CommandUI StatusFlags
+statusCommand = CommandUI {
+    commandName = "status",
+    commandSynopsis = "Show status(??)",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for statusCommand\n",
+    commandUsage = usagePackages "status",
+    commandDefaultFlags = defaultStatusFlags,
+    commandOptions = \showOrParseArgs ->
+        [option [] ["to-portage"]
+          "Print only packages likely to be interesting to move to the portage tree."
+          statusToPortage (\v flags -> flags { statusToPortage = v })
+          falseArg
+        ]
+  }
+
+statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
+statusAction flags args globalFlags = do
+  let verbose = fromFlag (globalVerbosity globalFlags)
+      portDir = fromFlag (globalPortDir globalFlags)
+      overlayPath = fromFlag (globalOverlayPath globalFlags)
+      toPortDir = fromFlag (statusToPortage flags)
+  runStatus verbose portDir overlayPath toPortDir
+
+-----------------------------------------------------------------------
+-- Merge
+-----------------------------------------------------------------------
+
+mergeCommand :: CommandUI (Flag String)
+mergeCommand = CommandUI {
+    commandName = "merge",
+    commandSynopsis = "Make an ebuild out of hackage package",
+    commandDescription = Just $ \pname ->
+      "TODO: this is the commandDescription for mergeCommand\n",
+    commandUsage = usagePackages "merge",
+    commandDefaultFlags = Flag defaultHackageServerURI,
+    commandOptions = \showOrParseArgs ->
+      []
+  }
+
+mergeAction :: Flag String -> [String] -> GlobalFlags -> IO ()
+mergeAction serverFlag [pkg] globalFlags = do
+  let verbose = fromFlag (globalVerbosity globalFlags)
+      server  = fromFlag serverFlag
+  case parseURI server of
+    Just uri -> merge verbose uri pkg
+    Nothing -> throwEx (InvalidServer server)
+  
+mergeAction _ _ _ =
+    throwEx (ArgumentError "'merge' needs exactly one parameter")
+
+-----------------------------------------------------------------------
+-- Main and utils
+-----------------------------------------------------------------------
+
+defaultHackageServerURI :: String
+defaultHackageServerURI = "http://hackage.haskell.org/packages/archive/"
+
+reqArgFlag :: ArgPlaceHolder -> SFlags -> LFlags -> Description ->
+              (b -> Flag String) -> (Flag String -> b -> b) -> OptDescr b
+reqArgFlag ad = reqArg ad (succeedReadE Flag) flagToList
+
+usagePackages :: String -> String -> String
+usagePackages name pname =
+  "Usage: " ++ pname ++ " " ++ name ++ " [FLAGS] [PACKAGE]\n\n"
+  ++ "Flags for " ++ name ++ ":"
+
+usageFlags :: String -> String -> String
+usageFlags name pname =
+      "Usage: " ++ pname ++ " " ++ name ++ " [FLAGS]\n\n"
+      ++ "Flags for " ++ name ++ ":"
+
+data GlobalFlags = GlobalFlags {
+    globalVersion :: Flag Bool,
+    globalOverlayPath :: Flag FilePath,
+    globalPortDir :: Flag FilePath,
+    globalVerbosity :: Flag Verbosity
+    }
+
+defaultGlobalFlags :: GlobalFlags
+defaultGlobalFlags = GlobalFlags {
+    globalVersion = Flag False,
+    globalOverlayPath = NoFlag,
+    globalPortDir = NoFlag,
+    globalVerbosity = Flag normal
+    }
+
+globalCommand :: CommandUI GlobalFlags
+globalCommand = CommandUI {
+    commandName = "",
+    commandSynopsis = "",
+    commandDescription = Just $ \pname ->
+        "TODO: this is the commandDescription for globalCommand\n",
+    commandUsage = \_ -> [],
+    commandDefaultFlags = defaultGlobalFlags,
+    commandOptions = \showOrParseArgs ->
+        [option "v" ["verbose"]
+          globalVerbosity (\v flags -> flags { globalVerbosity = v } )
+          falseArg
+        ]
+    }
+
+mainWorker :: [String] -> IO ()
+mainWorker args =
+  case commandsRun globalCommand commands args of
+    CommandHelp help -> printHelp help
+    CommandList opts -> printOptionsList opts
+    CommandErrors errs -> printErrors errs
+    CommandReadyToGo (globalflags, commandParse) -> do
+      case commandParse of 
+        CommandHelp help -> printHelp help
+        CommandList opts -> printOptionsList opts
+        CommandErrors errs -> printErrors errs
+        CommandReadyToGo action -> catchEx (action globalflags) errorHandler
+    where
+    printHelp help = getProgName >>= putStr . help
+    printOptionsList = putStr . unlines
+    printErrors errs = do
+      putStr (concat (intersperse "\n" errs))
+      exitFailure
+    errorHandler :: HackPortError -> IO ()
+    errorHandler e = do
+      putStrLn (hackPortShowError e)
+    commands =
+      [ listCommand `commandAddAction` listAction
+      , makeEbuildCommand `commandAddAction` makeEbuildAction
+      , statusCommand `commandAddAction` statusAction
+      , diffCommand `commandAddAction` diffAction
+      , updateCommand `commandAddAction` updateAction
+      , mergeCommand `commandAddAction` mergeAction
+      ]
+            
 main :: IO ()
-main = do
-    res <- performHPAction hpmain
-    case res of
-        Right _ -> return ()
-        Left err -> do
-            hPutStrLn stderr "An error occurred. To get more info run with --verbosity=debug"
-            hPutStrLn stderr (hackPortShowError err)
+main = getArgs >>= mainWorker

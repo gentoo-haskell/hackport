@@ -1,18 +1,25 @@
 module Diff
-    ( diffAction
+    ( runDiff
+    , DiffMode(..)
     ) where
 
+import Data.Char
 import qualified Data.Map as Map
 
-import Control.Monad.Trans
-import Data.Char
-
-import Action
 import Cache
-import Config (DiffMode(..))
 import P2
 import Version
-import Overlays
+
+-- cabal
+import Distribution.Verbosity
+
+data DiffMode
+	= ShowAll
+	| ShowMissing
+	| ShowAdditions
+	| ShowNewer
+	| ShowCommon
+	deriving Eq
 
 data DiffState a
 	= OnlyLeft a
@@ -26,45 +33,43 @@ tabs str = let len = length str in str++(if len < 3*8
 
 showDiffState :: Package -> DiffState Version -> String
 showDiffState pkg st = (tabs (show pkg)) ++ " [" ++ (case st of
-	Both x y -> showVersion x ++ (case compare x y of
-		EQ -> "="
-		GT -> ">"
-		LT -> "<") ++ showVersion y
-	OnlyLeft x -> showVersion x ++ ">none"
-	OnlyRight y ->  "none<"++showVersion y)++"]"
+  Both x y -> showVersion x ++ (case compare x y of
+    EQ -> "="
+    GT -> ">"
+    LT -> "<") ++ showVersion y
+  OnlyLeft x -> showVersion x ++ ">none"
+  OnlyRight y ->  "none<"++showVersion y)++"]"
 
+runDiff :: Verbosity -> FilePath -> DiffMode -> IO ()
+runDiff verbose overlayPath dm = do
+  cache <- readCache overlayPath
+  overlayTree <- readPortageTree overlayPath
+  let (hackageTree, clashes) = indexToPortage cache overlayTree
+  mapM_ putStrLn clashes
+  diff hackageTree overlayTree dm
 
-diffAction :: DiffMode -> HPAction ()
-diffAction dm = do
-    overlayPath <- getOverlayPath
-    cache <- readCache overlayPath
-    overlayTree <- liftIO $ readPortageTree overlayPath
-    let (hackageTree, clashes) = indexToPortage cache overlayTree
-    liftIO $ mapM_ putStrLn clashes
-    diff hackageTree overlayTree dm
-
-diff :: Portage -> Portage -> DiffMode -> HPAction ()
+diff :: Portage -> Portage -> DiffMode -> IO ()
 diff pt1 pt2 mode = do
-        let pkgs1 = Map.map (OnlyLeft  . eVersion . maximum) pt1
-        let pkgs2 = Map.map (OnlyRight . eVersion . maximum) pt2
-        let union = Map.unionWith (\(OnlyLeft x) (OnlyRight y) -> Both x y) pkgs1 pkgs2
-	let showFilter st = case mode of
-		ShowAll -> True
-		ShowMissing -> case st of
-			OnlyLeft _ -> True
-			Both x y -> x > y
-			OnlyRight _ -> False
-		ShowAdditions -> case st of
-			OnlyLeft _ -> False
-			Both x y -> x < y
-			OnlyRight _ -> True
-		ShowNewer -> case st of
-			OnlyLeft _ -> False
-			Both x y -> x > y
-			OnlyRight _ -> False
-		ShowCommon -> case st of
-			OnlyLeft _ -> False
-			Both x y -> x == y
-			OnlyRight _ -> False
-        let packages = filter (showFilter . snd) (Map.assocs union)
-        mapM_ (info . uncurry showDiffState) packages
+  let pkgs1 = Map.map (OnlyLeft  . eVersion . maximum) pt1
+  let pkgs2 = Map.map (OnlyRight . eVersion . maximum) pt2
+  let union = Map.unionWith (\(OnlyLeft x) (OnlyRight y) -> Both x y) pkgs1 pkgs2
+  let showFilter st = case mode of
+          ShowAll -> True
+          ShowMissing -> case st of
+                  OnlyLeft _ -> True
+                  Both x y -> x > y
+                  OnlyRight _ -> False
+          ShowAdditions -> case st of
+                  OnlyLeft _ -> False
+                  Both x y -> x < y
+                  OnlyRight _ -> True
+          ShowNewer -> case st of
+                  OnlyLeft _ -> False
+                  Both x y -> x > y
+                  OnlyRight _ -> False
+          ShowCommon -> case st of
+                  OnlyLeft _ -> False
+                  Both x y -> x == y
+                  OnlyRight _ -> False
+  let packages = filter (showFilter . snd) (Map.assocs union)
+  mapM_ (putStrLn . uncurry showDiffState) packages

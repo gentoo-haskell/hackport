@@ -1,11 +1,8 @@
 module GenerateEbuild where
 
-import Action
 import Cabal2Ebuild
-import Config
 
 import Prelude hiding (catch)
-import Control.Monad.Error
 import Distribution.Package
 import Data.Version (showVersion)
 import Network.URI
@@ -14,24 +11,23 @@ import System.FilePath
 
 mergeEbuild :: FilePath -> String -> EBuild -> IO ()
 mergeEbuild target category ebuild = do
-    let edir = target </> category </> name ebuild
-    let epath = edir </> name ebuild ++"-"++ version ebuild <.> "ebuild"
-    createDirectoryIfMissing True edir
-    writeFile epath (showEBuild ebuild)
+  let edir = target </> category </> name ebuild
+  let epath = edir </> name ebuild ++"-"++ version ebuild <.> "ebuild"
+  createDirectoryIfMissing True edir
+  writeFile epath (showEBuild ebuild)
 
-fixSrc :: PackageIdentifier -> EBuild -> HPAction EBuild
-fixSrc p ebuild = do
-	cfg <- getCfg
-	return $ ebuild {
-		src_uri = show $ (server cfg) {
-			uriPath = (uriPath (server cfg))
-				</> pkgName p
-				</> showVersion (pkgVersion p)
-				</> pkgName p ++ "-" ++
-					showVersion (pkgVersion p)
-				<.> "tar.gz"
-			}
-		}
+fixSrc :: URI -> PackageIdentifier -> EBuild -> EBuild
+fixSrc serverURI p ebuild =
+  ebuild {
+    src_uri = show $ serverURI {
+      uriPath = 
+        (uriPath serverURI)
+          </> pkgName p
+          </> showVersion (pkgVersion p)
+          </> pkgName p ++ "-" ++ showVersion (pkgVersion p)
+          <.> "tar.gz"
+      }
+    }
 
 {-hackage2ebuild ::
 	(PackageIdentifier,String,String) ->	-- ^ the package

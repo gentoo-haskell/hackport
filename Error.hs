@@ -1,8 +1,10 @@
 {-# OPTIONS -fglasgow-exts #-}
-module Error where
+module Error (HackPortError(..), throwEx, catchEx, hackPortShowError) where
 
 import Data.Typeable
-import Control.Monad.Error (Error)
+import Control.Exception
+
+import Control.Monad.Error
 
 data HackPortError
 	= ArgumentError String
@@ -27,9 +29,13 @@ data HackPortError
 	| InvalidServer String
 	deriving (Typeable)
 
-instance Error HackPortError
+instance Error HackPortError where
 
-type HackPortResult a = Either
+throwEx :: HackPortError -> IO a
+throwEx = throwDyn
+
+catchEx :: IO a -> (HackPortError -> IO a) -> IO a
+catchEx = catchDyn
 
 hackPortShowError :: HackPortError -> String
 hackPortShowError err = case err of

@@ -2,15 +2,12 @@ module Status
     ( FileStatus(..)
     , fromStatus
     , status
-    , statusAction
+    , runStatus
     ) where
 
-import Action
 import AnsiColor
-import Bash
 import P2
 import Utils
-import Overlays
 
 import Control.Monad.State
 
@@ -23,6 +20,9 @@ import qualified Data.Map as Map
 import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
+
+-- cabal
+import Distribution.Verbosity
 
 data FileStatus a
         = Same a
@@ -50,12 +50,10 @@ fromStatus fs =
         OverlayOnly a -> a
         PortageOnly a -> a
 
-status :: HPAction (Map Package [FileStatus Ebuild])
-status = do
-    portdir <- getPortdir
-    overlayPath <- getOverlayPath
-    overlay <- liftIO $ readPortageTree overlayPath
-    portage <- liftIO $ readPortagePackages portdir (Map.keys overlay)
+status :: Verbosity -> FilePath -> FilePath -> IO (Map Package [FileStatus Ebuild])
+status verbose portDir overlayPath = do
+    overlay <- readPortageTree overlayPath
+    portage <- readPortagePackages portDir (Map.keys overlay)
     let (over, both, port) = portageDiff overlay portage
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
@@ -75,14 +73,12 @@ status = do
                 ]
     return meld
 
-statusAction :: String -> HPAction ()
-statusAction action = do
-    let pkgFilter =
-            case action of
-                "" -> id
-                "toportage" -> toPortageFilter
-    pkgs <- status
-    statusPrinter (pkgFilter pkgs)
+runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> IO ()
+runStatus verbose portDir overlayPath toPortageFlag = do
+  let pkgFilter | toPortageFlag = toPortageFilter
+                | otherwise = id
+  pkgs <- status verbose portDir overlayPath
+  statusPrinter (pkgFilter pkgs)
 
 -- |Only return packages that seems interesting to sync to portage;
 --
@@ -104,13 +100,13 @@ toPortageFilter = Map.mapMaybe $ \ sts ->
         then Just sts
         else Nothing
 
-statusPrinter :: Map Package [FileStatus Ebuild] -> HPAction ()
+statusPrinter :: Map Package [FileStatus Ebuild] -> IO ()
 statusPrinter packages = do
-    liftIO $ putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
-    liftIO $ putStrLn $ toColor (Differs "Yellow" "") ++ ": package in portage and overlay differs"
-    liftIO $ putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
-    liftIO $ putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
-    forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> liftIO $ do
+    putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
+    putStrLn $ toColor (Differs "Yellow" "") ++ ": package in portage and overlay differs"
+    putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
+    putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
+    forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> do
         let (P c p) = pkg
         putStr $ c ++ '/' : bold p
         putStr " "

@@ -39,7 +39,6 @@ Executable	hackport
 
   ghc-options: -Wall
   other-modules:
-    Action
     AnsiColor
     Bash
     BlingBling
@@ -49,7 +48,6 @@ Executable	hackport
     Config
     Diff
     Error
-    Fetch
     GenerateEbuild
     Index
     Main

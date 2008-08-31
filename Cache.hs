@@ -1,8 +1,6 @@
 module Cache where
 
-import Action
 import CacheFile
-import Config
 import Error
 import Index
 import P2
@@ -19,14 +17,15 @@ import Network.HTTP (Request(..), RequestMethod(GET), simpleHTTP, rspBody)
 import qualified Data.ByteString.Lazy as L
 import System.Time
 import System.FilePath
-import Control.Monad.Error(throwError)
 import Control.Monad.Writer
-import Control.Monad (unless)
-import System.Directory (doesFileExist,createDirectoryIfMissing)
+import System.Directory (createDirectoryIfMissing)
 
 import qualified Data.Map as Map
 
--- | A long time. Used in checkCacheDate
+-- cabal
+import Distribution.Verbosity
+
+-- | A long time
 alarmingLongTime :: TimeDiff
 alarmingLongTime = TimeDiff
 	{ tdYear = 0
@@ -38,35 +37,34 @@ alarmingLongTime = TimeDiff
 	, tdPicosec = 0
 	}
 
-cacheURI :: URI -> URI
-cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
+updateCache :: Verbosity -> URI -> IO ()
+updateCache verbose uri = do
+  path <- getOverlayPath verbose
+  let cache = cacheURI uri
+  res <- simpleHTTP (Request cache GET [] "") -- `sayNormal` ("Fetching cache from "++show cache++"...",const "done.")
+  case res of
+    Left err -> throwEx (ConnectionFailed (show cache) (show err))
+    Right resp -> do
+      createDirectoryIfMissing False (path </> hackportDir)
+      Prelude.writeFile (cacheFile path) (rspBody resp)
+  where
+  cacheURI :: URI -> URI
+  cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
 
-updateCache :: HPAction ()
-updateCache = do
-	path <- getOverlayPath
-	cfg <- getCfg
-	let cache = cacheURI $ server cfg
-	res <- (liftIO $ simpleHTTP (Request cache GET [] "")) `sayNormal` ("Fetching cache from "++show cache++"...",const "done.")
-	case res of
-		Left err -> throwError (ConnectionFailed (show cache) (show err))
-		Right resp -> liftIO $ do
-                        createDirectoryIfMissing False (path </> hackportDir)
-                        Prelude.writeFile (cacheFile path) (rspBody resp)
 
-readCache :: FilePath -> HPAction Index
+readCache :: FilePath -> IO Index
 readCache portdir = do
-	let cachePath = cacheFile portdir
-	exists <- liftIO $ doesFileExist cachePath
-	unless exists $ do
-		info "No cache file present, attempting to update..."
-		updateCache
-	str <- liftIO $ L.readFile cachePath
-	return $ readIndex str
+  let cachePath = cacheFile portdir
+  -- TODO: re-implement
+  -- exists <- doesFileExist cachePath
+  -- unless exists $ do
+  --   info "No cache file present, attempting to update..."
+  --   updateCache
+  str <- L.readFile cachePath
+  return (readIndex str)
 
-readDefaultCache :: HPAction Index
-readDefaultCache = do
-    overlayPath <- getOverlayPath
-    readCache overlayPath
+readDefaultCache :: Verbosity -> IO Index
+readDefaultCache verbose = getOverlayPath verbose >>= readCache
 
 indexToPortage :: Index -> Portage -> (Portage, [String])
 indexToPortage index port = second nub . runWriter $ do

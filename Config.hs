@@ -16,19 +16,11 @@ data HackPortOptions
 data OperationMode
 	= List String
 	| Merge String
-	| DiffTree DiffMode
+	-- | DiffTree DiffMode
 	| Update
 	| ShowHelp
 	| Status String
 	| MakeEbuild String
-
-data DiffMode
-	= ShowAll
-	| ShowMissing
-	| ShowAdditions
-	| ShowNewer
-	| ShowCommon
-	deriving Eq
 
 data Config = Config
 	{ overlayPath		::Maybe String
@@ -78,25 +70,25 @@ parseConfig opts = let
 		"merge":[] -> Left "Need a package's name and version to merge it.\n"
 		"merge":package:[] -> Right (Merge package)
 		"merge":_:rest -> Left ("'merge' takes 1 argument("++show ((length rest)+1)++" given).\n")
-		"list":[] -> Right (List "")
-		"list":package:[] -> Right (List package)
-		"list":rest -> Left ("'list' takes at most one argument ("++show (length rest)++" given).\n")
-		"diff":[] -> Right (DiffTree ShowAll)
-		"diff":"all":[] -> Right (DiffTree ShowAll)
-		"diff":"missing":[] -> Right (DiffTree ShowMissing)
-		"diff":"additions":[] -> Right (DiffTree ShowAdditions)
-		"diff":"newer":[] -> Right (DiffTree ShowNewer)
-		"diff":"common":[] -> Right (DiffTree ShowCommon)
-		"diff":arg:[] -> Left ("Unknown argument to diff: '" ++ arg ++ "'. Use all,missing,additions,newer or common.\n")
-		"diff":_:xs -> Left ("'diff' takes one argument("++show ((length xs)+1)++" given).\n")
+		-- "list":[] -> Right (List "")
+		-- "list":package:[] -> Right (List package)
+		-- "list":rest -> Left ("'list' takes at most one argument ("++show (length rest)++" given).\n")
+		-- "diff":[] -> Right (DiffTree ShowAll)
+		-- "diff":"all":[] -> Right (DiffTree ShowAll)
+		-- "diff":"missing":[] -> Right (DiffTree ShowMissing)
+		-- "diff":"additions":[] -> Right (DiffTree ShowAdditions)
+		-- "diff":"newer":[] -> Right (DiffTree ShowNewer)
+		-- "diff":"common":[] -> Right (DiffTree ShowCommon)
+		-- "diff":arg:[] -> Left ("Unknown argument to diff: '" ++ arg ++ "'. Use all,missing,additions,newer or common.\n")
+		-- "diff":_:xs -> Left ("'diff' takes one argument("++show ((length xs)+1)++" given).\n")
 		"update":[] -> Right Update
 		"update":rest -> Left ("'update' takes zero arguments("++show (length rest)++" given).\n")
-		"status":[] -> Right (Status "")
-                "status":"toportage":[] -> Right (Status "toportage")
-		"status":xs-> Left ("invalid argument(s) to 'status': " ++ show xs)
-		"make-ebuild":[] -> Left "Need .cabal file to make ebuild."
-		"make-ebuild":package:[] -> Right (MakeEbuild package)
-		"make-ebuild":_:rest -> Left ("'make-ebuild' takes 1 argument("++show ((length rest)+1)++" given).\n")
+		-- "status":[] -> Right (Status "")
+                -- "status":"toportage":[] -> Right (Status "toportage")
+		-- "status":xs-> Left ("invalid argument(s) to 'status': " ++ show xs)
+		-- "make-ebuild":[] -> Left "Need .cabal file to make ebuild."
+		-- "make-ebuild":package:[] -> Right (MakeEbuild package)
+		-- "make-ebuild":_:rest -> Left ("'make-ebuild' takes 1 argument("++show ((length rest)+1)++" given).\n")
 
 		[] -> Right ShowHelp
 		_ -> Left "Unknown opertation mode\n"

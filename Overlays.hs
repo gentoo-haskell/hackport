@@ -1,59 +1,54 @@
 module Overlays where
 
-import Control.Monad.Error
+import Control.Monad
 import System.Directory
-import Data.Maybe
 import Data.List (nub)
 
 import Bash
-import Action
-import Config
 import Error
 import CacheFile
 
-getOverlayPath :: HPAction String
-getOverlayPath = do
-    cfg <- getCfg
-    case overlayPath cfg of
-        Nothing -> do
-          tree <- getOverlay `sayDebug` ("Guessing overlay...\n",\tree->"Found '"++tree++"'")
-          setOverlayPath $ Just tree
-          return tree
-        Just tree -> return tree
+-- cabal
+import Distribution.Verbosity
+import Distribution.Simple.Utils ( info )
 
-getOverlay :: HPAction String
-getOverlay = do
-	overlays <- getOverlays
-	case overlays of
-		[] -> throwError NoOverlay
-		[x] -> return x
-		mul -> search mul
+getOverlayPath :: Verbosity -> IO String
+getOverlayPath verbose = do
+  overlays <- getOverlays
+  case overlays of
+    [] -> throwEx NoOverlay
+    [x] -> return x
+    mul -> search mul
   where
-  search :: [String] -> HPAction String
+  search :: [String] -> IO String
   search mul = do
-    let loop [] = throwError $ MultipleOverlays mul
-        loop (x:xs) = (do
-          found <- liftIO (doesFileExist (cacheFile x))
-		`sayDebug` ("Checking '"++x++"'...\n",\res->if res then "found.\n" else "not found.")
+    let loop [] = throwEx (MultipleOverlays mul)
+        loop (x:xs) = do
+          info verbose $ "Checking '" ++ x ++ "'..."
+          found <- doesFileExist (cacheFile x)
           if found
-            then return x
-            else loop xs)
-    whisper "There are several overlays in your /etc/make.conf"
-    mapM (\x-> whisper (" * " ++x)) mul
-    whisper "Looking for one with a HackPort cache..."
+            then do
+              info verbose "OK!"
+              return x
+            else do
+              info verbose "Not ok." 
+              loop xs
+    info verbose "There are several overlays in your configuration."
+    mapM (info verbose . (" * " ++)) mul
+    info verbose "Looking for one with a HackPort cache..."
     overlay <- loop mul
-    whisper ("I choose " ++ overlay)
-    whisper "Override my decision with hackport -p /my/overlay"
+    info verbose $ "I choose " ++ overlay
+    info verbose "Override my decision with hackport -p /my/overlay"
     return overlay
 
-portageOverlays :: HPAction [String]
+portageOverlays :: IO [String]
 portageOverlays = runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY" >>= (return.words)
 
-paludisOverlays :: HPAction [String]
-paludisOverlays = return []
+paludisOverlays :: IO [String]
+paludisOverlays = return [] -- TODO: fix
 
-getOverlays :: HPAction [String]
+getOverlays :: IO [String]
 getOverlays = do
-    portage <- portageOverlays
-    paludis <- paludisOverlays
-    return (nub (portage ++ paludis))
+  portage <- portageOverlays
+  paludis <- paludisOverlays
+  return (nub (portage ++ paludis))
