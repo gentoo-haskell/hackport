@@ -12,6 +12,7 @@ import Distribution.Simple.Setup
         ( Flag(..), fromFlag
         , falseArg 
         , flagToMaybe, flagToList
+        , optionVerbosity
         )
 import Distribution.PackageDescription.Configuration
          ( flattenPackageDescription )
@@ -287,9 +288,7 @@ globalCommand = CommandUI {
     commandUsage = \_ -> [],
     commandDefaultFlags = defaultGlobalFlags,
     commandOptions = \showOrParseArgs ->
-        [option "v" ["verbose"]
-          globalVerbosity (\v flags -> flags { globalVerbosity = v } )
-          falseArg
+        [ optionVerbosity globalVerbosity (\v flags -> flags { globalVerbosity = v })
         ]
     }
 
