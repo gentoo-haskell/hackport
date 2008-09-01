@@ -56,7 +56,7 @@ listCommand = CommandUI {
 
 listAction :: () -> [String] -> GlobalFlags -> IO ()
 listAction _ args globalFlags = do
-  let verbose = fromFlag (globalVerbosity globalFlags)
+  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
       portDirM = flagToMaybe (globalOverlayPath globalFlags)
   overlay <-
     case portDirM of
@@ -106,21 +106,25 @@ makeEbuildCommand = CommandUI {
 -----------------------------------------------------------------------
 
 data DiffFlags = DiffFlags {
-    diffMode :: Flag DiffMode
+    diffMode :: Flag DiffMode,
+    diffVerbosity :: Flag Verbosity
   }
 
 instance Monoid DiffFlags where
   mempty = DiffFlags {
-    diffMode = mempty
+    diffMode = mempty,
+    diffVerbosity = mempty
   }
   mappend a b = DiffFlags {
-    diffMode = combine diffMode
+    diffMode = combine diffMode,
+    diffVerbosity = combine diffVerbosity
   }
     where combine field = field a `mappend` field b
 
 defaultDiffFlags :: DiffFlags
 defaultDiffFlags = DiffFlags {
-    diffMode = Flag ShowAll
+    diffMode = Flag ShowAll,
+    diffVerbosity = Flag normal
   }
 
 diffCommand :: CommandUI DiffFlags
@@ -132,12 +136,13 @@ diffCommand = CommandUI {
     commandUsage = usagePackages "diff",
     commandDefaultFlags = defaultDiffFlags,
     commandOptions = \showOrParseArgs ->
-       []
+      [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
+      ]
   }
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
-  let verbose = fromFlag (globalVerbosity globalFlags)
+  let verbose = fromFlag (diffVerbosity flags)
       overlayPath = fromFlag (globalOverlayPath globalFlags)
       dm = fromFlag (diffMode flags)
   runDiff verbose overlayPath dm
@@ -164,7 +169,7 @@ updateCommand = CommandUI {
 
 updateAction :: Flag String -> [String] -> GlobalFlags -> IO ()
 updateAction serverFlag args globalFlags = do
-  let verbose = fromFlag (globalVerbosity globalFlags)
+  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
       server  = fromFlag serverFlag
   case parseURI server of
     Just uri -> updateCache verbose uri
@@ -210,7 +215,7 @@ statusCommand = CommandUI {
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
-  let verbose = fromFlag (globalVerbosity globalFlags)
+  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
       portDir = fromFlag (globalPortDir globalFlags)
       overlayPath = fromFlag (globalOverlayPath globalFlags)
       toPortDir = fromFlag (statusToPortage flags)
@@ -234,7 +239,7 @@ mergeCommand = CommandUI {
 
 mergeAction :: Flag String -> [String] -> GlobalFlags -> IO ()
 mergeAction serverFlag [pkg] globalFlags = do
-  let verbose = fromFlag (globalVerbosity globalFlags)
+  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
       server  = fromFlag serverFlag
   case parseURI server of
     Just uri -> merge verbose uri pkg
@@ -267,16 +272,14 @@ usageFlags name pname =
 data GlobalFlags = GlobalFlags {
     globalVersion :: Flag Bool,
     globalOverlayPath :: Flag FilePath,
-    globalPortDir :: Flag FilePath,
-    globalVerbosity :: Flag Verbosity
+    globalPortDir :: Flag FilePath
     }
 
 defaultGlobalFlags :: GlobalFlags
 defaultGlobalFlags = GlobalFlags {
     globalVersion = Flag False,
     globalOverlayPath = NoFlag,
-    globalPortDir = NoFlag,
-    globalVerbosity = Flag normal
+    globalPortDir = NoFlag
     }
 
 globalCommand :: CommandUI GlobalFlags
@@ -288,8 +291,7 @@ globalCommand = CommandUI {
     commandUsage = \_ -> [],
     commandDefaultFlags = defaultGlobalFlags,
     commandOptions = \showOrParseArgs ->
-        [ optionVerbosity globalVerbosity (\v flags -> flags { globalVerbosity = v })
-        ]
+        [ ]
     }
 
 mainWorker :: [String] -> IO ()
