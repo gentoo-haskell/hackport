@@ -42,21 +42,40 @@ import Cabal2Ebuild
 -- List
 -----------------------------------------------------------------------
 
-listCommand :: CommandUI ()
+data ListFlags = ListFlags {
+    listVerbosity :: Flag Verbosity
+  }
+
+instance Monoid ListFlags where
+  mempty = ListFlags {
+    listVerbosity = mempty
+  }
+  mappend a b = ListFlags {
+    listVerbosity = combine listVerbosity
+  }
+    where combine field = field a `mappend` field b
+
+defaultListFlags :: ListFlags
+defaultListFlags = ListFlags {
+    listVerbosity = Flag normal
+  }
+
+listCommand :: CommandUI ListFlags
 listCommand = CommandUI {
     commandName = "list",
     commandSynopsis = "List packages",
     commandDescription = Just $ \pname ->
         "TODO: this is the commandDescription for listCommand\n",
     commandUsage = usagePackages "list",
-    commandDefaultFlags = (),
+    commandDefaultFlags = defaultListFlags,
     commandOptions = \showOrParseArgs ->
-      []
+      [ optionVerbosity listVerbosity (\v flags -> flags { listVerbosity = v })
+      ]
   }
 
-listAction :: () -> [String] -> GlobalFlags -> IO ()
-listAction _ args globalFlags = do
-  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
+listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
+listAction flags args globalFlags = do
+  let verbose = fromFlag (listVerbosity flags)
       portDirM = flagToMaybe (globalOverlayPath globalFlags)
   overlay <-
     case portDirM of
