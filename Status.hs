@@ -7,7 +7,8 @@ module Status
 
 import AnsiColor
 import P2
-import Utils
+
+import Distribution.Simple.Utils (equating, comparing)
 
 import Control.Monad.State
 
@@ -32,7 +33,7 @@ data FileStatus a
         deriving (Show,Eq)
 
 instance Ord a => Ord (FileStatus a) where
-    compare x y = compare (fromStatus x) (fromStatus y)
+    compare = comparing fromStatus
 
 instance Functor FileStatus where
     fmap f st =
@@ -59,8 +60,8 @@ status verbose portDir overlayPath = do
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
             -- also, one of them is already bound to 'e'
-            let (Just e1) = lookupEbuildWith portage (ePackage e) (comparing eVersion e)
-                (Just e2) = lookupEbuildWith overlay (ePackage e) (comparing eVersion e)
+            let (Just e1) = lookupEbuildWith portage (ePackage e) (equating eVersion e)
+                (Just e2) = lookupEbuildWith overlay (ePackage e) (equating eVersion e)
             eq <- equals (eFilePath e1) (eFilePath e2)
             return $ if eq
                         then Same e
@@ -127,12 +128,12 @@ toColor st = inColor c False Default (fromStatus st)
 portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
 portageDiff p1 p2 = (in1, ins, in2)
     where ins = Map.filter (not . null) $
-                    Map.intersectionWith (List.intersectBy $ comparing eVersion) p1 p2
+                    Map.intersectionWith (List.intersectBy $ equating eVersion) p1 p2
           in1 = difference p1 p2
           in2 = difference p2 p1
           difference x y = Map.filter (not . null) $
                        Map.differenceWith (\xs ys ->
-                        let lst = foldr (List.deleteBy (comparing eVersion)) xs ys in
+                        let lst = foldr (List.deleteBy (equating eVersion)) xs ys in
                         if null lst
                             then Nothing
                             else Just lst
@@ -147,7 +148,7 @@ equals fp1 fp2 = do
     return (equal' f1 f2)
 
 equal' :: L.ByteString -> L.ByteString -> Bool
-equal' = comparing essence
+equal' = equating essence
     where
     essence = filter (not . isEmpty) . filter (not . isComment) . L.lines
     isComment = L.isPrefixOf (L.pack "#") . L.dropWhile isSpace
