@@ -44,21 +44,25 @@ import Cabal2Ebuild
 -----------------------------------------------------------------------
 
 data ListFlags = ListFlags {
-    listVerbosity :: Flag Verbosity
+    listVerbosity :: Flag Verbosity,
+    listOverlayPath :: Flag FilePath
   }
 
 instance Monoid ListFlags where
   mempty = ListFlags {
-    listVerbosity = mempty
+    listVerbosity = mempty,
+    listOverlayPath = mempty
   }
   mappend a b = ListFlags {
-    listVerbosity = combine listVerbosity
+    listVerbosity = combine listVerbosity,
+    listOverlayPath = combine listOverlayPath
   }
     where combine field = field a `mappend` field b
 
 defaultListFlags :: ListFlags
 defaultListFlags = ListFlags {
-    listVerbosity = Flag normal
+    listVerbosity = Flag normal,
+    listOverlayPath = NoFlag
   }
 
 listCommand :: CommandUI ListFlags
@@ -71,13 +75,17 @@ listCommand = CommandUI {
     commandDefaultFlags = defaultListFlags,
     commandOptions = \showOrParseArgs ->
       [ optionVerbosity listVerbosity (\v flags -> flags { listVerbosity = v })
+      , option [] ["overlay"]
+         "Use cached packages list from specified overlay"
+         listOverlayPath (\v flags -> flags { listOverlayPath = v })
+         (reqArgFlag "PATH")
       ]
   }
 
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
 listAction flags args globalFlags = do
   let verbose = fromFlag (listVerbosity flags)
-      portdirM = flagToMaybe (globalOverlayPath globalFlags)
+      portdirM = flagToMaybe (listOverlayPath flags)
   overlay <- maybe (getOverlayPath verbose) return portdirM
   index <- readCache overlay
   let index' | null name = index
@@ -180,8 +188,8 @@ diffCommand = CommandUI {
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
   let verbose = fromFlag (diffVerbosity flags)
-      overlayPath = fromFlag (globalOverlayPath globalFlags)
       dm = fromFlag (diffMode flags)
+  overlayPath <- getOverlayPath verbose
   runDiff verbose overlayPath dm
 
 -----------------------------------------------------------------------
@@ -242,16 +250,22 @@ updateAction flags args globalFlags = do
 
 data StatusFlags = StatusFlags {
     statusVerbosity :: Flag Verbosity,
+    statusOverlayPath :: Flag FilePath,
+    statusPortdirPath :: Flag FilePath,
     statusToPortage :: Flag Bool
   }
 
 instance Monoid StatusFlags where
   mempty = StatusFlags {
     statusVerbosity = mempty,
+    statusOverlayPath = mempty,
+    statusPortdirPath = mempty,
     statusToPortage = mempty
   }
   mappend a b = StatusFlags {
     statusVerbosity = combine statusVerbosity,
+    statusOverlayPath = combine statusOverlayPath,
+    statusPortdirPath = combine statusPortdirPath,
     statusToPortage = combine statusToPortage
   }
     where combine field = field a `mappend` field b
@@ -259,6 +273,8 @@ instance Monoid StatusFlags where
 defaultStatusFlags :: StatusFlags
 defaultStatusFlags = StatusFlags {
     statusVerbosity = Flag normal,
+    statusOverlayPath = NoFlag,
+    statusPortdirPath = NoFlag,
     statusToPortage = Flag False
   }
 
@@ -270,21 +286,30 @@ statusCommand = CommandUI {
         "TODO: this is the commandDescription for statusCommand\n",
     commandUsage = usagePackages "status",
     commandDefaultFlags = defaultStatusFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_ ->
       [ optionVerbosity statusVerbosity (\v flags -> flags { statusVerbosity = v })
+      , option [] ["overlay"]
+         "Compare using the specified overlay"
+         statusOverlayPath (\v flags -> flags { statusOverlayPath = v })
+         (reqArgFlag "PATH")
+
+      , option [] ["portdir"]
+         "Compare using the specified portdir"
+         statusPortdirPath (\v flags -> flags { statusPortdirPath = v })
+         (reqArgFlag "PATH")
 
       , option [] ["to-portage"]
           "Print only packages likely to be interesting to move to the portage tree."
           statusToPortage (\v flags -> flags { statusToPortage = v })
           falseArg
-        ]
+      ]
   }
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
   let verbose = fromFlag (statusVerbosity flags)
-      overlayPathM = flagToMaybe (globalOverlayPath globalFlags)
-      portdirM = flagToMaybe (globalPortDir globalFlags)
+      overlayPathM = flagToMaybe (statusOverlayPath flags)
+      portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
   portdir <- maybe getSystemPortdir return portdirM
   overlayPath <- maybe (getOverlayPath verbose) return overlayPathM
@@ -346,7 +371,7 @@ mergeAction _ _ _ =
     throwEx (ArgumentError "'merge' needs exactly one parameter")
 
 -----------------------------------------------------------------------
--- Main and utils
+-- Utils
 -----------------------------------------------------------------------
 
 defaultHackageServerURI :: String
@@ -366,17 +391,17 @@ usageFlags name pname =
       "Usage: " ++ pname ++ " " ++ name ++ " [FLAGS]\n\n"
       ++ "Flags for " ++ name ++ ":"
 
+-----------------------------------------------------------------------
+-- Main
+-----------------------------------------------------------------------
+
 data GlobalFlags = GlobalFlags {
-    globalVersion :: Flag Bool,
-    globalOverlayPath :: Flag FilePath,
-    globalPortDir :: Flag FilePath
+    globalVersion :: Flag Bool
     }
 
 defaultGlobalFlags :: GlobalFlags
 defaultGlobalFlags = GlobalFlags {
-    globalVersion = Flag False,
-    globalOverlayPath = NoFlag,
-    globalPortDir = NoFlag
+    globalVersion = Flag False
     }
 
 globalCommand :: CommandUI GlobalFlags
