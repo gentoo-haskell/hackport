@@ -1,8 +1,10 @@
 module Overlays where
 
 import Control.Monad
+import Data.List (nub, inits)
+import Data.Maybe (maybeToList, listToMaybe, catMaybes)
 import System.Directory
-import Data.List (nub)
+import System.FilePath ((</>), splitPath, joinPath)
 
 import Bash
 import Error
@@ -41,14 +43,28 @@ getOverlayPath verbose = do
     info verbose "Override my decision with hackport -p /my/overlay"
     return overlay
 
-portageOverlays :: IO [String]
-portageOverlays = runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY" >>= (return.words)
-
-paludisOverlays :: IO [String]
-paludisOverlays = return [] -- TODO: fix
-
 getOverlays :: IO [String]
 getOverlays = do
-  portage <- portageOverlays
-  paludis <- paludisOverlays
-  return (nub (portage ++ paludis))
+  local   <- getLocalOverlay
+  portage <- getGlobalPortageOverlays
+  paludis <- getGlobalPaludisOverlays
+  return $ nub $ maybeToList local
+              ++ portage
+              ++ paludis
+
+getGlobalPortageOverlays :: IO [String]
+getGlobalPortageOverlays =
+  fmap words (runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY")
+
+getGlobalPaludisOverlays :: IO [String]
+getGlobalPaludisOverlays = return [] -- TODO: fix
+
+getLocalOverlay :: IO (Maybe FilePath)
+getLocalOverlay = do
+  curDir <- getCurrentDirectory
+  let lookIn = map joinPath . reverse . inits . splitPath $ curDir
+  fmap listToMaybe (filterM probe lookIn)
+
+  where
+    probe dir = doesDirectoryExist (dir </> "dev-haskell")
+
