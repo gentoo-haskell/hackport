@@ -98,26 +98,46 @@ listAction flags args globalFlags = do
 -- Make Ebuild
 -----------------------------------------------------------------------
 
-makeEbuildAction :: () -> [String] -> GlobalFlags -> IO ()
-makeEbuildAction _ args globalFlags = do
+data MakeEbuildFlags = MakeEbuildFlags {
+    makeEbuildVerbosity :: Flag Verbosity
+  }
+
+instance Monoid MakeEbuildFlags where
+  mempty = MakeEbuildFlags {
+    makeEbuildVerbosity = mempty
+  }
+  mappend a b = MakeEbuildFlags {
+    makeEbuildVerbosity = combine makeEbuildVerbosity
+  }
+    where combine field = field a `mappend` field b
+
+defaultMakeEbuildFlags :: MakeEbuildFlags
+defaultMakeEbuildFlags = MakeEbuildFlags {
+    makeEbuildVerbosity = Flag normal
+  }
+
+makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
+makeEbuildAction flags args globalFlags = do
   when (null args) $
     die "make-ebuild needs at least one argument"
+  let _verbosity = fromFlag (makeEbuildVerbosity flags)
   forM_ args $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
     let ebuild = cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
     writeFile ebuildFileName (showEBuild ebuild)
 
-makeEbuildCommand :: CommandUI ()
+makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
     commandName = "make-ebuild",
     commandSynopsis = "Make an ebuild from a .cabal file",
     commandDescription = Just $ \pname ->
         "TODO: this is the commandDescription for makeEbuildCommand\n",
     commandUsage = \_ -> [],
-    commandDefaultFlags = (),
+    commandDefaultFlags = defaultMakeEbuildFlags,
     commandOptions = \showOrParseArgs ->
-        []
+      [ optionVerbosity makeEbuildVerbosity (\v flags -> flags { makeEbuildVerbosity = v })
+      ]
   }
 
 -----------------------------------------------------------------------
