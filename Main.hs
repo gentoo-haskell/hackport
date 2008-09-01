@@ -243,20 +243,24 @@ updateAction flags args globalFlags = do
 -----------------------------------------------------------------------
 
 data StatusFlags = StatusFlags {
+    statusVerbosity :: Flag Verbosity,
     statusToPortage :: Flag Bool
   }
 
 instance Monoid StatusFlags where
   mempty = StatusFlags {
+    statusVerbosity = mempty,
     statusToPortage = mempty
   }
   mappend a b = StatusFlags {
+    statusVerbosity = combine statusVerbosity,
     statusToPortage = combine statusToPortage
   }
     where combine field = field a `mappend` field b
 
 defaultStatusFlags :: StatusFlags
 defaultStatusFlags = StatusFlags {
+    statusVerbosity = Flag normal,
     statusToPortage = Flag False
   }
 
@@ -269,7 +273,9 @@ statusCommand = CommandUI {
     commandUsage = usagePackages "status",
     commandDefaultFlags = defaultStatusFlags,
     commandOptions = \showOrParseArgs ->
-        [option [] ["to-portage"]
+      [ optionVerbosity statusVerbosity (\v flags -> flags { statusVerbosity = v })
+
+      , option [] ["to-portage"]
           "Print only packages likely to be interesting to move to the portage tree."
           statusToPortage (\v flags -> flags { statusToPortage = v })
           falseArg
@@ -278,7 +284,7 @@ statusCommand = CommandUI {
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
-  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
+  let verbose = fromFlag (statusVerbosity flags)
       portDir = fromFlag (globalPortDir globalFlags)
       overlayPath = fromFlag (globalOverlayPath globalFlags)
       toPortDir = fromFlag (statusToPortage flags)
