@@ -45,7 +45,6 @@ Executable	hackport
     Cabal2Ebuild
     Cache
     CacheFile
-    Config
     Diff
     Error
     GenerateEbuild
