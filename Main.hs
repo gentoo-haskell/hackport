@@ -27,6 +27,7 @@ import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure )
 import System.IO
 
+import Bash
 import qualified Cabal2Ebuild as E
 import Cache
 import Diff
@@ -285,10 +286,12 @@ statusCommand = CommandUI {
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
   let verbose = fromFlag (statusVerbosity flags)
-      portDir = fromFlag (globalPortDir globalFlags)
-      overlayPath = fromFlag (globalOverlayPath globalFlags)
-      toPortDir = fromFlag (statusToPortage flags)
-  runStatus verbose portDir overlayPath toPortDir
+      overlayPathM = flagToMaybe (globalOverlayPath globalFlags)
+      portdirM = flagToMaybe (globalPortDir globalFlags)
+      toPortdir = fromFlag (statusToPortage flags)
+  portdir <- maybe getSystemPortdir return portdirM
+  overlayPath <- maybe (getOverlayPath verbose) return overlayPathM
+  runStatus verbose portdir overlayPath toPortdir
 
 -----------------------------------------------------------------------
 -- Merge
