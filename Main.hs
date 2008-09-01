@@ -77,11 +77,8 @@ listCommand = CommandUI {
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
 listAction flags args globalFlags = do
   let verbose = fromFlag (listVerbosity flags)
-      portDirM = flagToMaybe (globalOverlayPath globalFlags)
-  overlay <-
-    case portDirM of
-      Just dir -> return dir
-      Nothing -> getOverlayPath verbose
+      portdirM = flagToMaybe (globalOverlayPath globalFlags)
+  overlay <- maybe (getOverlayPath verbose) return portdirM
   index <- readCache overlay
   let index' | null name = index
              | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
@@ -297,22 +294,50 @@ statusAction flags args globalFlags = do
 -- Merge
 -----------------------------------------------------------------------
 
-mergeCommand :: CommandUI (Flag String)
+data MergeFlags = MergeFlags {
+    mergeVerbosity :: Flag Verbosity,
+    mergeServerURI :: Flag String
+  }
+
+instance Monoid MergeFlags where
+  mempty = MergeFlags {
+    mergeVerbosity = mempty,
+    mergeServerURI = mempty
+  }
+  mappend a b = MergeFlags {
+    mergeVerbosity = combine mergeVerbosity,
+    mergeServerURI = combine mergeServerURI
+  }
+    where combine field = field a `mappend` field b
+
+defaultMergeFlags :: MergeFlags
+defaultMergeFlags = MergeFlags {
+    mergeVerbosity = Flag normal,
+    mergeServerURI = Flag defaultHackageServerURI
+  }
+
+mergeCommand :: CommandUI MergeFlags
 mergeCommand = CommandUI {
     commandName = "merge",
     commandSynopsis = "Make an ebuild out of hackage package",
     commandDescription = Just $ \pname ->
       "TODO: this is the commandDescription for mergeCommand\n",
     commandUsage = usagePackages "merge",
-    commandDefaultFlags = Flag defaultHackageServerURI,
+    commandDefaultFlags = defaultMergeFlags,
     commandOptions = \showOrParseArgs ->
-      []
+      [ optionVerbosity mergeVerbosity (\v flags -> flags { mergeVerbosity = v })
+
+      , option [] ["server"]
+          "Set the server you'd like to update the cache from"
+          mergeServerURI (\v flags -> flags { mergeServerURI = v} )
+          (reqArgFlag "SERVER")
+      ]
   }
 
-mergeAction :: Flag String -> [String] -> GlobalFlags -> IO ()
-mergeAction serverFlag [pkg] globalFlags = do
-  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
-      server  = fromFlag serverFlag
+mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
+mergeAction flags [pkg] globalFlags = do
+  let verbose = fromFlag (mergeVerbosity flags)
+      server  = fromFlag (mergeServerURI flags)
   case parseURI server of
     Just uri -> merge verbose uri pkg
     Nothing -> throwEx (InvalidServer server)
