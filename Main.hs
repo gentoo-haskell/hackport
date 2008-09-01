@@ -190,26 +190,50 @@ diffAction flags args globalFlags = do
 -- Update
 -----------------------------------------------------------------------
 
-updateCommand :: CommandUI (Flag String)
+data UpdateFlags = UpdateFlags {
+    updateVerbosity :: Flag Verbosity,
+    updateServerURI :: Flag String
+  }
+
+instance Monoid UpdateFlags where
+  mempty = UpdateFlags {
+    updateVerbosity = mempty,
+    updateServerURI = mempty
+  }
+  mappend a b = UpdateFlags {
+    updateVerbosity = combine updateVerbosity,
+    updateServerURI = combine updateServerURI
+  }
+    where combine field = field a `mappend` field b
+
+defaultUpdateFlags :: UpdateFlags
+defaultUpdateFlags = UpdateFlags {
+    updateVerbosity = Flag normal,
+    updateServerURI = Flag defaultHackageServerURI
+  }
+
+updateCommand :: CommandUI UpdateFlags
 updateCommand = CommandUI {
     commandName = "update",
     commandSynopsis = "Update the local cache",
     commandDescription = Just $ \pname ->
         "TODO: this is the commandDescription for updateCommand\n",
     commandUsage = usageFlags "update",
-    commandDefaultFlags = Flag defaultHackageServerURI,
+    commandDefaultFlags = defaultUpdateFlags,
     commandOptions = \_ ->
-      [ option [] ["server"]
+      [ optionVerbosity updateVerbosity (\v flags -> flags { updateVerbosity = v })
+
+      , option [] ["server"]
           "Set the server you'd like to update the cache from"
-          id (\v _ -> v)
+          updateServerURI (\v flags -> flags { updateServerURI = v} )
           (reqArgFlag "SERVER")
       ]
   }
 
-updateAction :: Flag String -> [String] -> GlobalFlags -> IO ()
-updateAction serverFlag args globalFlags = do
-  let verbose = normal -- fromFlag (globalVerbosity globalFlags)
-      server  = fromFlag serverFlag
+updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
+updateAction flags args globalFlags = do
+  let verbose = fromFlag (updateVerbosity flags)
+      server  = fromFlag (updateServerURI flags)
   case parseURI server of
     Just uri -> updateCache verbose uri
     Nothing -> throwEx (InvalidServer server)
