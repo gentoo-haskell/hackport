@@ -7,11 +7,15 @@ import qualified Distribution.Version as Portage
 
 import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Simple.PackageIndex (PackageIndex)
+import Distribution.Text (simpleParse)
 
 import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
-import System.FilePath  ((</>))
+import System.FilePath  ((</>), splitExtension)
 
+--main = putStrLn . unlines . map display
+--   =<< blingProgress . Progress.fromList . readOverlay
+--   =<< getDirectoryTree "."
 
 data Overlay = Overlay {
     overlayPath  :: FilePath,
@@ -35,37 +39,47 @@ readOverlay tree =
 
   where
     categories :: DirectoryTree -> [(Portage.Category, DirectoryTree)]
-    categories = error "TODO"
+    categories entries =
+      [ (category, entries')
+      | Directory dir entries' <- entries
+      , Just category <- [simpleParse dir] ]
 
     packages :: Portage.Category -> DirectoryTree
              -> [(Portage.PackageName, DirectoryTree)]
-    packages = error "TODO"
+    packages category entries =
+      [ (Portage.PackageName category name, entries')
+      | Directory dir entries' <- entries
+      , Just name <- [simpleParse dir] ]
 
     versions :: Portage.PackageName -> DirectoryTree -> [Portage.Version]
-    versions = error "TODO"
+    versions name@(Portage.PackageName (Portage.Category category) _) entries =
+      [ version
+      | File fileName <- entries
+      , let (baseName, ext) = splitExtension fileName
+      , ext == ".ebuild"
+      , let fullName = category ++ '/' : baseName
+      , Just (Portage.PackageId name' version) <- [simpleParse fullName]
+      , name == name' ]
 
-data DirectoryTree = File FilePath | Directory FilePath [DirectoryTree]
+type DirectoryTree  = [DirectoryEntry]
+data DirectoryEntry = File FilePath | Directory FilePath [DirectoryEntry]
 
 getDirectoryTree :: FilePath -> IO DirectoryTree
-getDirectoryTree = dirTreeStrict
+getDirectoryTree = dirEntries
 
   where
-    dirTreeStrict, dirTreeLazy :: FilePath -> IO DirectoryTree
-    dirTreeStrict dir = fmap (Directory dir) (dirEntries dir)
-    dirTreeLazy   dir = fmap (Directory dir) (unsafeInterleaveIO
-                                               (dirEntries dir))
-
-    dirEntries :: FilePath -> IO [DirectoryTree]
+    dirEntries :: FilePath -> IO [DirectoryEntry]
     dirEntries dir = do
       names <- getDirectoryContents dir
       sequence
-        [ do isDirectory <- doesDirectoryExist entry
+        [ do isDirectory <- doesDirectoryExist path
              if isDirectory
-               then dirTreeLazy entry
-               else return (File name)
+               then do entries <- unsafeInterleaveIO (dirEntries path)
+                       return (Directory name entries)
+               else    return (File      name)
         | name <- names
         , not (ignore name)
-        , let entry = dir </> name ]
+        , let path = dir </> name ]
 
     ignore ['.']      = True
     ignore ['.', '.'] = True
