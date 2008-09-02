@@ -1,9 +1,9 @@
 module Portage.Overlay where
 
 import qualified Portage.PackageId as Portage
+import qualified Portage.Version   as Portage
 
--- FIXME! use Portage.Version instead of Cabal version
-import qualified Distribution.Version as Portage
+import qualified Distribution.Package as Cabal
 
 import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Simple.PackageIndex (PackageIndex)
@@ -13,21 +13,38 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
 
---main = putStrLn . unlines . map display
---   =<< blingProgress . Progress.fromList . readOverlay
---   =<< getDirectoryTree "."
+--main = do
+--  pkgs <- blingProgress . Progress.fromList . readOverlay
+--      =<< getDirectoryTree "."
+--  putStrLn $ unlines [ display pkg
+--                     | pkg <- pkgs
+--                     , isNothing (Portage.toCabalPackageId pkg) ]
+
+--TODO: move this to another module:
+data ExistingEbuild = ExistingEbuild {
+    ebuildId      :: Portage.PackageId,
+    ebuildCabalId :: Cabal.PackageIdentifier,
+    ebuildPath    :: FilePath
+  }
+
+instance Cabal.Package ExistingEbuild where packageId = ebuildCabalId
 
 data Overlay = Overlay {
-    overlayPath  :: FilePath,
-    overlayIndex :: PackageIndex Portage.PackageId
+    overlayPath  :: FilePath
+
+    --TODO:
+--    overlayMap   :: Map Portage.PackageId ???
+--      -- or perhaps a trie
+--    overlayIndex :: PackageIndex ExistingEbuild
   }
 
 load :: FilePath -> IO Overlay
 load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
   where
     mkOverlay packages = Overlay {
-      overlayPath  = dir,
-      overlayIndex = PackageIndex.fromList packages
+      overlayPath  = dir
+--      TODO: ignore all ebuilds that have no Cabal version number
+--      overlayIndex = PackageIndex.fromList packages
     }
 
 readOverlay :: DirectoryTree -> [Portage.PackageId]

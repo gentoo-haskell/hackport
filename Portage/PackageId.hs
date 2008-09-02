@@ -4,16 +4,19 @@ module Portage.PackageId (
     Category(..),
     PackageName(..),
     PackageId(..),
+    fromCabalPackageId,
+    toCabalPackageId,
   ) where
 
+import qualified Portage.Version as Portage
+
 import qualified Distribution.Package as Cabal
-import Distribution.Version
 import Distribution.Text (Text(..))
 
 import qualified Distribution.Compat.ReadP as Parse
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char ( isAlphaNum )
+import qualified Data.Char as Char (isAlphaNum, toLower)
 
 
 newtype Category = Category String
@@ -22,11 +25,19 @@ newtype Category = Category String
 data PackageName = PackageName Category Cabal.PackageName
   deriving (Eq, Ord, Show, Read)
 
-data PackageId = PackageId PackageName Version
+data PackageId = PackageId PackageName Portage.Version
   deriving (Eq, Ord, Show, Read)
 
-instance Cabal.Package PackageId where
-  packageId (PackageId (PackageName _ n) v) = Cabal.PackageIdentifier n v
+fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
+fromCabalPackageId category (Cabal.PackageIdentifier name version) =
+  PackageId (PackageName category (lowercase name))
+            (Portage.fromCabalVersion version)
+  where
+    lowercase (Cabal.PackageName n) = Cabal.PackageName (map Char.toLower n)
+
+toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
+toCabalPackageId (PackageId (PackageName _cat name) version) =
+  fmap (Cabal.PackageIdentifier name) (Portage.toCabalVersion version)
 
 instance Text Category where
   disp (Category c) = Disp.text c
