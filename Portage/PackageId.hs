@@ -16,27 +16,42 @@ import Distribution.Text (Text(..))
 import qualified Distribution.Compat.ReadP as Parse
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, toLower)
-
+import qualified Data.Char as Char (isAlphaNum, isDigit, toLower)
+import Data.List (intersperse)
 
 newtype Category = Category String
   deriving (Eq, Ord, Show, Read)
 
-data PackageName = PackageName Category Cabal.PackageName
+data PackageName = PackageName Category PN
   deriving (Eq, Ord, Show, Read)
 
 data PackageId = PackageId PackageName Portage.Version
   deriving (Eq, Ord, Show, Read)
 
+data PN = PN String -- replace with Cabal.PackageName once we use Cabal>=1.5
+  deriving (Eq, Ord, Show, Read)
+
+instance Text PN where
+  disp (PN n) = Disp.text n
+  parse = do
+    ns <- Parse.sepBy1 component (Parse.char '-')
+    return (PN (concat (intersperse "-" ns)))
+    where
+      component = do
+        cs <- Parse.munch1 Char.isAlphaNum
+        if all Char.isDigit cs then Parse.pfail else return cs
+        -- each component must contain an alphabetic character, to avoid
+        -- ambiguity in identifiers like foo-1 (the 1 is the version number).
+
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
-  PackageId (PackageName category (lowercase name))
+  PackageId (PackageName category (PN (lowercase name)))
             (Portage.fromCabalVersion version)
   where
-    lowercase (Cabal.PackageName n) = Cabal.PackageName (map Char.toLower n)
+    lowercase = map Char.toLower
 
 toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
-toCabalPackageId (PackageId (PackageName _cat name) version) =
+toCabalPackageId (PackageId (PackageName _cat (PN name)) version) =
   fmap (Cabal.PackageIdentifier name) (Portage.toCabalVersion version)
 
 instance Text Category where
