@@ -4,19 +4,21 @@ module Portage.PackageId (
     Category(..),
     PackageName(..),
     PackageId(..),
+    PN(..),
     fromCabalPackageId,
     toCabalPackageId,
+    parseFriendlyPackage
   ) where
 
 import qualified Portage.Version as Portage
 
 import qualified Distribution.Package as Cabal
-import Distribution.Text (Text(..))
+import Distribution.Text (Text(..),display)
 
 import qualified Distribution.Compat.ReadP as Parse
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, isDigit, toLower)
+import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.List (intersperse)
 
 newtype Category = Category String
@@ -79,3 +81,23 @@ instance Text PackageId where
     Parse.char '-'
     version <- parse
     return (PackageId name version)
+
+parseFriendlyPackage :: String -> Maybe (Maybe Category, PN, Maybe Portage.Version)
+parseFriendlyPackage str =
+  case [ p | (p,s) <- Parse.readP_to_S parser str
+       , all Char.isSpace s ] of
+    [] -> Nothing
+    (x:_) -> Just x
+  where
+  parser = do
+    mc <- Parse.option Nothing $ do
+      c <- parse
+      Parse.char '/'
+      return (Just c)
+    p <- parse
+    mv <- Parse.option Nothing $ do
+      Parse.char '-'
+      v <- parse
+      return (Just v)
+    return (mc, p, mv)
+      
