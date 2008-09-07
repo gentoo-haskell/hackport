@@ -75,10 +75,10 @@ status verbosity portdir overlayPath = do
     return meld
 
 runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> IO ()
-runStatus verbose portdir overlayPath toPortageFlag = do
+runStatus verbosity portdir overlayPath toPortageFlag = do
   let pkgFilter | toPortageFlag = toPortageFilter
                 | otherwise = id
-  pkgs <- status verbose portdir overlayPath
+  pkgs <- status verbosity portdir overlayPath
   statusPrinter (pkgFilter pkgs)
 
 -- |Only return packages that seems interesting to sync to portage;

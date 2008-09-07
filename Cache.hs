@@ -39,13 +39,13 @@ alarmingLongTime = TimeDiff
 	}
 
 updateCache :: Verbosity -> URI -> IO ()
-updateCache verbose uri = do
-  path <- getOverlayPath verbose
+updateCache verbosity uri = do
+  path <- getOverlayPath verbosity
   let cache = cacheURI uri
-  notice verbose $
+  notice verbosity $
     "Fetching cache from " ++ show cache ++ "..."
   res <- simpleHTTP (Request cache GET [] "")
-  notice verbose $
+  notice verbosity $
     "done."
   case res of
     Left err -> throwEx (ConnectionFailed (show cache) (show err))
@@ -62,7 +62,7 @@ readCache verbosity portdir uri = do
   let cachePath = cacheFile portdir
   exists <- doesFileExist cachePath
   unless exists $ do
-    notice verbose "No cache file present, attempting to update..."
+    notice verbosity "No cache file present, attempting to update..."
     updateCache verbosity uri
   str <- L.readFile cachePath
   return (readIndex str)

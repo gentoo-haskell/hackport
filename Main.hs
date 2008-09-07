@@ -196,11 +196,11 @@ diffCommand = CommandUI {
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
-  let verbose = fromFlag (diffVerbosity flags)
+  let verbosity = fromFlag (diffVerbosity flags)
       dm = fromFlag (diffMode flags)
   serverURI <- getServerURI (fromFlag $ diffServerURI flags)
-  overlayPath <- getOverlayPath verbose
-  runDiff verbose overlayPath serverURI dm
+  overlayPath <- getOverlayPath verbosity
+  runDiff verbosity overlayPath serverURI dm
 
 -----------------------------------------------------------------------
 -- Update
@@ -248,10 +248,10 @@ updateCommand = CommandUI {
 
 updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
 updateAction flags args globalFlags = do
-  let verbose = fromFlag (updateVerbosity flags)
+  let verbosity = fromFlag (updateVerbosity flags)
       server  = fromFlag (updateServerURI flags)
   case parseURI server of
-    Just uri -> updateCache verbose uri
+    Just uri -> updateCache verbosity uri
     Nothing -> throwEx (InvalidServer server)
 
 -----------------------------------------------------------------------
@@ -317,13 +317,13 @@ statusCommand = CommandUI {
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
-  let verbose = fromFlag (statusVerbosity flags)
+  let verbosity = fromFlag (statusVerbosity flags)
       overlayPathM = flagToMaybe (statusOverlayPath flags)
       portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
   portdir <- maybe getSystemPortdir return portdirM
-  overlayPath <- maybe (getOverlayPath verbose) return overlayPathM
-  runStatus verbose portdir overlayPath toPortdir
+  overlayPath <- maybe (getOverlayPath verbosity) return overlayPathM
+  runStatus verbosity portdir overlayPath toPortdir
 
 -----------------------------------------------------------------------
 -- Merge
@@ -371,10 +371,10 @@ mergeCommand = CommandUI {
 
 mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
 mergeAction flags [pkg] globalFlags = do
-  let verbose = fromFlag (mergeVerbosity flags)
+  let verbosity = fromFlag (mergeVerbosity flags)
       server  = fromFlag (mergeServerURI flags)
   case parseURI server of
-    Just uri -> merge verbose uri pkg
+    Just uri -> merge verbosity uri pkg
     Nothing -> throwEx (InvalidServer server)
   
 mergeAction _ _ _ =

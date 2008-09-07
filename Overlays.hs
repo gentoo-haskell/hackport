@@ -15,7 +15,7 @@ import Distribution.Verbosity
 import Distribution.Simple.Utils ( info )
 
 getOverlayPath :: Verbosity -> IO String
-getOverlayPath verbose = do
+getOverlayPath verbosity = do
   overlays <- getOverlays
   case overlays of
     [] -> throwEx NoOverlay
@@ -26,21 +26,21 @@ getOverlayPath verbose = do
   search mul = do
     let loop [] = throwEx (MultipleOverlays mul)
         loop (x:xs) = do
-          info verbose $ "Checking '" ++ x ++ "'..."
+          info verbosity $ "Checking '" ++ x ++ "'..."
           found <- doesFileExist (cacheFile x)
           if found
             then do
-              info verbose "OK!"
+              info verbosity "OK!"
               return x
             else do
-              info verbose "Not ok." 
+              info verbosity "Not ok." 
               loop xs
-    info verbose "There are several overlays in your configuration."
-    mapM (info verbose . (" * " ++)) mul
-    info verbose "Looking for one with a HackPort cache..."
+    info verbosity "There are several overlays in your configuration."
+    mapM (info verbosity . (" * " ++)) mul
+    info verbosity "Looking for one with a HackPort cache..."
     overlay <- loop mul
-    info verbose $ "I choose " ++ overlay
-    info verbose "Override my decision with hackport -p /my/overlay"
+    info verbosity $ "I choose " ++ overlay
+    info verbosity "Override my decision with hackport -p /my/overlay"
     return overlay
 
 getOverlays :: IO [String]
