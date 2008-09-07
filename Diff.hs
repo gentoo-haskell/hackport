@@ -5,13 +5,15 @@ module Diff
 
 import Data.Char
 import qualified Data.Map as Map
+import Network.URI
 
 import Cache
 import P2
-import Version
+import qualified Portage.Version as Portage
 
 -- cabal
 import Distribution.Verbosity
+import Distribution.Text(display)
 
 data DiffMode
 	= ShowAll
@@ -31,18 +33,18 @@ tabs str = let len = length str in str++(if len < 3*8
 	then replicate (3*8-len) ' '
 	else "")
 
-showDiffState :: Package -> DiffState Version -> String
+showDiffState :: Package -> DiffState Portage.Version -> String
 showDiffState pkg st = (tabs (show pkg)) ++ " [" ++ (case st of
-  Both x y -> showVersion x ++ (case compare x y of
+  Both x y -> display x ++ (case compare x y of
     EQ -> "="
     GT -> ">"
-    LT -> "<") ++ showVersion y
-  OnlyLeft x -> showVersion x ++ ">none"
-  OnlyRight y ->  "none<"++showVersion y)++"]"
+    LT -> "<") ++ display y
+  OnlyLeft x -> display x ++ ">none"
+  OnlyRight y -> "none<" ++ display y) ++ "]"
 
-runDiff :: Verbosity -> FilePath -> DiffMode -> IO ()
-runDiff verbose overlayPath dm = do
-  cache <- readCache overlayPath
+runDiff :: Verbosity -> FilePath -> URI -> DiffMode -> IO ()
+runDiff verbosity overlayPath serverURI dm = do
+  cache <- readCache verbosity overlayPath serverURI
   overlayTree <- readPortageTree overlayPath
   let (hackageTree, clashes) = indexToPortage cache overlayTree
   mapM_ putStrLn clashes

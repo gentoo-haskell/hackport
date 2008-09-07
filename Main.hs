@@ -45,24 +45,28 @@ import Cabal2Ebuild
 
 data ListFlags = ListFlags {
     listVerbosity :: Flag Verbosity,
-    listOverlayPath :: Flag FilePath
+    listOverlayPath :: Flag FilePath,
+    listServerURI :: Flag String
   }
 
 instance Monoid ListFlags where
   mempty = ListFlags {
     listVerbosity = mempty,
-    listOverlayPath = mempty
+    listOverlayPath = mempty,
+    listServerURI = mempty
   }
   mappend a b = ListFlags {
     listVerbosity = combine listVerbosity,
-    listOverlayPath = combine listOverlayPath
+    listOverlayPath = combine listOverlayPath,
+    listServerURI = combine listServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultListFlags :: ListFlags
 defaultListFlags = ListFlags {
     listVerbosity = Flag normal,
-    listOverlayPath = NoFlag
+    listOverlayPath = NoFlag,
+    listServerURI = Flag defaultHackageServerURI
   }
 
 listCommand :: CommandUI ListFlags
@@ -84,10 +88,11 @@ listCommand = CommandUI {
 
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
 listAction flags args globalFlags = do
-  let verbose = fromFlag (listVerbosity flags)
+  let verbosity = fromFlag (listVerbosity flags)
       portdirM = flagToMaybe (listOverlayPath flags)
-  overlay <- maybe (getOverlayPath verbose) return portdirM
-  index <- readCache overlay
+  serverURI <- getServerURI (fromFlag $ listServerURI flags)
+  overlay <- maybe (getOverlayPath verbosity) return portdirM
+  index <- readCache verbosity overlay serverURI
   let index' | null name = index
              | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
       pkgs = [ pkg ++ "-" ++ ver | (pkg,ver,_) <- index']
@@ -152,24 +157,28 @@ makeEbuildCommand = CommandUI {
 
 data DiffFlags = DiffFlags {
     diffMode :: Flag DiffMode,
-    diffVerbosity :: Flag Verbosity
+    diffVerbosity :: Flag Verbosity,
+    diffServerURI :: Flag String
   }
 
 instance Monoid DiffFlags where
   mempty = DiffFlags {
     diffMode = mempty,
-    diffVerbosity = mempty
+    diffVerbosity = mempty,
+    diffServerURI = mempty
   }
   mappend a b = DiffFlags {
     diffMode = combine diffMode,
-    diffVerbosity = combine diffVerbosity
+    diffVerbosity = combine diffVerbosity,
+    diffServerURI = combine diffServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultDiffFlags :: DiffFlags
 defaultDiffFlags = DiffFlags {
     diffMode = Flag ShowAll,
-    diffVerbosity = Flag normal
+    diffVerbosity = Flag normal,
+    diffServerURI = Flag defaultHackageServerURI
   }
 
 diffCommand :: CommandUI DiffFlags
@@ -189,8 +198,9 @@ diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
   let verbose = fromFlag (diffVerbosity flags)
       dm = fromFlag (diffMode flags)
+  serverURI <- getServerURI (fromFlag $ diffServerURI flags)
   overlayPath <- getOverlayPath verbose
-  runDiff verbose overlayPath dm
+  runDiff verbose overlayPath serverURI dm
 
 -----------------------------------------------------------------------
 -- Update
@@ -376,6 +386,12 @@ mergeAction _ _ _ =
 
 defaultHackageServerURI :: String
 defaultHackageServerURI = "http://hackage.haskell.org/packages/archive/"
+
+getServerURI :: String -> IO URI
+getServerURI str =
+  case parseURI str of
+    Just uri -> return uri
+    Nothing -> throwEx (InvalidServer str)
 
 reqArgFlag :: ArgPlaceHolder -> SFlags -> LFlags -> Description ->
               (b -> Flag String) -> (Flag String -> b -> b) -> OptDescr b

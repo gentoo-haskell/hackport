@@ -1,7 +1,5 @@
 module Merge where
 
-import Text.ParserCombinators.Parsec
-
 import Control.Monad.Error
 import Data.Char
 import Data.Maybe
@@ -22,7 +20,7 @@ import qualified Cabal2Ebuild as E
 import Cache
 import Error
 import GenerateEbuild
-import Package
+import qualified Portage.PackageId as Portage
 import Overlays
 import P2
 
@@ -34,16 +32,16 @@ import Network.URI
 import Cabal2Ebuild
 
 merge :: Verbosity -> URI -> String -> IO ()
-merge verbose serverURI pstr = do
-    (m_category, pname, m_version) <- case parsePVC of
-      Right v -> return v
-      Left err -> throwEx (ArgumentError ("Could not parse [category/]package[-version]: " ++ show err))
-    portdir <- liftIO (getOverlayPath verbose)
-    overlay <- liftIO (readPortageTree portdir)
-    cache <- liftIO $ readCache portdir
+merge verbosity serverURI pstr = do
+    (m_category, Portage.PN pname, m_version) <- case Portage.parseFriendlyPackage pstr of
+      Just v -> return v
+      Nothing -> throwEx (ArgumentError ("Could not parse [category/]package[-version]: " ++ show pstr))
+    overlayPath <- getOverlayPath verbosity
+    overlay <- readPortageTree overlayPath
+    cache <- readCache verbosity overlayPath serverURI
     let (indexTree,clashes) = indexToPortage cache overlay
     mapM_ putStrLn clashes
-    info verbose $ "Searching for: "++ pstr
+    info verbosity $ "Searching for: "++ pstr
     let pkgs =
           Map.elems
             . Map.filterWithKey (\(P _ pname') _ -> map toLower pname' == map toLower pname)
@@ -62,7 +60,7 @@ merge verbose serverURI pstr = do
         _ -> fail "the impossible happened"
     category <- do
         case m_category of
-            Just cat -> return cat
+            Just (Portage.Category cat) -> return cat
             Nothing -> do
                 case pCategory (ePackage pkg) of
                     "hackage" -> return "dev-haskell"
@@ -76,15 +74,5 @@ merge verbose serverURI pstr = do
     let ebuild = fixSrc serverURI (packageId desc) (E.cabal2ebuild desc)
     liftIO $ do
         putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
-        putStrLn $ "Destination: " ++ portdir
-        mergeEbuild portdir category ebuild
-    where
-    parsePVC = parse readPVC "" pstr
-    readPVC = do
-        mc <- option Nothing $ try $ do
-            c <- readCat
-            char '/'
-            return (Just c)
-        (p, mv) <- readPkgAndVer
-        eof
-        return (mc, p, mv)
+        putStrLn $ "Destination: " ++ overlayPath
+        mergeEbuild overlayPath category ebuild

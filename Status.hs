@@ -8,8 +8,6 @@ module Status
 import AnsiColor
 import P2
 
-import Distribution.Simple.Utils (equating, comparing)
-
 import Control.Monad.State
 
 import qualified Data.List as List
@@ -24,6 +22,8 @@ import qualified Data.Traversable as T
 
 -- cabal
 import Distribution.Verbosity
+import Distribution.Simple.Utils (equating, comparing)
+import Distribution.Text(display)
 
 data FileStatus a
         = Same a
@@ -52,9 +52,9 @@ fromStatus fs =
         PortageOnly a -> a
 
 status :: Verbosity -> FilePath -> FilePath -> IO (Map Package [FileStatus Ebuild])
-status verbose portDir overlayPath = do
+status verbosity portdir overlayPath = do
     overlay <- readPortageTree overlayPath
-    portage <- readPortagePackages portDir (Map.keys overlay)
+    portage <- readPortagePackages portdir (Map.keys overlay)
     let (over, both, port) = portageDiff overlay portage
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
@@ -75,10 +75,10 @@ status verbose portDir overlayPath = do
     return meld
 
 runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> IO ()
-runStatus verbose portDir overlayPath toPortageFlag = do
+runStatus verbose portdir overlayPath toPortageFlag = do
   let pkgFilter | toPortageFlag = toPortageFilter
                 | otherwise = id
-  pkgs <- status verbose portDir overlayPath
+  pkgs <- status verbose portdir overlayPath
   statusPrinter (pkgFilter pkgs)
 
 -- |Only return packages that seems interesting to sync to portage;
@@ -112,7 +112,7 @@ statusPrinter packages = do
         putStr $ c ++ '/' : bold p
         putStr " "
         forM_ ebuilds $ \e -> do
-            putStr $ toColor (fmap (show . eVersion) e)
+            putStr $ toColor (fmap (display . eVersion) e)
             putChar ' '
         putStrLn ""
 

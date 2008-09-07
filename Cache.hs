@@ -4,7 +4,7 @@ import CacheFile
 import Error
 import Index
 import P2
-import Version
+import qualified Portage.Version as Portage
 import Overlays
 
 import Distribution.Text ( simpleParse )
@@ -18,12 +18,13 @@ import qualified Data.ByteString.Lazy as L
 import System.Time
 import System.FilePath
 import Control.Monad.Writer
-import System.Directory (createDirectoryIfMissing)
+import System.Directory (createDirectoryIfMissing, doesFileExist)
 
 import qualified Data.Map as Map
 
 -- cabal
 import Distribution.Verbosity
+import Distribution.Simple.Utils
 
 -- | A long time
 alarmingLongTime :: TimeDiff
@@ -41,7 +42,11 @@ updateCache :: Verbosity -> URI -> IO ()
 updateCache verbose uri = do
   path <- getOverlayPath verbose
   let cache = cacheURI uri
-  res <- simpleHTTP (Request cache GET [] "") -- `sayNormal` ("Fetching cache from "++show cache++"...",const "done.")
+  notice verbose $
+    "Fetching cache from " ++ show cache ++ "..."
+  res <- simpleHTTP (Request cache GET [] "")
+  notice verbose $
+    "done."
   case res of
     Left err -> throwEx (ConnectionFailed (show cache) (show err))
     Right resp -> do
@@ -52,19 +57,15 @@ updateCache verbose uri = do
   cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
 
 
-readCache :: FilePath -> IO Index
-readCache portdir = do
+readCache :: Verbosity -> FilePath -> URI -> IO Index
+readCache verbosity portdir uri = do
   let cachePath = cacheFile portdir
-  -- TODO: re-implement
-  -- exists <- doesFileExist cachePath
-  -- unless exists $ do
-  --   info "No cache file present, attempting to update..."
-  --   updateCache
+  exists <- doesFileExist cachePath
+  unless exists $ do
+    notice verbose "No cache file present, attempting to update..."
+    updateCache verbosity uri
   str <- L.readFile cachePath
   return (readIndex str)
-
-readDefaultCache :: Verbosity -> IO Index
-readDefaultCache verbose = getOverlayPath verbose >>= readCache
 
 indexToPortage :: Index -> Portage -> (Portage, [String])
 indexToPortage index port = second nub . runWriter $ do
@@ -73,7 +74,7 @@ indexToPortage index port = second nub . runWriter $ do
         pkg_cat <- lookupCat pkg_name
         Just ver <- return . simpleParse $ pkg_h_ver
         return $ Ebuild (P pkg_cat pkg_name)
-                        (fromCabalVersion ver)
+                        (Portage.fromCabalVersion ver)
                         "<hackage>"
                         (Just pkg_desc)
     return $ Map.map sort $ Map.fromListWith (++) [ (ePackage e, [e]) | e <- pkgs ]

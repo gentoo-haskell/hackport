@@ -20,6 +20,7 @@ Executable	hackport
     parsec,
     mtl,
     network,
+    pretty,
     regex-compat,
     Cabal >= 1.4 && < 1.5,
     HTTP >= 3000 && < 3002,
@@ -53,9 +54,10 @@ Executable	hackport
     MaybeRead
     Overlays
     P2
-    Package
     Portage
+    Portage.Version
+    Portage.PackageId
+    Portage.Overlay
     Setup
     Status
-    Version
     Merge

@@ -22,14 +22,16 @@ import System.FilePath
 
 import Text.Regex
 
-import Version
+import qualified Portage.Version as Portage
+
+import Distribution.Text
 
 type Portage = PortageMap [Ebuild]
 type PortageMap a = Map Package a
 
 data Ebuild = Ebuild {
     ePackage :: Package,
-    eVersion :: Version,
+    eVersion :: Portage.Version,
     eFilePath :: FilePath,
     ePkgDesc :: Maybe Cabal.GenericPackageDescription }
     deriving (Show)
@@ -77,12 +79,10 @@ readPortagePackages portdir packages0 = do
                       | (Just v, fn) <- map ((filterVersion package) &&& id) files ]
         return (map (uncurry (\v f -> Ebuild (P category package) v f Nothing)) ebuilds)
 
-    filterVersion :: String -> String -> Maybe Version
+    filterVersion :: String -> String -> Maybe Portage.Version
     filterVersion p fn = do
         [vstring] <- matchRegex (ebuildVersionRegex p) fn
-        case (parseVersion vstring) of
-            Left e -> fail (show e)
-            Right v -> return v
+        simpleParse vstring
 
     ebuildVersionRegex name = mkRegex ("^"++name++"-(.*)\\.ebuild$")
 
