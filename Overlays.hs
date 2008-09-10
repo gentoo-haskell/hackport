@@ -40,7 +40,7 @@ getOverlayPath verbosity = do
     info verbosity "Looking for one with a HackPort cache..."
     overlay <- loop mul
     info verbosity $ "I choose " ++ overlay
-    info verbosity "Override my decision with hackport -p /my/overlay"
+    info verbosity "Override my decision with hackport --overlay /my/overlay"
     return overlay
 
 getOverlays :: IO [String]
