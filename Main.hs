@@ -156,7 +156,7 @@ makeEbuildCommand = CommandUI {
 -----------------------------------------------------------------------
 
 data DiffFlags = DiffFlags {
-    diffMode :: Flag DiffMode,
+    diffMode :: Flag String, -- DiffMode,
     diffVerbosity :: Flag Verbosity,
     diffServerURI :: Flag String
   }
@@ -176,7 +176,7 @@ instance Monoid DiffFlags where
 
 defaultDiffFlags :: DiffFlags
 defaultDiffFlags = DiffFlags {
-    diffMode = Flag ShowAll,
+    diffMode = Flag "all",
     diffVerbosity = Flag normal,
     diffServerURI = Flag defaultHackageServerURI
   }
@@ -191,13 +191,24 @@ diffCommand = CommandUI {
     commandDefaultFlags = defaultDiffFlags,
     commandOptions = \showOrParseArgs ->
       [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
+      , option [] ["mode"]
+         "Diff mode, one of: all, newer, missing, additions, common"
+         diffMode (\v flags -> flags { diffMode = v })
+         (reqArgFlag "MODE") -- I don't know how to map it strictly to DiffMode
       ]
   }
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
   let verbosity = fromFlag (diffVerbosity flags)
-      dm = fromFlag (diffMode flags)
+      dm0 = fromFlag (diffMode flags)
+  dm <- case dm0 of
+          "all" -> return ShowAll
+          "missing" -> return ShowMissing
+          "additions" -> return ShowAdditions
+          "newer" -> return ShowNewer
+          "common" -> return ShowCommon
+          _ -> die $ "Unknown mode: " ++ dm0
   serverURI <- getServerURI (fromFlag $ diffServerURI flags)
   overlayPath <- getOverlayPath verbosity
   runDiff verbosity overlayPath serverURI dm
