@@ -1,19 +1,24 @@
 module Merge where
 
 import Control.Monad.Error
+-- import Control.Monad.Error
+import Control.Exception
 import Data.Char
 import Data.Maybe
 import Data.List
 import Data.Version
 import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
+import Distribution.PackageDescription ( PackageDescription(..) )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
 import Distribution.Simple.PackageIndex (PackageIndex)
 import Distribution.Text (display)
 
+import System.Directory ( getCurrentDirectory , setCurrentDirectory )
 import System.IO
-import Distribution.System (buildOS, buildArch)
+import System.Cmd (system)
+import System.FilePath ((</>), splitPath, joinPath, takeFileName)
 import qualified Data.Map as Map
 
 import qualified Cabal2Ebuild as E
@@ -24,10 +29,12 @@ import qualified Portage.PackageId as Portage
 import Overlays
 import P2
 
+import Distribution.System (buildOS, buildArch)
 import Distribution.Verbosity
 import Distribution.Simple.Utils
 
 import Network.URI
+import Network.HTTP
 
 import Cabal2Ebuild
 
@@ -72,7 +79,50 @@ merge verbosity serverURI pstr = do
                             (CompilerId GHC (Version [6,8,2] []))
                             [] genericDesc
     let ebuild = fixSrc serverURI (packageId desc) (E.cabal2ebuild desc)
-    liftIO $ do
-        putStrLn $ "Merging " ++ category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
-        putStrLn $ "Destination: " ++ overlayPath
-        mergeEbuild overlayPath category ebuild
+        ebuildName = category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
+    putStrLn $ "Merging " ++ ebuildName
+    putStrLn $ "Destination: " ++ overlayPath
+    mergeEbuild overlayPath category ebuild
+    let package_name = pkgName (package desc)
+        package_version = showVersion (pkgVersion (package desc))
+    print genericDesc
+    let
+      a <-> b = a ++ '-':b
+      a <.> b = a ++ '.':b
+      url = "http://hackage.haskell.org/packages/archive/"
+             </> package_name </> package_version </> package_name <-> package_version <.> "tar.gz"
+      Just uri = parseURI url
+      tarballName = package_name <-> package_version <.> "tar.gz"
+        -- example:
+        -- http://hackage.haskell.org/packages/archive/Cabal/1.4.0.2/Cabal-1.4.0.2.tar.gz
+    fetchAndDigest
+      verbosity
+      (overlayPath </> category </> pname)
+      tarballName
+      uri
+
+fetchAndDigest :: Verbosity
+               -> FilePath -- ^ directory of ebuild
+               -> String -- ^ tarball name
+               -> URI -- ^ tarball uri
+               -> IO () 
+fetchAndDigest verbosity ebuildDir tarballName tarballURI = do
+  withWorkingDirectory ebuildDir $ do
+    notice verbosity $ "Fetching " ++ show tarballURI ++ " ..."
+    response <- simpleHTTP (Request tarballURI GET [] "")
+    case response of
+      Left err -> print err
+      Right response -> do
+        let tarDestination = "/usr/portage/distfiles" </> tarballName
+        notice verbosity $ "Writing to " ++ tarDestination
+        writeFile tarDestination (rspBody response)
+        system "repoman manifest"
+        return ()
+
+withWorkingDirectory :: FilePath -> IO a -> IO a
+withWorkingDirectory newDir action = do
+  oldDir <- getCurrentDirectory
+  bracket
+    (setCurrentDirectory newDir)
+    (\_ -> setCurrentDirectory oldDir)
+    (\_ -> action)
