@@ -156,19 +156,19 @@ makeEbuildCommand = CommandUI {
 -----------------------------------------------------------------------
 
 data DiffFlags = DiffFlags {
-    diffMode :: Flag String, -- DiffMode,
+    -- diffMode :: Flag String, -- DiffMode,
     diffVerbosity :: Flag Verbosity,
     diffServerURI :: Flag String
   }
 
 instance Monoid DiffFlags where
   mempty = DiffFlags {
-    diffMode = mempty,
+    -- diffMode = mempty,
     diffVerbosity = mempty,
     diffServerURI = mempty
   }
   mappend a b = DiffFlags {
-    diffMode = combine diffMode,
+    -- diffMode = combine diffMode,
     diffVerbosity = combine diffVerbosity,
     diffServerURI = combine diffServerURI
   }
@@ -176,7 +176,7 @@ instance Monoid DiffFlags where
 
 defaultDiffFlags :: DiffFlags
 defaultDiffFlags = DiffFlags {
-    diffMode = Flag "all",
+    -- diffMode = Flag "all",
     diffVerbosity = Flag normal,
     diffServerURI = Flag defaultHackageServerURI
   }
@@ -191,24 +191,29 @@ diffCommand = CommandUI {
     commandDefaultFlags = defaultDiffFlags,
     commandOptions = \showOrParseArgs ->
       [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
+      {-
       , option [] ["mode"]
          "Diff mode, one of: all, newer, missing, additions, common"
          diffMode (\v flags -> flags { diffMode = v })
          (reqArgFlag "MODE") -- I don't know how to map it strictly to DiffMode
+      -}
       ]
   }
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
   let verbosity = fromFlag (diffVerbosity flags)
-      dm0 = fromFlag (diffMode flags)
-  dm <- case dm0 of
-          "all" -> return ShowAll
-          "missing" -> return ShowMissing
-          "additions" -> return ShowAdditions
-          "newer" -> return ShowNewer
-          "common" -> return ShowCommon
-          _ -> die $ "Unknown mode: " ++ dm0
+      -- dm0 = fromFlag (diffMode flags)
+  dm <- case args of
+          [] -> return ShowAll
+          ["all"] -> return ShowAll
+          ["missing"] -> return ShowMissing
+          ["additions"] -> return ShowAdditions
+          ["newer"] -> return ShowNewer
+          ["common"] -> return ShowCommon
+          -- TODO: ["package",packagePattern] ->
+          --          return ShowPackagePattern packagePattern
+          _ -> die $ "Unknown mode: " ++ unwords args
   serverURI <- getServerURI (fromFlag $ diffServerURI flags)
   overlayPath <- getOverlayPath verbosity
   runDiff verbosity overlayPath serverURI dm
