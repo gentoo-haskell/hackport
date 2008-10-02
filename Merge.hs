@@ -38,6 +38,9 @@ import Network.HTTP
 
 import Cabal2Ebuild
 
+a <-> b = a ++ '-':b
+a <.> b = a ++ '.':b
+
 merge :: Verbosity -> URI -> String -> IO ()
 merge verbosity serverURI pstr = do
     (m_category, Portage.PN pname, m_version) <- case Portage.parseFriendlyPackage pstr of
@@ -79,16 +82,13 @@ merge verbosity serverURI pstr = do
                             (CompilerId GHC (Version [6,8,2] []))
                             [] genericDesc
     let ebuild = fixSrc serverURI (packageId desc) (E.cabal2ebuild desc)
-        ebuildName = category ++ '/': pname ++ "-" ++ display (pkgVersion (packageId desc))
+        ebuildName = category </> pname <-> display (pkgVersion (packageId desc))
     putStrLn $ "Merging " ++ ebuildName
     putStrLn $ "Destination: " ++ overlayPath
     mergeEbuild overlayPath category ebuild
-    let package_name = pkgName (package desc)
-        package_version = showVersion (pkgVersion (package desc))
-    print genericDesc
     let
-      a <-> b = a ++ '-':b
-      a <.> b = a ++ '.':b
+      package_name = pkgName (package desc)
+      package_version = showVersion (pkgVersion (package desc))
       url = "http://hackage.haskell.org/packages/archive/"
              </> package_name </> package_version </> package_name <-> package_version <.> "tar.gz"
       Just uri = parseURI url
@@ -108,14 +108,15 @@ fetchAndDigest :: Verbosity
                -> IO () 
 fetchAndDigest verbosity ebuildDir tarballName tarballURI = do
   withWorkingDirectory ebuildDir $ do
-    notice verbosity $ "Fetching " ++ show tarballURI ++ " ..."
+    notice verbosity $ "Fetching " ++ show tarballURI
     response <- simpleHTTP (Request tarballURI GET [] "")
     case response of
       Left err -> print err
       Right response -> do
         let tarDestination = "/usr/portage/distfiles" </> tarballName
-        notice verbosity $ "Writing to " ++ tarDestination
+        notice verbosity $ "Saving to " ++ tarDestination
         writeFile tarDestination (rspBody response)
+        notice verbosity $ "Recalculating digests..."
         system "repoman manifest"
         return ()
 
