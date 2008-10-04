@@ -340,7 +340,7 @@ statusAction flags args globalFlags = do
       toPortdir = fromFlag (statusToPortage flags)
   portdir <- maybe getSystemPortdir return portdirM
   overlayPath <- maybe (getOverlayPath verbosity) return overlayPathM
-  runStatus verbosity portdir overlayPath toPortdir
+  runStatus verbosity portdir overlayPath toPortdir args
 
 -----------------------------------------------------------------------
 -- Merge

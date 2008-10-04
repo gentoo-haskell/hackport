@@ -74,12 +74,17 @@ status verbosity portdir overlayPath = do
                 ]
     return meld
 
-runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> IO ()
-runStatus verbosity portdir overlayPath toPortageFlag = do
+runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> [String] -> IO ()
+runStatus verbosity portdir overlayPath toPortageFlag pkgs = do
   let pkgFilter | toPortageFlag = toPortageFilter
                 | otherwise = id
-  pkgs <- status verbosity portdir overlayPath
-  statusPrinter (pkgFilter pkgs)
+  tree0 <- status verbosity portdir overlayPath
+  let tree = pkgFilter tree0
+  if (null pkgs)
+    then statusPrinter tree
+    else forM_ pkgs $ \pkg -> do
+          let filteredTree = Map.filterWithKey (\k _ -> pPackage k == pkg) tree
+          statusPrinter filteredTree
 
 -- |Only return packages that seems interesting to sync to portage;
 --
