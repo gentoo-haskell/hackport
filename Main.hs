@@ -211,6 +211,7 @@ diffAction flags args globalFlags = do
           ["additions"] -> return ShowAdditions
           ["newer"] -> return ShowNewer
           ["common"] -> return ShowCommon
+          ("package":  pkgs) -> return (ShowPackages pkgs)
           -- TODO: ["package",packagePattern] ->
           --          return ShowPackagePattern packagePattern
           _ -> die $ "Unknown mode: " ++ unwords args

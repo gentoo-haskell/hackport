@@ -3,6 +3,7 @@ module Diff
     , DiffMode(..)
     ) where
 
+import Control.Monad ( forM_ )
 import Data.Char
 import qualified Data.Map as Map
 import Network.URI
@@ -21,6 +22,7 @@ data DiffMode
 	| ShowAdditions
 	| ShowNewer
 	| ShowCommon
+        | ShowPackages [String]
 	deriving Eq
 
 data DiffState a
@@ -48,7 +50,14 @@ runDiff verbosity overlayPath serverURI dm = do
   overlayTree <- readPortageTree overlayPath
   let (hackageTree, clashes) = indexToPortage cache overlayTree
   mapM_ putStrLn clashes
-  diff hackageTree overlayTree dm
+  case dm of
+    ShowPackages pkgs ->
+      forM_ pkgs $ \ pkg -> do
+        let criteria = Map.filterWithKey (\k _ -> pPackage k == pkg)
+            subHackage = criteria hackageTree
+            subOverlay = criteria overlayTree
+        diff subHackage subOverlay dm
+    _ -> diff hackageTree overlayTree dm
 
 diff :: Portage -> Portage -> DiffMode -> IO ()
 diff pt1 pt2 mode = do
@@ -73,5 +82,6 @@ diff pt1 pt2 mode = do
                   OnlyLeft _ -> False
                   Both x y -> x == y
                   OnlyRight _ -> False
+          ShowPackages _ -> True
   let packages = filter (showFilter . snd) (Map.assocs union)
   mapM_ (putStrLn . uncurry showDiffState) packages
