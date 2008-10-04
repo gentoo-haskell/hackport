@@ -47,12 +47,12 @@ load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
 --      overlayIndex = PackageIndex.fromList packages
     }
 
-readOverlay :: DirectoryTree -> [Portage.PackageId]
-readOverlay tree =
-  [ Portage.PackageId name version
+readOverlayByPackage :: DirectoryTree -> [(Portage.PackageName, [Portage.PackageId])]
+readOverlayByPackage tree =
+  [ (name, map (Portage.PackageId name) (versions name pkgTree))
   | (category, catTree) <- categories        tree
   , (name,     pkgTree) <- packages category catTree
-  ,  version            <- versions name     pkgTree ]
+  ]
 
   where
     categories :: DirectoryTree -> [(Portage.Category, DirectoryTree)]
@@ -77,6 +77,9 @@ readOverlay tree =
       , let fullName = category ++ '/' : baseName
       , Just (Portage.PackageId name' version) <- [simpleParse fullName]
       , name == name' ]
+
+readOverlay :: DirectoryTree -> [Portage.PackageId]
+readOverlay tree = concatMap snd (readOverlayByPackage tree)
 
 type DirectoryTree  = [DirectoryEntry]
 data DirectoryEntry = File FilePath | Directory FilePath [DirectoryEntry]
