@@ -27,7 +27,7 @@ newtype Category = Category String
 data PackageName = PackageName Category PN
   deriving (Eq, Ord, Show, Read)
 
-data PackageId = PackageId PackageName Portage.Version
+data PackageId = PackageId { packageId :: PackageName, packageVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
 data PN = PN String -- replace with Cabal.PackageName once we use Cabal>=1.5

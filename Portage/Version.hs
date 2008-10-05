@@ -10,7 +10,7 @@
 -}
 
 module Portage.Version (
-    Version,
+    Version(..),
     Suffix(..),
     fromCabalVersion,
     toCabalVersion,

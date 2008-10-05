@@ -7,8 +7,12 @@ import qualified Distribution.Package as Cabal
 
 import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Simple.PackageIndex (PackageIndex)
-import Distribution.Text (simpleParse)
+import Distribution.Text (simpleParse, display)
+import Distribution.Simple.Utils ( comparing, equating )
 
+import Data.List as List
+import qualified Data.Map as Map
+import Data.Map (Map)
 import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
@@ -25,18 +29,18 @@ data ExistingEbuild = ExistingEbuild {
     ebuildId      :: Portage.PackageId,
     ebuildCabalId :: Cabal.PackageIdentifier,
     ebuildPath    :: FilePath
-  }
+  } deriving (Show,Ord,Eq)
 
 instance Cabal.Package ExistingEbuild where packageId = ebuildCabalId
 
 data Overlay = Overlay {
-    overlayPath  :: FilePath
-
+    overlayPath  :: FilePath,
+    overlayMap :: Map Portage.PackageName [ExistingEbuild]
     --TODO:
 --    overlayMap   :: Map Portage.PackageId ???
 --      -- or perhaps a trie
 --    overlayIndex :: PackageIndex ExistingEbuild
-  }
+  } deriving Show
 
 load :: FilePath -> IO Overlay
 load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
@@ -47,9 +51,48 @@ load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
 --      overlayIndex = PackageIndex.fromList packages
     }
 
-readOverlayByPackage :: DirectoryTree -> [(Portage.PackageName, [Portage.PackageId])]
+loadLazy :: FilePath -> IO Overlay
+loadLazy dir = fmap (mkOverlay . readOverlayByPackage) (getDirectoryTree dir)
+  where
+    allowed v = case v of
+      (Portage.Version _ Nothing [] _) -> True
+      _                                -> False
+    a <-> b = a ++ '-':b
+    a <.> b = a ++ '.':b
+
+    mkOverlay :: [(Portage.PackageName, [Portage.Version])] -> Overlay
+    mkOverlay packages = Overlay {
+      overlayPath  = dir,
+      overlayMap =
+          Map.fromList
+            [ (pkgName, [ ExistingEbuild portageId cabalId filepath
+                        | version <- allowedVersions
+                        , let portageId = Portage.PackageId pkgName version
+                        , Just cabalId <- [ Portage.toCabalPackageId portageId ]
+                        , let filepath =
+                                dir </> display pkgName <-> display version <.> "ebuild"
+                        ])
+            | (pkgName, allVersions) <- packages
+            , let allowedVersions = filter allowed allVersions
+           ]
+    }
+
+-- make sure there is only one ebuild for each version number (by selecting
+-- the highest ebuild version revision)
+reduceOverlay :: Overlay -> Overlay
+reduceOverlay overlay = overlay { overlayMap = Map.map reduceVersions (overlayMap overlay) }
+  where
+  versionNumbers (Portage.Version nums _ _ _) = nums
+  reduceVersions :: [ExistingEbuild] -> [ExistingEbuild]
+  reduceVersions ebuilds = -- gah!
+          map (maximumBy (comparing (Portage.packageVersion . ebuildId)))
+          . groupBy (equating (versionNumbers . Portage.packageVersion . ebuildId))
+          . sortBy (comparing (Portage.packageVersion . ebuildId))
+          $ ebuilds
+
+readOverlayByPackage :: DirectoryTree -> [(Portage.PackageName, [Portage.Version])]
 readOverlayByPackage tree =
-  [ (name, map (Portage.PackageId name) (versions name pkgTree))
+  [ (name, versions name pkgTree)
   | (category, catTree) <- categories        tree
   , (name,     pkgTree) <- packages category catTree
   ]
@@ -79,7 +122,10 @@ readOverlayByPackage tree =
       , name == name' ]
 
 readOverlay :: DirectoryTree -> [Portage.PackageId]
-readOverlay tree = concatMap snd (readOverlayByPackage tree)
+readOverlay tree = [ Portage.PackageId pkgId version
+                   | (pkgId, versions) <- readOverlayByPackage tree
+                   , version <- versions
+                   ]
 
 type DirectoryTree  = [DirectoryEntry]
 data DirectoryEntry = File FilePath | Directory FilePath [DirectoryEntry]
@@ -90,6 +136,7 @@ getDirectoryTree = dirEntries
   where
     dirEntries :: FilePath -> IO [DirectoryEntry]
     dirEntries dir = do
+      putStrLn dir
       names <- getDirectoryContents dir
       sequence
         [ do isDirectory <- doesDirectoryExist path
