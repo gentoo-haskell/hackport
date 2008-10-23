@@ -10,7 +10,7 @@ import Data.Monoid
 -- cabal
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
-        , falseArg
+        , falseArg 
         , flagToMaybe, flagToList
         , optionVerbosity
         )
@@ -329,7 +329,7 @@ statusCommand = CommandUI {
       , option [] ["to-portage"]
           "Print only packages likely to be interesting to move to the portage tree."
           statusToPortage (\v flags -> flags { statusToPortage = v })
-          falseArg
+          trueArg
       ]
   }
 
