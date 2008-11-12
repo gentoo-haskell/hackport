@@ -15,7 +15,7 @@ Flag split-base
 Executable	hackport
   Main-Is:	Main.hs
   Build-Depends:
-    base >= 2.0,
+    base >= 2.0 && < 4,
     filepath,
     parsec,
     mtl,
@@ -29,7 +29,7 @@ Executable	hackport
 
   if flag(split-base)
     Build-Depends:
-      base >= 3,
+      base >= 3 && < 4,
       directory,
       containers,
       process,
