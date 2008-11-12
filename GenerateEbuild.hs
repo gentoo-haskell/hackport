@@ -9,6 +9,8 @@ import Network.URI
 import System.Directory
 import System.FilePath
 
+import Index (pName)
+
 mergeEbuild :: FilePath -> String -> EBuild -> IO ()
 mergeEbuild target category ebuild = do
   let edir = target </> category </> name ebuild
@@ -20,14 +22,16 @@ fixSrc :: URI -> PackageIdentifier -> EBuild -> EBuild
 fixSrc serverURI p ebuild =
   ebuild {
     src_uri = show $ serverURI {
-      uriPath = 
+      uriPath =
         (uriPath serverURI)
-          </> pkgName p
+          </> pname
           </> showVersion (pkgVersion p)
-          </> pkgName p ++ "-" ++ showVersion (pkgVersion p)
+          </> pname ++ "-" ++ showVersion (pkgVersion p)
           <.> "tar.gz"
       }
     }
+    where
+      pname = pName (pkgName p)
 
 {-hackage2ebuild ::
 	(PackageIdentifier,String,String) ->	-- ^ the package

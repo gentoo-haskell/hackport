@@ -20,6 +20,7 @@ import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.List (intersperse)
+import Index (pName, mkPackage)
 
 newtype Category = Category String
   deriving (Eq, Ord, Show, Read)
@@ -47,14 +48,15 @@ instance Text PN where
 
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
-  PackageId (PackageName category (PN (lowercase name)))
+  PackageId (PackageName category (PN (lowercase . pName $ name)))
             (Portage.fromCabalVersion version)
   where
     lowercase = map Char.toLower
 
 toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
 toCabalPackageId (PackageId (PackageName _cat (PN name)) version) =
-  fmap (Cabal.PackageIdentifier name) (Portage.toCabalVersion version)
+  fmap (Cabal.PackageIdentifier (mkPackage name))
+           (Portage.toCabalVersion version)
 
 instance Text Category where
   disp (Category c) = Disp.text c
@@ -100,4 +102,4 @@ parseFriendlyPackage str =
       v <- parse
       return (Just v)
     return (mc, p, mv)
-      
+

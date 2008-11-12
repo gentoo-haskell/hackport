@@ -28,6 +28,7 @@ import GenerateEbuild
 import qualified Portage.PackageId as Portage
 import Overlays
 import P2
+import Index (pName)
 
 import Distribution.System (buildOS, buildArch)
 import Distribution.Verbosity
@@ -87,7 +88,7 @@ merge verbosity serverURI pstr = do
     putStrLn $ "Destination: " ++ overlayPath
     mergeEbuild overlayPath category ebuild
     let
-      package_name = pkgName (package desc)
+      package_name = pName $ pkgName (package desc)
       package_version = showVersion (pkgVersion (package desc))
       url = "http://hackage.haskell.org/packages/archive/"
              </> package_name </> package_version </> package_name <-> package_version <.> "tar.gz"
@@ -105,7 +106,7 @@ fetchAndDigest :: Verbosity
                -> FilePath -- ^ directory of ebuild
                -> String -- ^ tarball name
                -> URI -- ^ tarball uri
-               -> IO () 
+               -> IO ()
 fetchAndDigest verbosity ebuildDir tarballName tarballURI = do
   withWorkingDirectory ebuildDir $ do
     notice verbosity $ "Fetching " ++ show tarballURI

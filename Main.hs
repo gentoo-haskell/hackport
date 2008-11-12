@@ -10,7 +10,7 @@ import Data.Monoid
 -- cabal
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
-        , falseArg 
+        , falseArg
         , flagToMaybe, flagToList
         , optionVerbosity
         )
@@ -20,6 +20,7 @@ import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die )
 import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.PackageDescription.Parse as ParseCabal
 import Distribution.Verbosity (Verbosity, normal)
 
 import Network.URI
@@ -133,7 +134,7 @@ makeEbuildAction flags args globalFlags = do
     die "make-ebuild needs at least one argument"
   let _verbosity = fromFlag (makeEbuildVerbosity flags)
   forM_ args $ \cabalFileName -> do
-    pkg <- Cabal.readPackageDescription normal cabalFileName
+    pkg <- ParseCabal.readPackageDescription normal cabalFileName
     let ebuild = cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
     writeFile ebuildFileName (showEBuild ebuild)
@@ -393,7 +394,7 @@ mergeAction flags [pkg] globalFlags = do
   case parseURI server of
     Just uri -> merge verbosity uri pkg
     Nothing -> throwEx (InvalidServer server)
-  
+
 mergeAction _ _ _ =
     throwEx (ArgumentError "'merge' needs exactly one parameter")
 
@@ -456,7 +457,7 @@ mainWorker args =
     CommandList opts -> printOptionsList opts
     CommandErrors errs -> printErrors errs
     CommandReadyToGo (globalflags, commandParse) -> do
-      case commandParse of 
+      case commandParse of
         CommandHelp help -> printHelp help
         CommandList opts -> printOptionsList opts
         CommandErrors errs -> printErrors errs
@@ -478,6 +479,6 @@ mainWorker args =
       , updateCommand `commandAddAction` updateAction
       , mergeCommand `commandAddAction` mergeAction
       ]
-            
+
 main :: IO ()
 main = getArgs >>= mainWorker

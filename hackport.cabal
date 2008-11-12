@@ -22,7 +22,7 @@ Executable	hackport
     network,
     pretty,
     regex-compat,
-    Cabal >= 1.4 && < 1.5,
+    Cabal >= 1.6 && < 1.7,
     HTTP >= 3000 && < 3002,
     zlib,
     tar

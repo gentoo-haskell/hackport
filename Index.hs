@@ -7,6 +7,7 @@ import Codec.Compression.GZip(decompress)
 import Data.ByteString.Lazy.Char8(ByteString,unpack)
 import Codec.Archive.Tar
 import Distribution.PackageDescription
+import Distribution.PackageDescription.Parse
 import Distribution.Package
 import System.FilePath.Posix
 import MaybeRead (readPMaybe)
@@ -32,14 +33,20 @@ filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond p v]
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList pids = Map.unionsWith Set.union $
-    [ Map.singleton name (Set.singleton vers)
+    [ Map.singleton (pName name) (Set.singleton vers)
     | (PackageIdentifier {pkgName = name,pkgVersion = vers}) <- pids ]
+
+pName                    :: PackageName -> String
+pName (PackageName name) = name
+
+mkPackage :: String -> PackageName
+mkPackage = PackageName
 
 indexToPackageIdentifier :: Index -> [PackageIdentifier]
 indexToPackageIdentifier index = do
     (name,vers_str,_) <- index
     Just vers <- return $ readPMaybe parseVersion vers_str
-    return $ PackageIdentifier {pkgName = name,pkgVersion = vers}
+    return $ PackageIdentifier {pkgName = PackageName name,pkgVersion = vers}
 
 bestVersions :: IndexMap -> Map.Map String Version
 bestVersions = Map.map Set.findMax

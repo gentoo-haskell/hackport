@@ -39,6 +39,8 @@ import Data.List          (intercalate, groupBy, partition, nub, sortBy, init, l
 import Data.Ord           (comparing)
 import Data.Maybe         (catMaybes, fromJust)
 
+import Index (pName, mkPackage)
+
 data EBuild = EBuild {
     name :: String,
     version :: String,
@@ -101,7 +103,7 @@ cabal2ebuild pkg = ebuildTemplate {
     licenseComments = licenseComment (Cabal.license pkg),
     depend          = defaultDepGHC
                     : (simplify_deps $
-                         convertDependency (Cabal.Dependency "Cabal"
+                         convertDependency (Cabal.Dependency (mkPackage "Cabal")
                                            (Cabal.descCabalVersion pkg))
                         ++ convertDependencies (Cabal.buildDepends pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
@@ -109,7 +111,7 @@ cabal2ebuild pkg = ebuildTemplate {
                    ++ (if null (Cabal.executables pkg) then [] else ["bin"])
                    ++ maybe [] (const ["lib","profile","haddock"]) (Cabal.library pkg)
   } where
-        cabalPkgName = Cabal.pkgName (Cabal.package pkg)
+        cabalPkgName = pName $ Cabal.pkgName (Cabal.package pkg)
 
 defaultDepGHC :: Dependency
 defaultDepGHC     = OrLaterVersionOf (Version [6,6,1]) "dev-lang/ghc"
@@ -136,14 +138,14 @@ convertDependencies = concatMap convertDependency
 
 convertDependency :: Cabal.Dependency -> [Dependency]
 convertDependency (Cabal.Dependency pname _)
-  | pname `elem` coreLibs = []      -- no explicit dep on core libs
+  | (pName pname) `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency pname versionRange)
   = case versionRange of
       (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
       v                                    -> [convert v]
 
   where
-    ebuildName = "dev-haskell/" ++ map toLower pname
+    ebuildName = "dev-haskell/" ++ map toLower (pName pname)
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
@@ -229,7 +231,7 @@ showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ show v
 showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ show v
 showDepend (DependEither       dep1 dep2) = showDepend dep1
                                      ++ " || " ++ showDepend dep2
-showDepend (DependIfUse        useflag dep@(DependEither _ _)) 
+showDepend (DependIfUse        useflag dep@(DependEither _ _))
                                                 = useflag ++ "? " ++ showDepend dep
 showDepend (DependIfUse        useflag dep)  = useflag ++ "? ( " ++ showDepend dep++ " )"
 showDepend (ThisMajorOf        v p) = "=" ++ p ++ "-" ++ show v ++ "*"
@@ -305,7 +307,7 @@ simplify_group_table :: Package ->
                         Maybe Version ->
                         Maybe Version -> [Dependency]
 
--- simplify_group_table p ol       l        e        oe       exact 
+-- simplify_group_table p ol       l        e        oe       exact
 -- 1) trivial cases:
 simplify_group_table    p Nothing  Nothing  Nothing  Nothing  Nothing  = error $ p ++ ": unsolvable constraints"
 simplify_group_table    p (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p]
