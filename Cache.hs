@@ -13,7 +13,7 @@ import Control.Arrow
 import Data.Char
 import Data.List
 import Network.URI (URI, uriPath)
-import Network.HTTP (HTTPRequest(..), RequestMethod(GET), simpleHTTP, rspBody)
+import Network.HTTP (Request(..), RequestMethod(GET), simpleHTTP, rspBody)
 import qualified Data.ByteString.Lazy as L
 import System.Time
 import System.FilePath
