@@ -4,36 +4,38 @@ module Portage.PackageId (
     Category(..),
     PackageName(..),
     PackageId(..),
-    PN(..),
     fromCabalPackageId,
     toCabalPackageId,
     parseFriendlyPackage
   ) where
 
-import qualified Portage.Version as Portage
+import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
+import Data.List (intersperse)
+import qualified Text.PrettyPrint as Disp
+import Text.PrettyPrint ((<>))
 
 import qualified Distribution.Package as Cabal
-import Distribution.Text (Text(..))
+import Distribution.Text (Text(..),display)
 
 import qualified Distribution.Compat.ReadP as Parse
+
+import qualified Portage.Version as Portage
+
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.List (intersperse)
-import Index (pName, mkPackage)
 
 newtype Category = Category String
   deriving (Eq, Ord, Show, Read)
 
-data PackageName = PackageName Category PN
+data PackageName = PackageName Category Cabal.PackageName
   deriving (Eq, Ord, Show, Read)
 
-data PackageId = PackageId { packageId :: PackageName, packageVersion :: Portage.Version }
+data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
-data PN = PN String -- replace with Cabal.PackageName once we use Cabal>=1.5
-  deriving (Eq, Ord, Show, Read)
-
+{-
 instance Text PN where
   disp (PN n) = Disp.text n
   parse = do
@@ -45,17 +47,18 @@ instance Text PN where
         if all Char.isDigit cs then Parse.pfail else return cs
         -- each component must contain an alphabetic character, to avoid
         -- ambiguity in identifiers like foo-1 (the 1 is the version number).
+-}
 
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
-  PackageId (PackageName category (PN (lowercase . pName $ name)))
+  PackageId (PackageName category (lowercase name))
             (Portage.fromCabalVersion version)
   where
-    lowercase = map Char.toLower
+    lowercase (Cabal.PackageName name) = Cabal.PackageName (map Char.toLower name)
 
 toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
-toCabalPackageId (PackageId (PackageName _cat (PN name)) version) =
-  fmap (Cabal.PackageIdentifier (mkPackage name))
+toCabalPackageId (PackageId (PackageName _cat name) version) =
+  fmap (Cabal.PackageIdentifier name)
            (Portage.toCabalVersion version)
 
 instance Text Category where
@@ -84,7 +87,7 @@ instance Text PackageId where
     version <- parse
     return (PackageId name version)
 
-parseFriendlyPackage :: String -> Maybe (Maybe Category, PN, Maybe Portage.Version)
+parseFriendlyPackage :: String -> Maybe (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
 parseFriendlyPackage str =
   case [ p | (p,s) <- Parse.readP_to_S parser str
        , all Char.isSpace s ] of

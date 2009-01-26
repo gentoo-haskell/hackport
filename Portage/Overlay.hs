@@ -1,4 +1,11 @@
-module Portage.Overlay where
+module Portage.Overlay
+  ( ExistingEbuild(..)
+  , Overlay(..)
+  , load, loadLazy
+  , reduceOverlay
+  , inOverlay
+  )
+  where
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version   as Portage
@@ -6,7 +13,7 @@ import qualified Portage.Version   as Portage
 import qualified Distribution.Package as Cabal
 
 import qualified Distribution.Simple.PackageIndex as PackageIndex
-import Distribution.Simple.PackageIndex (PackageIndex)
+-- import Distribution.Simple.PackageIndex (PackageIndex)
 import Distribution.Text (simpleParse, display)
 import Distribution.Simple.Utils ( comparing, equating )
 
@@ -41,6 +48,20 @@ data Overlay = Overlay {
 --      -- or perhaps a trie
 --    overlayIndex :: PackageIndex ExistingEbuild
   } deriving Show
+
+inOverlay :: Overlay -> Cabal.PackageId -> Bool
+inOverlay overlay pkgId = not (Map.null packages)
+  where
+    packages = Map.filterWithKey
+                (\(Portage.PackageName _cat overlay_pn) ebuilds -> 
+                    let cabal_pn = Cabal.pkgName pkgId
+                        ebs = [ ()
+                                  | e <- ebuilds
+                                  , let ebuild_cabal_id = ebuildCabalId e
+                                  , ebuild_cabal_id == pkgId
+                                  ]
+                    in cabal_pn == overlay_pn && (not (null ebs))) om
+    om = overlayMap overlay
 
 load :: FilePath -> IO Overlay
 load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
@@ -85,9 +106,9 @@ reduceOverlay overlay = overlay { overlayMap = Map.map reduceVersions (overlayMa
   versionNumbers (Portage.Version nums _ _ _) = nums
   reduceVersions :: [ExistingEbuild] -> [ExistingEbuild]
   reduceVersions ebuilds = -- gah!
-          map (maximumBy (comparing (Portage.packageVersion . ebuildId)))
-          . groupBy (equating (versionNumbers . Portage.packageVersion . ebuildId))
-          . sortBy (comparing (Portage.packageVersion . ebuildId))
+          map (maximumBy (comparing (Portage.pkgVersion . ebuildId)))
+          . groupBy (equating (versionNumbers . Portage.pkgVersion . ebuildId))
+          . sortBy (comparing (Portage.pkgVersion . ebuildId))
           $ ebuilds
 
 readOverlayByPackage :: DirectoryTree -> [(Portage.PackageName, [Portage.Version])]
@@ -136,7 +157,6 @@ getDirectoryTree = dirEntries
   where
     dirEntries :: FilePath -> IO [DirectoryEntry]
     dirEntries dir = do
-      putStrLn dir
       names <- getDirectoryContents dir
       sequence
         [ do isDirectory <- doesDirectoryExist path
