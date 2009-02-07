@@ -1,7 +1,6 @@
 module Merge where
 
 import Control.Monad.Error
--- import Control.Monad.Error
 import Control.Exception
 import Data.Char
 import Data.Maybe
@@ -28,7 +27,7 @@ import GenerateEbuild
 import qualified Portage.PackageId as Portage
 import Overlays
 import P2
-import Index (pName)
+-- import Index (pName)
 
 import Distribution.System (buildOS, buildArch)
 import Distribution.Verbosity
@@ -43,6 +42,8 @@ a <-> b = a ++ '-':b
 a <.> b = a ++ '.':b
 
 merge :: Verbosity -> URI -> String -> IO ()
+merge = undefined
+{-
 merge verbosity serverURI pstr = do
     (m_category, Portage.PN pname, m_version) <- case Portage.parseFriendlyPackage pstr of
       Just v -> return v
@@ -128,3 +129,4 @@ withWorkingDirectory newDir action = do
     (setCurrentDirectory newDir)
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
+-}

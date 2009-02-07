@@ -8,8 +8,7 @@ import Data.Version (showVersion)
 import Network.URI
 import System.Directory
 import System.FilePath
-
-import Index (pName)
+import Distribution.Text (display)
 
 mergeEbuild :: FilePath -> String -> EBuild -> IO ()
 mergeEbuild target category ebuild = do
@@ -24,14 +23,12 @@ fixSrc serverURI p ebuild =
     src_uri = show $ serverURI {
       uriPath =
         (uriPath serverURI)
-          </> pname
-          </> showVersion (pkgVersion p)
-          </> pname ++ "-" ++ showVersion (pkgVersion p)
+          </> display (pkgName p)
+          </> display (pkgVersion p)
+          </> display (pkgName p) ++ "-" ++ display (pkgVersion p)
           <.> "tar.gz"
       }
     }
-    where
-      pname = pName (pkgName p)
 
 {-hackage2ebuild ::
 	(PackageIdentifier,String,String) ->	-- ^ the package

@@ -2,7 +2,7 @@ module Overlays where
 
 import Control.Monad
 import Data.List (nub, inits)
-import Data.Maybe (maybeToList, listToMaybe)
+import Data.Maybe (maybeToList, listToMaybe, catMaybes)
 import System.Directory
 import System.FilePath ((</>), splitPath, joinPath)
 
@@ -33,7 +33,7 @@ getOverlayPath verbosity = do
               info verbosity "OK!"
               return x
             else do
-              info verbosity "Not ok."
+              info verbosity "Not ok." 
               loop xs
     info verbosity "There are several overlays in your configuration."
     mapM (info verbosity . (" * " ++)) mul

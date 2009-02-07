@@ -1,44 +1,37 @@
 module Index where
 
+{-
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Version (Version,parseVersion)
 import Data.ByteString.Lazy.Char8(ByteString,unpack)
-import qualified Codec.Archive.Tar       as Tar
-import qualified Codec.Archive.Tar.Entry as Tar
-import Codec.Archive.Tar.Entry(Entry(..), EntryContent(..))
-import qualified Codec.Compression.GZip as GZip
+import Codec.Archive.Tar
 import Distribution.PackageDescription
 import Distribution.PackageDescription.Parse
+^ ^ ^ ^ ^ ^ ^
 import Distribution.Package
+import Distribution.Text
 import System.FilePath.Posix
 import MaybeRead (readPMaybe)
 
-type Index = [(String,String,GenericPackageDescription)]
-type IndexMap = Map.Map String (Set.Set Version)
+type Index = [(Cabal.PackageName, Version, GenericPackageDescription)]
+type IndexMap = Map.Map Cabal.PackageName (Set.Set Version)
 
 readIndex :: ByteString -> Index
-readIndex = createIndex
-            . Tar.read . GZip.decompress
-    where
-      createIndex = Tar.foldEntries getEntry [] (const [])
-
-getEntry         :: Entry -> Index -> Index
-getEntry ent ind = case (splitDirectories . Tar.entryPath $ ent) of
-                     [".",name,vers,file] -> case (cabalIndex ent) of
-                                               (Just desc) -> (name,vers,desc) : ind
-                                               _           -> error $ "Couldn't read cabal file " ++ (show file)
-                     _                    -> ind
-
-cabalIndex       :: Entry -> Maybe GenericPackageDescription
-cabalIndex entry = case (Tar.entryContent entry) of
-                     (NormalFile file _) -> case (parsePackageDescription . unpack $ file) of
-                                              (ParseOk _ pkg_desc) -> Just pkg_desc
-                                              _                    -> Nothing
-                     _                   -> Nothing
+readIndex str = do
+    let unziped = decompress str
+        untared = readTarArchive unziped
+    entr <- archiveEntries untared
+    case splitDirectories (tarFileName (entryHeader entr)) of
+        [".",pkgname,vers,file] -> do
+            let descr = case parsePackageDescription (unpack (entryData entr)) of
+                    ParseOk _ pkg_desc -> pkg_desc
+                    _  -> error $ "Couldn't read cabal file "++show file
+            return (pkgname,vers,descr)
+        _ -> fail "doesn't look like the proper path"
 
 filterIndexByPV :: (String -> String -> Bool) -> Index -> Index
-filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond p v]
+filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond (display p) (display v)]
 
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList pids = Map.unionsWith Set.union $
@@ -53,9 +46,17 @@ mkPackage = PackageName
 
 indexToPackageIdentifier :: Index -> [PackageIdentifier]
 indexToPackageIdentifier index = do
+v v v v v v v
+    (name,vers,_) <- index
+    return $ PackageIdentifier {pkgName = name, pkgVersion = vers}
+*************
     (name,vers_str,_) <- index
     Just vers <- return $ readPMaybe parseVersion vers_str
     return $ PackageIdentifier {pkgName = PackageName name,pkgVersion = vers}
+^ ^ ^ ^ ^ ^ ^
 
-bestVersions :: IndexMap -> Map.Map String Version
+bestVersions :: IndexMap -> Map.Map Cabal.PackageName Version
 bestVersions = Map.map Set.findMax
+
+
+-}

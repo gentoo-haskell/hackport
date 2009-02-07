@@ -28,7 +28,9 @@ module Cabal2Ebuild
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
-import qualified Distribution.Package as Cabal  (PackageIdentifier(..), Dependency(..))
+import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
+                                                , Dependency(..)
+                                                , PackageName(..))
 import qualified Distribution.Version as Cabal  (VersionRange(..), versionBranch, Version)
 import qualified Distribution.License as Cabal  (License(..))
 import qualified Distribution.Text as Cabal  (display)
@@ -38,8 +40,6 @@ import Data.Char          (toLower,isUpper)
 import Data.List          (intercalate, groupBy, partition, nub, sortBy, init, last)
 import Data.Ord           (comparing)
 import Data.Maybe         (catMaybes, fromJust)
-
-import Index (pName, mkPackage)
 
 data EBuild = EBuild {
     name :: String,
@@ -89,8 +89,6 @@ ebuildTemplate = EBuild {
     my_pn = Nothing
   }
 
-
-
 cabal2ebuild :: Cabal.PackageDescription -> EBuild
 cabal2ebuild pkg = ebuildTemplate {
     name        = map toLower cabalPkgName,
@@ -103,7 +101,7 @@ cabal2ebuild pkg = ebuildTemplate {
     licenseComments = licenseComment (Cabal.license pkg),
     depend          = defaultDepGHC
                     : (simplify_deps $
-                         convertDependency (Cabal.Dependency (mkPackage "Cabal")
+                         convertDependency (Cabal.Dependency (Cabal.PackageName "Cabal")
                                            (Cabal.descCabalVersion pkg))
                         ++ convertDependencies (Cabal.buildDepends pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
@@ -111,7 +109,7 @@ cabal2ebuild pkg = ebuildTemplate {
                    ++ (if null (Cabal.executables pkg) then [] else ["bin"])
                    ++ maybe [] (const ["lib","profile","haddock","hscolour"]) (Cabal.library pkg)
   } where
-        cabalPkgName = pName $ Cabal.pkgName (Cabal.package pkg)
+        cabalPkgName = Cabal.display $ Cabal.pkgName (Cabal.package pkg)
 
 defaultDepGHC :: Dependency
 defaultDepGHC     = OrLaterVersionOf (Version [6,6,1]) "dev-lang/ghc"
@@ -137,15 +135,15 @@ convertDependencies :: [Cabal.Dependency] -> [Dependency]
 convertDependencies = concatMap convertDependency
 
 convertDependency :: Cabal.Dependency -> [Dependency]
-convertDependency (Cabal.Dependency pname _)
-  | (pName pname) `elem` coreLibs = []      -- no explicit dep on core libs
+convertDependency (Cabal.Dependency pname@(Cabal.PackageName name) _)
+  | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency pname versionRange)
   = case versionRange of
       (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
       v                                    -> [convert v]
 
   where
-    ebuildName = "dev-haskell/" ++ map toLower (pName pname)
+    ebuildName = "dev-haskell/" ++ map toLower (Cabal.display pname)
 
     convert :: Cabal.VersionRange -> Dependency
     convert Cabal.AnyVersion = AnyVersionOf ebuildName
@@ -166,8 +164,8 @@ cabalVtoHPv = Version . Cabal.versionBranch
 instance Show Version where
     show (Version v) = intercalate "." $ map show v
 
-coreLibs :: [String]
-coreLibs =
+coreLibs :: [Cabal.PackageName]
+coreLibs = map Cabal.PackageName
   ["array"
   ,"base"
 --,"bytestring"   --already has ebuild

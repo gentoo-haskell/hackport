@@ -14,6 +14,7 @@ Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
+  Hs-Source-Dirs: ., cabal-install-0.6.0
   Build-Depends:
     base >= 2.0 && < 4,
     filepath,
@@ -25,7 +26,7 @@ Executable	hackport
     Cabal >= 1.6 && < 1.7,
     HTTP >= 4000.0.3,
     zlib,
-    tar >= 0.3.0.0 && < 0.4
+    tar
 
   if flag(split-base)
     Build-Depends:

@@ -1,5 +1,6 @@
 module Cache where
 
+{-
 import CacheFile
 import Error
 import Index
@@ -25,6 +26,7 @@ import qualified Data.Map as Map
 -- cabal
 import Distribution.Verbosity
 import Distribution.Simple.Utils
+
 
 -- | A long time
 alarmingLongTime :: TimeDiff
@@ -88,3 +90,5 @@ indexToPortage index port = second nub . runWriter $ do
                       | otherwise = head xs
                 tell ["WARNING: Category clash for package " ++ p ++ ", defaulting to " ++ c ++ ". Other categories: " ++ unwords (delete c xs)]
                 return c
+
+-}

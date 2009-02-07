@@ -10,7 +10,8 @@ import Data.Monoid
 -- cabal
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
-        , falseArg 
+        , falseArg
+        , falseArg, trueArg
         , flagToMaybe, flagToList
         , optionVerbosity
         )
@@ -20,12 +21,22 @@ import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die )
 import qualified Distribution.PackageDescription as Cabal
-import qualified Distribution.PackageDescription.Parse as ParseCabal
+import qualified Distribution.PackageDescription.Parse as Cabal
+import qualified Distribution.Package as Cabal
+import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Verbosity (Verbosity, normal)
+import Distribution.Text (display)
+
+import Distribution.Client.Types
+import Distribution.Client.Update
+import qualified Distribution.Client.IndexUtils as Index
+
+import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 
 import Network.URI
 import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure )
+import System.FilePath ( (</>) )
 import System.IO
 
 import Bash
@@ -45,29 +56,29 @@ import Cabal2Ebuild
 -----------------------------------------------------------------------
 
 data ListFlags = ListFlags {
-    listVerbosity :: Flag Verbosity,
-    listOverlayPath :: Flag FilePath,
-    listServerURI :: Flag String
+    listVerbosity :: Flag Verbosity
+    -- , listOverlayPath :: Flag FilePath
+    -- , listServerURI :: Flag String
   }
 
 instance Monoid ListFlags where
   mempty = ListFlags {
-    listVerbosity = mempty,
-    listOverlayPath = mempty,
-    listServerURI = mempty
+    listVerbosity = mempty
+    -- , listOverlayPath = mempty
+    -- , listServerURI = mempty
   }
   mappend a b = ListFlags {
-    listVerbosity = combine listVerbosity,
-    listOverlayPath = combine listOverlayPath,
-    listServerURI = combine listServerURI
+    listVerbosity = combine listVerbosity
+    -- , listOverlayPath = combine listOverlayPath
+    -- , listServerURI = combine listServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultListFlags :: ListFlags
 defaultListFlags = ListFlags {
-    listVerbosity = Flag normal,
-    listOverlayPath = NoFlag,
-    listServerURI = Flag defaultHackageServerURI
+    listVerbosity = Flag normal
+    -- , listOverlayPath = NoFlag
+    -- , listServerURI = Flag defaultHackageServerURI
   }
 
 listCommand :: CommandUI ListFlags
@@ -80,31 +91,34 @@ listCommand = CommandUI {
     commandDefaultFlags = defaultListFlags,
     commandOptions = \showOrParseArgs ->
       [ optionVerbosity listVerbosity (\v flags -> flags { listVerbosity = v })
+      {-
       , option [] ["overlay"]
          "Use cached packages list from specified overlay"
          listOverlayPath (\v flags -> flags { listOverlayPath = v })
          (reqArgFlag "PATH")
+       -}
       ]
   }
 
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
-listAction flags args globalFlags = do
+listAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (listVerbosity flags)
-      portdirM = flagToMaybe (listOverlayPath flags)
-  serverURI <- getServerURI (fromFlag $ listServerURI flags)
-  overlay <- maybe (getOverlayPath verbosity) return portdirM
-  index <- readCache verbosity overlay serverURI
-  let index' | null name = index
-             | otherwise = filterIndexByPV matchSubstringCaseInsensitive index
-      pkgs = [ pkg ++ "-" ++ ver | (pkg,ver,_) <- index']
-  if null pkgs
-    then throwEx (PackageNotFound name)
-    else putStr . unlines . sort $ pkgs
-      where
-      name | null args = []
-           | otherwise = head args
-      matchSubstringCaseInsensitive otherName _pVver =
-           map toLower name `isInfixOf` map toLower otherName
+  overlayPath <- getOverlayPath verbosity
+  let repo = defaultRepo overlayPath
+  index <- fmap packageIndex (Index.getAvailablePackages verbosity [ repo ])
+  overlay <- Overlay.loadLazy overlayPath
+  let pkgs | null extraArgs = PackageIndex.allPackages index
+           | otherwise = concatMap (PackageIndex.searchByNameSubstring index) extraArgs
+  let decorated = map (\p -> (Overlay.inOverlay overlay (packageInfoId p), p)) pkgs
+  mapM_ (putStrLn . pretty) decorated
+  where
+  pretty :: (Bool, AvailablePackage) -> String
+  pretty (inOverlay, pkg) =
+      let pkgId = packageInfoId pkg
+          dec | inOverlay = " * "
+              | otherwise = "   "
+      in dec ++ display (Cabal.pkgName pkgId) <-> display (Cabal.pkgVersion pkgId)
+
 
 -----------------------------------------------------------------------
 -- Make Ebuild
@@ -134,7 +148,7 @@ makeEbuildAction flags args globalFlags = do
     die "make-ebuild needs at least one argument"
   let _verbosity = fromFlag (makeEbuildVerbosity flags)
   forM_ args $ \cabalFileName -> do
-    pkg <- ParseCabal.readPackageDescription normal cabalFileName
+    pkg <- Cabal.readPackageDescription normal cabalFileName
     let ebuild = cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
     writeFile ebuildFileName (showEBuild ebuild)
@@ -158,28 +172,28 @@ makeEbuildCommand = CommandUI {
 
 data DiffFlags = DiffFlags {
     -- diffMode :: Flag String, -- DiffMode,
-    diffVerbosity :: Flag Verbosity,
-    diffServerURI :: Flag String
+    diffVerbosity :: Flag Verbosity
+    -- , diffServerURI :: Flag String
   }
 
 instance Monoid DiffFlags where
   mempty = DiffFlags {
     -- diffMode = mempty,
-    diffVerbosity = mempty,
-    diffServerURI = mempty
+    diffVerbosity = mempty
+    -- , diffServerURI = mempty
   }
   mappend a b = DiffFlags {
     -- diffMode = combine diffMode,
-    diffVerbosity = combine diffVerbosity,
-    diffServerURI = combine diffServerURI
+    diffVerbosity = combine diffVerbosity
+    -- , diffServerURI = combine diffServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultDiffFlags :: DiffFlags
 defaultDiffFlags = DiffFlags {
     -- diffMode = Flag "all",
-    diffVerbosity = Flag normal,
-    diffServerURI = Flag defaultHackageServerURI
+    diffVerbosity = Flag normal
+    -- , diffServerURI = Flag defaultHackageServerURI
   }
 
 diffCommand :: CommandUI DiffFlags
@@ -216,34 +230,35 @@ diffAction flags args globalFlags = do
           -- TODO: ["package",packagePattern] ->
           --          return ShowPackagePattern packagePattern
           _ -> die $ "Unknown mode: " ++ unwords args
-  serverURI <- getServerURI (fromFlag $ diffServerURI flags)
   overlayPath <- getOverlayPath verbosity
-  runDiff verbosity overlayPath serverURI dm
+  let serverURI = defaultRepoURI overlayPath
+      repo = defaultRepo overlayPath
+  runDiff verbosity overlayPath dm repo
 
 -----------------------------------------------------------------------
 -- Update
 -----------------------------------------------------------------------
 
 data UpdateFlags = UpdateFlags {
-    updateVerbosity :: Flag Verbosity,
-    updateServerURI :: Flag String
+    updateVerbosity :: Flag Verbosity
+    -- , updateServerURI :: Flag String
   }
 
 instance Monoid UpdateFlags where
   mempty = UpdateFlags {
-    updateVerbosity = mempty,
-    updateServerURI = mempty
+    updateVerbosity = mempty
+    -- , updateServerURI = mempty
   }
   mappend a b = UpdateFlags {
-    updateVerbosity = combine updateVerbosity,
-    updateServerURI = combine updateServerURI
+    updateVerbosity = combine updateVerbosity
+    -- , updateServerURI = combine updateServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultUpdateFlags :: UpdateFlags
 defaultUpdateFlags = UpdateFlags {
-    updateVerbosity = Flag normal,
-    updateServerURI = Flag defaultHackageServerURI
+    updateVerbosity = Flag normal
+    -- , updateServerURI = Flag defaultHackageServerURI
   }
 
 updateCommand :: CommandUI UpdateFlags
@@ -257,20 +272,23 @@ updateCommand = CommandUI {
     commandOptions = \_ ->
       [ optionVerbosity updateVerbosity (\v flags -> flags { updateVerbosity = v })
 
+      {-
       , option [] ["server"]
           "Set the server you'd like to update the cache from"
           updateServerURI (\v flags -> flags { updateServerURI = v} )
           (reqArgFlag "SERVER")
+      -}
       ]
   }
 
 updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
-updateAction flags args globalFlags = do
+updateAction flags extraArgs globalFlags = do
+  unless (null extraArgs) $
+    die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
-      server  = fromFlag (updateServerURI flags)
-  case parseURI server of
-    Just uri -> updateCache verbosity uri
-    Nothing -> throwEx (InvalidServer server)
+  overlayPath <- getOverlayPath verbosity
+  update verbosity [ defaultRepo overlayPath ]
+  
 
 -----------------------------------------------------------------------
 -- Status
@@ -348,25 +366,25 @@ statusAction flags args globalFlags = do
 -----------------------------------------------------------------------
 
 data MergeFlags = MergeFlags {
-    mergeVerbosity :: Flag Verbosity,
-    mergeServerURI :: Flag String
+    mergeVerbosity :: Flag Verbosity
+    -- , mergeServerURI :: Flag String
   }
 
 instance Monoid MergeFlags where
   mempty = MergeFlags {
-    mergeVerbosity = mempty,
-    mergeServerURI = mempty
+    mergeVerbosity = mempty
+    -- , mergeServerURI = mempty
   }
   mappend a b = MergeFlags {
-    mergeVerbosity = combine mergeVerbosity,
-    mergeServerURI = combine mergeServerURI
+    mergeVerbosity = combine mergeVerbosity
+    -- , mergeServerURI = combine mergeServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultMergeFlags :: MergeFlags
 defaultMergeFlags = MergeFlags {
-    mergeVerbosity = Flag normal,
-    mergeServerURI = Flag defaultHackageServerURI
+    mergeVerbosity = Flag normal
+    -- , mergeServerURI = Flag defaultHackageServerURI
   }
 
 mergeCommand :: CommandUI MergeFlags
@@ -380,20 +398,20 @@ mergeCommand = CommandUI {
     commandOptions = \showOrParseArgs ->
       [ optionVerbosity mergeVerbosity (\v flags -> flags { mergeVerbosity = v })
 
+      {-
       , option [] ["server"]
           "Set the server you'd like to update the cache from"
           mergeServerURI (\v flags -> flags { mergeServerURI = v} )
           (reqArgFlag "SERVER")
+      -}
       ]
   }
 
 mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
 mergeAction flags [pkg] globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
-      server  = fromFlag (mergeServerURI flags)
-  case parseURI server of
-    Just uri -> merge verbosity uri pkg
-    Nothing -> throwEx (InvalidServer server)
+  overlayPath <- getOverlayPath verbosity
+  merge verbosity (defaultRepoURI overlayPath) pkg
 
 mergeAction _ _ _ =
     throwEx (ArgumentError "'merge' needs exactly one parameter")
@@ -402,8 +420,21 @@ mergeAction _ _ _ =
 -- Utils
 -----------------------------------------------------------------------
 
-defaultHackageServerURI :: String
-defaultHackageServerURI = "http://hackage.haskell.org/packages/archive/"
+defaultRepo :: FilePath -> Repo
+defaultRepo overlayPath =
+  Repo {
+      repoKind = Left hackage,
+      repoLocalDir = overlayPath </> ".hackport"
+    }
+  where
+    hackage = RemoteRepo name uri
+    name = "hackage.haskell.org"
+    uri  = URI "http:" (Just (URIAuth "" name "")) "/packages/archive" "" ""
+
+defaultRepoURI :: FilePath -> URI
+defaultRepoURI overlayPath =
+  case repoKind (defaultRepo overlayPath) of
+    Left (RemoteRepo { remoteRepoURI = uri }) -> uri
 
 getServerURI :: String -> IO URI
 getServerURI str =
