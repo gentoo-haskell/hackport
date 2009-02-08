@@ -41,6 +41,15 @@ import Cabal2Ebuild
 a <-> b = a ++ '-':b
 a <.> b = a ++ '.':b
 
+{-
+Requested features:
+  * Create an ebuild for the cabal package
+      - Copy the old keywords and ~arch them
+  * Download the tarball and digest
+  * Add files to darcs?
+  * Print diff with the next latest version?
+-}
+
 merge :: Verbosity -> URI -> String -> IO ()
 merge = undefined
 {-
