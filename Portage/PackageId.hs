@@ -6,7 +6,9 @@ module Portage.PackageId (
     PackageId(..),
     fromCabalPackageId,
     toCabalPackageId,
-    parseFriendlyPackage
+    parseFriendlyPackage,
+    normalizeCabalPackageName,
+    normalizeCabalPackageId
   ) where
 
 import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
@@ -51,10 +53,16 @@ instance Text PN where
 
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
-  PackageId (PackageName category (lowercase name))
+  PackageId (PackageName category (normalizeCabalPackageName name))
             (Portage.fromCabalVersion version)
-  where
-    lowercase (Cabal.PackageName name) = Cabal.PackageName (map Char.toLower name)
+
+normalizeCabalPackageName :: Cabal.PackageName -> Cabal.PackageName
+normalizeCabalPackageName (Cabal.PackageName name) =
+  Cabal.PackageName (map Char.toLower name)
+
+normalizeCabalPackageId :: Cabal.PackageIdentifier -> Cabal.PackageIdentifier
+normalizeCabalPackageId (Cabal.PackageIdentifier name version) =
+  Cabal.PackageIdentifier (normalizeCabalPackageName name) version
 
 toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
 toCabalPackageId (PackageId (PackageName _cat name) version) =

@@ -32,6 +32,7 @@ import Distribution.Client.Update
 import qualified Distribution.Client.IndexUtils as Index
 
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
+import Portage.PackageId ( normalizeCabalPackageName, normalizeCabalPackageId )
 
 import Network.URI
 import System.Environment ( getArgs, getProgName )
@@ -109,15 +110,15 @@ listAction flags extraArgs globalFlags = do
   overlay <- Overlay.loadLazy overlayPath
   let pkgs | null extraArgs = PackageIndex.allPackages index
            | otherwise = concatMap (PackageIndex.searchByNameSubstring index) extraArgs
-  let decorated = map (\p -> (Overlay.inOverlay overlay (packageInfoId p), p)) pkgs
+      normalized = map (normalizeCabalPackageId . packageInfoId) pkgs
+  let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
   mapM_ (putStrLn . pretty) decorated
   where
-  pretty :: (Bool, AvailablePackage) -> String
-  pretty (inOverlay, pkg) =
-      let pkgId = packageInfoId pkg
-          dec | inOverlay = " * "
+  pretty :: (Bool, Cabal.PackageIdentifier) -> String
+  pretty (inOverlay, pkgId) =
+      let dec | inOverlay = " * "
               | otherwise = "   "
-      in dec ++ display (Cabal.pkgName pkgId) <-> display (Cabal.pkgVersion pkgId)
+      in dec ++ display pkgId
 
 
 -----------------------------------------------------------------------
