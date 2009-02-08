@@ -79,8 +79,10 @@ runDiff verbosity overlayPath dm repo = do
 
 data PackageCompareInfo = PackageCompareInfo {
     name :: Cabal.PackageName,
-    hackageVersions :: [ Cabal.Version ],
-    overlayVersions :: [ Cabal.Version ]
+--    hackageVersions :: [ Cabal.Version ],
+--    overlayVersions :: [ Cabal.Version ]
+    hackageVersion :: Maybe Cabal.Version,
+    overlayVersion :: Maybe Cabal.Version
   } deriving Show
 
 showPackageCompareInfo :: PackageCompareInfo -> String
@@ -88,13 +90,11 @@ showPackageCompareInfo pkgCmpInfo =
     display (name pkgCmpInfo) ++ " ["
     ++ hackageS ++ sign ++ overlayS ++ "]" 
   where
-  latestOf :: (Ord a) => [a] -> Maybe a
-  latestOf = listToMaybe . reverse . sort
-  hackageMax = latestOf . hackageVersions $ pkgCmpInfo
-  overlayMax = latestOf . overlayVersions $ pkgCmpInfo
-  hackageS = maybe "none" display hackageMax
-  overlayS = maybe "none" display overlayMax
-  sign = case compare hackageMax overlayMax of
+  overlay = overlayVersion pkgCmpInfo
+  hackage = hackageVersion pkgCmpInfo
+  hackageS = maybe "none" display hackage
+  overlayS = maybe "none" display overlay
+  sign = case compare hackage overlay of
           EQ -> "="
           GT -> ">"
           LT -> "<"
@@ -106,15 +106,30 @@ diff :: [Cabal.AvailablePackage]
 diff hackage overlay dm = do
   mapM_ (putStrLn . showPackageCompareInfo) pkgCmpInfos
   where
-  merged = mergePackages (map Cabal.packageId hackage)
+  merged = mergePackages (map (Portage.normalizeCabalPackageId . Cabal.packageId) hackage)
                          (map Portage.ebuildCabalId overlay)
-  pkgCmpInfos = map (uncurry mergePackageInfo) (filter pkgFilter merged)
-  pkgFilter (h,o) =
+  pkgCmpInfos = filter pkgFilter (map (uncurry mergePackageInfo) merged)
+  pkgFilter :: PackageCompareInfo -> Bool
+  pkgFilter pkgCmpInfo =
+    let om = overlayVersion pkgCmpInfo
+        hm = hackageVersion pkgCmpInfo
+        st = case (om,hm) of
+              (Just ov, Just hv) -> InBoth ov hv
+              (Nothing, Just hv) -> OnlyInRight hv
+              (Just ov, Nothing) -> OnlyInLeft ov
+    in
     case dm of
       ShowAll -> True
-      ShowPackages _ -> True
+      ShowPackages _ -> True -- already filtered
+      ShowNewer -> case st of
+                     InBoth o h -> h>o
+                     _ -> False
+      ShowMissing -> case st of
+                      OnlyInRight _ -> True
+                      InBoth x y -> x < y
+                      OnlyInLeft _ -> False
       _ -> True
-
+ 
 -- | We get the 'PackageCompareInfo' by combining the info for the overlay
 -- and hackage versions of a package.
 --
@@ -130,15 +145,17 @@ mergePackageInfo hackage overlay =
   PackageCompareInfo {
     name              = combine Cabal.pkgName latestHackage
                                 Cabal.pkgName latestOverlay,
-    hackageVersions = map Cabal.pkgVersion hackage,
-    overlayVersions = map Cabal.pkgVersion overlay
+--    hackageVersions = map Cabal.pkgVersion hackage,
+--    overlayVersions = map Cabal.pkgVersion overlay
+    hackageVersion = fmap Cabal.pkgVersion latestHackage,
+    overlayVersion = fmap Cabal.pkgVersion latestOverlay
   }
   where
     combine f x g y = fromJust (fmap f x `mplus` fmap g y)
-    latestHackage = latestOf hackage :: Maybe Cabal.PackageIdentifier
-    latestOverlay = latestOf overlay :: Maybe Cabal.PackageIdentifier
+    latestHackage = latestOf hackage
+    latestOverlay = latestOf overlay
     latestOf :: [Cabal.PackageIdentifier] -> Maybe Cabal.PackageIdentifier
-    latestOf = listToMaybe . sortBy (comparing Cabal.pkgVersion)
+    latestOf = listToMaybe . reverse . sortBy (comparing Cabal.pkgVersion)
 
 -- | Rearrange installed and available packages into groups referring to the
 -- same package by name. In the result pairs, the lists are guaranteed to not
