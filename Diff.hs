@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import Network.URI
 import Control.Exception ( assert )
 import Data.Maybe ( fromJust, listToMaybe )
-import Data.List ( sortBy, groupBy )
+import Data.List ( sort, sortBy, groupBy )
 import Data.Ord ( comparing )
 
 import qualified Portage.Version as Portage
@@ -80,16 +80,40 @@ runDiff verbosity overlayPath dm repo = do
 data PackageCompareInfo = PackageCompareInfo {
     name :: Cabal.PackageName,
     hackageVersions :: [ Cabal.Version ],
-    overlayVersions :: [ Portage.Version ]
-  }
+    overlayVersions :: [ Cabal.Version ]
+  } deriving Show
+
+showPackageCompareInfo :: PackageCompareInfo -> String
+showPackageCompareInfo pkgCmpInfo =
+    display (name pkgCmpInfo) ++ " ["
+    ++ hackageS ++ sign ++ overlayS ++ "]" 
+  where
+  latestOf :: (Ord a) => [a] -> Maybe a
+  latestOf = listToMaybe . reverse . sort
+  hackageMax = latestOf . hackageVersions $ pkgCmpInfo
+  overlayMax = latestOf . overlayVersions $ pkgCmpInfo
+  hackageS = maybe "none" display hackageMax
+  overlayS = maybe "none" display overlayMax
+  sign = case compare hackageMax overlayMax of
+          EQ -> "="
+          GT -> ">"
+          LT -> "<"
 
 diff :: [Cabal.AvailablePackage]
      -> [Portage.ExistingEbuild]
      -> DiffMode
      -> IO ()
-diff hackage overlay dm =
-  
-  error "Diff.diff not implemented"
+diff hackage overlay dm = do
+  mapM_ (putStrLn . showPackageCompareInfo) pkgCmpInfos
+  where
+  merged = mergePackages (map Cabal.packageId hackage)
+                         (map Portage.ebuildCabalId overlay)
+  pkgCmpInfos = map (uncurry mergePackageInfo) (filter pkgFilter merged)
+  pkgFilter (h,o) =
+    case dm of
+      ShowAll -> True
+      ShowPackages _ -> True
+      _ -> True
 
 -- | We get the 'PackageCompareInfo' by combining the info for the overlay
 -- and hackage versions of a package.
@@ -98,35 +122,35 @@ diff hackage overlay dm =
 -- the input package info records are all supposed to refer to the same
 -- package name.
 --
-mergePackageInfo :: [Portage.ExistingEbuild]
-                 -> [Cabal.AvailablePackage]
+mergePackageInfo :: [Cabal.PackageIdentifier]
+                 -> [Cabal.PackageIdentifier]
                  -> PackageCompareInfo
-mergePackageInfo overlay hackage =
+mergePackageInfo hackage overlay =
   assert (length overlay + length hackage > 0) $
   PackageCompareInfo {
-    name              = combine (Cabal.pkgName . Cabal.packageId) latestHackage
-                                (Cabal.pkgName . Cabal.packageId) latestOverlay,
-    hackageVersions = map (Cabal.pkgVersion   . Cabal.packageId) hackage,
-    overlayVersions = map (Portage.pkgVersion . Portage.ebuildId) overlay
+    name              = combine Cabal.pkgName latestHackage
+                                Cabal.pkgName latestOverlay,
+    hackageVersions = map Cabal.pkgVersion hackage,
+    overlayVersions = map Cabal.pkgVersion overlay
   }
   where
     combine f x g y = fromJust (fmap f x `mplus` fmap g y)
-    latestHackage = latestOf hackage
-    latestOverlay = latestOf overlay
-    latestOf :: Cabal.Package pkg => [pkg] -> Maybe pkg
-    latestOf = listToMaybe . sortBy (comparing (Cabal.pkgVersion . Cabal.packageId))
+    latestHackage = latestOf hackage :: Maybe Cabal.PackageIdentifier
+    latestOverlay = latestOf overlay :: Maybe Cabal.PackageIdentifier
+    latestOf :: [Cabal.PackageIdentifier] -> Maybe Cabal.PackageIdentifier
+    latestOf = listToMaybe . sortBy (comparing Cabal.pkgVersion)
 
 -- | Rearrange installed and available packages into groups referring to the
 -- same package by name. In the result pairs, the lists are guaranteed to not
 -- both be empty.
 --
-mergePackages ::   [Cabal.InstalledPackageInfo] -> [Cabal.AvailablePackage]
-              -> [([Cabal.InstalledPackageInfo],   [Cabal.AvailablePackage])]
-mergePackages installed available =
+mergePackages :: [Cabal.PackageIdentifier] -> [Cabal.PackageIdentifier]
+              -> [([Cabal.PackageIdentifier], [Cabal.PackageIdentifier])]
+mergePackages hackage overlay =
     map collect
   $ mergeBy (\i a -> fst i `compare` fst a)
-            (groupOn (Cabal.pkgName . Cabal.packageId) installed)
-            (groupOn (Cabal.pkgName . Cabal.packageId) available)
+            (groupOn Cabal.pkgName hackage)
+            (groupOn Cabal.pkgName overlay)
   where
     collect (OnlyInLeft  (_,is)       ) = (is, [])
     collect (    InBoth  (_,is) (_,as)) = (is, as)
