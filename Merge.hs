@@ -66,6 +66,8 @@ Requested features:
   * Download the tarball and digest
   * Add files to darcs?
   * Print diff with the next latest version?
+BUGS:
+  * Dependencies are always expected to be in dev-haskell
 -}
 
 readPackageString :: [String]
@@ -199,9 +201,11 @@ merge verbosity repo serverURI args = do
   -- debug verbosity ("Finalized package:\n" ++ showPackageDescription pkgDesc)
 
                -- TODO: more fixes
+               --        * inherit keywords from previous ebuilds
+               --        * set homepage to hackage page if cabal homepage is
+               --            empty
   let ebuild = fixSrc serverURI (packageId pkgDesc) (E.cabal2ebuild pkgDesc)
-      ebuildName = display category
-                   </> display norm_pkgId
+      ebuildName = display category </> display norm_pkgId
 
   mergeEbuild verbosity overlayPath (Portage.unCategory category) ebuild
   fetchAndDigest
