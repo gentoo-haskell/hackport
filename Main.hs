@@ -19,7 +19,7 @@ import Distribution.PackageDescription.Configuration
          ( flattenPackageDescription )
 import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
-import Distribution.Simple.Utils ( die )
+import Distribution.Simple.Utils ( die, cabalVersion )
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
@@ -51,6 +51,9 @@ import Overlays
 import Merge
 
 import Cabal2Ebuild
+
+import qualified Paths_cabal_install 
+import qualified Paths_hackport
 
 -----------------------------------------------------------------------
 -- List
@@ -463,12 +466,14 @@ usageFlags name pname =
 -----------------------------------------------------------------------
 
 data GlobalFlags = GlobalFlags {
-    globalVersion :: Flag Bool
+    globalVersion :: Flag Bool,
+    globalNumericVersion :: Flag Bool
     }
 
 defaultGlobalFlags :: GlobalFlags
 defaultGlobalFlags = GlobalFlags {
-    globalVersion = Flag False
+    globalVersion = Flag False,
+    globalNumericVersion = Flag False
     }
 
 globalCommand :: CommandUI GlobalFlags
@@ -480,7 +485,15 @@ globalCommand = CommandUI {
     commandUsage = \_ -> [],
     commandDefaultFlags = defaultGlobalFlags,
     commandOptions = \showOrParseArgs ->
-        [ ]
+        [ option ['V'] ["version"]
+            "Print version information"
+            globalVersion (\v flags -> flags { globalVersion = v })
+            trueArg
+        , option [] ["numeric-version"]
+            "Print just the version number"
+            globalNumericVersion (\v flags -> flags { globalNumericVersion = v })
+            trueArg
+        ]
     }
 
 mainWorker :: [String] -> IO ()
@@ -491,9 +504,11 @@ mainWorker args =
     CommandErrors errs -> printErrors errs
     CommandReadyToGo (globalflags, commandParse) -> do
       case commandParse of
-        CommandHelp help -> printHelp help
-        CommandList opts -> printOptionsList opts
-        CommandErrors errs -> printErrors errs
+        _ | fromFlag (globalVersion globalflags)        -> printVersion
+          | fromFlag (globalNumericVersion globalflags) -> printNumericVersion
+        CommandHelp help        -> printHelp help
+        CommandList opts        -> printOptionsList opts
+        CommandErrors errs      -> printErrors errs
         CommandReadyToGo action -> catchEx (action globalflags) errorHandler
     where
     printHelp help = getProgName >>= putStr . help
@@ -501,6 +516,13 @@ mainWorker args =
     printErrors errs = do
       putStr (concat (intersperse "\n" errs))
       exitFailure
+    printNumericVersion = putStrLn $ display Paths_hackport.version
+    printVersion        = putStrLn $ "hackport version "
+                                  ++ display Paths_hackport.version
+                                  ++ "\nusing cabal-install "
+                                  ++ display Paths_cabal_install.version
+                                  ++ " and the Cabal library version "
+                                  ++ display cabalVersion
     errorHandler :: HackPortError -> IO ()
     errorHandler e = do
       putStrLn (hackPortShowError e)
