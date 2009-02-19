@@ -41,7 +41,7 @@ hackPortShowError :: HackPortError -> String
 hackPortShowError err = case err of
 	ArgumentError str -> "Argument error: "++str
 	ConnectionFailed server reason -> "Connection to hackage server '"++server++"' failed: "++reason
-	PackageNotFound pkg -> "Package '"++ pkg ++"' not found on server."
+	PackageNotFound pkg -> "Package '"++ pkg ++"' not found on server. Try 'hackport update'?"
 	InvalidTarballURL url reason -> "Error while downloading tarball '"++url++"': "++reason
 	InvalidSignatureURL url reason -> "Error while downloading signature '"++url++"': "++reason
 	VerificationFailed file signature -> "Error while checking signature('"++signature++"') of '"++file++"'"
