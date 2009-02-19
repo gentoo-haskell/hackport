@@ -139,10 +139,14 @@ convertDependency (Cabal.Dependency pname@(Cabal.PackageName name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency pname versionRange)
   = case versionRange of
+      -- versionRange && versionRange
       (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
+      -- any other dep
       v                                    -> [convert v]
 
   where
+    -- XXX: not always true, we should look properly for deps in the overlay
+    -- to find the correct category
     ebuildName = "dev-haskell/" ++ map toLower (Cabal.display pname)
 
     convert :: Cabal.VersionRange -> Dependency
@@ -189,7 +193,7 @@ coreLibs = map Cabal.PackageName
 
 showEBuild :: EBuild -> String
 showEBuild ebuild =
-  ss "# Copyright 1999-2008 Gentoo Foundation". nl.
+  ss "# Copyright 1999-2009 Gentoo Foundation". nl.
   ss "# Distributed under the terms of the GNU General Public License v2". nl.
   ss "# $Header:  $". nl.
   nl.
