@@ -4,6 +4,7 @@ module Portage.PackageId (
     Category(..),
     PackageName(..),
     PackageId(..),
+    Portage.Version(..),
     fromCabalPackageId,
     toCabalPackageId,
     parseFriendlyPackage,
@@ -28,7 +29,7 @@ import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.List (intersperse)
 
-newtype Category = Category String
+newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)
 
 data PackageName = PackageName Category Cabal.PackageName

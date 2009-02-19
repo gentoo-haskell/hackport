@@ -43,10 +43,6 @@ instance Cabal.Package ExistingEbuild where packageId = ebuildCabalId
 data Overlay = Overlay {
     overlayPath  :: FilePath,
     overlayMap :: Map Portage.PackageName [ExistingEbuild]
-    --TODO:
---    overlayMap   :: Map Portage.PackageId ???
---      -- or perhaps a trie
---    overlayIndex :: PackageIndex ExistingEbuild
   } deriving Show
 
 inOverlay :: Overlay -> Cabal.PackageId -> Bool

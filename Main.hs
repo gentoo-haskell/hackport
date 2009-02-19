@@ -409,10 +409,11 @@ mergeCommand = CommandUI {
   }
 
 mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
-mergeAction flags [pkg] globalFlags = do
+mergeAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
   overlayPath <- getOverlayPath verbosity
-  merge verbosity (defaultRepoURI overlayPath) pkg
+  let repo = defaultRepo overlayPath
+  merge verbosity repo (defaultRepoURI overlayPath) extraArgs
 
 mergeAction _ _ _ =
     throwEx (ArgumentError "'merge' needs exactly one parameter")

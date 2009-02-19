@@ -45,11 +45,11 @@ Executable	hackport
     Bash
     BlingBling
     Cabal2Ebuild
+    CabalDistributionVersion
     Cache
     CacheFile
     Diff
     Error
-    GenerateEbuild
     Index
     Main
     MaybeRead
