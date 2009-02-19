@@ -76,7 +76,7 @@ readPackageString :: [String]
 readPackageString args = do
   packageString <-
     case args of
-      [] -> Left (ArgumentError ("Need an argument, [category/]package[-version]"))
+      [] -> Left (ArgumentError "Need an argument, [category/]package[-version]")
       [pkg] -> return pkg
       _ -> Left (ArgumentError ("Too many arguments: " ++ unwords args))
   case Portage.parseFriendlyPackage packageString of
@@ -89,7 +89,7 @@ readPackageString args = do
 -- If it does not exist, we default to \'dev-haskell\'.
 resolveCategory :: Verbosity -> Overlay.Overlay -> Cabal.PackageName -> IO Portage.Category
 resolveCategory verbosity overlay pn = do
-  info verbosity $ "Searching for which category to use..."
+  info verbosity "Searching for which category to use..."
   case resolveCategories overlay pn of
     [] -> do
       info verbosity "No previous version of this package, defaulting category to dev-haskell."
@@ -125,7 +125,7 @@ resolveVersion :: [AvailablePackage] -> Maybe Cabal.Version -> Maybe AvailablePa
 resolveVersion avails Nothing = Just $ maximumBy (comparing packageInfoId) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
-    match avail =  ver == (pkgVersion (packageInfoId avail))
+    match avail = ver == pkgVersion (packageInfoId avail)
 
 merge :: Verbosity -> Repo -> URI -> [String] -> IO ()
 merge verbosity repo serverURI args = do
@@ -161,7 +161,7 @@ merge verbosity repo serverURI args = do
     case resolveVersion availablePkgs m_version of
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
-        forM_ availablePkgs $ \ avail -> do
+        forM_ availablePkgs $ \ avail ->
           putStrLn (display . packageInfoId $ avail)
         throwEx (ArgumentError "no such version for that package")
       Just avail -> return avail
@@ -204,7 +204,6 @@ merge verbosity repo serverURI args = do
                    </> display norm_pkgId
 
   mergeEbuild verbosity overlayPath (Portage.unCategory category) ebuild
-  let
   fetchAndDigest
     verbosity
     (overlayPath </> display category </> display norm_pkgName)
@@ -227,7 +226,7 @@ fetchAndDigest :: Verbosity
                -> String -- ^ tarball name
                -> URI -- ^ tarball uri
                -> IO ()
-fetchAndDigest verbosity ebuildDir tarballName tarballURI = do
+fetchAndDigest verbosity ebuildDir tarballName tarballURI =
   withWorkingDirectory ebuildDir $ do
     notice verbosity $ "Fetching " ++ show tarballURI
     response <- simpleHTTP (Request tarballURI GET [] "")
@@ -237,7 +236,7 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI = do
         let tarDestination = "/usr/portage/distfiles" </> tarballName
         notice verbosity $ "Saving to " ++ tarDestination
         writeFile tarDestination (rspBody response)
-        notice verbosity $ "Recalculating digests..."
+        notice verbosity "Recalculating digests..."
         system "repoman manifest"
         return ()
 
@@ -263,7 +262,7 @@ fixSrc serverURI p ebuild =
   ebuild {
     src_uri = show $ serverURI {
       uriPath =
-        (uriPath serverURI)
+        uriPath serverURI
           </> display (pkgName p) 
           </> display (pkgVersion p) 
           </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
