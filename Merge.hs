@@ -241,37 +241,40 @@ addDeps :: [E.Dependency] -> EBuild -> EBuild
 addDeps d e = e { depend = depend e ++ d }
 
 findCLibs :: Verbosity -> (String -> Maybe String) -> PackageDescription -> IO [E.Dependency]
-findCLibs verbosity resolver (PackageDescription { library = lib, executables = exes }) = do
+findCLibs verbosity resolver0 (PackageDescription { library = lib, executables = exes }) = do
   debug verbosity "Mapping extra-libraries into portage packages..."
   -- for extra libs we don't find, maybe look into into installed packages?
   when (not . null $ notFound) $
-    info verbosity ("Could not find portage packages for extra-libraries: " ++ unwords notFound)
+    warn verbosity ("Could not find portage packages for extra-libraries: " ++ unwords notFound)
   when (not . null $ found) $
     debug verbosity ("Found c-libraries deps: " ++ show found)
   return found
   where
-  notFound = [ p | Left p <- el ]
-  found = [ p | Right p <- el ]
-  el = do 
-    lib <- staticTranslateExtraLibs $ libE ++ exeE
-    case lib of
-      Right p -> return (Right p)
-      Left p -> case resolver p of
-                  Nothing -> return (Left p)
-                  Just hit -> return (Right $ E.AnyVersionOf hit)
+  portageResolver :: String -> Maybe E.Dependency
+  portageResolver p = fmap E.AnyVersionOf (resolver0 p)
+  resolvers = [ staticTranslateExtraLib, portageResolver ]
+
+  resolved = [ chain p resolvers
+             | p <- libE ++ exeE
+             ] :: [Either String E.Dependency]
+
+  notFound = [ p | Left p <- resolved ]
+  found = [ p | Right p <- resolved ]
+
+  chain v [] = Left v
+  chain v (f:fs) = case f v of
+                     Nothing -> chain v fs
+                     Just x -> Right x
+
   libE = maybe [] (extraLibs.libBuildInfo) lib
   exeE = concatMap (extraLibs.buildInfo) exes
 
-staticTranslateExtraLibs :: [String] -> [Either String E.Dependency]
-staticTranslateExtraLibs = map tr . nub
+staticTranslateExtraLib :: String -> Maybe E.Dependency
+staticTranslateExtraLib lib = lookup lib m
   where
   m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
       , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
       ]
-  tr n = case lookup n m of
-          Just d -> Right d
-          Nothing -> Left n
-          
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
