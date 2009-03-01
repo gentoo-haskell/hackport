@@ -214,7 +214,7 @@ merge verbosity repo serverURI args = do
       packageNameResolver s = do
         (Portage.PackageName (Portage.Category cat) (Cabal.PackageName pn))
           <- resolveFullPortageName portage (Cabal.PackageName s)
-        return (cat </> pn)
+        return $ E.AnyVersionOf (cat </> pn)
 
   extra <- findCLibs verbosity packageNameResolver pkgDesc
                     
@@ -240,8 +240,8 @@ merge verbosity repo serverURI args = do
 addDeps :: [E.Dependency] -> EBuild -> EBuild
 addDeps d e = e { depend = depend e ++ d }
 
-findCLibs :: Verbosity -> (String -> Maybe String) -> PackageDescription -> IO [E.Dependency]
-findCLibs verbosity resolver0 (PackageDescription { library = lib, executables = exes }) = do
+findCLibs :: Verbosity -> (String -> Maybe E.Dependency) -> PackageDescription -> IO [E.Dependency]
+findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do
   debug verbosity "Mapping extra-libraries into portage packages..."
   -- for extra libs we don't find, maybe look into into installed packages?
   when (not . null $ notFound) $
@@ -250,8 +250,6 @@ findCLibs verbosity resolver0 (PackageDescription { library = lib, executables =
     debug verbosity ("Found c-libraries deps: " ++ show found)
   return found
   where
-  portageResolver :: String -> Maybe E.Dependency
-  portageResolver p = fmap E.AnyVersionOf (resolver0 p)
   resolvers = [ staticTranslateExtraLib, portageResolver ]
 
   resolved = [ chain p resolvers
