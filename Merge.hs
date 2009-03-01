@@ -269,5 +269,9 @@ fixSrc serverURI p ebuild =
           </> display (pkgVersion p) 
           </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
           <.> "tar.gz"
-      } 
+      },
+    E.homepage = case E.homepage ebuild of
+                "" -> "http://hackage.haskell.org/cgi-bin/hackage-scripts/package/"
+                        ++ display (pkgName p)
+                x -> x
     }
