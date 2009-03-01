@@ -3,16 +3,16 @@ module Diff
     , DiffMode(..)
     ) where
 
-import Control.Monad ( forM_, mplus )
+import Control.Monad ( mplus )
 import Data.Char
-import qualified Data.Map as Map
-import Network.URI
+-- import qualified Data.Map as Map
+-- import Network.URI
 import Control.Exception ( assert )
 import Data.Maybe ( fromJust, listToMaybe )
-import Data.List ( sort, sortBy, groupBy )
+import Data.List ( sortBy, groupBy )
 import Data.Ord ( comparing )
 
-import qualified Portage.Version as Portage
+-- import qualified Portage.Version as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
@@ -24,7 +24,7 @@ import Distribution.Verbosity
 import Distribution.Text(display)
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Simple.PackageIndex as Cabal
-import qualified Distribution.InstalledPackageInfo as Cabal
+-- import qualified Distribution.InstalledPackageInfo as Cabal
 import Distribution.Simple.Utils (equating)
 
 -- cabal-install
@@ -41,12 +41,17 @@ data DiffMode
         | ShowPackages [String]
 	deriving Eq
 
-type DiffState a = MergeResult a a
 
+{-
+type DiffState a = MergeResult a a
 tabs :: String -> String
 tabs str = let len = length str in str++(if len < 3*8
 	then replicate (3*8-len) ' '
 	else "")
+
+
+-- TODO: is the new showPackageCompareInfo showing the packages in the same
+-- way as showDiffState did?
 
 showDiffState :: Cabal.PackageName -> DiffState Portage.Version -> String
 showDiffState pkg st = (tabs (display pkg)) ++ " [" ++ (case st of
@@ -56,6 +61,7 @@ showDiffState pkg st = (tabs (display pkg)) ++ " [" ++ (case st of
     LT -> "<") ++ display y
   OnlyInLeft x -> display x ++ ">none"
   OnlyInRight y -> "none<" ++ display y) ++ "]"
+-}
 
 runDiff :: Verbosity -> FilePath -> DiffMode -> Cabal.Repo -> IO ()
 runDiff verbosity overlayPath dm repo = do
@@ -117,6 +123,7 @@ diff hackage overlay dm = do
               (Just ov, Just hv) -> InBoth ov hv
               (Nothing, Just hv) -> OnlyInRight hv
               (Just ov, Nothing) -> OnlyInLeft ov
+              _ -> error "impossible"
     in
     case dm of
       ShowAll -> True
@@ -136,7 +143,6 @@ diff hackage overlay dm = do
                      OnlyInLeft _ -> False
                      InBoth x y -> x == y
                      OnlyInRight _ -> False
-      _ -> True
  
 -- | We get the 'PackageCompareInfo' by combining the info for the overlay
 -- and hackage versions of a package.
