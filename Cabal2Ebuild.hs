@@ -23,7 +23,9 @@
 --
 module Cabal2Ebuild
         (EBuild(..)
+        ,Dependency(..)
         ,cabal2ebuild
+        ,convertDependencies
         ,showEBuild) where
 
 import qualified Distribution.PackageDescription as Cabal
@@ -70,7 +72,7 @@ data Dependency = AnyVersionOf               Package
                 | DependEither Dependency Dependency   -- depend || depend
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
                 | ThisMajorOf        Version Package   -- =package-version*
-    deriving Eq
+    deriving (Eq,Show)
 
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {

@@ -8,7 +8,11 @@ import Data.List
 import Data.Version
 import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
-import Distribution.PackageDescription ( PackageDescription(..), FlagName(..) )
+import Distribution.PackageDescription ( PackageDescription(..)
+                                       , FlagName(..)
+                                       , libBuildInfo
+                                       , buildInfo
+                                       , extraLibs )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
 -- import Distribution.PackageDescription.Parse ( showPackageDescription )
@@ -25,7 +29,6 @@ import System.FilePath ((</>), splitPath, joinPath, takeFileName)
 import qualified Data.Map as Map
 
 import qualified Cabal2Ebuild as E
--- import Cache
 import Error as E
 import Overlays
 
@@ -194,15 +197,20 @@ merge verbosity repo serverURI args = do
                            | Dependency pn vr <- buildDepends pkgDesc0
                            ]
                 in pkgDesc0 { buildDepends = deps }
+  extra <- findCLibs pkgDesc
                     
   debug verbosity ("Selected flags: " ++ show flags)
+  debug verbosity ("extra-libs: ")
+  mapM_ (debug verbosity . show) extra
   -- debug verbosity ("Finalized package:\n" ++ showPackageDescription pkgDesc)
 
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
                --        * set homepage to hackage page if cabal homepage is
                --            empty
-  let ebuild = fixSrc serverURI (packageId pkgDesc) (E.cabal2ebuild pkgDesc)
+  let ebuild = fixSrc serverURI (packageId pkgDesc)
+               . addDeps extra
+               $ E.cabal2ebuild pkgDesc
       ebuildName = display category </> display norm_pkgId
 
   mergeEbuild verbosity overlayPath (Portage.unCategory category) ebuild
@@ -211,6 +219,25 @@ merge verbosity repo serverURI args = do
     (overlayPath </> display category </> display norm_pkgName)
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
+
+addDeps :: [E.Dependency] -> EBuild -> EBuild
+addDeps d e = e { depend = depend e ++ d }
+
+findCLibs :: PackageDescription -> IO [E.Dependency]
+findCLibs (PackageDescription { library = lib, executables = exes }) =
+  -- for extra libs we don't find, maybe look into into installed packages?
+  return (translateExtraLibs $ libE ++ exeE)
+  where
+  libE = maybe [] (extraLibs.libBuildInfo) lib
+  exeE = concatMap (extraLibs.buildInfo) exes
+
+translateExtraLibs :: [String] -> [E.Dependency]
+translateExtraLibs = catMaybes . map tr
+  where
+  m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
+      , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
+      ]
+  tr n = lookup n m
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
