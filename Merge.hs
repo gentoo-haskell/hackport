@@ -121,6 +121,19 @@ resolveCategories overlay pn =
   where
     om = Overlay.overlayMap overlay
 
+resolveFullPortageName :: Overlay.Overlay -> Cabal.PackageName -> Maybe Portage.PackageName
+resolveFullPortageName overlay pn =
+  case resolveCategories overlay pn of
+    [] -> Nothing
+    [cat] -> return (Portage.PackageName cat pn)
+    cats | devhaskell `elem` cats ->
+              return (Portage.PackageName devhaskell pn)
+         | otherwise ->
+              Nothing
+  where
+  devhaskell = Portage.Category "dev-haskell"
+
+
 -- | Given a list of available packages, and maybe a preferred version,
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
@@ -150,6 +163,7 @@ merge verbosity repo serverURI args = do
 
   overlayPath <- getOverlayPath verbosity
   overlay <- Overlay.loadLazy overlayPath
+  portage <- Overlay.loadLazy "/usr/portage"
   index <- fmap packageIndex $ getAvailablePackages verbosity [ repo ]
 
   -- find all packages that maches the user specified package name
@@ -197,7 +211,12 @@ merge verbosity repo serverURI args = do
                            | Dependency pn vr <- buildDepends pkgDesc0
                            ]
                 in pkgDesc0 { buildDepends = deps }
-  extra <- findCLibs pkgDesc
+      packageNameResolver s = do
+        (Portage.PackageName (Portage.Category cat) (Cabal.PackageName pn))
+          <- resolveFullPortageName portage (Cabal.PackageName s)
+        return (cat </> pn)
+
+  extra <- findCLibs verbosity packageNameResolver pkgDesc
                     
   debug verbosity ("Selected flags: " ++ show flags)
   debug verbosity ("extra-libs: ")
@@ -206,8 +225,6 @@ merge verbosity repo serverURI args = do
 
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
-               --        * set homepage to hackage page if cabal homepage is
-               --            empty
   let ebuild = fixSrc serverURI (packageId pkgDesc)
                . addDeps extra
                $ E.cabal2ebuild pkgDesc
@@ -223,21 +240,38 @@ merge verbosity repo serverURI args = do
 addDeps :: [E.Dependency] -> EBuild -> EBuild
 addDeps d e = e { depend = depend e ++ d }
 
-findCLibs :: PackageDescription -> IO [E.Dependency]
-findCLibs (PackageDescription { library = lib, executables = exes }) =
+findCLibs :: Verbosity -> (String -> Maybe String) -> PackageDescription -> IO [E.Dependency]
+findCLibs verbosity resolver (PackageDescription { library = lib, executables = exes }) = do
+  debug verbosity "Mapping extra-libraries into portage packages..."
   -- for extra libs we don't find, maybe look into into installed packages?
-  return (translateExtraLibs $ libE ++ exeE)
+  when (not . null $ notFound) $
+    info verbosity ("Could not find portage packages for extra-libraries: " ++ unwords notFound)
+  when (not . null $ found) $
+    debug verbosity ("Found c-libraries deps: " ++ show found)
+  return found
   where
+  notFound = [ p | Left p <- el ]
+  found = [ p | Right p <- el ]
+  el = do 
+    lib <- staticTranslateExtraLibs $ libE ++ exeE
+    case lib of
+      Right p -> return (Right p)
+      Left p -> case resolver p of
+                  Nothing -> return (Left p)
+                  Just hit -> return (Right $ E.AnyVersionOf hit)
   libE = maybe [] (extraLibs.libBuildInfo) lib
   exeE = concatMap (extraLibs.buildInfo) exes
 
-translateExtraLibs :: [String] -> [E.Dependency]
-translateExtraLibs = catMaybes . map tr
+staticTranslateExtraLibs :: [String] -> [Either String E.Dependency]
+staticTranslateExtraLibs = map tr . nub
   where
   m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
       , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
       ]
-  tr n = lookup n m
+  tr n = case lookup n m of
+          Just d -> Right d
+          Nothing -> Left n
+          
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
