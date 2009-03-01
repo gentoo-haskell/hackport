@@ -42,7 +42,6 @@ import System.IO
 
 import Bash
 import qualified Cabal2Ebuild as E
-import Cache
 import Diff
 import Error
 import Index

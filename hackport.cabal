@@ -46,7 +46,6 @@ Executable	hackport
     BlingBling
     Cabal2Ebuild
     CabalDistributionVersion
-    Cache
     CacheFile
     Diff
     Error
