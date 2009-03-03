@@ -12,7 +12,8 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
                                        , libBuildInfo
                                        , buildInfo
-                                       , extraLibs )
+                                       , extraLibs
+                                       , buildTools )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
 -- import Distribution.PackageDescription.Parse ( showPackageDescription )
@@ -211,6 +212,12 @@ merge verbosity repo serverURI args = do
                            | Dependency pn vr <- buildDepends pkgDesc0
                            ]
                 in pkgDesc0 { buildDepends = deps }
+
+      bt = [ Cabal.Dependency (Cabal.PackageName pkg') range
+           | Cabal.Dependency (Cabal.PackageName pkg ) range <- buildToolsDeps pkgDesc
+           , Just pkg' <- return (lookup pkg buildToolsTable) 
+           ]
+
       packageNameResolver s = do
         (Portage.PackageName (Portage.Category cat) (Cabal.PackageName pn))
           <- resolveFullPortageName portage (Cabal.PackageName s)
@@ -221,12 +228,17 @@ merge verbosity repo serverURI args = do
   debug verbosity ("Selected flags: " ++ show flags)
   debug verbosity ("extra-libs: ")
   mapM_ (debug verbosity . show) extra
+
+  debug verbosity ("build-tools:")
+  mapM_ (debug verbosity . show) bt
+
   -- debug verbosity ("Finalized package:\n" ++ showPackageDescription pkgDesc)
 
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
   let ebuild = fixSrc serverURI (packageId pkgDesc)
                . addDeps extra
+               . addDeps (convertDependencies bt)
                $ E.cabal2ebuild pkgDesc
       ebuildName = display category </> display norm_pkgId
 
@@ -273,6 +285,20 @@ staticTranslateExtraLib lib = lookup lib m
   m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
       , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
       ]
+
+buildToolsDeps :: PackageDescription -> [Cabal.Dependency]
+buildToolsDeps (PackageDescription { library = lib, executables = exes }) = cabalDeps
+  where
+  cabalDeps = depL ++ depE
+  depL = maybe [] (buildTools.libBuildInfo) lib
+  depE = concatMap (buildTools.buildInfo) exes
+
+buildToolsTable :: [(String, String)]
+buildToolsTable =
+  [ ("happy", "dev-haskell/happy")
+  , ("alex", "dev-haskell/alex")
+  , ("c2hs", "dev-haskell/c2hs")
+  ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
