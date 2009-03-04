@@ -55,6 +55,8 @@ import qualified Portage.Overlay as Overlay
 
 import Cabal2Ebuild
 
+import Debug.Trace
+
 -- This is just a hack to simplify version ranges.
 -- Backported from Cabal HEAD to work with Cabal 1.6.
 -- Replace this module once it's included in a cabal release.
@@ -126,13 +128,23 @@ resolveFullPortageName :: Overlay.Overlay -> Cabal.PackageName -> Maybe Portage.
 resolveFullPortageName overlay pn =
   case resolveCategories overlay pn of
     [] -> Nothing
-    [cat] -> return (Portage.PackageName cat pn)
-    cats | devhaskell `elem` cats ->
-              return (Portage.PackageName devhaskell pn)
-         | otherwise ->
-              Nothing
+    [cat] -> ret cat
+    cats | (cat:_) <- (filter (`elem` cats) priority) -> ret cat
+         | otherwise -> trace ("Ambiguous package name: " ++ show pn ++ ", hits: " ++ show cats) Nothing
   where
-  devhaskell = Portage.Category "dev-haskell"
+  ret c = return (Portage.PackageName c pn)
+  mkC = Portage.Category
+  devhaskell = mkC "dev-haskell"
+  -- if any of these categories show up in the result list, the match isn't
+  -- ambiguous, pick the first match in the list
+  priority = [ mkC "dev-haskell"
+             , mkC "sys-libs"
+             , mkC "dev-libs"
+             , mkC "x11-libs"
+             , mkC "media-libs"
+             , mkC "net-libs"
+             , mkC "sci-libs"
+             ]
 
 
 -- | Given a list of available packages, and maybe a preferred version,
