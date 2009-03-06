@@ -52,7 +52,7 @@ fromList :: [a] -> Progress () b [a]
 fromList xs0 = unfold next xs0
   where
     next []     = Left (Right xs0)
-    next (x:xs) = Right ((), xs)
+    next (_:xs) = Right ((), xs)
 
 instance Functor (Progress step fail) where
   fmap f = fold Step Fail (Done . f)
