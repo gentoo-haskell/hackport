@@ -42,19 +42,17 @@ updateCache :: Verbosity -> URI -> IO ()
 updateCache verbosity uri = do
   path <- getOverlayPath verbosity
   let cache = cacheURI uri
-  notice verbosity $
-    "Fetching cache from " ++ show cache ++ "..."
+  notice verbosity $ "Fetching cache from " ++ show cache ++ "..."
   res <- simpleHTTP (Request cache GET [] "")
-  notice verbosity $
-    "done."
+  notice verbosity $ "done."
   case res of
     Left err -> throwEx (ConnectionFailed (show cache) (show err))
     Right resp -> do
-      createDirectoryIfMissing False (path </> hackportDir)
-      Prelude.writeFile (cacheFile path) (rspBody resp)
+             createDirectoryIfMissing False (path </> hackportDir)
+             Prelude.writeFile (cacheFile path) (rspBody resp)
   where
-  cacheURI :: URI -> URI
-  cacheURI uri = uri {uriPath = uriPath uri </> indexFile}
+    cacheURI :: URI -> URI
+    cacheURI uri' = uri' {uriPath = uriPath uri' </> indexFile}
 
 
 readCache :: Verbosity -> FilePath -> URI -> IO Index
