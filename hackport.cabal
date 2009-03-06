@@ -25,7 +25,7 @@ Executable	hackport
     Cabal >= 1.6 && < 1.7,
     HTTP >= 4000.0.3,
     zlib,
-    tar
+    tar >= 0.3.0.0 && < 0.4
 
   if flag(split-base)
     Build-Depends:

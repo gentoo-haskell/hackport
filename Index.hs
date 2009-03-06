@@ -3,9 +3,11 @@ module Index where
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Version (Version,parseVersion)
-import Codec.Compression.GZip(decompress)
 import Data.ByteString.Lazy.Char8(ByteString,unpack)
-import Codec.Archive.Tar
+import qualified Codec.Archive.Tar       as Tar
+import qualified Codec.Archive.Tar.Entry as Tar
+import Codec.Archive.Tar.Entry(Entry(..), EntryContent(..))
+import qualified Codec.Compression.GZip as GZip
 import Distribution.PackageDescription
 import Distribution.PackageDescription.Parse
 import Distribution.Package
@@ -16,17 +18,24 @@ type Index = [(String,String,GenericPackageDescription)]
 type IndexMap = Map.Map String (Set.Set Version)
 
 readIndex :: ByteString -> Index
-readIndex str = do
-    let unziped = decompress str
-        untared = readTarArchive unziped
-    entr <- archiveEntries untared
-    case splitDirectories (tarFileName (entryHeader entr)) of
-        [".",pkgname,vers,file] -> do
-            let descr = case parsePackageDescription (unpack (entryData entr)) of
-                    ParseOk _ pkg_desc -> pkg_desc
-                    _  -> error $ "Couldn't read cabal file "++show file
-            return (pkgname,vers,descr)
-        _ -> fail "doesn't look like the proper path"
+readIndex = createIndex
+            . Tar.read . GZip.decompress
+    where
+      createIndex = Tar.foldEntries getEntry [] (const [])
+
+getEntry         :: Entry -> Index -> Index
+getEntry ent ind = case (splitDirectories . Tar.entryPath $ ent) of
+                     [".",name,vers,file] -> case (cabalIndex ent) of
+                                               (Just desc) -> (name,vers,desc) : ind
+                                               _           -> error $ "Couldn't read cabal file " ++ (show file)
+                     _                    -> ind
+
+cabalIndex       :: Entry -> Maybe GenericPackageDescription
+cabalIndex entry = case (Tar.entryContent entry) of
+                     (NormalFile file _) -> case (parsePackageDescription . unpack $ file) of
+                                              (ParseOk _ pkg_desc) -> Just pkg_desc
+                                              _                    -> Nothing
+                     _                   -> Nothing
 
 filterIndexByPV :: (String -> String -> Bool) -> Index -> Index
 filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond p v]
@@ -34,7 +43,7 @@ filterIndexByPV cond index = [ x | x@(p,v,_d) <- index, cond p v]
 indexMapFromList :: [PackageIdentifier] -> IndexMap
 indexMapFromList pids = Map.unionsWith Set.union $
     [ Map.singleton (pName name) (Set.singleton vers)
-    | (PackageIdentifier {pkgName = name,pkgVersion = vers}) <- pids ]
+          | (PackageIdentifier {pkgName = name,pkgVersion = vers}) <- pids ]
 
 pName                    :: PackageName -> String
 pName (PackageName name) = name
