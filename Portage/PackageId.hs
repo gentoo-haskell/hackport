@@ -13,7 +13,7 @@ module Portage.PackageId (
   ) where
 
 import qualified Distribution.Package as Cabal
-import Distribution.Text (Text(..),display)
+import Distribution.Text (Text(..))
 
 import qualified Distribution.Compat.ReadP as Parse
 

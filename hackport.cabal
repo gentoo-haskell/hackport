@@ -26,7 +26,11 @@ Executable	hackport
     Cabal >= 1.6 && < 1.7,
     HTTP >= 4000.0.3,
     zlib,
-    tar
+    tar,
+    array
+  -- array is inherited from cabal-install 
+
+    -- tar >= 0.3.0.0 && < 0.4
 
   if flag(split-base)
     Build-Depends:
@@ -49,7 +53,6 @@ Executable	hackport
     CacheFile
     Diff
     Error
-    Index
     Main
     MaybeRead
     Overlays

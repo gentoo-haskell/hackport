@@ -44,7 +44,6 @@ import Bash
 import qualified Cabal2Ebuild as E
 import Diff
 import Error
-import Index
 import Status
 import Overlays
 import Merge
