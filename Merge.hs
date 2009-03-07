@@ -1,3 +1,4 @@
+{-# OPTIONS -XPatternGuards #-}
 module Merge where
 
 import Control.Monad.Error
@@ -9,7 +10,7 @@ import Data.Version
 import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
-                                       , FlagName(..)
+                                       -- , FlagName(..)
                                        , libBuildInfo
                                        , buildInfo
                                        , extraLibs
@@ -26,7 +27,7 @@ import System.Directory ( getCurrentDirectory
                         )
 import System.IO
 import System.Cmd (system)
-import System.FilePath ((</>), splitPath, joinPath, takeFileName)
+import System.FilePath ((</>))
 import qualified Data.Map as Map
 
 import qualified Cabal2Ebuild as E
@@ -62,7 +63,10 @@ import Debug.Trace
 -- Replace this module once it's included in a cabal release.
 import CabalDistributionVersion (simplifyVersionRange)
 
+(<->) :: String -> String -> String
 a <-> b = a ++ '-':b
+
+(<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
 
 {-
@@ -134,7 +138,6 @@ resolveFullPortageName overlay pn =
   where
   ret c = return (Portage.PackageName c pn)
   mkC = Portage.Category
-  devhaskell = mkC "dev-haskell"
   -- if any of these categories show up in the result list, the match isn't
   -- ambiguous, pick the first match in the list
   priority = [ mkC "dev-haskell"
@@ -204,11 +207,9 @@ merge verbosity repo serverURI args = do
     info verbosity $ match_text ++ (display . packageInfoId $ avail)
 
   let cabal_pkgId = packageInfoId selectedPkg
-      cabal_pkgName = packageName cabal_pkgId
-      pkgVer = packageVersion cabal_pkgId
       norm_pkgId = Portage.normalizeCabalPackageId cabal_pkgId
       norm_pkgName = packageName norm_pkgId
-  category <- resolveCategory verbosity overlay norm_pkgName
+  cat <- resolveCategory verbosity overlay norm_pkgName
 
   let pkgGenericDesc = packageDescription selectedPkg
       Right (pkgDesc0, flags) =
@@ -231,9 +232,9 @@ merge verbosity repo serverURI args = do
            ]
 
       packageNameResolver s = do
-        (Portage.PackageName (Portage.Category cat) (Cabal.PackageName pn))
+        (Portage.PackageName (Portage.Category p_cat) (Cabal.PackageName pn))
           <- resolveFullPortageName portage (Cabal.PackageName s)
-        return $ E.AnyVersionOf (cat </> pn)
+        return $ E.AnyVersionOf (p_cat </> pn)
 
   extra <- findCLibs verbosity packageNameResolver pkgDesc
                     
@@ -252,12 +253,12 @@ merge verbosity repo serverURI args = do
                . addDeps extra
                . addDeps (convertDependencies bt)
                $ E.cabal2ebuild pkgDesc
-      ebuildName = display category </> display norm_pkgId
+      -- ebuildName = display category </> display norm_pkgId
 
-  mergeEbuild verbosity overlayPath (Portage.unCategory category) ebuild
+  mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
   fetchAndDigest
     verbosity
-    (overlayPath </> display category </> display norm_pkgName)
+    (overlayPath </> display cat </> display norm_pkgName)
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
 
@@ -318,10 +319,10 @@ mkUri pid =
    -- http://hackage.haskell.org/packages/archive/Cabal/1.4.0.2/Cabal-1.4.0.2.tar.gz
    fromJust $ parseURI $
     "http://hackage.haskell.org/packages/archive/"
-             </> name </> ver </> name <-> ver <.> "tar.gz"
+             </> p_name </> p_ver </> p_name <-> p_ver <.> "tar.gz"
   where
-    ver = display (packageVersion pid)
-    name = display (packageName pid)
+    p_ver = display (packageVersion pid)
+    p_name = display (packageName pid)
 
 fetchAndDigest :: Verbosity
                -> FilePath -- ^ directory of ebuild
@@ -331,8 +332,8 @@ fetchAndDigest :: Verbosity
 fetchAndDigest verbosity ebuildDir tarballName tarballURI =
   withWorkingDirectory ebuildDir $ do
     notice verbosity $ "Fetching " ++ show tarballURI
-    response <- simpleHTTP (Request tarballURI GET [] "")
-    case response of
+    e_response <- simpleHTTP (Request tarballURI GET [] "")
+    case e_response of
       Left err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
       Right response -> do
         let tarDestination = "/usr/portage/distfiles" </> tarballName
@@ -351,8 +352,8 @@ withWorkingDirectory newDir action = do
     (\_ -> action)
 
 mergeEbuild :: Verbosity -> FilePath -> String -> EBuild -> IO () 
-mergeEbuild verbosity target category ebuild = do 
-  let edir = target </> category </> name ebuild
+mergeEbuild verbosity target cat ebuild = do 
+  let edir = target </> cat </> name ebuild
       elocal = name ebuild ++"-"++ version ebuild <.> "ebuild"
       epath = edir </> elocal
   createDirectoryIfMissing True edir
