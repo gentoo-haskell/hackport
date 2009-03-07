@@ -12,11 +12,6 @@ module Portage.PackageId (
     normalizeCabalPackageId
   ) where
 
-import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
-import Data.List (intersperse)
-import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ((<>))
-
 import qualified Distribution.Package as Cabal
 import Distribution.Text (Text(..),display)
 
@@ -26,8 +21,9 @@ import qualified Portage.Version as Portage
 
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, isDigit, isSpace, toLower)
-import Data.List (intersperse)
+import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
+-- import qualified Data.Char as Char (isDigit)
+-- import Data.List (intersperse)
 
 newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)

@@ -12,8 +12,7 @@ import qualified Portage.Version   as Portage
 
 import qualified Distribution.Package as Cabal
 
-import qualified Distribution.Simple.PackageIndex as PackageIndex
--- import Distribution.Simple.PackageIndex (PackageIndex)
+-- import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Text (simpleParse, display)
 import Distribution.Simple.Utils ( comparing, equating )
 
@@ -62,10 +61,11 @@ inOverlay overlay pkgId = not (Map.null packages)
 load :: FilePath -> IO Overlay
 load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
   where
-    mkOverlay packages = Overlay {
+    mkOverlay _packages = Overlay {
       overlayPath  = dir
 --      TODO: ignore all ebuilds that have no Cabal version number
---      overlayIndex = PackageIndex.fromList packages
+--    , overlayIndex = PackageIndex.fromList packages
+      , overlayMap   = undefined
     }
 
 loadLazy :: FilePath -> IO Overlay
