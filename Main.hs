@@ -10,8 +10,7 @@ import Data.Monoid
 -- cabal
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
-        , falseArg
-        , falseArg, trueArg
+        , trueArg
         , flagToMaybe, flagToList
         , optionVerbosity
         )
@@ -20,7 +19,7 @@ import Distribution.PackageDescription.Configuration
 import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die, cabalVersion )
-import qualified Distribution.PackageDescription as Cabal
+-- import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Simple.PackageIndex as PackageIndex
@@ -32,7 +31,7 @@ import Distribution.Client.Update
 import qualified Distribution.Client.IndexUtils as Index
 
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
-import Portage.PackageId ( normalizeCabalPackageName, normalizeCabalPackageId )
+import Portage.PackageId ( normalizeCabalPackageId )
 
 import Network.URI
 import System.Environment ( getArgs, getProgName )
@@ -87,11 +86,11 @@ listCommand :: CommandUI ListFlags
 listCommand = CommandUI {
     commandName = "list",
     commandSynopsis = "List packages",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for listCommand\n",
     commandUsage = usagePackages "list",
     commandDefaultFlags = defaultListFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_showOrParseArgs ->
       [ optionVerbosity listVerbosity (\v flags -> flags { listVerbosity = v })
       {-
       , option [] ["overlay"]
@@ -103,7 +102,7 @@ listCommand = CommandUI {
   }
 
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
-listAction flags extraArgs globalFlags = do
+listAction flags extraArgs _globalFlags = do
   let verbosity = fromFlag (listVerbosity flags)
   overlayPath <- getOverlayPath verbosity
   let repo = defaultRepo overlayPath
@@ -116,9 +115,9 @@ listAction flags extraArgs globalFlags = do
   mapM_ (putStrLn . pretty) decorated
   where
   pretty :: (Bool, Cabal.PackageIdentifier) -> String
-  pretty (inOverlay, pkgId) =
-      let dec | inOverlay = " * "
-              | otherwise = "   "
+  pretty (isInOverlay, pkgId) =
+      let dec | isInOverlay = " * "
+              | otherwise   = "   "
       in dec ++ display pkgId
 
 
@@ -145,7 +144,7 @@ defaultMakeEbuildFlags = MakeEbuildFlags {
   }
 
 makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
-makeEbuildAction flags args globalFlags = do
+makeEbuildAction flags args _globalFlags = do
   when (null args) $
     die "make-ebuild needs at least one argument"
   let _verbosity = fromFlag (makeEbuildVerbosity flags)
@@ -159,11 +158,11 @@ makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
     commandName = "make-ebuild",
     commandSynopsis = "Make an ebuild from a .cabal file",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for makeEbuildCommand\n",
     commandUsage = \_ -> [],
     commandDefaultFlags = defaultMakeEbuildFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_showOrParseArgs ->
       [ optionVerbosity makeEbuildVerbosity (\v flags -> flags { makeEbuildVerbosity = v })
       ]
   }
@@ -202,11 +201,11 @@ diffCommand :: CommandUI DiffFlags
 diffCommand = CommandUI {
     commandName = "diff",
     commandSynopsis = "Run diff",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for diffCommand\n",
     commandUsage = usagePackages "diff",
     commandDefaultFlags = defaultDiffFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_showOrParseArgs ->
       [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
       {-
       , option [] ["mode"]
@@ -218,7 +217,7 @@ diffCommand = CommandUI {
   }
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
-diffAction flags args globalFlags = do
+diffAction flags args _globalFlags = do
   let verbosity = fromFlag (diffVerbosity flags)
       -- dm0 = fromFlag (diffMode flags)
   dm <- case args of
@@ -267,7 +266,7 @@ updateCommand :: CommandUI UpdateFlags
 updateCommand = CommandUI {
     commandName = "update",
     commandSynopsis = "Update the local cache",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for updateCommand\n",
     commandUsage = usageFlags "update",
     commandDefaultFlags = defaultUpdateFlags,
@@ -284,7 +283,7 @@ updateCommand = CommandUI {
   }
 
 updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
-updateAction flags extraArgs globalFlags = do
+updateAction flags extraArgs _globalFlags = do
   unless (null extraArgs) $
     die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
@@ -330,7 +329,7 @@ statusCommand :: CommandUI StatusFlags
 statusCommand = CommandUI {
     commandName = "status",
     commandSynopsis = "Show status(??)",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for statusCommand\n",
     commandUsage = usagePackages "status",
     commandDefaultFlags = defaultStatusFlags,
@@ -354,7 +353,7 @@ statusCommand = CommandUI {
   }
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
-statusAction flags args globalFlags = do
+statusAction flags args _globalFlags = do
   let verbosity = fromFlag (statusVerbosity flags)
       overlayPathM = flagToMaybe (statusOverlayPath flags)
       portdirM = flagToMaybe (statusPortdirPath flags)
@@ -393,11 +392,11 @@ mergeCommand :: CommandUI MergeFlags
 mergeCommand = CommandUI {
     commandName = "merge",
     commandSynopsis = "Make an ebuild out of hackage package",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
       "TODO: this is the commandDescription for mergeCommand\n",
     commandUsage = usagePackages "merge",
     commandDefaultFlags = defaultMergeFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_showOrParseArgs ->
       [ optionVerbosity mergeVerbosity (\v flags -> flags { mergeVerbosity = v })
 
       {-
@@ -410,14 +409,11 @@ mergeCommand = CommandUI {
   }
 
 mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
-mergeAction flags extraArgs globalFlags = do
+mergeAction flags extraArgs _globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
   overlayPath <- getOverlayPath verbosity
   let repo = defaultRepo overlayPath
   merge verbosity repo (defaultRepoURI overlayPath) extraArgs
-
-mergeAction _ _ _ =
-    throwEx (ArgumentError "'merge' needs exactly one parameter")
 
 -----------------------------------------------------------------------
 -- Utils
@@ -430,9 +426,9 @@ defaultRepo overlayPath =
       repoLocalDir = overlayPath </> ".hackport"
     }
   where
-    hackage = RemoteRepo name uri
-    name = "hackage.haskell.org"
-    uri  = URI "http:" (Just (URIAuth "" name "")) "/packages/archive" "" ""
+    hackage = RemoteRepo server_name uri
+    server_name = "hackage.haskell.org"
+    uri  = URI "http:" (Just (URIAuth "" server_name "")) "/packages/archive" "" ""
 
 defaultRepoURI :: FilePath -> URI
 defaultRepoURI overlayPath =
@@ -450,14 +446,14 @@ reqArgFlag :: ArgPlaceHolder -> SFlags -> LFlags -> Description ->
 reqArgFlag ad = reqArg ad (succeedReadE Flag) flagToList
 
 usagePackages :: String -> String -> String
-usagePackages name pname =
-  "Usage: " ++ pname ++ " " ++ name ++ " [FLAGS] [PACKAGE]\n\n"
-  ++ "Flags for " ++ name ++ ":"
+usagePackages op_name pname =
+  "Usage: " ++ pname ++ " " ++ op_name ++ " [FLAGS] [PACKAGE]\n\n"
+  ++ "Flags for " ++ op_name ++ ":"
 
 usageFlags :: String -> String -> String
-usageFlags name pname =
-      "Usage: " ++ pname ++ " " ++ name ++ " [FLAGS]\n\n"
-      ++ "Flags for " ++ name ++ ":"
+usageFlags flag_name pname =
+      "Usage: " ++ pname ++ " " ++ flag_name ++ " [FLAGS]\n\n"
+      ++ "Flags for " ++ flag_name ++ ":"
 
 -----------------------------------------------------------------------
 -- Main
@@ -478,11 +474,11 @@ globalCommand :: CommandUI GlobalFlags
 globalCommand = CommandUI {
     commandName = "",
     commandSynopsis = "",
-    commandDescription = Just $ \pname ->
+    commandDescription = Just $ \_pname ->
         "TODO: this is the commandDescription for globalCommand\n",
     commandUsage = \_ -> [],
     commandDefaultFlags = defaultGlobalFlags,
-    commandOptions = \showOrParseArgs ->
+    commandOptions = \_showOrParseArgs ->
         [ option ['V'] ["version"]
             "Print version information"
             globalVersion (\v flags -> flags { globalVersion = v })
