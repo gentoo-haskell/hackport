@@ -92,14 +92,14 @@ module CabalDistributionVersion (
 
  ) where
 
-import Data.Version     ( Version(..) )
+-- import Data.Version     ( Version(..) )
 
-import Distribution.Text ( Text(..) )
-import qualified Distribution.Compat.ReadP as Parse
-import Distribution.Compat.ReadP ((+++))
-import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ((<>), (<+>))
-import qualified Data.Char as Char (isDigit)
+-- import Distribution.Text ( Text(..) )
+-- import qualified Distribution.Compat.ReadP as Parse
+-- import Distribution.Compat.ReadP ((+++))
+-- import qualified Text.PrettyPrint as Disp
+-- import Text.PrettyPrint ((<>), (<+>))
+-- import qualified Data.Char as Char (isDigit)
 import Control.Exception (assert)
 
 import Distribution.Version
@@ -217,7 +217,7 @@ foldVersionRange :: a -> (Version -> a) -> (Version -> a) -> (Version -> a)
                  -> (Version -> Version -> a)
                  -> (a -> a -> a)  -> (a -> a -> a)
                  -> VersionRange -> a
-foldVersionRange anyv this later earlier wildcard union intersect = fold
+foldVersionRange anyv this later earlier _wildcard union intersect = fold
   where
     fold AnyVersion                     = anyv
     fold (ThisVersion v)                = this v

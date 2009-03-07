@@ -139,7 +139,7 @@ convertDependencies :: [Cabal.Dependency] -> [Dependency]
 convertDependencies = concatMap convertDependency
 
 convertDependency :: Cabal.Dependency -> [Dependency]
-convertDependency (Cabal.Dependency pname@(Cabal.PackageName name) _)
+convertDependency (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency pname versionRange)
   = case versionRange of
