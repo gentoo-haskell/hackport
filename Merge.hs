@@ -308,9 +308,9 @@ buildToolsDeps (PackageDescription { library = lib, executables = exes }) = caba
 
 buildToolsTable :: [(String, String)]
 buildToolsTable =
-  [ ("happy", "dev-haskell/happy")
-  , ("alex", "dev-haskell/alex")
-  , ("c2hs", "dev-haskell/c2hs")
+  [ ("happy", "happy") -- TODO: we would like to specify both cat and pkg name
+  , ("alex", "alex")
+  , ("c2hs", "c2hs")
   ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
