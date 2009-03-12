@@ -10,7 +10,7 @@ import Data.Version
 import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
-                                       -- , FlagName(..)
+                                       , FlagName(..)
                                        , libBuildInfo
                                        , buildInfo
                                        , extraLibs
@@ -216,6 +216,7 @@ merge verbosity repo serverURI args = do
         finalizePackageDescription
           [ -- XXX: common things we should enable/disable?
             -- (FlagName "small_base", True) -- try to use small base
+            (FlagName "cocoa", False)
           ]
           (Nothing :: Maybe (PackageIndex PackageIdentifier))
           buildOS buildArch
