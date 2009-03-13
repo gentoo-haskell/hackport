@@ -48,9 +48,14 @@ getOverlays = do
   local   <- getLocalOverlay
   portage <- getGlobalPortageOverlays
   paludis <- getGlobalPaludisOverlays
-  return $ nub $ maybeToList local
+  return $ nub $ map clean $
+                 maybeToList local
               ++ portage
               ++ paludis
+  where
+  clean path = case reverse path of
+                '/':p -> reverse p
+                _ -> path
 
 getGlobalPortageOverlays :: IO [String]
 getGlobalPortageOverlays =
