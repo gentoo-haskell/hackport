@@ -179,10 +179,13 @@ coreLibs = map Cabal.PackageName
 --,"bytestring"   --already has ebuild
   ,"containers"
   ,"directory"
+  ,"editline"
 --,"filepath"     --already has ebuild
   ,"ghc"
+  ,"ghc-prim"
   ,"haskell98"
   ,"hpc"          --has ebuild, but only in the overlay
+  ,"integer"
   ,"old-locale"
   ,"old-time"
   ,"packedstring"
