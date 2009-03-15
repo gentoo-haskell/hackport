@@ -337,7 +337,8 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI =
     case e_response of
       Left err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
       Right response -> do
-        let tarDestination = "/usr/portage/distfiles" </> tarballName
+        repo_info <- Overlay.getInfo
+        let tarDestination = (Overlay.distfiles_dir repo_info) </> tarballName
         notice verbosity $ "Saving to " ++ tarDestination
         writeFile tarDestination (rspBody response)
         notice verbosity "Recalculating digests..."

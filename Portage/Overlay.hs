@@ -4,6 +4,8 @@ module Portage.Overlay
   , load, loadLazy
   , reduceOverlay
   , inOverlay
+  , getInfo -- :: IO [(String, String)]
+  , LocalInfo(..)
   )
   where
 
@@ -22,6 +24,11 @@ import Data.Map (Map)
 import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
+
+import Util (run_cmd)
+import Control.Monad (mplus)
+import Data.Char (isSpace)
+import Data.Maybe (fromJust)
 
 --main = do
 --  pkgs <- blingProgress . Progress.fromList . readOverlay
@@ -167,3 +174,38 @@ getDirectoryTree = dirEntries
     ignore ['.']      = True
     ignore ['.', '.'] = True
     ignore _          = False
+
+
+data LocalInfo =
+    LocalInfo { distfiles_dir :: String
+              }
+    deriving (Show)
+
+defaultInfo :: LocalInfo
+defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles" }
+
+-- query paludis and then emerge
+getInfo :: IO LocalInfo
+getInfo = do paludis_info <- (fmap . fmap) parse_paludis_output (run_cmd "paludis --info")
+             emerge_info <- (fmap . fmap) parse_emerge_output (run_cmd "emerge --info")
+             return $ fromJust $ paludis_info `mplus` emerge_info `mplus` (Just defaultInfo)
+
+parse_paludis_output :: String -> LocalInfo
+parse_paludis_output raw_data =
+    foldl updateInfo defaultInfo $ lines raw_data
+    where updateInfo info str =
+              case (break (== ':') (refine str)) of
+                  -- TODO: not quite true. shoud parse info on 'by repo' basis
+                  -- TODO: we are interested in 'Repository gentoo:' actually
+                  ("distdir", ':':value) -> info{distfiles_dir = refine value}
+                  _ -> info
+          refine = dropWhile isSpace
+
+parse_emerge_output :: String -> LocalInfo
+parse_emerge_output raw_data =
+    foldl updateInfo defaultInfo $ lines raw_data
+    where updateInfo info str =
+              case (break (== '=') str) of
+                  ("DISTDIR", '=':value) -> info{distfiles_dir = unquote value}
+                  _                      -> info
+          unquote = init . tail
