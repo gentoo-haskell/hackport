@@ -12,7 +12,7 @@ module Util
 
 import System.IO
 import System.Process
-import System.Exit
+import System.Exit ()
 
 -- 'run_cmd' executes command and returns it's standard output
 -- as 'String'.

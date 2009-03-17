@@ -6,9 +6,9 @@ import Data.Maybe (maybeToList, listToMaybe)
 import System.Directory
 import System.FilePath ((</>), splitPath, joinPath)
 
-import Bash
 import Error
 import CacheFile
+import Portage.Overlay
 
 -- cabal
 import Distribution.Verbosity
@@ -45,24 +45,15 @@ getOverlayPath verbosity = do
 
 getOverlays :: IO [String]
 getOverlays = do
-  local   <- getLocalOverlay
-  portage <- getGlobalPortageOverlays
-  paludis <- getGlobalPaludisOverlays
+  local    <- getLocalOverlay
+  overlays <- overlay_list `fmap` getInfo
   return $ nub $ map clean $
                  maybeToList local
-              ++ portage
-              ++ paludis
+              ++ overlays
   where
   clean path = case reverse path of
                 '/':p -> reverse p
                 _ -> path
-
-getGlobalPortageOverlays :: IO [String]
-getGlobalPortageOverlays =
-  fmap words (runBash "source /etc/make.conf;echo -n $PORTDIR_OVERLAY")
-
-getGlobalPaludisOverlays :: IO [String]
-getGlobalPaludisOverlays = return [] -- TODO: fix
 
 getLocalOverlay :: IO (Maybe FilePath)
 getLocalOverlay = do
