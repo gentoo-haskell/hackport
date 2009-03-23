@@ -30,7 +30,8 @@ import Distribution.Client.Types
 import Distribution.Client.Update
 import qualified Distribution.Client.IndexUtils as Index
 
-import Portage.Overlay as Overlay ( loadLazy, inOverlay, getInfo, LocalInfo(..) )
+import Portage.Overlay as Overlay ( loadLazy, inOverlay )
+import Portage.Host as Host ( getInfo, portage_dir )
 import Portage.PackageId ( normalizeCabalPackageId )
 
 import Network.URI
@@ -357,7 +358,7 @@ statusAction flags args _globalFlags = do
       overlayPathM = flagToMaybe (statusOverlayPath flags)
       portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
-  portdir <- maybe (Overlay.portage_dir `fmap` Overlay.getInfo) return portdirM
+  portdir <- maybe (Host.portage_dir `fmap` Host.getInfo) return portdirM
   overlayPath <- maybe (getOverlayPath verbosity) return overlayPathM
   runStatus verbosity portdir overlayPath toPortdir args
 

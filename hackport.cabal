@@ -60,6 +60,7 @@ Executable	hackport
     Portage.Version
     Portage.PackageId
     Portage.Overlay
+    Portage.Host
     Setup
     Status
     Merge

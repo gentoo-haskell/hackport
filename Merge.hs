@@ -52,6 +52,7 @@ import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
+import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
 
 import Cabal2Ebuild
@@ -179,7 +180,7 @@ merge verbosity repo serverURI args = do
 
   overlayPath <- getOverlayPath verbosity
   overlay <- Overlay.loadLazy overlayPath
-  portage_path <- Overlay.portage_dir `fmap` Overlay.getInfo
+  portage_path <- Host.portage_dir `fmap` Host.getInfo
   portage <- Overlay.loadLazy portage_path
   index <- fmap packageIndex $ getAvailablePackages verbosity [ repo ]
 
@@ -338,8 +339,8 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI =
     case e_response of
       Left err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
       Right response -> do
-        repo_info <- Overlay.getInfo
-        let tarDestination = (Overlay.distfiles_dir repo_info) </> tarballName
+        repo_info <- Host.getInfo
+        let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
         notice verbosity $ "Saving to " ++ tarDestination
         writeFile tarDestination (rspBody response)
         notice verbosity "Recalculating digests..."

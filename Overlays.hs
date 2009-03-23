@@ -8,7 +8,7 @@ import System.FilePath ((</>), splitPath, joinPath)
 
 import Error
 import CacheFile
-import Portage.Overlay
+import Portage.Host
 
 -- cabal
 import Distribution.Verbosity
