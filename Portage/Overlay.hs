@@ -179,11 +179,13 @@ getDirectoryTree = dirEntries
 data LocalInfo =
     LocalInfo { distfiles_dir :: String
               , overlay_list  :: [FilePath]
+              , portage_dir   :: FilePath
               }
 
 defaultInfo :: LocalInfo
 defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
                         , overlay_list  = []
+                        , portage_dir   = "/usr/portage"
                         }
 
 -- query paludis and then emerge
@@ -213,9 +215,12 @@ parse_paludis_output raw_data =
     where updateInfo info po =
               case (format po) of
                   "ebuild" | (repo_name po) /= "gentoo" -- hack, skip main repo
-                      -> info{ distfiles_dir = distdir po -- ew override last distdir here (FIXME?)
+                      -> info{ distfiles_dir = distdir po -- we override last distdir here (FIXME?)
                              , overlay_list  = (location po) : overlay_list info
                              }
+                  "ebuild" -- hack, main repo -- (repo_name po) == "gentoo"
+                      -> info{ portage_dir = location po }
+
                   _   -> info
 
 parse_paludis_overlays :: String -> [LocalPaludisOverlay]
@@ -249,6 +254,8 @@ parse_emerge_output raw_data =
               case (break (== '=') str) of
                   ("DISTDIR", '=':value)
                       -> info{distfiles_dir = unquote value}
+                  ("PORTDIR", '=':value)
+                      -> info{portage_dir = unquote value}
                   ("PORTDIR_OVERLAY", '=':value)
                       -> info{overlay_list = words $ unquote value}
                   _   -> info

@@ -12,15 +12,20 @@ module Util
 
 import System.IO
 import System.Process
-import System.Exit ()
+import System.Exit (ExitCode(..))
 
 -- 'run_cmd' executes command and returns it's standard output
 -- as 'String'.
 
 run_cmd :: String -> IO (Maybe String)
-run_cmd cmd = do (_hI, hO, _hE, hProcess) <- runInteractiveCommand cmd
+run_cmd cmd = do (hI, hO, hE, hProcess) <- runInteractiveCommand cmd
+                 hClose hI
                  output <- hGetContents hO
-                 _exitCode <- waitForProcess hProcess
-                 return $ if (output == "")
+                 errors <- hGetContents hE -- TODO: propagate error to caller
+                 length output `seq` hClose hO
+                 length errors `seq` hClose hE
+
+                 exitCode <- waitForProcess hProcess
+                 return $ if (output == "" || exitCode /= ExitSuccess)
                           then Nothing
                           else Just output

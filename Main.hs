@@ -30,7 +30,7 @@ import Distribution.Client.Types
 import Distribution.Client.Update
 import qualified Distribution.Client.IndexUtils as Index
 
-import Portage.Overlay as Overlay ( loadLazy, inOverlay )
+import Portage.Overlay as Overlay ( loadLazy, inOverlay, getInfo, LocalInfo(..) )
 import Portage.PackageId ( normalizeCabalPackageId )
 
 import Network.URI
@@ -39,7 +39,6 @@ import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
 import System.IO
 
-import Bash
 import qualified Cabal2Ebuild as E
 import Diff
 import Error
@@ -358,7 +357,7 @@ statusAction flags args _globalFlags = do
       overlayPathM = flagToMaybe (statusOverlayPath flags)
       portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
-  portdir <- maybe getSystemPortdir return portdirM
+  portdir <- maybe (Overlay.portage_dir `fmap` Overlay.getInfo) return portdirM
   overlayPath <- maybe (getOverlayPath verbosity) return overlayPathM
   runStatus verbosity portdir overlayPath toPortdir args
 

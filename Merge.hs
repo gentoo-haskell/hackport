@@ -179,7 +179,8 @@ merge verbosity repo serverURI args = do
 
   overlayPath <- getOverlayPath verbosity
   overlay <- Overlay.loadLazy overlayPath
-  portage <- Overlay.loadLazy "/usr/portage"
+  portage_path <- Overlay.portage_dir `fmap` Overlay.getInfo
+  portage <- Overlay.loadLazy portage_path
   index <- fmap packageIndex $ getAvailablePackages verbosity [ repo ]
 
   -- find all packages that maches the user specified package name

@@ -46,7 +46,6 @@ Executable	hackport
   ghc-options: -Wall
   other-modules:
     AnsiColor
-    Bash
     BlingBling
     Cabal2Ebuild
     CabalDistributionVersion
