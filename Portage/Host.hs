@@ -4,9 +4,8 @@ module Portage.Host
   ) where
 
 import Util (run_cmd)
-import Control.Monad (mplus)
 import Data.Char (isSpace)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 
 
 data LocalInfo =
@@ -23,9 +22,17 @@ defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
 
 -- query paludis and then emerge
 getInfo :: IO LocalInfo
-getInfo = do paludis_info <- (fmap . fmap) parse_paludis_output (run_cmd "paludis --info")
-             emerge_info <- (fmap . fmap) parse_emerge_output (run_cmd "emerge --info")
-             return $ fromJust $ paludis_info `mplus` emerge_info `mplus` (Just defaultInfo)
+getInfo = fromJust `fmap`
+    performMaybes [ (fmap . fmap) parse_paludis_output (run_cmd "paludis --info")
+                  , (fmap . fmap) parse_emerge_output  (run_cmd "emerge --info")
+                  , return (Just defaultInfo)
+                  ]
+    where performMaybes [] = return Nothing
+          performMaybes (act:acts) =
+              do r <- act
+                 if isJust r
+                     then return r
+                     else performMaybes acts
 
 data LocalPaludisOverlay =
     LocalPaludisOverlay { repo_name :: String
