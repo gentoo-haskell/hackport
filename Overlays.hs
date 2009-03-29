@@ -19,7 +19,8 @@ import Distribution.Simple.Utils ( info )
 getOverlayPath :: Verbosity -> Maybe FilePath -> IO String
 getOverlayPath verbosity override_overlay = do
   overlays <- if isJust override_overlay
-                  then return [fromJust override_overlay]
+                  then do info verbosity $ "Forced " ++ fromJust override_overlay
+                          return [fromJust override_overlay]
                   else getOverlays
   case overlays of
     [] -> throwEx NoOverlay
