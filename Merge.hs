@@ -160,8 +160,8 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == pkgVersion (packageInfoId avail)
 
-merge :: Verbosity -> Repo -> URI -> [String] -> IO ()
-merge verbosity repo serverURI args = do
+merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> IO ()
+merge verbosity repo serverURI args overlayPath = do
   (m_category, user_pName, m_version) <-
     case readPackageString args of
       Left err -> throwEx err
@@ -178,7 +178,6 @@ merge verbosity repo serverURI args = do
 
   let (Cabal.PackageName user_pname_str) = user_pName
 
-  overlayPath <- getOverlayPath verbosity
   overlay <- Overlay.loadLazy overlayPath
   portage_path <- Host.portage_dir `fmap` Host.getInfo
   portage <- Overlay.loadLazy portage_path

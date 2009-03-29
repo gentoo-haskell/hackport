@@ -102,9 +102,9 @@ listCommand = CommandUI {
   }
 
 listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
-listAction flags extraArgs _globalFlags = do
+listAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (listVerbosity flags)
-  overlayPath <- getOverlayPath verbosity
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   let repo = defaultRepo overlayPath
   index <- fmap packageIndex (Index.getAvailablePackages verbosity [ repo ])
   overlay <- Overlay.loadLazy overlayPath
@@ -217,7 +217,7 @@ diffCommand = CommandUI {
   }
 
 diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
-diffAction flags args _globalFlags = do
+diffAction flags args globalFlags = do
   let verbosity = fromFlag (diffVerbosity flags)
       -- dm0 = fromFlag (diffMode flags)
   dm <- case args of
@@ -231,7 +231,7 @@ diffAction flags args _globalFlags = do
           -- TODO: ["package",packagePattern] ->
           --          return ShowPackagePattern packagePattern
           _ -> die $ "Unknown mode: " ++ unwords args
-  overlayPath <- getOverlayPath verbosity
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   let serverURI = defaultRepoURI overlayPath
       repo = defaultRepo overlayPath
   runDiff verbosity overlayPath dm repo
@@ -283,11 +283,11 @@ updateCommand = CommandUI {
   }
 
 updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
-updateAction flags extraArgs _globalFlags = do
+updateAction flags extraArgs globalFlags = do
   unless (null extraArgs) $
     die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
-  overlayPath <- getOverlayPath verbosity
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   update verbosity [ defaultRepo overlayPath ]
   
 
@@ -353,13 +353,13 @@ statusCommand = CommandUI {
   }
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
-statusAction flags args _globalFlags = do
+statusAction flags args globalFlags = do
   let verbosity = fromFlag (statusVerbosity flags)
       overlayPathM = flagToMaybe (statusOverlayPath flags)
       portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
   portdir <- maybe (Host.portage_dir `fmap` Host.getInfo) return portdirM
-  overlayPath <- maybe (getOverlayPath verbosity) return overlayPathM
+  overlayPath <- maybe (getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)) return overlayPathM
   runStatus verbosity portdir overlayPath toPortdir args
 
 -----------------------------------------------------------------------
@@ -409,11 +409,11 @@ mergeCommand = CommandUI {
   }
 
 mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
-mergeAction flags extraArgs _globalFlags = do
+mergeAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
-  overlayPath <- getOverlayPath verbosity
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   let repo = defaultRepo overlayPath
-  merge verbosity repo (defaultRepoURI overlayPath) extraArgs
+  merge verbosity repo (defaultRepoURI overlayPath) extraArgs overlayPath
 
 -----------------------------------------------------------------------
 -- Utils
@@ -459,16 +459,18 @@ usageFlags flag_name pname =
 -- Main
 -----------------------------------------------------------------------
 
-data GlobalFlags = GlobalFlags {
-    globalVersion :: Flag Bool,
-    globalNumericVersion :: Flag Bool
-    }
+data GlobalFlags =
+    GlobalFlags { globalVersion :: Flag Bool
+                , globalNumericVersion :: Flag Bool
+                , globalPathToOverlay :: Flag (Maybe FilePath)
+                }
 
 defaultGlobalFlags :: GlobalFlags
-defaultGlobalFlags = GlobalFlags {
-    globalVersion = Flag False,
-    globalNumericVersion = Flag False
-    }
+defaultGlobalFlags =
+    GlobalFlags { globalVersion = Flag False
+                , globalNumericVersion = Flag False
+                , globalPathToOverlay = Flag Nothing
+                }
 
 globalCommand :: CommandUI GlobalFlags
 globalCommand = CommandUI {
@@ -487,6 +489,10 @@ globalCommand = CommandUI {
             "Print just the version number"
             globalNumericVersion (\v flags -> flags { globalNumericVersion = v })
             trueArg
+        , option ['p'] ["overlay-path"]
+            "Override search path list where .hackport/ lives (default list: ['.', paludis-ovls or emerge-ovls])"
+            globalPathToOverlay (\path flags -> flags { globalPathToOverlay = path })
+            (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms])) -- FIXME: i should be optional
         ]
     }
 

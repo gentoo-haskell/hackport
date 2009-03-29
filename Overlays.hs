@@ -1,8 +1,10 @@
-module Overlays where
+module Overlays
+    ( getOverlayPath
+    ) where
 
 import Control.Monad
 import Data.List (nub, inits)
-import Data.Maybe (maybeToList, listToMaybe)
+import Data.Maybe (maybeToList, listToMaybe, isJust, fromJust)
 import System.Directory
 import System.FilePath ((</>), splitPath, joinPath)
 
@@ -14,9 +16,11 @@ import Portage.Host
 import Distribution.Verbosity
 import Distribution.Simple.Utils ( info )
 
-getOverlayPath :: Verbosity -> IO String
-getOverlayPath verbosity = do
-  overlays <- getOverlays
+getOverlayPath :: Verbosity -> Maybe FilePath -> IO String
+getOverlayPath verbosity override_overlay = do
+  overlays <- if isJust override_overlay
+                  then return [fromJust override_overlay]
+                  else getOverlays
   case overlays of
     [] -> throwEx NoOverlay
     [x] -> return x
