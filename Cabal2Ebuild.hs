@@ -179,7 +179,7 @@ coreLibs = map Cabal.PackageName
 --,"bytestring"   --already has ebuild
   ,"containers"
   ,"directory"
-  ,"editline"
+  --,"editline"
 --,"filepath"     --already has ebuild
   ,"ghc"
   ,"ghc-prim"
