@@ -221,7 +221,7 @@ merge verbosity repo serverURI args overlayPath = do
           ]
           (Nothing :: Maybe (PackageIndex PackageIdentifier))
           buildOS buildArch
-          (CompilerId GHC (Version [6,10,1] []))
+          (CompilerId GHC (Version [6,10,2] []))
           [] pkgGenericDesc
       pkgDesc = let deps = [ Dependency pn (simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
