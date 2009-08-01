@@ -91,7 +91,7 @@ Features
                 but the ebuilds are not identical
 
         Optional parameters:
-            'toportage'
+            '--to-portage'
                 Only print packages that are likely to be interesting to
                 move to the portage tree.
                 It will print packages when they exist in both portage and
