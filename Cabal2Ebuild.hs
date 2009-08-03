@@ -39,9 +39,12 @@ import qualified Distribution.Text as Cabal  (display)
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 
 import Data.Char          (toLower,isUpper)
-import Data.List          (intercalate, groupBy, partition, nub, sortBy, init, last)
+import Data.List          (groupBy, partition, nub, sortBy, init, last)
 import Data.Ord           (comparing)
 import Data.Maybe         (catMaybes, fromJust)
+
+import Portage.Dependency
+import Portage.Version
 
 data EBuild = EBuild {
     name :: String,
@@ -54,25 +57,12 @@ data EBuild = EBuild {
     keywords :: [String],
     iuse :: [String],
     depend :: [Dependency],
+    rdepend :: [Dependency],
     features :: [String],
     -- comments on various fields for communicating stuff to the user
     licenseComments :: String,
     my_pn :: Maybe String --If the package's name contains upper-case
   }
-
-type Package = String
-newtype Version = Version [Int] deriving (Ord, Eq)
-type UseFlag = String
-data Dependency = AnyVersionOf               Package
-                | ThisVersionOf      Version Package   -- =package-version
-                | LaterVersionOf     Version Package   -- >package-version
-                | EarlierVersionOf   Version Package   -- <package-version
-                | OrLaterVersionOf   Version Package   -- >=package-version
-                | OrEarlierVersionOf Version Package   -- <=package-version
-                | DependEither Dependency Dependency   -- depend || depend
-                | DependIfUse  UseFlag    Dependency   -- use? ( depend )
-                | ThisMajorOf        Version Package   -- =package-version*
-    deriving (Eq,Show)
 
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
@@ -86,6 +76,7 @@ ebuildTemplate = EBuild {
     keywords = ["~amd64","~x86"],
     iuse = [],
     depend = [],
+    rdepend = [],
     features = [],
     licenseComments = "",
     my_pn = Nothing
@@ -116,7 +107,7 @@ cabal2ebuild pkg = ebuildTemplate {
         cabalPkgName = Cabal.display $ Cabal.pkgName (Cabal.package pkg)
 
 defaultDepGHC :: Dependency
-defaultDepGHC     = OrLaterVersionOf (Version [6,6,1]) "dev-lang/ghc"
+defaultDepGHC     = OrLaterVersionOf (Version [6,6,1] Nothing [] 0) "dev-lang/ghc"
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
@@ -165,12 +156,9 @@ convertDependency (Cabal.Dependency pname versionRange)
     convert (Cabal.UnionVersionRanges r1 r2)
       = DependEither (convert r1) (convert r2)
 
--- converts Cabal versiion type to hackopr version
+-- converts Cabal version type to hackport version
 cabalVtoHPv :: Cabal.Version -> Version
-cabalVtoHPv = Version . Cabal.versionBranch
-
-instance Show Version where
-    show (Version v) = intercalate "." $ map show v
+cabalVtoHPv = (\v -> Version v Nothing [] 0) . Cabal.versionBranch
 
 coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName
@@ -230,20 +218,6 @@ showEBuild ebuild =
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
-
-showDepend :: Dependency -> Package
-showDepend (AnyVersionOf         p) = p
-showDepend (ThisVersionOf      v p) = "~" ++ p ++ "-" ++ show v
-showDepend (LaterVersionOf     v p) = ">" ++ p ++ "-" ++ show v
-showDepend (EarlierVersionOf   v p) = "<" ++ p ++ "-" ++ show v
-showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ show v
-showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ show v
-showDepend (DependEither       dep1 dep2) = showDepend dep1
-                                     ++ " || " ++ showDepend dep2
-showDepend (DependIfUse        useflag dep@(DependEither _ _))
-                                                = useflag ++ "? " ++ showDepend dep
-showDepend (DependIfUse        useflag dep)  = useflag ++ "? ( " ++ showDepend dep++ " )"
-showDepend (ThisMajorOf        v p) = "=" ++ p ++ "-" ++ show v ++ "*"
 
 ss :: String -> String -> String
 ss = showString
@@ -326,10 +300,10 @@ simplify_group_table    p Nothing  Nothing  Nothing  (Just v) Nothing  = [OrEarl
 simplify_group_table    p Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVersionOf v p]
 
 -- 2) simplification passes
-simplify_group_table    p (Just (Version v1)) Nothing (Just (Version v2)) Nothing Nothing
+simplify_group_table    p (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ _ _)) Nothing Nothing
     -- specian case: >=a-v.N a<v.(N+1)   => =a-v.N*
-    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1) p]
-    | otherwise                                        = [OrLaterVersionOf (Version v1) p, EarlierVersionOf (Version v2) p]
+    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1 Nothing [] 0) p]
+    | otherwise                                        = [OrLaterVersionOf (Version v1 Nothing [] 0) p, EarlierVersionOf (Version v2 Nothing [] 0) p]
 
 -- TODO: simplify constraints of type: >=a-v1; > a-v2 and such
 

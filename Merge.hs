@@ -1,4 +1,41 @@
 {-# OPTIONS -XPatternGuards #-}
+{- | Merge a package from hackage to an ebuild.  
+
+Merging a library
+=================
+
+Compile time:
+  ghc
+  cabal
+  build tools
+  deps
+  extra-libs (c-libs)
+
+Run time:
+  deps
+  extra-libs (c-libs)
+
+RDEPEND="${DEPS} ${EXTRALIBS}"
+DEPEND="${RDEPEND} ghc cabal ${BUILDTOOLS}"
+
+Merging an executable
+=====================
+Packages with both executable and library must be treated as libraries, as it will impose a stricter DEPEND.
+
+Compile time:
+  ghc
+  cabal
+  build tools
+  deps
+  extra-libs (c-libs)
+
+Run time:
+  extra-libs (c-libs)
+
+RDEPEND="${EXTRALIBS}"
+DEPEND="${RDEPEND} ghc cabal ${BUILDTOOLS}"
+
+-}
 module Merge where
 
 import Control.Monad.Error
@@ -6,7 +43,6 @@ import Control.Exception
 import Data.Char
 import Data.Maybe
 import Data.List
-import Data.Version
 import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
@@ -32,7 +68,6 @@ import qualified Data.Map as Map
 
 import qualified Cabal2Ebuild as E
 import Error as E
-import Overlays
 
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
@@ -221,7 +256,7 @@ merge verbosity repo serverURI args overlayPath = do
           ]
           (Nothing :: Maybe (PackageIndex PackageIdentifier))
           buildOS buildArch
-          (CompilerId GHC (Version [6,10,4] []))
+          (CompilerId GHC (Cabal.Version [6,10,4] []))
           [] pkgGenericDesc
       pkgDesc = let deps = [ Dependency pn (simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
@@ -267,6 +302,9 @@ merge verbosity repo serverURI args overlayPath = do
 addDeps :: [E.Dependency] -> EBuild -> EBuild
 addDeps d e = e { depend = depend e ++ d }
 
+addRDeps :: [E.Dependency] -> EBuild -> EBuild
+addRDeps d e = e { rdepend = rdepend e ++ d }
+
 findCLibs :: Verbosity -> (String -> Maybe E.Dependency) -> PackageDescription -> IO [E.Dependency]
 findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do
   debug verbosity "Mapping extra-libraries into portage packages..."
@@ -299,6 +337,8 @@ staticTranslateExtraLib lib = lookup lib m
   where
   m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
       , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
+      , ("mysqlclient", E.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) "virtual/mysql")
+      , ("pq", E.LaterVersionOf (Portage.Version [7] Nothing [] 0) "virtual/postgresql-base")
       ]
 
 buildToolsDeps :: PackageDescription -> [Cabal.Dependency]

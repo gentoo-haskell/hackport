@@ -58,6 +58,7 @@ Executable	hackport
     P2
     Portage
     Portage.Version
+    Portage.Dependency
     Portage.PackageId
     Portage.Overlay
     Portage.Host
