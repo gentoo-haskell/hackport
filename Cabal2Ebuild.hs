@@ -113,8 +113,8 @@ defaultDepGHC     = OrLaterVersionOf (Version [6,6,1] Nothing [] 0) "dev-lang/gh
 convertLicense :: Cabal.License -> String
 convertLicense Cabal.GPL          = "GPL-2"    -- almost certainly version 2
 convertLicense Cabal.LGPL         = "LGPL-2.1" -- probably version 2.1
-convertLicense Cabal.BSD3         = "BSD"      -- do we really not
-convertLicense Cabal.BSD4         = "BSD"      -- distinguish between these?
+convertLicense Cabal.BSD3         = "BSD"
+convertLicense Cabal.BSD4         = "BSD-4"
 convertLicense Cabal.PublicDomain = "public-domain"
 convertLicense Cabal.AllRightsReserved = ""
 convertLicense _                  = ""
