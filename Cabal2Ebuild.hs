@@ -164,7 +164,8 @@ coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName
   ["array"
   ,"base"
---,"bytestring"   --already has ebuild
+  ,"bytestring"   -- intentionally no ebuild. use ghc's version
+                  -- to avoid dreaded 'diamond dependency' problem
   ,"containers"
   ,"directory"
   --,"editline"
