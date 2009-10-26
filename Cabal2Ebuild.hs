@@ -183,6 +183,7 @@ coreLibs = map Cabal.PackageName
   ,"random"
   ,"readline"     --has ebuild, but only in the overlay
   ,"rts"
+  ,"syb"          -- intentionally no ebuild. use ghc's version
   ,"template-haskell"
   ,"unix"         --has ebuild, but only in the overlay
   ]
