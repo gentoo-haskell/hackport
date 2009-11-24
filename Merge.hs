@@ -34,7 +34,7 @@ Run time:
   extra-libs (c-libs)
 
 RDEPEND="${EXTRALIBS}"
-DEPEND="${RDEPEND} ghc cabal ${BUILDTOOLS}"
+DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
 
 -}
 module Merge where
