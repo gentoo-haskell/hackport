@@ -8,15 +8,16 @@ Compile time:
   ghc
   cabal
   build tools
-  deps
+  deps (haskell dependencies)
   extra-libs (c-libs)
 
 Run time:
-  deps
+  ghc
+  deps (haskell dependencies)
   extra-libs (c-libs)
 
-RDEPEND="${DEPS} ${EXTRALIBS}"
-DEPEND="${RDEPEND} ghc cabal ${BUILDTOOLS}"
+RDEPEND="ghc ${DEPS} ${EXTRALIBS}"
+DEPEND="${RDEPEND} cabal ${BUILDTOOLS}"
 
 Merging an executable
 =====================
