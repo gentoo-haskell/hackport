@@ -23,7 +23,7 @@ import qualified Data.Version as Cabal
 import Distribution.Verbosity
 import Distribution.Text(display)
 import qualified Distribution.Package as Cabal
-import qualified Distribution.Simple.PackageIndex as Cabal
+import qualified Distribution.Client.PackageIndex as Index
 -- import qualified Distribution.InstalledPackageInfo as Cabal
 import Distribution.Simple.Utils (equating)
 
@@ -76,11 +76,11 @@ runDiff verbosity overlayPath dm repo = do
   let (subHackage, subOverlay)
         = case dm of
             ShowPackages pkgs ->
-              (concatMap (Cabal.searchByNameSubstring hackageIndex) pkgs
-              ,concatMap (Cabal.searchByNameSubstring overlayIndex) pkgs)
+              (concatMap (Index.searchByNameSubstring hackageIndex) pkgs
+              ,concatMap (Index.searchByNameSubstring overlayIndex) pkgs)
             _ ->
-              (Cabal.allPackages hackageIndex
-              ,Cabal.allPackages overlayIndex)
+              (Index.allPackages hackageIndex
+              ,Index.allPackages overlayIndex)
   diff subHackage subOverlay dm
 
 data PackageCompareInfo = PackageCompareInfo {

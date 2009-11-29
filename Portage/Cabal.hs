@@ -3,7 +3,7 @@ module Portage.Cabal
 
 import qualified Data.Map as Map
 
-import qualified Distribution.Simple.PackageIndex as Cabal
+import qualified Distribution.Client.PackageIndex as Cabal
 
 import qualified Portage.Overlay as Portage
 

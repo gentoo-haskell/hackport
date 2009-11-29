@@ -111,8 +111,8 @@ defaultDepGHC     = OrLaterVersionOf (Version [6,6,1] Nothing [] 0) "dev-lang/gh
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
-convertLicense Cabal.GPL          = "GPL-2"    -- almost certainly version 2
-convertLicense Cabal.LGPL         = "LGPL-2.1" -- probably version 2.1
+convertLicense (Cabal.GPL mv)     = "GPL-" ++ (maybe "2" show mv)  -- almost certainly version 2
+convertLicense (Cabal.LGPL mv)    = "LGPL-" ++ (maybe "2.1" show mv) -- probably version 2.1
 convertLicense Cabal.BSD3         = "BSD"
 convertLicense Cabal.BSD4         = "BSD-4"
 convertLicense Cabal.PublicDomain = "public-domain"

@@ -54,8 +54,6 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , buildTools )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
--- import Distribution.PackageDescription.Parse ( showPackageDescription )
-import Distribution.Simple.PackageIndex (PackageIndex)
 import Distribution.Text (display)
 
 import System.Directory ( getCurrentDirectory
@@ -73,7 +71,7 @@ import Error as E
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
 
-import Distribution.System (buildOS, buildArch)
+import Distribution.System (buildPlatform)
 import Distribution.Verbosity
 import Distribution.Simple.Utils
 
@@ -83,7 +81,7 @@ import Network.HTTP
 import Cabal2Ebuild
 
 import Distribution.Client.IndexUtils ( getAvailablePackages )
-import qualified Distribution.Simple.PackageIndex as Index
+import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
@@ -94,11 +92,6 @@ import qualified Portage.Overlay as Overlay
 import Cabal2Ebuild
 
 import Debug.Trace
-
--- This is just a hack to simplify version ranges.
--- Backported from Cabal HEAD to work with Cabal 1.6.
--- Replace this module once it's included in a cabal release.
-import CabalDistributionVersion (simplifyVersionRange)
 
 (<->) :: String -> String -> String
 a <-> b = a ++ '-':b
@@ -255,11 +248,12 @@ merge verbosity repo serverURI args overlayPath = do
             -- (FlagName "small_base", True) -- try to use small base
             (FlagName "cocoa", False)
           ]
-          (Nothing :: Maybe (PackageIndex PackageIdentifier))
-          buildOS buildArch
+          (\dependency -> True)
+          -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
+          buildPlatform
           (CompilerId GHC (Cabal.Version [6,10,4] []))
           [] pkgGenericDesc
-      pkgDesc = let deps = [ Dependency pn (simplifyVersionRange vr)
+      pkgDesc = let deps = [ Dependency pn (Cabal.simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
                            ]
                 in pkgDesc0 { buildDepends = deps }
@@ -274,6 +268,7 @@ merge verbosity repo serverURI args overlayPath = do
           <- resolveFullPortageName portage (Cabal.PackageName s)
         return $ E.AnyVersionOf (p_cat </> pn)
 
+  -- calculate extra-libs
   extra <- findCLibs verbosity packageNameResolver pkgDesc
                     
   debug verbosity ("Selected flags: " ++ show flags)

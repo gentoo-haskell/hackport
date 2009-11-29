@@ -1,5 +1,5 @@
 Name:           hackport
-Version:	0.2.3
+Version:	0.2.4
 License:	GPL
 Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
@@ -8,13 +8,13 @@ Synopsis:	Hackage and Portage integration tool
 Description:    A command line tool to manage an overlay of Gentoo ebuilds
                 that are generated from a hackage repo of Cabal packages.
 Build-Type:     Simple
-Cabal-Version:  >=1.2
+Cabal-Version:  >=1.8
 
 Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
-  Hs-Source-Dirs: ., cabal-install-0.6.2
+  Hs-Source-Dirs: ., cabal-install-0.7.5
   Build-Depends:
     base >= 2.0 && < 4,
     filepath,
@@ -23,7 +23,7 @@ Executable	hackport
     network,
     pretty,
     regex-compat,
-    Cabal >= 1.6 && < 1.7,
+    Cabal == 1.8.*,
     HTTP >= 4000.0.3,
     zlib,
     tar,
@@ -48,7 +48,6 @@ Executable	hackport
     AnsiColor
     BlingBling
     Cabal2Ebuild
-    CabalDistributionVersion
     CacheFile
     Diff
     Error

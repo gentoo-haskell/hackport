@@ -22,12 +22,13 @@ import Distribution.Simple.Utils ( die, cabalVersion )
 -- import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
-import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Verbosity (Verbosity, normal)
 import Distribution.Text (display)
 
 import Distribution.Client.Types
 import Distribution.Client.Update
+
+import qualified Distribution.Client.PackageIndex as Index
 import qualified Distribution.Client.IndexUtils as Index
 
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
@@ -108,8 +109,8 @@ listAction flags extraArgs globalFlags = do
   let repo = defaultRepo overlayPath
   index <- fmap packageIndex (Index.getAvailablePackages verbosity [ repo ])
   overlay <- Overlay.loadLazy overlayPath
-  let pkgs | null extraArgs = PackageIndex.allPackages index
-           | otherwise = concatMap (PackageIndex.searchByNameSubstring index) extraArgs
+  let pkgs | null extraArgs = Index.allPackages index
+           | otherwise = concatMap (Index.searchByNameSubstring index) extraArgs
       normalized = map (normalizeCabalPackageId . packageInfoId) pkgs
   let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
   mapM_ (putStrLn . pretty) decorated
