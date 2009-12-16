@@ -149,6 +149,7 @@ convertDependency (Cabal.Dependency pname versionRange)
     convert (Cabal.ThisVersion v) = ThisVersionOf (cabalVtoHPv v) ebuildName
     convert (Cabal.LaterVersion v)   = LaterVersionOf (cabalVtoHPv v) ebuildName
     convert (Cabal.EarlierVersion v) = EarlierVersionOf (cabalVtoHPv v) ebuildName
+    convert (Cabal.WildcardVersion v) = ThisMajorOf (cabalVtoHPv v) ebuildName 
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.LaterVersion v2))
       | v1 == v2 = OrLaterVersionOf (cabalVtoHPv v1) ebuildName
     convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.EarlierVersion v2))
