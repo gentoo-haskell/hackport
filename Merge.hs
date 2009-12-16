@@ -88,8 +88,7 @@ import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
-
-import Cabal2Ebuild
+import qualified Portage.Resolve as Portage
 
 import Debug.Trace
 
@@ -125,59 +124,6 @@ readPackageString args = do
     Just v@(_,_,Just (Portage.Version _ Nothing [] 0)) -> return v
     _ -> Left (ArgumentError ("Could not parse [category/]package[-version]: " ++ packageString))
 
--- | If a package already exist in the overlay, find which category it has.
--- If it does not exist, we default to \'dev-haskell\'.
-resolveCategory :: Verbosity -> Overlay.Overlay -> Cabal.PackageName -> IO Portage.Category
-resolveCategory verbosity overlay pn = do
-  info verbosity "Searching for which category to use..."
-  case resolveCategories overlay pn of
-    [] -> do
-      info verbosity "No previous version of this package, defaulting category to dev-haskell."
-      return devhaskell
-    [cat] -> do
-      info verbosity $ "Exact match of already existing package, using category: "
-                         ++ display cat
-      return cat
-    cats -> do
-      warn verbosity $ "Multiple matches of categories: " ++ unwords (map display cats)
-      if devhaskell `elem` cats
-        then do notice verbosity "Defaulting to dev-haskell"
-                return devhaskell
-        else do warn verbosity "Multiple matches and no known default. Override by specifying "
-                warn verbosity "package category like so  'hackport merge categoryname/package[-version]."
-                throwEx (ArgumentError "Specify package category and try again.")
-  where
-  devhaskell = Portage.Category "dev-haskell"
-
-resolveCategories :: Overlay.Overlay -> Cabal.PackageName -> [Portage.Category]
-resolveCategories overlay pn =
-  [ cat 
-  | (Portage.PackageName cat pn') <- Map.keys om
-  , pn == Portage.normalizeCabalPackageName pn'
-  ]
-  where
-    om = Overlay.overlayMap overlay
-
-resolveFullPortageName :: Overlay.Overlay -> Cabal.PackageName -> Maybe Portage.PackageName
-resolveFullPortageName overlay pn =
-  case resolveCategories overlay pn of
-    [] -> Nothing
-    [cat] -> ret cat
-    cats | (cat:_) <- (filter (`elem` cats) priority) -> ret cat
-         | otherwise -> trace ("Ambiguous package name: " ++ show pn ++ ", hits: " ++ show cats) Nothing
-  where
-  ret c = return (Portage.PackageName c pn)
-  mkC = Portage.Category
-  -- if any of these categories show up in the result list, the match isn't
-  -- ambiguous, pick the first match in the list
-  priority = [ mkC "dev-haskell"
-             , mkC "sys-libs"
-             , mkC "dev-libs"
-             , mkC "x11-libs"
-             , mkC "media-libs"
-             , mkC "net-libs"
-             , mkC "sci-libs"
-             ]
 
 
 -- | Given a list of available packages, and maybe a preferred version,
@@ -239,7 +185,7 @@ merge verbosity repo serverURI args overlayPath = do
   let cabal_pkgId = packageInfoId selectedPkg
       norm_pkgId = Portage.normalizeCabalPackageId cabal_pkgId
       norm_pkgName = packageName norm_pkgId
-  cat <- resolveCategory verbosity overlay norm_pkgName
+  cat <- Portage.resolveCategory verbosity overlay norm_pkgName
 
   let pkgGenericDesc = packageDescription selectedPkg
       Right (pkgDesc0, flags) =
@@ -265,7 +211,7 @@ merge verbosity repo serverURI args overlayPath = do
 
       packageNameResolver s = do
         (Portage.PackageName (Portage.Category p_cat) (Cabal.PackageName pn))
-          <- resolveFullPortageName portage (Cabal.PackageName s)
+          <- Portage.resolveFullPortageName portage (Cabal.PackageName s)
         return $ E.AnyVersionOf (p_cat </> pn)
 
   -- calculate extra-libs

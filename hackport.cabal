@@ -60,6 +60,7 @@ Executable	hackport
     Portage.Dependency
     Portage.PackageId
     Portage.Overlay
+    Portage.Resolve
     Portage.Host
     Setup
     Status
