@@ -78,6 +78,7 @@ simplify_group_table    p ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)     exa
 -- more, than one interval.
 simplify_group :: [Dependency] -> [Dependency]
 simplify_group [dep@(AnyVersionOf _package)] = [dep]
+simplify_group [dep@(ThisMajorOf _v    _p)]  = [dep]
 simplify_group deps = simplify_group_table package
                                            min_or_later_v   -- >=
                                            min_later_v      -- >
@@ -108,7 +109,6 @@ simplify_group deps = simplify_group_table package
           or_later_v _                     = Nothing
 
           this_v (ThisVersionOf v  _p) = Just v
-          this_v (ThisMajorOf v    _p) = Just v
           this_v _                     = Nothing
           --
           safe_minimum xs = case catMaybes xs of
