@@ -24,7 +24,7 @@ data Progress step fail done = Step step (Progress step fail done)
                              | Fail fail
                              | Done done
 
--- | Consume a 'Progres' calculation. Much like 'foldr' for lists but with
+-- | Consume a 'Progress' calculation. Much like 'foldr' for lists but with
 -- two base cases, one for a final result and one for failure.
 --
 -- Eg to convert into a simple 'Either' result use:
