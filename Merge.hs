@@ -81,6 +81,7 @@ import Network.HTTP
 import Cabal2Ebuild
 
 import Distribution.Client.IndexUtils ( getAvailablePackages )
+import Distribution.Client.Fetch ( downloadURI )
 import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
 
@@ -315,18 +316,16 @@ fetchAndDigest :: Verbosity
                -> IO ()
 fetchAndDigest verbosity ebuildDir tarballName tarballURI =
   withWorkingDirectory ebuildDir $ do
-    notice verbosity $ "Fetching " ++ show tarballURI
-    e_response <- simpleHTTP (Request tarballURI GET [] "")
-    case e_response of
-      Left err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
-      Right response -> do
-        repo_info <- Host.getInfo
-        let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
-        notice verbosity $ "Saving to " ++ tarDestination
-        writeFile tarDestination (rspBody response)
-        notice verbosity "Recalculating digests..."
-        system "repoman manifest"
-        return ()
+     repo_info <- Host.getInfo
+     let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
+     merr <- downloadURI verbosity tarDestination tarballURI
+     case merr of
+      Just err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
+      Nothing -> do
+       notice verbosity $ "Saved to " ++ tarDestination
+       notice verbosity "Recalculating digests..."
+       system "repoman manifest"
+       return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
 withWorkingDirectory newDir action = do

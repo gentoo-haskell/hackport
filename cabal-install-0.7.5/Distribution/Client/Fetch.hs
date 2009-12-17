@@ -19,6 +19,7 @@ module Distribution.Client.Fetch (
     fetchPackage,
     isFetched,
     downloadIndex,
+    downloadURI
   ) where
 
 import Distribution.Client.Types
