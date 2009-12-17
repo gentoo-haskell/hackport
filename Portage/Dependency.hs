@@ -59,7 +59,7 @@ simplify_group_table    p Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVe
 
 -- 2) simplification passes
 simplify_group_table    p (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ _ _)) Nothing Nothing
-    -- specian case: >=a-v.N a<v.(N+1)   => =a-v.N*
+    -- special case: >=a-v.N a<v.(N+1)   => =a-v.N*
     | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1 Nothing [] 0) p]
     | otherwise                                        = [OrLaterVersionOf (Version v1 Nothing [] 0) p, EarlierVersionOf (Version v2 Nothing [] 0) p]
 
@@ -108,6 +108,7 @@ simplify_group deps = simplify_group_table package
           or_later_v _                     = Nothing
 
           this_v (ThisVersionOf v  _p) = Just v
+          this_v (ThisMajorOf v    _p) = Just v
           this_v _                     = Nothing
           --
           safe_minimum xs = case catMaybes xs of
