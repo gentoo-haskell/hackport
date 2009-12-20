@@ -8,11 +8,9 @@ module Portage.Overlay
   where
 
 import qualified Portage.PackageId as Portage
-import qualified Portage.Version   as Portage
 
 import qualified Distribution.Package as Cabal
 
--- import qualified Distribution.Simple.PackageIndex as PackageIndex
 import Distribution.Text (simpleParse, display)
 import Distribution.Simple.Utils ( comparing, equating )
 
