@@ -4,15 +4,11 @@ module Diff
     ) where
 
 import Control.Monad ( mplus )
-import Data.Char
--- import qualified Data.Map as Map
--- import Network.URI
 import Control.Exception ( assert )
 import Data.Maybe ( fromJust, listToMaybe )
 import Data.List ( sortBy, groupBy )
 import Data.Ord ( comparing )
 
--- import qualified Portage.Version as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
@@ -24,7 +20,6 @@ import Distribution.Verbosity
 import Distribution.Text(display)
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Client.PackageIndex as Index
--- import qualified Distribution.InstalledPackageInfo as Cabal
 import Distribution.Simple.Utils (equating)
 
 -- cabal-install
