@@ -13,11 +13,9 @@ import qualified Distribution.PackageDescription as Cabal
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe
 import qualified Data.List as List
 
 import System.Directory
-import System.IO
 import System.FilePath
 
 import Text.Regex
