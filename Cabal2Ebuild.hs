@@ -39,8 +39,6 @@ import qualified Distribution.Text as Cabal  (display)
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 
 import Data.Char          (toLower,isUpper)
-import Data.List          (groupBy, partition, nub, sortBy, init, last)
-import Data.Maybe         (catMaybes, fromJust, isJust)
 
 import Portage.Dependency
 import Portage.Version
