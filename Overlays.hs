@@ -41,7 +41,7 @@ getOverlayPath verbosity override_overlay = do
               info verbosity "Not ok."
               loop xs
     info verbosity "There are several overlays in your configuration."
-    mapM (info verbosity . (" * " ++)) mul
+    mapM_ (info verbosity . (" * " ++)) mul
     info verbosity "Looking for one with a HackPort cache..."
     overlay <- loop mul
     info verbosity $ "I choose " ++ overlay
