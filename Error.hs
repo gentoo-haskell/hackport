@@ -2,8 +2,7 @@
 module Error (HackPortError(..), throwEx, catchEx, hackPortShowError) where
 
 import Data.Typeable
-import Control.Exception
-
+import Control.Exception.Extensible as EE
 import Control.Monad.Error
 
 data HackPortError
@@ -27,15 +26,17 @@ data HackPortError
 	-- | WrongCacheVersion
 	-- | InvalidCache
 	| InvalidServer String
-	deriving (Typeable)
+	deriving (Typeable, Show)
 
 instance Error HackPortError where
 
+instance Exception HackPortError where
+
 throwEx :: HackPortError -> IO a
-throwEx = throwDyn
+throwEx = EE.throw
 
 catchEx :: IO a -> (HackPortError -> IO a) -> IO a
-catchEx = catchDyn
+catchEx = EE.catch
 
 hackPortShowError :: HackPortError -> String
 hackPortShowError err = case err of

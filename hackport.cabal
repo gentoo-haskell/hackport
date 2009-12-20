@@ -16,7 +16,7 @@ Executable	hackport
   Main-Is:	Main.hs
   Hs-Source-Dirs: ., cabal-install-0.8.0
   Build-Depends:
-    base >= 2.0 && < 4,
+    base >= 2.0 && < 5,
     filepath,
     parsec,
     mtl,
@@ -27,21 +27,21 @@ Executable	hackport
     HTTP >= 4000.0.3,
     zlib,
     tar,
-    array
+    array,
   -- array is inherited from cabal-install 
-
-    -- tar >= 0.3.0.0 && < 0.4
+  -- tar >= 0.3.0.0 && < 0.4
+    extensible-exceptions
 
   if flag(split-base)
     Build-Depends:
-      base >= 3 && < 4,
+      base >= 3 && < 5,
       directory,
       containers,
       process,
       old-time,
       bytestring
   else
-    Build-Depends:  base <  3
+     Build-Depends: base < 3
 
   ghc-options: -Wall
   other-modules:
