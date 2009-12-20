@@ -52,7 +52,7 @@ fromStatus fs =
         PortageOnly a -> a
 
 status :: Verbosity -> FilePath -> FilePath -> IO (Map Package [FileStatus Ebuild])
-status verbosity portdir overlayPath = do
+status _verbosity portdir overlayPath = do
     overlay <- readPortageTree overlayPath
     portage <- readPortagePackages portdir (Map.keys overlay)
     let (over, both, port) = portageDiff overlay portage
