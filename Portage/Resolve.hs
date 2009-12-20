@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternGuards #-}
+
 module Portage.Resolve where
 
 import qualified Portage.Overlay as Overlay
