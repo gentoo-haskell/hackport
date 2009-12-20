@@ -41,7 +41,6 @@ module Merge where
 
 import Control.Monad.Error
 import Control.Exception
-import Data.Char
 import Data.Maybe
 import Data.List
 import Distribution.Package
@@ -60,10 +59,8 @@ import System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
                         )
-import System.IO
 import System.Cmd (system)
 import System.FilePath ((</>))
-import qualified Data.Map as Map
 
 import qualified Cabal2Ebuild as E
 import Error as E
@@ -76,7 +73,6 @@ import Distribution.Verbosity
 import Distribution.Simple.Utils
 
 import Network.URI
-import Network.HTTP
 
 import Cabal2Ebuild
 
@@ -90,8 +86,6 @@ import qualified Portage.Version as Portage
 import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
-
-import Debug.Trace
 
 (<->) :: String -> String -> String
 a <-> b = a ++ '-':b
