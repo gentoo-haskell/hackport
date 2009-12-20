@@ -189,7 +189,7 @@ merge verbosity repo serverURI args overlayPath = do
             -- (FlagName "small_base", True) -- try to use small base
             (FlagName "cocoa", False)
           ]
-          (\dependency -> True)
+          (\_dependency -> True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
           (CompilerId GHC (Cabal.Version [6,10,4] []))
@@ -318,7 +318,7 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI =
       Nothing -> do
        notice verbosity $ "Saved to " ++ tarDestination
        notice verbosity "Recalculating digests..."
-       system "repoman manifest"
+       _ <- system "repoman manifest"
        return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
