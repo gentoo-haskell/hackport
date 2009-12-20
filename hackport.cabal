@@ -1,5 +1,5 @@
 Name:           hackport
-Version:	0.2.4
+Version:	0.2.5
 License:	GPL
 Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
@@ -14,7 +14,7 @@ Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
-  Hs-Source-Dirs: ., cabal-install-0.7.5
+  Hs-Source-Dirs: ., cabal-install-0.8.0
   Build-Depends:
     base >= 2.0 && < 4,
     filepath,

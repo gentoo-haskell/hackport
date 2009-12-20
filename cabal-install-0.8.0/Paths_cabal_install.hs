@@ -6,4 +6,4 @@ import Data.Version (Version(..))
 import System.Environment (getEnv)
 
 version :: Version
-version = Version {versionBranch = [0,7,5], versionTags = []}
+version = Version {versionBranch = [0,8,0], versionTags = []}
