@@ -33,7 +33,7 @@ import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , Dependency(..)
                                                 , PackageName(..))
-import qualified Distribution.Version as Cabal  (VersionRange(..), versionBranch, Version)
+import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange', versionBranch, Version)
 import qualified Distribution.License as Cabal  (License(..))
 import qualified Distribution.Text as Cabal  (display)
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
@@ -130,29 +130,25 @@ convertDependency :: Cabal.Dependency -> [Dependency]
 convertDependency (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency (Cabal.Dependency pname versionRange)
-  = case versionRange of
-      -- versionRange && versionRange
-      (Cabal.IntersectVersionRanges v1 v2) -> [convert v1, convert v2]
-      -- any other dep
-      v                                    -> [convert v]
-
+  = convert versionRange
   where
     -- XXX: not always true, we should look properly for deps in the overlay
     -- to find the correct category
     ebuildName = "dev-haskell/" ++ map toLower (Cabal.display pname)
-
-    convert :: Cabal.VersionRange -> Dependency
-    convert Cabal.AnyVersion = AnyVersionOf ebuildName
-    convert (Cabal.ThisVersion v) = ThisVersionOf (cabalVtoHPv v) ebuildName
-    convert (Cabal.LaterVersion v)   = LaterVersionOf (cabalVtoHPv v) ebuildName
-    convert (Cabal.EarlierVersion v) = EarlierVersionOf (cabalVtoHPv v) ebuildName
-    convert (Cabal.WildcardVersion v) = ThisMajorOf (cabalVtoHPv v) ebuildName 
-    convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.LaterVersion v2))
-      | v1 == v2 = OrLaterVersionOf (cabalVtoHPv v1) ebuildName
-    convert (Cabal.UnionVersionRanges (Cabal.ThisVersion v1) (Cabal.EarlierVersion v2))
-      | v1 == v2 = OrEarlierVersionOf (cabalVtoHPv v1) ebuildName
-    convert (Cabal.UnionVersionRanges r1 r2)
-      = DependEither (convert r1) (convert r2)
+    convert :: Cabal.VersionRange -> [Dependency]
+    convert =  Cabal.foldVersionRange'
+             (          [AnyVersionOf                        ebuildName] -- ^ @\"-any\"@ version
+            )(\v     -> [ThisVersionOf      (cabalVtoHPv v)  ebuildName] -- ^ @\"== v\"@
+            )(\v     -> [LaterVersionOf     (cabalVtoHPv v)  ebuildName] -- ^ @\"> v\"@
+            )(\v     -> [EarlierVersionOf   (cabalVtoHPv v)  ebuildName] -- ^ @\"< v\"@
+            )(\v     -> [OrLaterVersionOf   (cabalVtoHPv v)  ebuildName] -- ^ @\">= v\"@
+            )(\v     -> [OrEarlierVersionOf (cabalVtoHPv v)  ebuildName] -- ^ @\"<= v\"@
+{- FIXME -} )(\v1 _  -> [ThisMajorOf        (cabalVtoHPv v1) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\r1 r2 -> case (r1,r2) of
+                            ([r1'], [r2']) -> [DependEither r1' r2']       -- ^ @\"_ || _\"@ union
+                            _              -> error "convertDependency: compound either"
+            )(\r1 r2 -> r1 ++ r2
+            )
 
 -- converts Cabal version type to hackport version
 cabalVtoHPv :: Cabal.Version -> Version
