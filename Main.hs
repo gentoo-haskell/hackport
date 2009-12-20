@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad
-import Data.Char
 import Data.Maybe
 import Data.List
 import Data.Monoid
@@ -19,7 +18,6 @@ import Distribution.PackageDescription.Configuration
 import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die, cabalVersion )
--- import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
@@ -39,18 +37,16 @@ import Network.URI
 import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
-import System.IO
 
 import qualified Cabal2Ebuild as E
+
 import Diff
 import Error
 import Status
 import Overlays
 import Merge
 
-import Cabal2Ebuild
-
-import qualified Paths_cabal_install 
+import qualified Paths_cabal_install
 import qualified Paths_hackport
 
 -----------------------------------------------------------------------
@@ -151,9 +147,9 @@ makeEbuildAction flags args _globalFlags = do
   let _verbosity = fromFlag (makeEbuildVerbosity flags)
   forM_ args $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
-    let ebuild = cabal2ebuild (flattenPackageDescription pkg)
-    let ebuildFileName = name ebuild ++ "-" ++ version ebuild ++ ".ebuild"
-    writeFile ebuildFileName (showEBuild ebuild)
+    let ebuild = E.cabal2ebuild (flattenPackageDescription pkg)
+    let ebuildFileName = E.name ebuild ++ "-" ++ E.version ebuild ++ ".ebuild"
+    writeFile ebuildFileName (E.showEBuild ebuild)
 
 makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
@@ -233,8 +229,7 @@ diffAction flags args globalFlags = do
           --          return ShowPackagePattern packagePattern
           _ -> die $ "Unknown mode: " ++ unwords args
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  let serverURI = defaultRepoURI overlayPath
-      repo = defaultRepo overlayPath
+  let repo = defaultRepo overlayPath
   runDiff verbosity overlayPath dm repo
 
 -----------------------------------------------------------------------
@@ -435,6 +430,7 @@ defaultRepoURI :: FilePath -> URI
 defaultRepoURI overlayPath =
   case repoKind (defaultRepo overlayPath) of
     Left (RemoteRepo { remoteRepoURI = uri }) -> uri
+    Right _                                   -> error $ "defaultRepoURI: unable to get URI for " ++ overlayPath
 
 getServerURI :: String -> IO URI
 getServerURI str =
@@ -492,7 +488,7 @@ globalCommand = CommandUI {
             trueArg
         , option ['p'] ["overlay-path"]
             "Override search path list where .hackport/ lives (default list: ['.', paludis-ovls or emerge-ovls])"
-            globalPathToOverlay (\path flags -> flags { globalPathToOverlay = path })
+            globalPathToOverlay (\ovl_path flags -> flags { globalPathToOverlay = ovl_path })
             (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms])) -- FIXME: i should be optional
         ]
     }
