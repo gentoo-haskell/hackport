@@ -78,7 +78,7 @@ instance Text PackageName where
 
   parse = do
     category <- parse
-    Parse.char '/'
+    _ <- Parse.char '/'
     name <- parse
     return (PackageName category name)
 
@@ -88,7 +88,7 @@ instance Text PackageId where
 
   parse = do
     name <- parse
-    Parse.char '-'
+    _ <- Parse.char '-'
     version <- parse
     return (PackageId name version)
 
@@ -102,11 +102,11 @@ parseFriendlyPackage str =
   parser = do
     mc <- Parse.option Nothing $ do
       c <- parse
-      Parse.char '/'
+      _ <- Parse.char '/'
       return (Just c)
     p <- parse
     mv <- Parse.option Nothing $ do
-      Parse.char '-'
+      _ <- Parse.char '-'
       v <- parse
       return (Just v)
     return (mc, p, mv)
