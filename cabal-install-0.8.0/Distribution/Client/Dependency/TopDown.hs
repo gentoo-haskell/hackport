@@ -32,7 +32,7 @@ import qualified Distribution.Client.PackageIndex as PackageIndex
 import Distribution.Client.PackageIndex (PackageIndex)
 import Distribution.Package
          ( PackageName(..), PackageIdentifier, Package(packageId), packageVersion, packageName
-         , Dependency(Dependency), thisPackageVersion, notThisPackageVersion
+         , Dependency(Dependency), thisPackageVersion {- , notThisPackageVersion -}
          , PackageFixedDeps(depends) )
 import Distribution.PackageDescription
          ( PackageDescription(buildDepends) )
@@ -565,6 +565,7 @@ addPackageSelectConstraint pkgid constraints =
     dep    = TaggedDependency NoInstalledConstraint (thisPackageVersion pkgid)
     reason = SelectedOther pkgid
 
+{-
 addPackageExcludeConstraint :: PackageIdentifier -> Constraints
                             -> Satisfiable Constraints
                                  [PackageIdentifier] ExclusionReason
@@ -574,6 +575,7 @@ addPackageExcludeConstraint pkgid constraints =
     dep    = TaggedDependency NoInstalledConstraint
                (notThisPackageVersion pkgid)
     reason = ExcludedByConfigureFail
+-}
 
 addPackageDependencyConstraint :: PackageIdentifier -> TaggedDependency -> Constraints
                                -> Satisfiable Constraints
