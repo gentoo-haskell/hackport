@@ -39,6 +39,7 @@ import qualified Distribution.Text as Cabal  (display)
 --import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 
 import Data.Char          (toLower,isUpper)
+import Data.Maybe ( isJust )
 
 import Portage.Dependency
 import Portage.Version
@@ -53,8 +54,13 @@ data EBuild = EBuild {
     slot :: String,
     keywords :: [String],
     iuse :: [String],
-    depend :: [Dependency],
-    rdepend :: [Dependency],
+    haskell_deps :: [Dependency],
+    build_tools :: [Dependency],
+    extra_libs :: [Dependency],
+    cabal_dep :: Dependency,
+    ghc_dep :: Dependency,
+    depend :: [String],
+    rdepend :: [String],
     features :: [String],
     -- comments on various fields for communicating stuff to the user
     licenseComments :: String,
@@ -72,6 +78,11 @@ ebuildTemplate = EBuild {
     slot = "0",
     keywords = ["~amd64","~x86"],
     iuse = [],
+    haskell_deps = [],
+    build_tools = [],
+    extra_libs = [],
+    cabal_dep = AnyVersionOf "dev-haskell/cabal",
+    ghc_dep = defaultDepGHC,
     depend = [],
     rdepend = [],
     features = [],
@@ -89,22 +100,22 @@ cabal2ebuild pkg = ebuildTemplate {
     src_uri         = Cabal.pkgUrl pkg,
     license         = convertLicense (Cabal.license pkg),
     licenseComments = licenseComment (Cabal.license pkg),
-    depend          = defaultDepGHC
-                    : (simplify_deps $
-                         convertDependency (Cabal.Dependency (Cabal.PackageName "Cabal")
-                                           (Cabal.descCabalVersion pkg))
-                        ++ convertDependencies (Cabal.buildDepends pkg)),
+    haskell_deps    = simplify_deps $ convertDependencies (Cabal.buildDepends pkg),
+    cabal_dep       = head $ convertDependency (Cabal.Dependency (Cabal.PackageName "Cabal")
+                                               (Cabal.descCabalVersion pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = features ebuildTemplate
-                   ++ (if null (Cabal.executables pkg) then [] else ["bin"])
+                   ++ (if hasExe then ["bin"] else [])
                    ++ maybe [] (const (["lib","profile","haddock"]
                         ++ if cabalPkgName == "hscolour" then [] else ["hscolour"])
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
   } where
         cabalPkgName = Cabal.display $ Cabal.pkgName (Cabal.package pkg)
+        hasLib = isJust (Cabal.library pkg)
+        hasExe = (not . null) (Cabal.executables pkg) 
 
 defaultDepGHC :: Dependency
-defaultDepGHC     = OrLaterVersionOf (Version [6,6,1] Nothing [] 0) "dev-lang/ghc"
+defaultDepGHC = OrLaterVersionOf (Version [6,6,1] Nothing [] 0) "dev-lang/ghc"
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
@@ -208,7 +219,20 @@ showEBuild ebuild =
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
   ss "IUSE=". quote' (sepBy ", " $ iuse ebuild). nl.
   nl.
-  ss "DEPEND=". quote' (sepBy "\n\t\t" $ map showDepend $ depend ebuild). nl.
+  ( if (not . null . build_tools $ ebuild)
+      then ss "BUILDTOOLS=". quote' (sepBy "\n\t\t" $ map showDepend $ build_tools ebuild). nl
+      else id
+  ).
+  ( if (not . null . extra_libs $ ebuild )
+      then ss "EXTRALIBS=". quote' (sepBy "\n\t\t" $ map showDepend $ extra_libs ebuild). nl
+      else id
+  ).
+  ( if (not . null . haskell_deps $ ebuild)
+      then ss "HASKELLDEPS=". quote' (sepBy "\n\t\t" $ map showDepend $ haskell_deps ebuild). nl
+      else id
+  ).
+  ss "RDEPEND=". quote' (sepBy "\n\t\t" $ rdepend ebuild). nl.
+  ss "DEPEND=". quote' (sepBy "\n\t\t" $ depend ebuild). nl.
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)

@@ -37,7 +37,8 @@ RDEPEND="${EXTRALIBS}"
 DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
 
 -}
-module Merge where
+module Merge
+  ( merge ) where
 
 import Control.Monad.Error
 import Control.Exception
@@ -49,8 +50,10 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
                                        , libBuildInfo
                                        , buildInfo
+                                       , buildable
                                        , extraLibs
-                                       , buildTools )
+                                       , buildTools
+                                       , hasLibs )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
 import Distribution.Text (display)
@@ -63,6 +66,7 @@ import System.Cmd (system)
 import System.FilePath ((</>))
 
 import qualified Cabal2Ebuild as E
+import Cabal2Ebuild
 import Error as E
 
 import qualified Distribution.Package as Cabal
@@ -74,8 +78,6 @@ import Distribution.Simple.Utils
 
 import Network.URI
 
-import Cabal2Ebuild
-
 import Distribution.Client.IndexUtils ( getAvailablePackages )
 import Distribution.Client.Fetch ( downloadURI )
 import qualified Distribution.Client.PackageIndex as Index
@@ -83,9 +85,12 @@ import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
+import qualified Portage.Dependency as Portage
 import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
+
+import Debug.Trace ( trace )
 
 (<->) :: String -> String -> String
 a <-> b = a ++ '-':b
@@ -189,7 +194,7 @@ merge verbosity repo serverURI args overlayPath = do
             -- (FlagName "small_base", True) -- try to use small base
             (FlagName "cocoa", False)
           ]
-          (\_dependency -> True)
+          (\dependency -> trace ("accepting dep(?): " ++ display dependency) True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
           (CompilerId GHC (Cabal.Version [6,10,4] []))
@@ -199,7 +204,13 @@ merge verbosity repo serverURI args overlayPath = do
                            ]
                 in pkgDesc0 { buildDepends = deps }
 
-      bt = [ Cabal.Dependency (Cabal.PackageName pkg') range
+      hasBuildableExes p =
+        any (buildable . buildInfo)
+        . executables $ p
+      treatAsLibrary = (not . hasBuildableExes) pkgDesc && hasLibs pkgDesc
+
+      -- calculate build tools
+      bt = [ pkg' -- TODO: currently ignoring version range
            | Cabal.Dependency (Cabal.PackageName pkg ) range <- buildToolsDeps pkgDesc
            , Just pkg' <- return (lookup pkg buildToolsTable) 
            ]
@@ -223,24 +234,34 @@ merge verbosity repo serverURI args overlayPath = do
 
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
+  let d e = if treatAsLibrary
+              then Portage.showDepend (cabal_dep e)
+                    : "${RDEPEND}"
+                    : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
+              else Portage.showDepend (cabal_dep e)
+                    : Portage.showDepend (ghc_dep e)
+                    : "${RDEPEND}"
+                    : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
+                       ++ [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
+      rd e = if treatAsLibrary
+              then Portage.showDepend (ghc_dep e)
+                    : [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
+                       ++ [ "${EXTRALIBS}" | not . null $ extra_libs e ]
+              else [ "${EXTRALIBS}" | not . null $ extra_libs e ]
   let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . addDeps extra
-               . addDeps (convertDependencies bt)
+               . (\e -> e { depend = d e } )
+               . (\e -> e { rdepend = rd e } )
+               . (\e -> e { extra_libs  = extra_libs  e ++ extra } )
+               . (\e -> e { build_tools = build_tools e ++ bt } )
                $ E.cabal2ebuild pkgDesc
-      -- ebuildName = display category </> display norm_pkgId
 
+  debug verbosity ("Treat as library: " ++ show treatAsLibrary)
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
   fetchAndDigest
     verbosity
     (overlayPath </> display cat </> display norm_pkgName)
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
-
-addDeps :: [E.Dependency] -> EBuild -> EBuild
-addDeps d e = e { depend = depend e ++ d }
-
-addRDeps :: [E.Dependency] -> EBuild -> EBuild
-addRDeps d e = e { rdepend = rdepend e ++ d }
 
 findCLibs :: Verbosity -> (String -> Maybe E.Dependency) -> PackageDescription -> IO [E.Dependency]
 findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do
@@ -285,11 +306,11 @@ buildToolsDeps (PackageDescription { library = lib, executables = exes }) = caba
   depL = maybe [] (buildTools.libBuildInfo) lib
   depE = concatMap (buildTools.buildInfo) exes
 
-buildToolsTable :: [(String, String)]
+buildToolsTable :: [(String, E.Dependency)]
 buildToolsTable =
-  [ ("happy", "happy") -- TODO: we would like to specify both cat and pkg name
-  , ("alex", "alex")
-  , ("c2hs", "c2hs")
+  [ ("happy", E.AnyVersionOf "dev-haskell/happy")
+  , ("alex", E.AnyVersionOf "dev-haskell/alex")
+  , ("c2hs", E.AnyVersionOf "dev-haskell/c2hs")
   ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
