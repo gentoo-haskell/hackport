@@ -163,7 +163,7 @@ coreLibs = map Cabal.PackageName
   ,"containers"
   ,"directory"
   --,"editline"
---,"filepath"     --already has ebuild
+  ,"filepath"     -- intentionally no ebuild. use ghc's version
   ,"ghc"
   ,"ghc-prim"
   ,"haskell98"
