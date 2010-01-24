@@ -36,10 +36,8 @@ import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange', versionBranch, Version)
 import qualified Distribution.License as Cabal  (License(..))
 import qualified Distribution.Text as Cabal  (display)
---import qualified Distribution.Compiler as Cabal (CompilerFlavor(..))
 
 import Data.Char          (toLower,isUpper)
-import Data.Maybe ( isJust )
 
 import Portage.Dependency
 import Portage.Version
@@ -111,7 +109,7 @@ cabal2ebuild pkg = ebuildTemplate {
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
   } where
         cabalPkgName = Cabal.display $ Cabal.pkgName (Cabal.package pkg)
-        hasLib = isJust (Cabal.library pkg)
+        -- hasLib = isJust (Cabal.library pkg)
         hasExe = (not . null) (Cabal.executables pkg) 
 
 defaultDepGHC :: Dependency

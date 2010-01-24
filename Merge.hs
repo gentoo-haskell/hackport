@@ -194,7 +194,7 @@ merge verbosity repo serverURI args overlayPath = do
             -- (FlagName "small_base", True) -- try to use small base
             (FlagName "cocoa", False)
           ]
-          (\dependency -> trace ("accepting dep(?): " ++ display dependency) True)
+          (\dep -> trace ("accepting dep(?): " ++ display dep) True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
           (CompilerId GHC (Cabal.Version [6,10,4] []))
@@ -211,7 +211,7 @@ merge verbosity repo serverURI args overlayPath = do
 
       -- calculate build tools
       bt = [ pkg' -- TODO: currently ignoring version range
-           | Cabal.Dependency (Cabal.PackageName pkg ) range <- buildToolsDeps pkgDesc
+           | Cabal.Dependency (Cabal.PackageName pkg ) _range <- buildToolsDeps pkgDesc
            , Just pkg' <- return (lookup pkg buildToolsTable) 
            ]
 
