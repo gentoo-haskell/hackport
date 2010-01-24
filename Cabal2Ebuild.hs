@@ -123,6 +123,7 @@ convertLicense Cabal.BSD3         = "BSD"
 convertLicense Cabal.BSD4         = "BSD-4"
 convertLicense Cabal.PublicDomain = "public-domain"
 convertLicense Cabal.AllRightsReserved = ""
+convertLicense Cabal.MIT          = "MIT"
 convertLicense _                  = ""
 
 licenseComment :: Cabal.License -> String
