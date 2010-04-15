@@ -10,6 +10,10 @@ Description:    A command line tool to manage an overlay of Gentoo ebuilds
 Build-Type:     Simple
 Cabal-Version:  >=1.8
 
+source-repository head
+  type: darcs
+  location: http://code.haskell.org/gentoo/hackport/
+
 Flag split-base
 
 Executable	hackport
