@@ -18,7 +18,7 @@ Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
-  Hs-Source-Dirs: ., cabal-install-0.8.0
+  Hs-Source-Dirs: ., cabal-install-0.8.2
   Build-Depends:
     base >= 2.0 && < 5,
     filepath,

@@ -32,10 +32,12 @@ import qualified Distribution.Client.PackageIndex as PackageIndex
 import Distribution.Client.PackageIndex (PackageIndex)
 import Distribution.Package
          ( PackageName(..), PackageIdentifier, Package(packageId), packageVersion, packageName
-         , Dependency(Dependency), thisPackageVersion {- , notThisPackageVersion -}
+         , Dependency(Dependency), thisPackageVersion, notThisPackageVersion
          , PackageFixedDeps(depends) )
 import Distribution.PackageDescription
          ( PackageDescription(buildDepends) )
+import Distribution.Client.PackageUtils
+         ( externalBuildDepends )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription, flattenPackageDescription )
 import Distribution.Version
@@ -301,7 +303,7 @@ configurePackage platform comp available spkg = case spkg of
                                     platform comp [] p of
       Left missing        -> Left missing
       Right (pkg, flags') -> Right $
-        SemiConfiguredPackage apkg flags' (buildDepends pkg)
+        SemiConfiguredPackage apkg flags' (externalBuildDepends pkg)
 
   dependencySatisfiable = not . null . PackageIndex.lookupDependency available
 
@@ -565,7 +567,6 @@ addPackageSelectConstraint pkgid constraints =
     dep    = TaggedDependency NoInstalledConstraint (thisPackageVersion pkgid)
     reason = SelectedOther pkgid
 
-{-
 addPackageExcludeConstraint :: PackageIdentifier -> Constraints
                             -> Satisfiable Constraints
                                  [PackageIdentifier] ExclusionReason
@@ -575,7 +576,6 @@ addPackageExcludeConstraint pkgid constraints =
     dep    = TaggedDependency NoInstalledConstraint
                (notThisPackageVersion pkgid)
     reason = ExcludedByConfigureFail
--}
 
 addPackageDependencyConstraint :: PackageIdentifier -> TaggedDependency -> Constraints
                                -> Satisfiable Constraints

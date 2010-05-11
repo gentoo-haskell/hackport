@@ -79,7 +79,7 @@ import Distribution.Simple.Utils
 import Network.URI
 
 import Distribution.Client.IndexUtils ( getAvailablePackages )
-import Distribution.Client.Fetch ( downloadURI )
+import Distribution.Client.HttpUtils ( downloadURI )
 import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
 
@@ -333,14 +333,14 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI =
   withWorkingDirectory ebuildDir $ do
      repo_info <- Host.getInfo
      let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
-     merr <- downloadURI verbosity tarDestination tarballURI
-     case merr of
-      Just err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
-      Nothing -> do
-       notice verbosity $ "Saved to " ++ tarDestination
-       notice verbosity "Recalculating digests..."
-       _ <- system "repoman manifest"
-       return ()
+     downloadURI verbosity tarballURI tarDestination
+     -- Just err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
+     -- TODO: downloadURI will throw a non-hackport exception if the
+     -- download fails
+     notice verbosity $ "Saved to " ++ tarDestination
+     notice verbosity "Recalculating digests..."
+     _ <- system "repoman manifest"
+     return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
 withWorkingDirectory newDir action = do
