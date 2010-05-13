@@ -15,6 +15,7 @@ module Distribution.Client.IndexUtils (
   getAvailablePackages,
 
   readPackageIndexFile,
+  readRepoIndex,
   parseRepoIndex,
 
   disambiguatePackageName,
