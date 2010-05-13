@@ -47,7 +47,7 @@ import Data.Maybe ( fromJust )
 import Distribution.Verbosity
 import Distribution.Text ( display )
 import Distribution.Client.Types ( Repo, AvailablePackageDb(..), AvailablePackage(..) )
-import Distribution.Simple.Utils ( info, warn, notice )
+import Distribution.Simple.Utils ( warn, notice, info )
 
 import qualified Data.Version as Cabal
 import qualified Distribution.Package as Cabal
@@ -64,25 +64,25 @@ type PVU_Item = (Portage.PackageName, [(Cabal.Version, Maybe String)])
 
 distroMap :: Verbosity -> Repo -> FilePath -> FilePath -> [String] -> IO ()
 distroMap verbosity repo portagePath overlayPath args = do
-  putStrLn "distro map called"
-  putStrLn ("verbosity: " ++ show verbosity)
-  putStrLn ("portage: " ++ portagePath)
-  putStrLn ("overlay: " ++ overlayPath)
-  putStrLn ("args: " ++ show args)
+  info verbosity "distro map called"
+  info verbosity ("verbosity: " ++ show verbosity)
+  info verbosity ("portage: " ++ portagePath)
+  info verbosity ("overlay: " ++ overlayPath)
+  info verbosity ("args: " ++ show args)
 
   portage <- readOverlayByPackage <$> getDirectoryTree portagePath
   overlay <- readOverlayByPackage <$> getDirectoryTree overlayPath
 
-  putStrLn ("portage packages: " ++ show (length portage))
-  putStrLn ("overlay packages: " ++ show (length overlay))
+  info verbosity ("portage packages: " ++ show (length portage))
+  info verbosity ("overlay packages: " ++ show (length overlay))
 
   let portageMap = buildPortageMap portage
       overlayMap = buildOverlayMap overlay
       completeMap = unionMap portageMap overlayMap
 
-  putStrLn ("portage map: " ++ show (Map.size portageMap))
-  putStrLn ("overlay map: " ++ show (Map.size overlayMap))
-  putStrLn ("complete map: " ++ show (Map.size completeMap))
+  info verbosity ("portage map: " ++ show (Map.size portageMap))
+  info verbosity ("overlay map: " ++ show (Map.size overlayMap))
+  info verbosity ("complete map: " ++ show (Map.size completeMap))
 
   AvailablePackageDb { packageIndex = packageIndex } <-
     CabalInstall.getAvailablePackages verbosity [repo]
@@ -90,10 +90,10 @@ distroMap verbosity repo portagePath overlayPath args = do
   let pkgs0 = map (map packageInfoId) (CabalInstall.allPackagesByName packageIndex)
       hackagePkgs = [ (Cabal.pkgName (head p), map Cabal.pkgVersion p) | p <- pkgs0 ]
 
-  putStrLn ("cabal packages: " ++ show (length hackagePkgs))
+  info verbosity ("cabal packages: " ++ show (length hackagePkgs))
 
   let pvus = concat $ map (\(p,vs) -> lookupPVU completeMap p vs) hackagePkgs
-  putStrLn ("found pvus: " ++ show (length pvus))
+  info verbosity ("found pvus: " ++ show (length pvus))
 
   mapM_ (putStrLn . showPVU) pvus
   return ()
@@ -145,7 +145,7 @@ lookupPVU pvu_map pn cvs =
   where
   noDefaultText is = unlines $ ("no default for package: " ++ display pn)
                            : [ " * " ++ (display cat)
-                             | i@(Portage.PackageName cat _, _) <- is]
+                             | (Portage.PackageName cat _, _) <- is]
 
   ret (_, vs) = [ (pn, v, u) | (v, u) <- vs, v `elem` cvs ]
   preferableItem items =
