@@ -135,24 +135,25 @@ unionMap = Map.unionWith f
 
 -- resolving Cabal.PackageName to Portage.PackageName
 
-resolveCategories :: PVU_Map
-                  -> Cabal.PackageName
-                  -> [PVU_Item]
-resolveCategories pvu_map cpn = Map.toList $ Map.filterWithKey f pvu_map
-  where
-  f (Portage.PackageName _cat pn) _vs = cpn == pn
-
 lookupPVU :: PVU_Map -> Cabal.PackageName -> [Cabal.Version] -> [PVU]
 lookupPVU pvu_map pn cvs =
-  case resolveCategories pvu_map (Portage.normalizeCabalPackageName pn) of
+  case findItems pvu_map (Portage.normalizeCabalPackageName pn) of
     [] -> []
     [item] -> ret item
-    --items | (cat@(:_) <- (filter (`elem` cats) priority) -> ret cat
-    --     | otherwise -> trace ("Ambiguous package name: " ++ show pn ++ ", hits: " ++ show cats) Nothing
-    _ -> trace ("too many packages: " ++ show pn) []
+    items | [item] <- preferableItem items -> ret item
+          | otherwise -> trace (noDefaultText items) []
   where
+  noDefaultText is = unlines $ ("no default for package: " ++ display pn)
+                           : [ " * " ++ (display cat)
+                             | i@(Portage.PackageName cat _, _) <- is]
+
   ret (_, vs) = [ (pn, v, u) | (v, u) <- vs, v `elem` cvs ]
   preferableItem items =
     [ item
     | item@(Portage.PackageName cat _pn, _vs) <- items
     , cat == Portage.Category "dev-haskell"]
+  findItems pvu_map cpn = Map.toList $ Map.filterWithKey f pvu_map
+    where
+    f (Portage.PackageName _cat pn) _vs = cpn == pn
+
+
