@@ -2,6 +2,7 @@ module Portage.Overlay
   ( ExistingEbuild(..)
   , Overlay(..)
   , load, loadLazy
+  , readOverlayByPackage, getDirectoryTree, DirectoryTree
   , reduceOverlay
   , inOverlay
   )
