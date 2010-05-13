@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative
 import Control.Monad
 import Data.Maybe
 import Data.List
@@ -295,22 +296,16 @@ updateAction flags extraArgs globalFlags = do
 
 data StatusFlags = StatusFlags {
     statusVerbosity :: Flag Verbosity,
-    statusOverlayPath :: Flag FilePath,
-    statusPortdirPath :: Flag FilePath,
     statusToPortage :: Flag Bool
   }
 
 instance Monoid StatusFlags where
   mempty = StatusFlags {
     statusVerbosity = mempty,
-    statusOverlayPath = mempty,
-    statusPortdirPath = mempty,
     statusToPortage = mempty
   }
   mappend a b = StatusFlags {
     statusVerbosity = combine statusVerbosity,
-    statusOverlayPath = combine statusOverlayPath,
-    statusPortdirPath = combine statusPortdirPath,
     statusToPortage = combine statusToPortage
   }
     where combine field = field a `mappend` field b
@@ -318,8 +313,6 @@ instance Monoid StatusFlags where
 defaultStatusFlags :: StatusFlags
 defaultStatusFlags = StatusFlags {
     statusVerbosity = Flag normal,
-    statusOverlayPath = NoFlag,
-    statusPortdirPath = NoFlag,
     statusToPortage = Flag False
   }
 
@@ -333,16 +326,6 @@ statusCommand = CommandUI {
     commandDefaultFlags = defaultStatusFlags,
     commandOptions = \_ ->
       [ optionVerbosity statusVerbosity (\v flags -> flags { statusVerbosity = v })
-      , option [] ["overlay"]
-         "Compare using the specified overlay"
-         statusOverlayPath (\v flags -> flags { statusOverlayPath = v })
-         (reqArgFlag "PATH")
-
-      , option [] ["portdir"]
-         "Compare using the specified portdir"
-         statusPortdirPath (\v flags -> flags { statusPortdirPath = v })
-         (reqArgFlag "PATH")
-
       , option [] ["to-portage"]
           "Print only packages likely to be interesting to move to the portage tree."
           statusToPortage (\v flags -> flags { statusToPortage = v })
@@ -353,12 +336,10 @@ statusCommand = CommandUI {
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
   let verbosity = fromFlag (statusVerbosity flags)
-      overlayPathM = flagToMaybe (statusOverlayPath flags)
-      portdirM = flagToMaybe (statusPortdirPath flags)
       toPortdir = fromFlag (statusToPortage flags)
-  portdir <- maybe (Host.portage_dir `fmap` Host.getInfo) return portdirM
-  overlayPath <- maybe (getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)) return overlayPathM
-  runStatus verbosity portdir overlayPath toPortdir args
+  portagePath <- getPortageDir verbosity globalFlags
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
+  runStatus verbosity portagePath overlayPath toPortdir args
 
 -----------------------------------------------------------------------
 -- Merge
@@ -500,7 +481,10 @@ usageFlags flag_name pname =
 
 getPortageDir :: Verbosity -> GlobalFlags -> IO FilePath
 getPortageDir verbosity globalFlags = do
-  let portagePath =  fromFlag (globalPathToPortage globalFlags)
+  let portagePathM =  fromFlag (globalPathToPortage globalFlags)
+  portagePath <- case portagePathM of
+                   Nothing -> Host.portage_dir <$> Host.getInfo
+                   Just path -> return path
   exists <- doesDirectoryExist $ portagePath </> "dev-haskell"
   when (not exists) $
     warn verbosity $ "Looks like an invalid portage directory: " ++ portagePath
@@ -514,7 +498,7 @@ data GlobalFlags =
     GlobalFlags { globalVersion :: Flag Bool
                 , globalNumericVersion :: Flag Bool
                 , globalPathToOverlay :: Flag (Maybe FilePath)
-                , globalPathToPortage :: Flag FilePath
+                , globalPathToPortage :: Flag (Maybe FilePath)
                 }
 
 defaultGlobalFlags :: GlobalFlags
@@ -522,7 +506,7 @@ defaultGlobalFlags =
     GlobalFlags { globalVersion = Flag False
                 , globalNumericVersion = Flag False
                 , globalPathToOverlay = Flag Nothing
-                , globalPathToPortage = Flag "/usr/portage"
+                , globalPathToPortage = Flag Nothing
                 }
 
 globalCommand :: CommandUI GlobalFlags
@@ -547,9 +531,9 @@ globalCommand = CommandUI {
             globalPathToOverlay (\ovrl_path flags -> flags { globalPathToOverlay = ovrl_path })
             (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
         , option [] ["portage-path"]
-            "Override path to your portage tree. Default: /usr/portage"
+            "Override path to your portage tree"
             globalPathToPortage (\port_path flags -> flags { globalPathToPortage = port_path })
-            (reqArg' "PATH" Flag (\(Flag ms) -> [ms]))
+            (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
         ]
     }
 
