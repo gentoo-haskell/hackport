@@ -17,7 +17,7 @@ import Distribution.PackageDescription.Configuration
          ( flattenPackageDescription )
 import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
-import Distribution.Simple.Utils ( die, cabalVersion )
+import Distribution.Simple.Utils ( die, cabalVersion, warn )
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
@@ -35,6 +35,7 @@ import Portage.PackageId ( normalizeCabalPackageId )
 
 import Network.URI
 import System.Environment ( getArgs, getProgName )
+import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
 
@@ -45,6 +46,7 @@ import Error
 import Status
 import Overlays
 import Merge
+import DistroMap ( distroMap )
 
 import qualified Paths_cabal_install
 import qualified Paths_hackport
@@ -412,6 +414,50 @@ mergeAction flags extraArgs globalFlags = do
   merge verbosity repo (defaultRepoURI overlayPath) extraArgs overlayPath
 
 -----------------------------------------------------------------------
+-- DistroMap
+-----------------------------------------------------------------------
+
+data DistroMapFlags = DistroMapFlags {
+    distroMapVerbosity :: Flag Verbosity
+  }
+
+instance Monoid DistroMapFlags where
+  mempty = DistroMapFlags {
+    distroMapVerbosity = mempty
+    -- , mergeServerURI = mempty
+  }
+  mappend a b = DistroMapFlags {
+    distroMapVerbosity = combine distroMapVerbosity
+  }
+    where combine field = field a `mappend` field b
+
+defaultDistroMapFlags :: DistroMapFlags
+defaultDistroMapFlags = DistroMapFlags {
+    distroMapVerbosity = Flag normal
+  }
+
+distroMapCommand :: CommandUI DistroMapFlags
+distroMapCommand = CommandUI {
+    commandName = "distromap",
+    commandSynopsis = "Build a distromap file",
+    commandDescription = Just $ \_pname ->
+      "TODO: this is the commandDescription for distroMapCommand\n",
+    commandUsage = usagePackages "distromap",
+    commandDefaultFlags = defaultDistroMapFlags,
+    commandOptions = \_showOrParseArgs ->
+      [ optionVerbosity distroMapVerbosity (\v flags -> flags { distroMapVerbosity = v })
+      ]
+  }
+
+distroMapAction :: DistroMapFlags-> [String] -> GlobalFlags -> IO ()
+distroMapAction flags extraArgs globalFlags = do
+  let verbosity = fromFlag (distroMapVerbosity flags)
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
+  let repo = defaultRepo overlayPath
+  portagePath <- getPortageDir verbosity globalFlags
+  distroMap verbosity repo portagePath overlayPath extraArgs
+
+-----------------------------------------------------------------------
 -- Utils
 -----------------------------------------------------------------------
 
@@ -452,6 +498,14 @@ usageFlags flag_name pname =
       "Usage: " ++ pname ++ " " ++ flag_name ++ " [FLAGS]\n\n"
       ++ "Flags for " ++ flag_name ++ ":"
 
+getPortageDir :: Verbosity -> GlobalFlags -> IO FilePath
+getPortageDir verbosity globalFlags = do
+  let portagePath =  fromFlag (globalPathToPortage globalFlags)
+  exists <- doesDirectoryExist $ portagePath </> "dev-haskell"
+  when (not exists) $
+    warn verbosity $ "Looks like an invalid portage directory: " ++ portagePath
+  return portagePath
+
 -----------------------------------------------------------------------
 -- Main
 -----------------------------------------------------------------------
@@ -460,6 +514,7 @@ data GlobalFlags =
     GlobalFlags { globalVersion :: Flag Bool
                 , globalNumericVersion :: Flag Bool
                 , globalPathToOverlay :: Flag (Maybe FilePath)
+                , globalPathToPortage :: Flag FilePath
                 }
 
 defaultGlobalFlags :: GlobalFlags
@@ -467,6 +522,7 @@ defaultGlobalFlags =
     GlobalFlags { globalVersion = Flag False
                 , globalNumericVersion = Flag False
                 , globalPathToOverlay = Flag Nothing
+                , globalPathToPortage = Flag "/usr/portage"
                 }
 
 globalCommand :: CommandUI GlobalFlags
@@ -488,8 +544,12 @@ globalCommand = CommandUI {
             trueArg
         , option ['p'] ["overlay-path"]
             "Override search path list where .hackport/ lives (default list: ['.', paludis-ovls or emerge-ovls])"
-            globalPathToOverlay (\ovl_path flags -> flags { globalPathToOverlay = ovl_path })
-            (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms])) -- FIXME: i should be optional
+            globalPathToOverlay (\ovrl_path flags -> flags { globalPathToOverlay = ovrl_path })
+            (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
+        , option [] ["portage-path"]
+            "Override path to your portage tree. Default: /usr/portage"
+            globalPathToPortage (\port_path flags -> flags { globalPathToPortage = port_path })
+            (reqArg' "PATH" Flag (\(Flag ms) -> [ms]))
         ]
     }
 
@@ -530,6 +590,7 @@ mainWorker args =
       , diffCommand `commandAddAction` diffAction
       , updateCommand `commandAddAction` updateAction
       , mergeCommand `commandAddAction` mergeAction
+      , distroMapCommand `commandAddAction` distroMapAction
       ]
 
 main :: IO ()
