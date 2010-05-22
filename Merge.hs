@@ -297,6 +297,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
       , ("mysqlclient", E.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) "virtual/mysql")
       , ("pq", E.LaterVersionOf (Portage.Version [7] Nothing [] 0) "virtual/postgresql-base")
+      , ("ev", E.AnyVersionOf "dev-libs/libev")
       ]
 
 buildToolsDeps :: PackageDescription -> [Cabal.Dependency]
