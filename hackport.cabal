@@ -1,6 +1,7 @@
 Name:           hackport
 Version:	0.2.5
 License:	GPL
+License-file:   LICENSE
 Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
 Category:       Distribution
