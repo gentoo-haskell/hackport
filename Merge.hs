@@ -312,6 +312,9 @@ buildToolsTable =
   [ ("happy", E.AnyVersionOf "dev-haskell/happy")
   , ("alex", E.AnyVersionOf "dev-haskell/alex")
   , ("c2hs", E.AnyVersionOf "dev-haskell/c2hs")
+  , ("gtk2hsTypeGen",       E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
+  , ("gtk2hsHookGenerator", E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
+  , ("gtk2hsC2hs",          E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
   ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
