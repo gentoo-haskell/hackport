@@ -185,7 +185,7 @@ merge verbosity repo serverURI args overlayPath = do
   let cabal_pkgId = packageInfoId selectedPkg
       norm_pkgId = Portage.normalizeCabalPackageId cabal_pkgId
       norm_pkgName = packageName norm_pkgId
-  cat <- Portage.resolveCategory verbosity overlay norm_pkgName
+  cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
 
   let pkgGenericDesc = packageDescription selectedPkg
       Right (pkgDesc0, flags) =
