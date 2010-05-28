@@ -251,8 +251,8 @@ merge verbosity repo serverURI args overlayPath = do
   let ebuild = fixSrc serverURI (packageId pkgDesc)
                . (\e -> e { depend = d e } )
                . (\e -> e { rdepend = rd e } )
-               . (\e -> e { extra_libs  = extra_libs  e ++ extra } )
-               . (\e -> e { build_tools = build_tools e ++ bt } )
+               . (\e -> e { extra_libs  = nub (extra_libs  e ++ extra) } )
+               . (\e -> e { build_tools = nub (build_tools e ++ bt) } )
                $ E.cabal2ebuild pkgDesc
 
   debug verbosity ("Treat as library: " ++ show treatAsLibrary)
