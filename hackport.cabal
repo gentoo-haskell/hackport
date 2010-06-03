@@ -63,6 +63,7 @@ Executable	hackport
     Portage
     Portage.Version
     Portage.Dependency
+    Portage.GHCCore
     Portage.PackageId
     Portage.Overlay
     Portage.Resolve
