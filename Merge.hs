@@ -375,7 +375,7 @@ fixSrc serverURI p ebuild =
           <.> "tar.gz"
       },
     E.homepage = case E.homepage ebuild of
-                "" -> "http://hackage.haskell.org/cgi-bin/hackage-scripts/package/"
+                "" -> "http://hackage.haskell.org/package/"
                         ++ display (pkgName p)
                 x -> x
     }
