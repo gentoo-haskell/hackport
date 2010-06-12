@@ -20,7 +20,7 @@ import Data.Monoid
 import Text.PrettyPrint.HughesPJ
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122]
+ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122, ghc6123]
 
 platform :: Platform
 platform = Platform X86_64 Linux
@@ -65,7 +65,10 @@ mkIndex pids = fromList
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
--- | Core packages in GHC 6.12.2 as a 'PackageIndex'.
+-- | Core packages in GHC 6.12.3 as a 'PackageIndex'.
+ghc6123 :: (CompilerId, PackageIndex)
+ghc6123 = (ghc [6,12,3], mkIndex ghc6123_pkgs)
+
 ghc6122 :: (CompilerId, PackageIndex)
 ghc6122 = (ghc [6,12,2], mkIndex ghc6122_pkgs)
 
@@ -83,6 +86,33 @@ ghc682 = (ghc [6,8,2], mkIndex ghc682_pkgs)
 
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+ghc6123_pkgs :: [PackageIdentifier]
+ghc6123_pkgs = 
+  [ p "array" [0,3,0,1]
+  , p "base" [3,0,3,2]
+  , p "base" [4,2,0,2]
+  , p "bytestring" [0,9,1,7]
+--  , p "Cabal" [1,8,0,6]  package is upgradeable
+  , p "containers" [0,3,0,0]
+  , p "directory" [1,0,1,1]
+  , p "extensible-exceptions" [0,1,1,1]
+  , p "filepath" [1,1,0,4]
+  , p "haskell98" [1,0,1,1]
+  , p "hpc" [0,5,0,5]
+  , p "integer-smp" [0,2,0,1]
+  , p "integer-simple" [0,1,0,0]
+  , p "old-locale" [1,0,0,2]
+  , p "old-time" [1,0,0,5]
+  , p "pretty" [1,0,1,1]
+  , p "process" [1,0,1,3]
+  , p "random" [1,0,0,2]
+  , p "syb" [0,1,0,2]
+  , p "template-haskell" [2,4,0,1]
+--  , p "time" [1,1,4] package is upgradeable
+  , p "unix" [2,4,0,2]
+--  , p "utf8-string" [0,3,4] package is upgradeable
+  ]
+
 ghc6122_pkgs :: [PackageIdentifier]
 ghc6122_pkgs = 
   [ p "array" [0,3,0,0]
