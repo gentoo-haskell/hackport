@@ -7,31 +7,59 @@ import Distribution.Version
 import Distribution.Simple.PackageIndex
 import Distribution.InstalledPackageInfo
 
+import Distribution.PackageDescription
+import Distribution.PackageDescription.Configuration
+import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
+import Distribution.System
+
 import Distribution.Text
 
-import Data.Maybe ( fromJust )
+import Data.Maybe
 import Data.Monoid
 
 import Text.PrettyPrint.HughesPJ
 
+ghcs :: [(CompilerId, PackageIndex)]
+ghcs = [ghc682, ghc6104, ghc6121]
+
+platform :: Platform
+platform = Platform X86_64 Linux
+
+latest_index :: PackageIndex
+latest_index = snd ghc6121
+
 packageIsCore :: PackageIndex -> PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
 
+packageIsCoreInAnyGHC :: PackageName -> Bool
+packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
+
+{-
 all_index :: PackageIndex
 all_index = mconcat [ ghc6121_index, ghc6104_index, ghc682_index ]
+-}
 
 -- | Check if a dependency is satisfiable given a 'PackageIndex'
 -- representing the core packages in a GHC version.
 -- Packages that are not core will always be accepted, packages that are
--- core must be satisfied by the 'PackageIndex'.
+-- core in any ghc must be satisfied by the 'PackageIndex'.
 dependencySatisfiable :: PackageIndex -> Dependency -> Bool
 dependencySatisfiable pi dep@(Dependency pn rang)
-  | pn == PackageName "Win32" = False
-  | not (packageIsCore pi pn) = True
-  | otherwise = not . null $ lookupDependency pi dep
+  | pn == PackageName "Win32" = False -- only exists on windows, not in linux
+  | not . null $ lookupDependency pi dep = True -- the package index satisfies the dep
+  | packageIsCoreInAnyGHC pn = False -- some other ghcs support the dependency
+  | otherwise = True -- the dep is not related with core packages, accept the dep
 
-latest_index :: PackageIndex
-latest_index = ghc6121_index
+packageBuildableWithGHCVersion
+  :: GenericPackageDescription
+  -> (CompilerId, PackageIndex)
+  -> Either [Dependency] (PackageDescription, FlagAssignment)
+packageBuildableWithGHCVersion pkg (compiler, pkgIndex) =
+  finalizePackageDescription [] (dependencySatisfiable pkgIndex) platform compiler [] pkg
+
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe CompilerId
+minimumGHCVersionToBuildPackage gpd =
+  listToMaybe [ cid | g@(cid, pix) <- ghcs, Right _ <- return (packageBuildableWithGHCVersion gpd g)]
 
 mkIndex :: [PackageIdentifier] -> PackageIndex
 mkIndex pids = fromList
@@ -42,25 +70,28 @@ mkIndex pids = fromList
       }
   | pi@(PackageIdentifier name version) <- pids ]
 
+ghc :: [Int] -> CompilerId
+ghc nrs = CompilerId GHC (Version nrs [])
 
 -- | Core packages in GHC 6.12.1 as a 'PackageIndex'.
-ghc6121_index :: PackageIndex
-ghc6121_index = mkIndex ghc6121
+ghc6121 :: (CompilerId, PackageIndex)
+ghc6121 = (ghc [6,12,1], mkIndex ghc6121_pkgs)
 
-ghc6104_index :: PackageIndex
-ghc6104_index = mkIndex ghc6104
+ghc6104 :: (CompilerId, PackageIndex)
+ghc6104 = (ghc [6,10,4], mkIndex ghc6104_pkgs)
 
-ghc682_index :: PackageIndex
-ghc682_index = mkIndex ghc682
+ghc682 :: (CompilerId, PackageIndex)
+ghc682 = (ghc [6,8,2], mkIndex ghc682_pkgs)
 
--- | Core packages in GHC 6.12.1
-ghc6121 :: [PackageIdentifier]
-ghc6121 =
+-- | Non-upgradeable core packages in GHC 6.12.1
+-- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+ghc6121_pkgs :: [PackageIdentifier]
+ghc6121_pkgs = 
   [ p "array" [0,3,0,0]
   , p "base" [3,0,3,2]
   , p "base" [4,2,0,0]
   , p "bytestring" [0,9,1,5]
-  , p "Cabal" [1,8,0,2]
+--  , p "Cabal" [1,8,0,2]  package is upgradeable
   , p "containers" [0,3,0,0]
   , p "directory" [1,0,1,0]
   , p "extensible-exceptions" [0,1,1,1]
@@ -77,16 +108,16 @@ ghc6121 =
   , p "syb" [0,1,0,2]
   , p "template-haskell" [2,4,0,0]
   , p "unix" [2,4,0,0]
-  , p "utf8-string" [0,3,4]
+--  , p "utf8-string" [0,3,4] package is upgradeable
   ]
 
-ghc6104 :: [PackageIdentifier]
-ghc6104 =
+ghc6104_pkgs :: [PackageIdentifier]
+ghc6104_pkgs =
   [ p "array" [0,2,0,0]
   , p "base" [3,0,3,1]
   , p "base" [4,1,0,0]
   , p "bytestring" [0,9,1,4]
-  , p "Cabal" [1,6,0,3]
+--  , p "Cabal" [1,6,0,3] package is upgradeable
   , p "containers" [0,2,0,1 ]
   , p "directory" [1,0,0,3]
   , p "extensible-exceptions" [0,1,1,0]
