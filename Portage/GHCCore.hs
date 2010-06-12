@@ -105,9 +105,27 @@ ghc6104 =
   , p "unix" [2,3,2,0]
   ]
 
-ghc682 :: [PackageIdentifier]
-ghc682 =
-  [ p "" [] ]
+ghc682_pkgs :: [PackageIdentifier]
+ghc682_pkgs =
+  [ p "array" [0,1,0,0]
+  , p "base" [3,0,1,0]
+  , p "bytestring" [0,9,0,1]
+--  , p "Cabal" [1,2,3,0] package is upgradeable
+  , p "containers" [0,1,0,1]
+  , p "dictionary" [1,0,0,0]
+  , p "filepath" [1,1,0,0]
+  , p "haskell98" [1,0,1,0]
+  , p "hpc" [0,5,0,0]
+  , p "old-locale" [1,0,0,0]
+  , p "old-time" [1,0,0,0]
+  , p "packedstring" [0,1,0,0]
+  , p "pretty" [1,0,0,0]
+  , p "process" [1,0,0,0]
+  , p "random" [1,0,0,0]
+--  , p "readline" [1,0,1,0]
+  , p "template-haskell" [2,2,0,0]
+  , p "unix" [2,3,0,0]
+  ]
 
 p :: String -> [Int] -> PackageIdentifier
 p pn vs = PackageIdentifier (PackageName pn) (Version vs [])
