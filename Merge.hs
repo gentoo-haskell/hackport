@@ -207,7 +207,7 @@ merge verbosity repo serverURI args overlayPath = do
       hasBuildableExes p =
         any (buildable . buildInfo)
         . executables $ p
-      treatAsLibrary = (not . hasBuildableExes) pkgDesc && hasLibs pkgDesc
+      treatAsLibrary = (not . hasBuildableExes) pkgDesc || hasLibs pkgDesc
 
       -- calculate build tools
       bt = [ pkg' -- TODO: currently ignoring version range
