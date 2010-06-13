@@ -73,3 +73,38 @@ Executable	hackport
     Status
     Merge
     Util
+
+
+Executable	hackport-guess-ghc-version
+  Main-Is:	Main-GuessGHC.hs
+  Build-Depends:
+    base >= 2.0 && < 5,
+    filepath,
+    parsec,
+    mtl,
+    network,
+    pretty,
+    regex-compat,
+    Cabal == 1.8.*,
+    HTTP >= 4000.0.3,
+    zlib,
+    tar,
+    array,
+  -- array is inherited from cabal-install 
+  -- tar >= 0.3.0.0 && < 0.4
+    extensible-exceptions
+
+  if flag(split-base)
+    Build-Depends:
+      base >= 3 && < 5,
+      directory,
+      containers,
+      process,
+      old-time,
+      bytestring
+  else
+     Build-Depends: base < 3
+
+  ghc-options: -Wall
+  other-modules:
+    Portage.GHCCore
