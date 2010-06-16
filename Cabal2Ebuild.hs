@@ -26,6 +26,7 @@ module Cabal2Ebuild
         ,Dependency(..)
         ,cabal2ebuild
         ,convertDependencies
+        ,convertDependency
         ,showEBuild) where
 
 import qualified Distribution.PackageDescription as Cabal
@@ -98,8 +99,9 @@ cabal2ebuild pkg = ebuildTemplate {
     src_uri         = Cabal.pkgUrl pkg,
     license         = convertLicense (Cabal.license pkg),
     licenseComments = licenseComment (Cabal.license pkg),
-    haskell_deps    = simplify_deps $ convertDependencies (Cabal.buildDepends pkg),
-    cabal_dep       = head $ convertDependency (Cabal.Dependency (Cabal.PackageName "Cabal")
+    haskell_deps    = simplify_deps $ convertDependencies "dev-haskell" (Cabal.buildDepends pkg),
+    cabal_dep       = head $ convertDependency "dev-haskell"
+                                               (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                (Cabal.descCabalVersion pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     features        = features ebuildTemplate
@@ -133,18 +135,18 @@ licenseComment Cabal.OtherLicense =
   "Fixme: \"OtherLicense\", please fill in manually"
 licenseComment _ = ""
 
-convertDependencies :: [Cabal.Dependency] -> [Dependency]
-convertDependencies = concatMap convertDependency
+convertDependencies :: String -> [Cabal.Dependency] -> [Dependency]
+convertDependencies category = concatMap (convertDependency category)
 
-convertDependency :: Cabal.Dependency -> [Dependency]
-convertDependency (Cabal.Dependency pname@(Cabal.PackageName _name) _)
+convertDependency :: String -> Cabal.Dependency -> [Dependency]
+convertDependency _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
-convertDependency (Cabal.Dependency pname versionRange)
+convertDependency category (Cabal.Dependency pname versionRange)
   = convert versionRange
   where
     -- XXX: not always true, we should look properly for deps in the overlay
     -- to find the correct category
-    ebuildName = "dev-haskell/" ++ map toLower (Cabal.display pname)
+    ebuildName = category ++ "/" ++ map toLower (Cabal.display pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
              (          [AnyVersionOf                        ebuildName] -- ^ @\"-any\"@ version
