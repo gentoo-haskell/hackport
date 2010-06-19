@@ -25,10 +25,11 @@ import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlpha, isDigit)
 
-data Version = Version [Int]         -- [1,42,3] ~= 1.42.3
-                       (Maybe Char)  -- optional letter
-                       [Suffix]
-                       Int           -- revision, 0 means none
+data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
+                       , versionChar     :: (Maybe Char)  -- optional letter
+                       , versionSuffix   :: [Suffix]
+                       , versionRevision :: Int           -- revision, 0 means none
+                       }
   deriving (Eq, Ord, Show, Read)
 
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int

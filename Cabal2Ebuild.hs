@@ -36,11 +36,12 @@ import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , PackageName(..))
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange', versionBranch, Version)
 import qualified Distribution.License as Cabal  (License(..))
-import qualified Distribution.Text as Cabal  (display)
+import Distribution.Text (display)
 
 import Data.Char          (toLower,isUpper)
 
 import Portage.Dependency
+import qualified Portage.PackageId as Portage
 import Portage.Version
 
 data EBuild = EBuild {
@@ -80,7 +81,7 @@ ebuildTemplate = EBuild {
     haskell_deps = [],
     build_tools = [],
     extra_libs = [],
-    cabal_dep = AnyVersionOf "dev-haskell/cabal",
+    cabal_dep = AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal"),
     ghc_dep = defaultDepGHC,
     depend = [],
     rdepend = [],
@@ -92,15 +93,15 @@ ebuildTemplate = EBuild {
 cabal2ebuild :: Cabal.PackageDescription -> EBuild
 cabal2ebuild pkg = ebuildTemplate {
     name        = map toLower cabalPkgName,
-    version     = Cabal.display (Cabal.pkgVersion (Cabal.package pkg)),
+    version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
     homepage        = Cabal.homepage pkg,
     src_uri         = Cabal.pkgUrl pkg,
     license         = convertLicense (Cabal.license pkg),
     licenseComments = licenseComment (Cabal.license pkg),
-    haskell_deps    = simplify_deps $ convertDependencies "dev-haskell" (Cabal.buildDepends pkg),
-    cabal_dep       = head $ convertDependency "dev-haskell"
+    haskell_deps    = simplify_deps $ convertDependencies (Portage.Category "dev-haskell") (Cabal.buildDepends pkg),
+    cabal_dep       = head $ convertDependency (Portage.Category "dev-haskell")
                                                (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                (Cabal.descCabalVersion pkg)),
     my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
@@ -110,17 +111,17 @@ cabal2ebuild pkg = ebuildTemplate {
                         ++ if cabalPkgName == "hscolour" then [] else ["hscolour"])
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
   } where
-        cabalPkgName = Cabal.display $ Cabal.pkgName (Cabal.package pkg)
+        cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
         -- hasLib = isJust (Cabal.library pkg)
         hasExe = (not . null) (Cabal.executables pkg) 
 
 defaultDepGHC :: Dependency
-defaultDepGHC = OrLaterVersionOf (Version [6,8,1] Nothing [] 0) "dev-lang/ghc"
+defaultDepGHC = OrLaterVersionOf (Version [6,8,1] Nothing [] 0) (Portage.mkPackageName "dev-lang" "ghc")
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
-convertLicense (Cabal.GPL mv)     = "GPL-" ++ (maybe "2" Cabal.display mv)  -- almost certainly version 2
-convertLicense (Cabal.LGPL mv)    = "LGPL-" ++ (maybe "2.1" Cabal.display mv) -- probably version 2.1
+convertLicense (Cabal.GPL mv)     = "GPL-" ++ (maybe "2" display mv)  -- almost certainly version 2
+convertLicense (Cabal.LGPL mv)    = "LGPL-" ++ (maybe "2.1" display mv) -- probably version 2.1
 convertLicense Cabal.BSD3         = "BSD"
 convertLicense Cabal.BSD4         = "BSD-4"
 convertLicense Cabal.PublicDomain = "public-domain"
@@ -135,10 +136,10 @@ licenseComment Cabal.OtherLicense =
   "Fixme: \"OtherLicense\", please fill in manually"
 licenseComment _ = ""
 
-convertDependencies :: String -> [Cabal.Dependency] -> [Dependency]
+convertDependencies :: Portage.Category -> [Cabal.Dependency] -> [Dependency]
 convertDependencies category = concatMap (convertDependency category)
 
-convertDependency :: String -> Cabal.Dependency -> [Dependency]
+convertDependency :: Portage.Category -> Cabal.Dependency -> [Dependency]
 convertDependency _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency category (Cabal.Dependency pname versionRange)
@@ -146,7 +147,7 @@ convertDependency category (Cabal.Dependency pname versionRange)
   where
     -- XXX: not always true, we should look properly for deps in the overlay
     -- to find the correct category
-    ebuildName = category ++ "/" ++ map toLower (Cabal.display pname)
+    ebuildName = Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
              (          [AnyVersionOf                        ebuildName] -- ^ @\"-any\"@ version
@@ -221,15 +222,15 @@ showEBuild ebuild =
   ss "IUSE=". quote' (sepBy ", " $ iuse ebuild). nl.
   nl.
   ( if (not . null . build_tools $ ebuild)
-      then ss "BUILDTOOLS=". quote' (sepBy "\n\t\t" $ map showDepend $ build_tools ebuild). nl
+      then ss "BUILDTOOLS=". quote' (sepBy "\n\t\t" $ map display $ build_tools ebuild). nl
       else id
   ).
   ( if (not . null . extra_libs $ ebuild )
-      then ss "EXTRALIBS=". quote' (sepBy "\n\t\t" $ map showDepend $ extra_libs ebuild). nl
+      then ss "EXTRALIBS=". quote' (sepBy "\n\t\t" $ map display $ extra_libs ebuild). nl
       else id
   ).
   ( if (not . null . haskell_deps $ ebuild)
-      then ss "HASKELLDEPS=". quote' (sepBy "\n\t\t" $ map showDepend $ haskell_deps ebuild). nl
+      then ss "HASKELLDEPS=". quote' (sepBy "\n\t\t" $ map display $ haskell_deps ebuild). nl
       else id
   ).
   ss "RDEPEND=". quote' (sepBy "\n\t\t" $ rdepend ebuild). nl.

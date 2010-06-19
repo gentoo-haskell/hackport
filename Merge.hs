@@ -216,9 +216,9 @@ merge verbosity repo serverURI args overlayPath = do
            ]
 
       packageNameResolver s = do
-        (Portage.PackageName (Portage.Category p_cat) (Cabal.PackageName pn))
+        (Portage.PackageName p_cat pn)
           <- Portage.resolveFullPortageName portage (Cabal.PackageName s)
-        return $ E.AnyVersionOf (p_cat </> pn)
+        return $ E.AnyVersionOf (Portage.PackageName p_cat pn)
 
   -- calculate extra-libs
   extra <- findCLibs verbosity packageNameResolver pkgDesc
@@ -235,16 +235,16 @@ merge verbosity repo serverURI args overlayPath = do
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
   let d e = if treatAsLibrary
-              then Portage.showDepend (cabal_dep e)
+              then display (cabal_dep e)
                     : "${RDEPEND}"
                     : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
-              else Portage.showDepend (cabal_dep e)
-                    : Portage.showDepend (ghc_dep e)
+              else display (cabal_dep e)
+                    : display (ghc_dep e)
                     : "${RDEPEND}"
                     : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
                        ++ [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
       rd e = if treatAsLibrary
-              then Portage.showDepend (ghc_dep e)
+              then display (ghc_dep e)
                     : [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
                        ++ [ "${EXTRALIBS}" | not . null $ extra_libs e ]
               else [ "${EXTRALIBS}" | not . null $ extra_libs e ]
@@ -293,11 +293,11 @@ findCLibs verbosity portageResolver (PackageDescription { library = lib, executa
 staticTranslateExtraLib :: String -> Maybe E.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", E.AnyVersionOf "sys-libs/zlib")
-      , ("bz2", E.AnyVersionOf "sys-libs/bzlib")
-      , ("mysqlclient", E.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) "virtual/mysql")
-      , ("pq", E.LaterVersionOf (Portage.Version [7] Nothing [] 0) "virtual/postgresql-base")
-      , ("ev", E.AnyVersionOf "dev-libs/libev")
+  m = [ ("z", E.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib"))
+      , ("bz2", E.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib"))
+      , ("mysqlclient", E.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql"))
+      , ("pq", E.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
+      , ("ev", E.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
       ]
 
 buildToolsDeps :: PackageDescription -> [Cabal.Dependency]
@@ -309,12 +309,12 @@ buildToolsDeps (PackageDescription { library = lib, executables = exes }) = caba
 
 buildToolsTable :: [(String, E.Dependency)]
 buildToolsTable =
-  [ ("happy", E.AnyVersionOf "dev-haskell/happy")
-  , ("alex", E.AnyVersionOf "dev-haskell/alex")
-  , ("c2hs", E.AnyVersionOf "dev-haskell/c2hs")
-  , ("gtk2hsTypeGen",       E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
-  , ("gtk2hsHookGenerator", E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
-  , ("gtk2hsC2hs",          E.AnyVersionOf "dev-haskell/gtk2hs-buildtools")
+  [ ("happy", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy"))
+  , ("alex", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex"))
+  , ("c2hs", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs"))
+  , ("gtk2hsTypeGen",       E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  , ("gtk2hsHookGenerator", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  , ("gtk2hsC2hs",          E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   ]
 
 mkUri :: Cabal.PackageIdentifier -> URI

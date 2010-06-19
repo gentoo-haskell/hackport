@@ -5,6 +5,7 @@ module Portage.PackageId (
     PackageName(..),
     PackageId(..),
     Portage.Version(..),
+    mkPackageName,
     fromCabalPackageId,
     toCabalPackageId,
     parseFriendlyPackage,
@@ -47,6 +48,9 @@ instance Text PN where
         -- each component must contain an alphabetic character, to avoid
         -- ambiguity in identifiers like foo-1 (the 1 is the version number).
 -}
+
+mkPackageName :: String -> String -> PackageName
+mkPackageName cat package = PackageName (Category cat) (Cabal.PackageName package)
 
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =

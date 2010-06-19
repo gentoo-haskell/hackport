@@ -1,47 +1,57 @@
 module Portage.Dependency (
   Dependency(..),
-  showDepend,
   simplify_deps
   ) where
 
 import Portage.Version
-import Distribution.Text (display)
+import Distribution.Text ( display, Text(..) )
+
+import Portage.PackageId
+
+import qualified Text.PrettyPrint as Disp
+import Text.PrettyPrint ( (<>) )
 
 import Data.Maybe ( fromJust, catMaybes )
 import Data.List ( nub, groupBy, partition, sortBy )
 import Data.Ord           (comparing)
 
-type Package = String
 type UseFlag = String
 
-data Dependency = AnyVersionOf               Package
-                | ThisVersionOf      Version Package   -- =package-version
-                | LaterVersionOf     Version Package   -- >package-version
-                | EarlierVersionOf   Version Package   -- <package-version
-                | OrLaterVersionOf   Version Package   -- >=package-version
-                | OrEarlierVersionOf Version Package   -- <=package-version
+data Dependency = AnyVersionOf               PackageName
+                | ThisVersionOf      Version PackageName   -- ~package-version
+                | LaterVersionOf     Version PackageName   -- >package-version
+                | EarlierVersionOf   Version PackageName   -- <package-version
+                | OrLaterVersionOf   Version PackageName   -- >=package-version
+                | OrEarlierVersionOf Version PackageName   -- <=package-version
                 | DependEither Dependency Dependency   -- depend || depend
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
-                | ThisMajorOf        Version Package   -- =package-version*
+                | ThisMajorOf        Version PackageName   -- =package-version*
     deriving (Eq,Show)
 
-showDepend :: Dependency -> Package
-showDepend (AnyVersionOf         p) = p
-showDepend (ThisVersionOf      v p) = "~" ++ p ++ "-" ++ display v
-showDepend (LaterVersionOf     v p) = ">" ++ p ++ "-" ++ display v
-showDepend (EarlierVersionOf   v p) = "<" ++ p ++ "-" ++ display v
-showDepend (OrLaterVersionOf   v p) = ">=" ++ p ++ "-" ++ display v
-showDepend (OrEarlierVersionOf v p) = "<=" ++ p ++ "-" ++ display v
-showDepend (DependEither       dep1 dep2) = showDepend dep1
-                                     ++ " || " ++ showDepend dep2
+instance Text Dependency where
+  disp = showDepend
+
+(<->) :: Disp.Doc -> Disp.Doc -> Disp.Doc
+a <-> b = a <> Disp.char '-' <> b
+
+showDepend :: Dependency -> Disp.Doc
+showDepend (AnyVersionOf         p) = disp p
+showDepend (ThisVersionOf      v p) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 }
+showDepend (LaterVersionOf     v p) = Disp.char '>' <> disp p <-> disp v
+showDepend (EarlierVersionOf   v p) = Disp.char '<' <> disp p <-> disp v
+showDepend (OrLaterVersionOf   v p) = Disp.text ">=" <> disp p <-> disp v
+showDepend (OrEarlierVersionOf v p) = Disp.text "<=" <> disp p <-> disp v
+showDepend (DependEither       dep1 dep2)
+              = Disp.text "|| " <> Disp.parens (Disp.space <> disp dep1 <> Disp.space <> disp dep2 <> Disp.space)
 showDepend (DependIfUse        useflag dep@(DependEither _ _))
-                                                = useflag ++ "? " ++ showDepend dep
-showDepend (DependIfUse        useflag dep)  = useflag ++ "? ( " ++ showDepend dep++ " )"
-showDepend (ThisMajorOf        v p) = "=" ++ p ++ "-" ++ display v ++ "*"
+              = Disp.text useflag <> Disp.text "? " <> disp dep
+showDepend (DependIfUse        useflag dep)
+              = Disp.text useflag <> Disp.text "? " <>  Disp.parens (disp dep)
+showDepend (ThisMajorOf        v p) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*'
 
 {- Here goes code for dependencies simplification -}
 
-simplify_group_table :: Package ->
+simplify_group_table :: PackageName ->
                         Maybe Version ->
                         Maybe Version ->
                         Maybe Version ->
@@ -50,7 +60,7 @@ simplify_group_table :: Package ->
 
 -- simplify_group_table p ol       l        e        oe       exact
 -- 1) trivial cases:
-simplify_group_table    p Nothing  Nothing  Nothing  Nothing  Nothing  = error $ p ++ ": unsolvable constraints"
+simplify_group_table    p Nothing  Nothing  Nothing  Nothing  Nothing  = error $ display p ++ ": unsolvable constraints"
 simplify_group_table    p (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p]
 simplify_group_table    p Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p]
 simplify_group_table    p Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p]
@@ -122,7 +132,7 @@ simplify_group deps = simplify_group_table package
 simplify_deps :: [Dependency] -> [Dependency]
 simplify_deps deps = (concatMap (simplify_group.nub) $
                        groupBy cmpPkgName $
-                         sortBy (comparing getPackageString) groupable)
+                         sortBy (comparing getPackagePart) groupable)
                      ++ ungroupable
     where (ungroupable, groupable) = partition ((==Nothing).getPackage) deps
           --
@@ -130,7 +140,7 @@ simplify_deps deps = (concatMap (simplify_group.nub) $
           cmpMaybe (Just p1) (Just p2) = p1 == p2
           cmpMaybe _         _         = False
           --
-getPackage :: Dependency -> Maybe Package
+getPackage :: Dependency -> Maybe PackageName
 getPackage (AnyVersionOf package) = Just package
 getPackage (ThisVersionOf      _version package) = Just package
 getPackage (LaterVersionOf     _version package) = Just package
@@ -141,5 +151,5 @@ getPackage (DependEither _dependency _Dependency) = Nothing
 getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
 getPackage (ThisMajorOf        _version package) = Just package
 --
-getPackageString :: Dependency -> Package
-getPackageString dep = maybe "" id $ getPackage dep
+getPackagePart :: Dependency -> PackageName
+getPackagePart dep = fromJust (getPackage dep)
