@@ -77,21 +77,24 @@ convertDependency category (Cabal.Dependency pname versionRange)
   where
     -- XXX: not always true, we should look properly for deps in the overlay
     -- to find the correct category
-    ebuildName = Portage.PackageName category (Portage.normalizeCabalPackageName pname)
+    pn = Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
-             (          [AnyVersionOf                        ebuildName] -- ^ @\"-any\"@ version
-            )(\v     -> [ThisVersionOf      (fromCabalVersion v)  ebuildName] -- ^ @\"== v\"@
-            )(\v     -> [LaterVersionOf     (fromCabalVersion v)  ebuildName] -- ^ @\"> v\"@
-            )(\v     -> [EarlierVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\"< v\"@
-            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\">= v\"@
-            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v)  ebuildName] -- ^ @\"<= v\"@
-            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
-            )(\r1 r2 -> case (r1,r2) of
-                            ([r1'], [r2']) -> [DependEither r1' r2']       -- ^ @\"_ || _\"@ union
-                            _              -> error "convertDependency: compound either"
+             (          [AnyVersionOf                            pn] -- ^ @\"-any\"@ version
+            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn] -- ^ @\"== v\"@
+            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn] -- ^ @\"> v\"@
+            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn] -- ^ @\"< v\"@
+            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn] -- ^ @\">= v\"@
+            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn] -- ^ @\"<= v\"@
+            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\g1 g2 -> [DependEither (flatten g1 ++ flatten g2)   ] -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> r1 ++ r2
             )
+      where
+      flatten :: [Dependency] -> [[Dependency]]
+      flatten [DependEither ds] = concatMap flatten ds
+      flatten other = [other]
+
 
 coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName

@@ -23,7 +23,7 @@ data Dependency = AnyVersionOf               PackageName
                 | EarlierVersionOf   Version PackageName   -- <package-version
                 | OrLaterVersionOf   Version PackageName   -- >=package-version
                 | OrEarlierVersionOf Version PackageName   -- <=package-version
-                | DependEither Dependency Dependency   -- depend || depend
+                | DependEither [[Dependency]]              -- || ( depend_group1 ..depend_groupN )
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
                 | ThisMajorOf        Version PackageName   -- =package-version*
     deriving (Eq,Show)
@@ -41,9 +41,11 @@ showDepend (LaterVersionOf     v p) = Disp.char '>' <> disp p <-> disp v
 showDepend (EarlierVersionOf   v p) = Disp.char '<' <> disp p <-> disp v
 showDepend (OrLaterVersionOf   v p) = Disp.text ">=" <> disp p <-> disp v
 showDepend (OrEarlierVersionOf v p) = Disp.text "<=" <> disp p <-> disp v
-showDepend (DependEither       dep1 dep2)
-              = Disp.text "|| " <> Disp.parens (Disp.space <> disp dep1 <> Disp.space <> disp dep2 <> Disp.space)
-showDepend (DependIfUse        useflag dep@(DependEither _ _))
+showDepend (DependEither       dep_groups0)
+              = Disp.text "|| " <> spaceParens dep_groups
+  where dep_groups = map (spaceParens . map disp) dep_groups0
+        spaceParens ds = Disp.parens (Disp.space <> Disp.hsep ds <> Disp.space)
+showDepend (DependIfUse        useflag dep@(DependEither _))
               = Disp.text useflag <> Disp.text "? " <> disp dep
 showDepend (DependIfUse        useflag dep)
               = Disp.text useflag <> Disp.text "? " <>  Disp.parens (disp dep)
@@ -147,7 +149,7 @@ getPackage (LaterVersionOf     _version package) = Just package
 getPackage (EarlierVersionOf   _version package) = Just package
 getPackage (OrLaterVersionOf   _version package) = Just package
 getPackage (OrEarlierVersionOf _version package) = Just package
-getPackage (DependEither _dependency _Dependency) = Nothing
+getPackage (DependEither _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
 getPackage (ThisMajorOf        _version package) = Just package
 --
