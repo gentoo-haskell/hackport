@@ -289,9 +289,7 @@ data EDep = EDep
     rdep :: [Portage.Dependency],
     rdep_e :: [String],
     dep :: [Portage.Dependency],
-    dep_e :: [String],
-    extra_libs :: [Portage.Dependency],
-    pkg_conf :: [Portage.Dependency]
+    dep_e :: [String]
   }
 
 emptyEDep :: EDep
@@ -300,9 +298,7 @@ emptyEDep = EDep
     rdep = [],
     rdep_e = [],
     dep = [],
-    dep_e = [],
-    extra_libs = [],
-    pkg_conf = []
+    dep_e = []
   }
 
 findCLibs :: Verbosity -> (String -> Maybe Portage.Dependency) -> PackageDescription -> IO [Portage.Dependency]
