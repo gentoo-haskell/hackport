@@ -49,9 +49,6 @@ ebuildTemplate = EBuild {
     my_pn = Nothing
   }
 
-defaultDepGHC :: Dependency
-defaultDepGHC = OrLaterVersionOf (Version [6,8,1] Nothing [] 0) (mkPackageName "dev-lang" "ghc")
-
 instance Text EBuild where
   disp = Disp.text . showEBuild
 
