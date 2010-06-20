@@ -168,4 +168,5 @@ licenseComment Cabal.AllRightsReserved =
   "Note: packages without a license cannot be included in portage"
 licenseComment Cabal.OtherLicense =
   "Fixme: \"OtherLicense\", please fill in manually"
+licenseComment (Cabal.UnknownLicense _) = "Fixme: license unknown to cabal"
 licenseComment _ = ""
