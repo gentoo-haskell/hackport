@@ -40,7 +40,8 @@ import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
 
-import qualified Cabal2Ebuild as E
+import qualified Cabal2Ebuild as C2E
+import qualified Portage.EBuild as E
 
 import Diff
 import Error
@@ -150,9 +151,9 @@ makeEbuildAction flags args _globalFlags = do
   let _verbosity = fromFlag (makeEbuildVerbosity flags)
   forM_ args $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
-    let ebuild = E.cabal2ebuild (flattenPackageDescription pkg)
+    let ebuild = C2E.cabal2ebuild (flattenPackageDescription pkg)
     let ebuildFileName = E.name ebuild ++ "-" ++ E.version ebuild ++ ".ebuild"
-    writeFile ebuildFileName (E.showEBuild ebuild)
+    writeFile ebuildFileName (display ebuild)
 
 makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {

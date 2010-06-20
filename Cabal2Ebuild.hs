@@ -82,21 +82,17 @@ convertDependency category (Cabal.Dependency pname versionRange)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
              (          [AnyVersionOf                        ebuildName] -- ^ @\"-any\"@ version
-            )(\v     -> [ThisVersionOf      (cabalVtoHPv v)  ebuildName] -- ^ @\"== v\"@
-            )(\v     -> [LaterVersionOf     (cabalVtoHPv v)  ebuildName] -- ^ @\"> v\"@
-            )(\v     -> [EarlierVersionOf   (cabalVtoHPv v)  ebuildName] -- ^ @\"< v\"@
-            )(\v     -> [OrLaterVersionOf   (cabalVtoHPv v)  ebuildName] -- ^ @\">= v\"@
-            )(\v     -> [OrEarlierVersionOf (cabalVtoHPv v)  ebuildName] -- ^ @\"<= v\"@
-{- FIXME -} )(\v1 _  -> [ThisMajorOf        (cabalVtoHPv v1) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\v     -> [ThisVersionOf      (fromCabalVersion v)  ebuildName] -- ^ @\"== v\"@
+            )(\v     -> [LaterVersionOf     (fromCabalVersion v)  ebuildName] -- ^ @\"> v\"@
+            )(\v     -> [EarlierVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\"< v\"@
+            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\">= v\"@
+            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v)  ebuildName] -- ^ @\"<= v\"@
+{- FIXME -} )(\v _   -> [ThisMajorOf        (fromCabalVersion v) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\r1 r2 -> case (r1,r2) of
                             ([r1'], [r2']) -> [DependEither r1' r2']       -- ^ @\"_ || _\"@ union
                             _              -> error "convertDependency: compound either"
             )(\r1 r2 -> r1 ++ r2
             )
-
--- converts Cabal version type to hackport version
-cabalVtoHPv :: Cabal.Version -> Version
-cabalVtoHPv = (\v -> Version v Nothing [] 0) . Cabal.versionBranch
 
 coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName

@@ -66,6 +66,7 @@ import System.Cmd (system)
 import System.FilePath ((</>))
 
 import qualified Cabal2Ebuild as C2E
+import qualified Portage.EBuild as E
 import Error as E
 
 import qualified Distribution.Package as Cabal
@@ -234,24 +235,24 @@ merge verbosity repo serverURI args overlayPath = do
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
   let d e = if treatAsLibrary
-              then display (C2E.cabal_dep e)
+              then display (E.cabal_dep e)
                     : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ C2E.build_tools e ]
-              else display (C2E.cabal_dep e)
-                    : display (C2E.ghc_dep e)
+                    : [ "${BUILDTOOLS}"  | not . null $ E.build_tools e ]
+              else display (E.cabal_dep e)
+                    : display (E.ghc_dep e)
                     : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ C2E.build_tools e ]
-                       ++ [ "${HASKELLDEPS}" | not . null $ C2E.haskell_deps e ]
+                    : [ "${BUILDTOOLS}"  | not . null $ E.build_tools e ]
+                       ++ [ "${HASKELLDEPS}" | not . null $ E.haskell_deps e ]
       rd e = if treatAsLibrary
-              then display (C2E.ghc_dep e)
-                    : [ "${HASKELLDEPS}" | not . null $ C2E.haskell_deps e ]
-                       ++ [ "${EXTRALIBS}" | not . null $ C2E.extra_libs e ]
-              else [ "${EXTRALIBS}" | not . null $ C2E.extra_libs e ]
+              then display (E.ghc_dep e)
+                    : [ "${HASKELLDEPS}" | not . null $ E.haskell_deps e ]
+                       ++ [ "${EXTRALIBS}" | not . null $ E.extra_libs e ]
+              else [ "${EXTRALIBS}" | not . null $ E.extra_libs e ]
   let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . (\e -> e { C2E.depend = d e } )
-               . (\e -> e { C2E.rdepend = rd e } )
-               . (\e -> e { C2E.extra_libs  = nub (C2E.extra_libs  e ++ extra) } )
-               . (\e -> e { C2E.build_tools = nub (C2E.build_tools e ++ bt) } )
+               . (\e -> e { E.depend = d e } )
+               . (\e -> e { E.rdepend = rd e } )
+               . (\e -> e { E.extra_libs  = nub (E.extra_libs  e ++ extra) } )
+               . (\e -> e { E.build_tools = nub (E.build_tools e ++ bt) } )
                $ C2E.cabal2ebuild pkgDesc
 
   debug verbosity ("Treat as library: " ++ show treatAsLibrary)
@@ -353,19 +354,19 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
-mergeEbuild :: Verbosity -> FilePath -> String -> C2E.EBuild -> IO () 
+mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO () 
 mergeEbuild verbosity target cat ebuild = do 
-  let edir = target </> cat </> C2E.name ebuild
-      elocal = C2E.name ebuild ++"-"++ C2E.version ebuild <.> "ebuild"
+  let edir = target </> cat </> E.name ebuild
+      elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
   createDirectoryIfMissing True edir
   info verbosity $ "Writing " ++ elocal
-  writeFile epath (C2E.showEBuild ebuild)
+  writeFile epath (display ebuild)
 
-fixSrc :: URI -> PackageIdentifier -> C2E.EBuild -> C2E.EBuild
+fixSrc :: URI -> PackageIdentifier -> E.EBuild -> E.EBuild
 fixSrc serverURI p ebuild =
   ebuild {
-    C2E.src_uri = show $ serverURI {
+    E.src_uri = show $ serverURI {
       uriPath =
         uriPath serverURI
           </> display (pkgName p) 
@@ -373,7 +374,7 @@ fixSrc serverURI p ebuild =
           </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
           <.> "tar.gz"
       },
-    C2E.homepage = case C2E.homepage ebuild of
+    E.homepage = case E.homepage ebuild of
                 "" -> "http://hackage.haskell.org/package/"
                         ++ display (pkgName p)
                 x -> x
