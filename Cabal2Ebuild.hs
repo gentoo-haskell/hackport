@@ -56,11 +56,6 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.homepage        = Cabal.homepage pkg,
     E.src_uri         = Cabal.pkgUrl pkg,
     E.license         = Cabal.license pkg,
-    {- E.haskell_deps    = simplify_deps $ convertDependencies (Portage.Category "dev-haskell") (Cabal.buildDepends pkg),
-    E.cabal_dep       = head $ convertDependency (Portage.Category "dev-haskell")
-                                               (Cabal.Dependency (Cabal.PackageName "Cabal")
-                                               (Cabal.descCabalVersion pkg)),
-    -}
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
                    ++ (if hasExe then ["bin"] else [])
@@ -69,7 +64,6 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
   } where
         cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
-        -- hasLib = isJust (Cabal.library pkg)
         hasExe = (not . null) (Cabal.executables pkg) 
 
 convertDependencies :: Portage.Category -> [Cabal.Dependency] -> [Dependency]
@@ -92,7 +86,7 @@ convertDependency category (Cabal.Dependency pname versionRange)
             )(\v     -> [EarlierVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\"< v\"@
             )(\v     -> [OrLaterVersionOf   (fromCabalVersion v)  ebuildName] -- ^ @\">= v\"@
             )(\v     -> [OrEarlierVersionOf (fromCabalVersion v)  ebuildName] -- ^ @\"<= v\"@
-{- FIXME -} )(\v _   -> [ThisMajorOf        (fromCabalVersion v) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) ebuildName] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\r1 r2 -> case (r1,r2) of
                             ([r1'], [r2']) -> [DependEither r1' r2']       -- ^ @\"_ || _\"@ union
                             _              -> error "convertDependency: compound either"
