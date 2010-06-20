@@ -65,8 +65,7 @@ import System.Directory ( getCurrentDirectory
 import System.Cmd (system)
 import System.FilePath ((</>))
 
-import qualified Cabal2Ebuild as E
-import Cabal2Ebuild
+import qualified Cabal2Ebuild as C2E
 import Error as E
 
 import qualified Distribution.Package as Cabal
@@ -218,7 +217,7 @@ merge verbosity repo serverURI args overlayPath = do
       packageNameResolver s = do
         (Portage.PackageName p_cat pn)
           <- Portage.resolveFullPortageName portage (Cabal.PackageName s)
-        return $ E.AnyVersionOf (Portage.PackageName p_cat pn)
+        return $ Portage.AnyVersionOf (Portage.PackageName p_cat pn)
 
   -- calculate extra-libs
   extra <- findCLibs verbosity packageNameResolver pkgDesc
@@ -235,25 +234,25 @@ merge verbosity repo serverURI args overlayPath = do
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
   let d e = if treatAsLibrary
-              then display (cabal_dep e)
+              then display (C2E.cabal_dep e)
                     : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
-              else display (cabal_dep e)
-                    : display (ghc_dep e)
+                    : [ "${BUILDTOOLS}"  | not . null $ C2E.build_tools e ]
+              else display (C2E.cabal_dep e)
+                    : display (C2E.ghc_dep e)
                     : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ build_tools e ]
-                       ++ [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
+                    : [ "${BUILDTOOLS}"  | not . null $ C2E.build_tools e ]
+                       ++ [ "${HASKELLDEPS}" | not . null $ C2E.haskell_deps e ]
       rd e = if treatAsLibrary
-              then display (ghc_dep e)
-                    : [ "${HASKELLDEPS}" | not . null $ haskell_deps e ]
-                       ++ [ "${EXTRALIBS}" | not . null $ extra_libs e ]
-              else [ "${EXTRALIBS}" | not . null $ extra_libs e ]
+              then display (C2E.ghc_dep e)
+                    : [ "${HASKELLDEPS}" | not . null $ C2E.haskell_deps e ]
+                       ++ [ "${EXTRALIBS}" | not . null $ C2E.extra_libs e ]
+              else [ "${EXTRALIBS}" | not . null $ C2E.extra_libs e ]
   let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . (\e -> e { depend = d e } )
-               . (\e -> e { rdepend = rd e } )
-               . (\e -> e { extra_libs  = nub (extra_libs  e ++ extra) } )
-               . (\e -> e { build_tools = nub (build_tools e ++ bt) } )
-               $ E.cabal2ebuild pkgDesc
+               . (\e -> e { C2E.depend = d e } )
+               . (\e -> e { C2E.rdepend = rd e } )
+               . (\e -> e { C2E.extra_libs  = nub (C2E.extra_libs  e ++ extra) } )
+               . (\e -> e { C2E.build_tools = nub (C2E.build_tools e ++ bt) } )
+               $ C2E.cabal2ebuild pkgDesc
 
   debug verbosity ("Treat as library: " ++ show treatAsLibrary)
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
@@ -263,7 +262,7 @@ merge verbosity repo serverURI args overlayPath = do
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
 
-findCLibs :: Verbosity -> (String -> Maybe E.Dependency) -> PackageDescription -> IO [E.Dependency]
+findCLibs :: Verbosity -> (String -> Maybe Portage.Dependency) -> PackageDescription -> IO [Portage.Dependency]
 findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do
   debug verbosity "Mapping extra-libraries into portage packages..."
   -- for extra libs we don't find, maybe look into into installed packages?
@@ -277,7 +276,7 @@ findCLibs verbosity portageResolver (PackageDescription { library = lib, executa
 
   resolved = [ chain p resolvers
              | p <- libE ++ exeE
-             ] :: [Either String E.Dependency]
+             ] :: [Either String Portage.Dependency]
 
   notFound = [ p | Left p <- resolved ]
   found = [ p | Right p <- resolved ]
@@ -290,14 +289,14 @@ findCLibs verbosity portageResolver (PackageDescription { library = lib, executa
   libE = maybe [] (extraLibs.libBuildInfo) lib
   exeE = concatMap (extraLibs.buildInfo) exes
 
-staticTranslateExtraLib :: String -> Maybe E.Dependency
+staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", E.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib"))
-      , ("bz2", E.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib"))
-      , ("mysqlclient", E.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql"))
-      , ("pq", E.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
-      , ("ev", E.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
+  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib"))
+      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib"))
+      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql"))
+      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
+      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
       ]
 
 buildToolsDeps :: PackageDescription -> [Cabal.Dependency]
@@ -307,14 +306,14 @@ buildToolsDeps (PackageDescription { library = lib, executables = exes }) = caba
   depL = maybe [] (buildTools.libBuildInfo) lib
   depE = concatMap (buildTools.buildInfo) exes
 
-buildToolsTable :: [(String, E.Dependency)]
+buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
-  [ ("happy", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy"))
-  , ("alex", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex"))
-  , ("c2hs", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs"))
-  , ("gtk2hsTypeGen",       E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsHookGenerator", E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsC2hs",          E.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy"))
+  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex"))
+  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs"))
+  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
@@ -338,7 +337,7 @@ fetchAndDigest verbosity ebuildDir tarballName tarballURI =
      repo_info <- Host.getInfo
      let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
      downloadURI verbosity tarballURI tarDestination
-     -- Just err -> throwEx (E.DownloadFailed (show tarballURI) (show err))
+     -- Just err -> throwEx (Portage.DownloadFailed (show tarballURI) (show err))
      -- TODO: downloadURI will throw a non-hackport exception if the
      -- download fails
      notice verbosity $ "Saved to " ++ tarDestination
@@ -354,19 +353,19 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
-mergeEbuild :: Verbosity -> FilePath -> String -> EBuild -> IO () 
+mergeEbuild :: Verbosity -> FilePath -> String -> C2E.EBuild -> IO () 
 mergeEbuild verbosity target cat ebuild = do 
-  let edir = target </> cat </> name ebuild
-      elocal = name ebuild ++"-"++ version ebuild <.> "ebuild"
+  let edir = target </> cat </> C2E.name ebuild
+      elocal = C2E.name ebuild ++"-"++ C2E.version ebuild <.> "ebuild"
       epath = edir </> elocal
   createDirectoryIfMissing True edir
   info verbosity $ "Writing " ++ elocal
-  writeFile epath (showEBuild ebuild)
+  writeFile epath (C2E.showEBuild ebuild)
 
-fixSrc :: URI -> PackageIdentifier -> EBuild -> EBuild
+fixSrc :: URI -> PackageIdentifier -> C2E.EBuild -> C2E.EBuild
 fixSrc serverURI p ebuild =
   ebuild {
-    src_uri = show $ serverURI {
+    C2E.src_uri = show $ serverURI {
       uriPath =
         uriPath serverURI
           </> display (pkgName p) 
@@ -374,7 +373,7 @@ fixSrc serverURI p ebuild =
           </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
           <.> "tar.gz"
       },
-    E.homepage = case E.homepage ebuild of
+    C2E.homepage = case C2E.homepage ebuild of
                 "" -> "http://hackage.haskell.org/package/"
                         ++ display (pkgName p)
                 x -> x
