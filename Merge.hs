@@ -10,11 +10,13 @@ Compile time:
   build tools
   deps (haskell dependencies)
   extra-libs (c-libs)
+  pkg-config (c-libs)
 
 Run time:
   ghc
   deps (haskell dependencies)
   extra-libs (c-libs)
+  pkg-config (c-libs)
 
 RDEPEND="ghc ${DEPS} ${EXTRALIBS}"
 DEPEND="${RDEPEND} cabal ${BUILDTOOLS}"
@@ -27,11 +29,13 @@ Compile time:
   ghc
   cabal
   build tools
-  deps
+  deps (haskell dependencies)
   extra-libs (c-libs)
+  pkg-config (c-libs)
 
 Run time:
   extra-libs (c-libs)
+  pkg-config (c-libs)
 
 RDEPEND="${EXTRALIBS}"
 DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
@@ -221,11 +225,11 @@ merge verbosity repo serverURI args overlayPath = do
         return $ Portage.AnyVersionOf (Portage.PackageName p_cat pn)
 
   -- calculate extra-libs
-  extra <- findCLibs verbosity packageNameResolver pkgDesc
+  extra_libs <- findCLibs verbosity packageNameResolver pkgDesc
                     
   debug verbosity ("Selected flags: " ++ show flags)
   debug verbosity ("extra-libs: ")
-  mapM_ (debug verbosity . show) extra
+  mapM_ (debug verbosity . show) extra_libs
 
   debug verbosity ("build-tools:")
   mapM_ (debug verbosity . show) bt
@@ -234,25 +238,40 @@ merge verbosity repo serverURI args overlayPath = do
 
                -- TODO: more fixes
                --        * inherit keywords from previous ebuilds
-  let d e = if treatAsLibrary
-              then display (E.cabal_dep e)
-                    : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ E.build_tools e ]
-              else display (E.cabal_dep e)
-                    : display (E.ghc_dep e)
-                    : "${RDEPEND}"
-                    : [ "${BUILDTOOLS}"  | not . null $ E.build_tools e ]
-                       ++ [ "${HASKELLDEPS}" | not . null $ E.haskell_deps e ]
-      rd e = if treatAsLibrary
-              then display (E.ghc_dep e)
-                    : [ "${HASKELLDEPS}" | not . null $ E.haskell_deps e ]
-                       ++ [ "${EXTRALIBS}" | not . null $ E.extra_libs e ]
-              else [ "${EXTRALIBS}" | not . null $ E.extra_libs e ]
+  let cabal_dep = head $ C2E.convertDependency (Portage.Category "dev-haskell")
+                                            (Cabal.Dependency (Cabal.PackageName "Cabal")
+                                              (descCabalVersion pkgDesc))
+      ghc_dep = C2E.default_ghc_dependency
+      haskell_deps = Portage.simplify_deps $ C2E.convertDependencies (Portage.Category "dev-haskell") (buildDepends pkgDesc)
+      build_tools = bt
+      pkg_config = []
+ 
+  let edeps
+        | treatAsLibrary = emptyEDep
+                  {
+                    dep = cabal_dep
+                          : build_tools,
+                    dep_e = [ "${RDEPEND}" ],
+                    rdep = ghc_dep
+                            : haskell_deps
+                            ++ extra_libs
+                            ++ pkg_config
+                  }
+        | otherwise = emptyEDep
+                  {
+                    dep = ghc_dep
+                          : cabal_dep
+                          : build_tools
+                          ++ haskell_deps,
+                    dep_e = [ "${RDEPEND}" ],
+                    rdep = extra_libs
+                           ++ pkg_config
+                  }
   let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . (\e -> e { E.depend = d e } )
-               . (\e -> e { E.rdepend = rd e } )
-               . (\e -> e { E.extra_libs  = nub (E.extra_libs  e ++ extra) } )
-               . (\e -> e { E.build_tools = nub (E.build_tools e ++ bt) } )
+               . (\e -> e { E.depend =  dep edeps } )
+               . (\e -> e { E.depend_extra = dep_e edeps } )
+               . (\e -> e { E.rdepend = rdep edeps } )
+               . (\e -> e { E.rdepend_extra = rdep_e edeps } )
                $ C2E.cabal2ebuild pkgDesc
 
   debug verbosity ("Treat as library: " ++ show treatAsLibrary)
@@ -262,6 +281,29 @@ merge verbosity repo serverURI args overlayPath = do
     (overlayPath </> display cat </> display norm_pkgName)
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
+
+
+-- | Dependencies of an ebuild
+data EDep = EDep
+  {
+    rdep :: [Portage.Dependency],
+    rdep_e :: [String],
+    dep :: [Portage.Dependency],
+    dep_e :: [String],
+    extra_libs :: [Portage.Dependency],
+    pkg_conf :: [Portage.Dependency]
+  }
+
+emptyEDep :: EDep
+emptyEDep = EDep
+  {
+    rdep = [],
+    rdep_e = [],
+    dep = [],
+    dep_e = [],
+    extra_libs = [],
+    pkg_conf = []
+  }
 
 findCLibs :: Verbosity -> (String -> Maybe Portage.Dependency) -> PackageDescription -> IO [Portage.Dependency]
 findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do

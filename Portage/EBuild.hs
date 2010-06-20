@@ -22,13 +22,10 @@ data EBuild = EBuild {
     slot :: String,
     keywords :: [String],
     iuse :: [String],
-    haskell_deps :: [Dependency],
-    build_tools :: [Dependency],
-    extra_libs :: [Dependency],
-    cabal_dep :: Dependency,
-    ghc_dep :: Dependency,
-    depend :: [String],
-    rdepend :: [String],
+    depend :: [Dependency],
+    depend_extra :: [String],
+    rdepend :: [Dependency],
+    rdepend_extra :: [String],
     features :: [String],
     my_pn :: Maybe String --If the package's name contains upper-case
   }
@@ -44,13 +41,10 @@ ebuildTemplate = EBuild {
     slot = "0",
     keywords = ["~amd64","~x86"],
     iuse = [],
-    haskell_deps = [],
-    build_tools = [],
-    extra_libs = [],
-    cabal_dep = AnyVersionOf (mkPackageName "dev-haskell" "cabal"),
-    ghc_dep = defaultDepGHC,
     depend = [],
+    depend_extra = [],
     rdepend = [],
+    rdepend_extra = [],
     features = [],
     my_pn = Nothing
   }
@@ -87,20 +81,9 @@ showEBuild ebuild =
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
   ss "IUSE=". quote' (sepBy ", " $ iuse ebuild). nl.
   nl.
-  ( if (not . null . build_tools $ ebuild)
-      then ss "BUILDTOOLS=". quote' (sepBy "\n\t\t" $ map display $ build_tools ebuild). nl
-      else id
-  ).
-  ( if (not . null . extra_libs $ ebuild )
-      then ss "EXTRALIBS=". quote' (sepBy "\n\t\t" $ map display $ extra_libs ebuild). nl
-      else id
-  ).
-  ( if (not . null . haskell_deps $ ebuild)
-      then ss "HASKELLDEPS=". quote' (sepBy "\n\t\t" $ map display $ haskell_deps ebuild). nl
-      else id
-  ).
-  ss "RDEPEND=". quote' (sepBy "\n\t\t" $ rdepend ebuild). nl.
-  ss "DEPEND=". quote' (sepBy "\n\t\t" $ depend ebuild). nl.
+  dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
+  dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
+  nl.
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
@@ -115,6 +98,9 @@ sc = showChar
 
 nl :: String -> String
 nl = sc '\n'
+
+dep_str :: String -> [String] -> [Dependency] -> (String -> String)
+dep_str var extra deps = ss var. sc '='. quote' (sepBy "\n\t\t" $ extra ++ map display deps). nl
 
 quote :: String -> String -> String
 quote str = sc '"'. ss str. sc '"'

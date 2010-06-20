@@ -24,7 +24,8 @@
 module Cabal2Ebuild
         (cabal2ebuild
         ,convertDependencies
-        ,convertDependency) where
+        ,convertDependency
+        ,default_ghc_dependency) where
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
@@ -43,6 +44,9 @@ import qualified Portage.EBuild as Portage
 import qualified Portage.EBuild as E
 import Portage.Version
 
+default_ghc_dependency :: Dependency
+default_ghc_dependency = OrLaterVersionOf (Version [6,8,1] Nothing [] 0) (Portage.mkPackageName "dev-lang" "ghc")
+
 cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild pkg = Portage.ebuildTemplate {
     E.name        = map toLower cabalPkgName,
@@ -52,10 +56,11 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.homepage        = Cabal.homepage pkg,
     E.src_uri         = Cabal.pkgUrl pkg,
     E.license         = Cabal.license pkg,
-    E.haskell_deps    = simplify_deps $ convertDependencies (Portage.Category "dev-haskell") (Cabal.buildDepends pkg),
+    {- E.haskell_deps    = simplify_deps $ convertDependencies (Portage.Category "dev-haskell") (Cabal.buildDepends pkg),
     E.cabal_dep       = head $ convertDependency (Portage.Category "dev-haskell")
                                                (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                (Cabal.descCabalVersion pkg)),
+    -}
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
                    ++ (if hasExe then ["bin"] else [])
