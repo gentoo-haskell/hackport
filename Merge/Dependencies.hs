@@ -46,6 +46,8 @@ resolveDependencies pkg =
       {
         dep  = Portage.simplify_deps ( dep edeps),
         rdep = Portage.simplify_deps (rdep edeps)
+        -- todo: if rdep includes cabal or ghc, make sure it's the same
+        -- version as in dep
       }
   where
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
