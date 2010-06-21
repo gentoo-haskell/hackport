@@ -9,8 +9,10 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , buildable
                                        , extraLibs
                                        , buildTools
+                                       , pkgconfigDepends
                                        , hasLibs )
 import Data.Maybe ( isNothing )
+import Data.List ( nub )
 
 import qualified Distribution.Package as Cabal
 
@@ -48,7 +50,7 @@ resolveDependencies pkg = edeps
     ghc_dep = ghcDependency pkg
     extra_libs = findCLibs pkg
     build_tools = buildToolsDependencies pkg
-    pkg_config = []
+    pkg_config = pkgConfigDependencies pkg
     edeps
         | treatAsLibrary = emptyEDep
                   {
@@ -131,7 +133,7 @@ staticTranslateExtraLib lib = lookup lib m
 ---------------------------------------------------------------
 
 buildToolsDependencies :: PackageDescription -> [Portage.Dependency]
-buildToolsDependencies (PackageDescription { library = lib, executables = exes }) =
+buildToolsDependencies (PackageDescription { library = lib, executables = exes }) = nub $
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
@@ -142,7 +144,6 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   where
   cabalDeps = depL ++ depE
   depL = maybe [] (buildTools.libBuildInfo) lib
-  -- depE = concatMap (buildTools.buildInfo) exes
   depE = concatMap buildTools (filter buildable (map buildInfo exes))
 
 buildToolsTable :: [(String, Portage.Dependency)]
@@ -153,4 +154,37 @@ buildToolsTable =
   , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  ]
+
+---------------------------------------------------------------
+-- pkg-config
+---------------------------------------------------------------
+
+pkgConfigDependencies :: PackageDescription -> [Portage.Dependency]
+pkgConfigDependencies (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs cabalDeps
+  where
+  cabalDeps = depL ++ depE
+  depL = maybe [] (pkgconfigDepends.libBuildInfo) lib
+  depE = concatMap pkgconfigDepends (filter buildable (map buildInfo exes))
+
+resolvePkgConfigs :: [Cabal.Dependency] -> [Portage.Dependency]
+resolvePkgConfigs cdeps =
+  [ case resolvePkgConfig pkg of
+      Just d -> d
+      Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
+                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn))
+  | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
+
+resolvePkgConfig :: Cabal.Dependency -> Maybe Portage.Dependency
+resolvePkgConfig (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
+  (cat,portname) <- lookup pn table
+  return . head $ (C2E.convertDependency (Portage.Category cat) (Cabal.Dependency (Cabal.PackageName portname) _cabalVersion))
+
+table :: [(String, (String, String))]
+table =
+  [("gconf",    ("gnome-base", "gconf"))
+  ,("gthreadc", ("dev-libs", "glib")) -- should be slot 2
+  ,("gtk",      ("x11-libs", "gtk")) -- should be slot 2
+  ,("cairo",    ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
+  ,("pango",    ("x11-libs", "pango"))
   ]
