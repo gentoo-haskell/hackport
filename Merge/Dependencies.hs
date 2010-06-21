@@ -41,7 +41,12 @@ emptyEDep = EDep
   }
 
 resolveDependencies :: PackageDescription -> EDep
-resolveDependencies pkg = edeps
+resolveDependencies pkg =
+    edeps
+      {
+        dep  = Portage.simplify_deps ( dep edeps),
+        rdep = Portage.simplify_deps (rdep edeps)
+      }
   where
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
