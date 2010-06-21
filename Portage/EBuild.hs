@@ -7,8 +7,6 @@ import Distribution.Text ( Text(..), display )
 import qualified Text.PrettyPrint as Disp
 
 import Portage.Dependency
-import Portage.Version
-import Portage.PackageId
 
 import Distribution.License as Cabal
 
