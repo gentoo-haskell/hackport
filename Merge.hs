@@ -52,12 +52,7 @@ import Distribution.Package
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
-                                       , libBuildInfo
-                                       , buildInfo
-                                       , buildable
-                                       , extraLibs
-                                       , buildTools
-                                       , hasLibs )
+                                       )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
 import Distribution.Text (display)
@@ -89,10 +84,11 @@ import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
-import qualified Portage.Dependency as Portage
 import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
+
+import qualified Merge.Dependencies as Merge
 
 import Debug.Trace ( trace )
 
@@ -158,8 +154,8 @@ merge verbosity repo serverURI args overlayPath = do
   let (Cabal.PackageName user_pname_str) = user_pName
 
   overlay <- Overlay.loadLazy overlayPath
-  portage_path <- Host.portage_dir `fmap` Host.getInfo
-  portage <- Overlay.loadLazy portage_path
+  -- portage_path <- Host.portage_dir `fmap` Host.getInfo
+  -- portage <- Overlay.loadLazy portage_path
   index <- fmap packageIndex $ getAvailablePackages verbosity [ repo ]
 
   -- find all packages that maches the user specified package name
@@ -207,153 +203,23 @@ merge verbosity repo serverURI args overlayPath = do
                            | Dependency pn vr <- buildDepends pkgDesc0
                            ]
                 in pkgDesc0 { buildDepends = deps }
+      edeps = Merge.resolveDependencies pkgDesc
 
-      hasBuildableExes p =
-        any (buildable . buildInfo)
-        . executables $ p
-      treatAsLibrary = (not . hasBuildableExes) pkgDesc || hasLibs pkgDesc
-
-      -- calculate build tools
-      bt = [ pkg' -- TODO: currently ignoring version range
-           | Cabal.Dependency (Cabal.PackageName pkg ) _range <- buildToolsDeps pkgDesc
-           , Just pkg' <- return (lookup pkg buildToolsTable) 
-           ]
-
-      packageNameResolver s = do
-        (Portage.PackageName p_cat pn)
-          <- Portage.resolveFullPortageName portage (Cabal.PackageName s)
-        return $ Portage.AnyVersionOf (Portage.PackageName p_cat pn)
-
-  -- calculate extra-libs
-  extra_libs <- findCLibs verbosity packageNameResolver pkgDesc
-                    
   debug verbosity ("Selected flags: " ++ show flags)
-  debug verbosity ("extra-libs: ")
-  mapM_ (debug verbosity . show) extra_libs
 
-  debug verbosity ("build-tools:")
-  mapM_ (debug verbosity . show) bt
-
-  -- debug verbosity ("Finalized package:\n" ++ showPackageDescription pkgDesc)
-
-               -- TODO: more fixes
-               --        * inherit keywords from previous ebuilds
-  let cabal_dep = head $ C2E.convertDependency (Portage.Category "dev-haskell")
-                                            (Cabal.Dependency (Cabal.PackageName "Cabal")
-                                              (descCabalVersion pkgDesc))
-      ghc_dep = C2E.default_ghc_dependency
-      haskell_deps = Portage.simplify_deps $ C2E.convertDependencies (Portage.Category "dev-haskell") (buildDepends pkgDesc)
-      build_tools = bt
-      pkg_config = []
- 
-  let edeps
-        | treatAsLibrary = emptyEDep
-                  {
-                    dep = cabal_dep
-                          : build_tools,
-                    dep_e = [ "${RDEPEND}" ],
-                    rdep = ghc_dep
-                            : haskell_deps
-                            ++ extra_libs
-                            ++ pkg_config
-                  }
-        | otherwise = emptyEDep
-                  {
-                    dep = ghc_dep
-                          : cabal_dep
-                          : build_tools
-                          ++ haskell_deps,
-                    dep_e = [ "${RDEPEND}" ],
-                    rdep = extra_libs
-                           ++ pkg_config
-                  }
   let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . (\e -> e { E.depend =  dep edeps } )
-               . (\e -> e { E.depend_extra = dep_e edeps } )
-               . (\e -> e { E.rdepend = rdep edeps } )
-               . (\e -> e { E.rdepend_extra = rdep_e edeps } )
+               . (\e -> e { E.depend        = Merge.dep edeps } )
+               . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
+               . (\e -> e { E.rdepend       = Merge.rdep edeps } )
+               . (\e -> e { E.rdepend_extra = Merge.rdep_e edeps } )
                $ C2E.cabal2ebuild pkgDesc
 
-  debug verbosity ("Treat as library: " ++ show treatAsLibrary)
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
   fetchAndDigest
     verbosity
     (overlayPath </> display cat </> display norm_pkgName)
     (display cabal_pkgId <.> "tar.gz")
     (mkUri cabal_pkgId)
-
-
--- | Dependencies of an ebuild
-data EDep = EDep
-  {
-    rdep :: [Portage.Dependency],
-    rdep_e :: [String],
-    dep :: [Portage.Dependency],
-    dep_e :: [String]
-  }
-
-emptyEDep :: EDep
-emptyEDep = EDep
-  {
-    rdep = [],
-    rdep_e = [],
-    dep = [],
-    dep_e = []
-  }
-
-findCLibs :: Verbosity -> (String -> Maybe Portage.Dependency) -> PackageDescription -> IO [Portage.Dependency]
-findCLibs verbosity portageResolver (PackageDescription { library = lib, executables = exes }) = do
-  debug verbosity "Mapping extra-libraries into portage packages..."
-  -- for extra libs we don't find, maybe look into into installed packages?
-  when (not . null $ notFound) $
-    warn verbosity ("Could not find portage packages for extra-libraries: " ++ unwords notFound)
-  when (not . null $ found) $
-    debug verbosity ("Found c-libraries deps: " ++ show found)
-  return found
-  where
-  resolvers = [ staticTranslateExtraLib, portageResolver ]
-
-  resolved = [ chain p resolvers
-             | p <- libE ++ exeE
-             ] :: [Either String Portage.Dependency]
-
-  notFound = [ p | Left p <- resolved ]
-  found = [ p | Right p <- resolved ]
-
-  chain v [] = Left v
-  chain v (f:fs) = case f v of
-                     Nothing -> chain v fs
-                     Just x -> Right x
-
-  libE = maybe [] (extraLibs.libBuildInfo) lib
-  exeE = concatMap (extraLibs.buildInfo) exes
-
-staticTranslateExtraLib :: String -> Maybe Portage.Dependency
-staticTranslateExtraLib lib = lookup lib m
-  where
-  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib"))
-      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib"))
-      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql"))
-      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
-      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
-      ]
-
-buildToolsDeps :: PackageDescription -> [Cabal.Dependency]
-buildToolsDeps (PackageDescription { library = lib, executables = exes }) = cabalDeps
-  where
-  cabalDeps = depL ++ depE
-  depL = maybe [] (buildTools.libBuildInfo) lib
-  depE = concatMap (buildTools.buildInfo) exes
-
-buildToolsTable :: [(String, Portage.Dependency)]
-buildToolsTable =
-  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy"))
-  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex"))
-  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs"))
-  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  ]
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
