@@ -241,4 +241,5 @@ table =
   ,("cairo-svg",        ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
   ,("pango",        ("x11-libs", "pango"))
   ,("gio-2.0",      ("dev-libs", "glib"))
+  ,("libglade-2.0", ("gnome-base", "libglade"))
   ]
