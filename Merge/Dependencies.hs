@@ -255,4 +255,5 @@ table =
   ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview"))
   ,("librsvg-2.0",                 ("gnome-base","librsvg"))
   ,("vte",                         ("x11-libs","vte"))
+  ,("gtkglext-1.0",                ("x11-libs","gtkglext"))
   ]
