@@ -245,4 +245,11 @@ table =
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
   ,("webkit-1.0", ("net-libs","webkit-gtk"))
+  ,("gstreamer-0.10",              ("media-libs", "gstreamer"))
+  ,("gstreamer-audio-0.10",        ("media-libs","gst-plugins-base"))
+  ,("gstreamer-base-0.10",         ("media-libs","gstreamer"))
+  ,("gstreamer-controller-0.10",   ("media-libs", "gstreamer"))
+  ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer"))
+  ,("gstreamer-net-0.10",          ("media-libs", "gstreamer"))
+  ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base"))
   ]
