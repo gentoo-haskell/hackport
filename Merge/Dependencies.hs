@@ -252,4 +252,5 @@ table =
   ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer"))
   ,("gstreamer-net-0.10",          ("media-libs", "gstreamer"))
   ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base"))
+  ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview"))
   ]
