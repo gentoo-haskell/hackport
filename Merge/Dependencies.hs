@@ -244,4 +244,5 @@ table =
   ,("libglade-2.0", ("gnome-base", "libglade"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
+  ,("webkit-1.0", ("net-libs","webkit-gtk"))
   ]
