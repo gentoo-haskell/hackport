@@ -242,4 +242,6 @@ table =
   ,("pango",        ("x11-libs", "pango"))
   ,("gio-2.0",      ("dev-libs", "glib"))
   ,("libglade-2.0", ("gnome-base", "libglade"))
+  ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
+  ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
   ]
