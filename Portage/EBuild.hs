@@ -98,7 +98,11 @@ dep_str :: String -> [String] -> [Dependency] -> (String -> String)
 dep_str var extra deps = ss var. sc '='. quote' (sepBy "\n\t\t" $ extra ++ map display deps). nl
 
 quote :: String -> String -> String
-quote str = sc '"'. ss str. sc '"'
+quote str = sc '"'. ss (esc str). sc '"'
+  where
+  esc = concatMap esc'
+  esc' '"' = "\""
+  esc' c = [c]
 
 quote' :: (String -> String) -> String -> String
 quote' str = sc '"'. str. sc '"'
