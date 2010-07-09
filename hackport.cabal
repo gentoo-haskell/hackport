@@ -56,6 +56,7 @@ Executable	hackport
     CacheFile
     Diff
     Error
+    Paths_hackport
     Main
     MaybeRead
     Overlays
