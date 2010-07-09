@@ -34,7 +34,7 @@ import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 import Portage.Host as Host ( getInfo, portage_dir )
 import Portage.PackageId ( normalizeCabalPackageId )
 
-import Network.URI
+import Network.URI ( URI(..), URIAuth(..), parseURI )
 import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
