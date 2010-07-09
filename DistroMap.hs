@@ -47,20 +47,19 @@ import Data.Maybe ( fromJust )
 import Distribution.Verbosity
 import Distribution.Text ( display )
 import Distribution.Client.Types ( Repo, AvailablePackageDb(..), AvailablePackage(..) )
-import Distribution.Simple.Utils ( warn, notice, info )
+import Distribution.Simple.Utils ( info )
 
 import qualified Data.Version as Cabal
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Client.PackageIndex as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
 
-import Portage.Overlay ( Overlay(..), readOverlayByPackage, getDirectoryTree, DirectoryTree )
+import Portage.Overlay (  readOverlayByPackage, getDirectoryTree )
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 
 type PVU = (Cabal.PackageName, Cabal.Version, Maybe String)
 type PVU_Map = Map Portage.PackageName [(Cabal.Version, Maybe String)]
-type PVU_Item = (Portage.PackageName, [(Cabal.Version, Maybe String)])
 
 distroMap :: Verbosity -> Repo -> FilePath -> FilePath -> [String] -> IO ()
 distroMap verbosity repo portagePath overlayPath args = do

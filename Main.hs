@@ -11,7 +11,7 @@ import Data.Monoid
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
         , trueArg
-        , flagToMaybe, flagToList
+        , flagToList
         , optionVerbosity
         )
 import Distribution.PackageDescription.Configuration

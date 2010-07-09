@@ -32,8 +32,7 @@ import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , Dependency(..)
                                                 , PackageName(..))
-import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange', versionBranch, Version)
-import qualified Distribution.License as Cabal  (License(..))
+import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')
 import Distribution.Text (display)
 
 import Data.Char          (toLower,isUpper)
