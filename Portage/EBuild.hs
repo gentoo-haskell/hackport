@@ -42,8 +42,8 @@ ebuildTemplate = EBuild {
     version = "0.1",
     hackportVersion = getHackportVersion Paths_hackport.version,
     description = "",
-    homepage = "",
-    src_uri = "",
+    homepage = "http://hackage.haskell.org/package/${PN}",
+    src_uri = "http://hackage.haskell.org/packages/archive/${PN}/${PV}/${P}.tar.gz",
     license = Cabal.UnknownLicense "xxx UNKNOWN xxx",
     slot = "0",
     keywords = ["~amd64","~x86"],
@@ -76,9 +76,7 @@ showEBuild ebuild =
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (description ebuild). nl.
   ss "HOMEPAGE=". quote (homepage ebuild). nl.
-  ss "SRC_URI=". quote (replaceVars (src_uri ebuild)).
-     (if null (src_uri ebuild) then ss "\t#Fixme: please fill in manually"
-         else id). nl.
+  ss "SRC_URI=". quote (replaceVars (src_uri ebuild)). nl.
   nl.
   ss "LICENSE=". quote (convertLicense . license $ ebuild).
      (if null (licenseComment . license $ ebuild) then id

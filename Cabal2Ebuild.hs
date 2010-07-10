@@ -52,8 +52,8 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
-    E.homepage        = Cabal.homepage pkg,
-    E.src_uri         = Cabal.pkgUrl pkg,
+    E.homepage        = thisHomepage,
+    E.src_uri         = thisSRC_URI,
     E.license         = Cabal.license pkg,
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
@@ -64,6 +64,12 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
   } where
         cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
         hasExe = (not . null) (Cabal.executables pkg) 
+        thisHomepage = if (null $ Cabal.homepage pkg)
+                         then E.homepage E.ebuildTemplate
+                         else Cabal.homepage pkg
+        thisSRC_URI = if (null $ Cabal.pkgUrl pkg)
+                        then E.src_uri E.ebuildTemplate
+                        else Cabal.pkgUrl pkg
 
 convertDependencies :: Portage.Category -> [Cabal.Dependency] -> [Dependency]
 convertDependencies category = concatMap (convertDependency category)
