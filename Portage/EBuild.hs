@@ -78,7 +78,6 @@ showEBuild ebuild =
   nl.
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
-  nl.
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
