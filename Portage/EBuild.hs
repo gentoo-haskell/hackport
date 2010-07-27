@@ -75,7 +75,7 @@ showEBuild ebuild =
      Just pn -> ss "MY_PN=". quote pn. nl.
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (description ebuild). nl.
-  ss "HOMEPAGE=". quote (homepage ebuild). nl.
+  ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
   ss "SRC_URI=". quote (replaceVars (src_uri ebuild)). nl.
   nl.
   ss "LICENSE=". quote (convertLicense . license $ ebuild).
@@ -92,6 +92,7 @@ showEBuild ebuild =
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
   where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
+        expandVars = replaceMultiVars [(name ebuild, "${PN}")]
 
 ss :: String -> String -> String
 ss = showString
