@@ -6,13 +6,13 @@ module Portage.Host
 import Util (run_cmd)
 import Data.Char (isSpace)
 import Data.Maybe (fromJust, isJust)
-
+import Control.Applicative ( (<$>) )
 
 data LocalInfo =
     LocalInfo { distfiles_dir :: String
               , overlay_list  :: [FilePath]
               , portage_dir   :: FilePath
-              }
+              } deriving Show
 
 defaultInfo :: LocalInfo
 defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
@@ -23,7 +23,7 @@ defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
 -- query paludis and then emerge
 getInfo :: IO LocalInfo
 getInfo = fromJust `fmap`
-    performMaybes [ (fmap . fmap) parse_paludis_output (run_cmd "paludis --info")
+    performMaybes [ getPaludisInfo
                   , (fmap . fmap) parse_emerge_output  (run_cmd "emerge --info")
                   , return (Just defaultInfo)
                   ]
@@ -48,6 +48,38 @@ bad_paludis_overlay =
                         , location  = undefined
                         , distdir   = undefined
                         }
+
+getPaludisInfo :: IO (Maybe LocalInfo)
+getPaludisInfo = do
+  mp <- fmap paludisParseRepositories <$> run_cmd "paludis --list-repositories"
+  case mp of
+    Nothing -> return Nothing
+    Just repos0 -> Just <$> do
+      let repos = filter (`notElem` knownRepos) repos0
+      Just gentooLocation <- paludisRepositoryLocation "gentoo"
+      Just gentooDistdir <- paludisRepositoryDistdir "gentoo"
+      others <- map fromJust <$> mapM paludisRepositoryLocation repos
+      return (LocalInfo
+                { distfiles_dir = gentooDistdir
+                , overlay_list = others
+                , portage_dir = gentooLocation
+                })
+  where
+    knownRepos = ["installed-virtuals", "virtuals", "gentoo", "installed"]
+
+paludisParseRepositories :: String -> [String]
+paludisParseRepositories = map (tail . tail) . lines
+{- * installed-virtuals
+   * virtuals
+   * gentoo
+   * installed
+   * gentoo-haskell -}
+
+paludisRepositoryLocation :: String -> IO (Maybe String)
+paludisRepositoryLocation repo = fmap init <$> run_cmd ("paludis --configuration-variable " ++ repo ++ " location")
+
+paludisRepositoryDistdir :: String -> IO (Maybe String)
+paludisRepositoryDistdir repo = fmap init <$> run_cmd ("paludis --configuration-variable " ++ repo ++ " distdir")
 
 parse_paludis_output :: String -> LocalInfo
 parse_paludis_output raw_data =
