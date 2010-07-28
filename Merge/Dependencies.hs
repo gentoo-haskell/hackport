@@ -177,6 +177,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
       , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
       , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat"))
+      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl"))
       ]
 
 ---------------------------------------------------------------
@@ -257,4 +258,5 @@ table =
   ,("librsvg-2.0",                 ("gnome-base","librsvg"))
   ,("vte",                         ("x11-libs","vte"))
   ,("gtkglext-1.0",                ("x11-libs","gtkglext"))
+  ,("curl",                        ("net-misc", "curl"))
   ]
