@@ -160,7 +160,8 @@ merge verbosity repo serverURI args overlayPath = do
           (fst GHCCore.defaultGHC)
           [] pkgGenericDesc
 
-      (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id (GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc)
+      mminimumGHC = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
+      (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id mminimumGHC
 
       pkgDesc = let deps = [ Dependency pn (Cabal.simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
@@ -170,6 +171,7 @@ merge verbosity repo serverURI args overlayPath = do
       edeps = Merge.resolveDependencies pkgDesc (Just compilerId)
 
   debug verbosity ("Selected flags: " ++ show flags)
+  info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
 
   let ebuild = fixSrc serverURI (packageId pkgDesc)
                . (\e -> e { E.depend        = Merge.dep edeps } )
