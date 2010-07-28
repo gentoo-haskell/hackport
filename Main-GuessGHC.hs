@@ -18,7 +18,6 @@ main = do
 
 guess :: GenericPackageDescription -> IO ()
 guess gpd = do
-  --gpd <- readPackageDescription verbose fp
   let pkg = package . packageDescription $ gpd
   let mghc = minimumGHCVersionToBuildPackage gpd
   putStr (display pkg)
