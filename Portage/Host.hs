@@ -5,7 +5,7 @@ module Portage.Host
 
 import Util (run_cmd)
 import Data.Char (isSpace)
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust, catMaybes)
 import Control.Applicative ( (<$>) )
 
 data LocalInfo =
@@ -24,7 +24,7 @@ defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
 getInfo :: IO LocalInfo
 getInfo = fromJust `fmap`
     performMaybes [ getPaludisInfo
-                  , (fmap . fmap) parse_emerge_output  (run_cmd "emerge --info")
+                  , fmap parse_emerge_output <$> (run_cmd "emerge --info")
                   , return (Just defaultInfo)
                   ]
     where performMaybes [] = return Nothing
@@ -34,90 +34,51 @@ getInfo = fromJust `fmap`
                      then return r
                      else performMaybes acts
 
-data LocalPaludisOverlay =
-    LocalPaludisOverlay { repo_name :: String
-                        , format    :: String
-                        , location  :: FilePath
-                        , distdir   :: FilePath
-                        }
-
-bad_paludis_overlay :: LocalPaludisOverlay
-bad_paludis_overlay =
-    LocalPaludisOverlay { repo_name = undefined
-                        , format    = undefined
-                        , location  = undefined
-                        , distdir   = undefined
-                        }
+----------
+-- Paludis
+----------
 
 getPaludisInfo :: IO (Maybe LocalInfo)
-getPaludisInfo = do
-  mp <- fmap paludisParseRepositories <$> run_cmd "paludis --list-repositories"
-  case mp of
-    Nothing -> return Nothing
-    Just repos0 -> Just <$> do
-      let repos = filter (`notElem` knownRepos) repos0
-      Just gentooLocation <- paludisRepositoryLocation "gentoo"
-      Just gentooDistdir <- paludisRepositoryDistdir "gentoo"
-      others <- map fromJust <$> mapM paludisRepositoryLocation repos
-      return (LocalInfo
-                { distfiles_dir = gentooDistdir
-                , overlay_list = others
-                , portage_dir = gentooLocation
-                })
+getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "paludis --info"
+
+parsePaludisInfo :: String -> LocalInfo
+parsePaludisInfo text =
+  let chunks = splitBy (=="") . lines $ text
+      repositories = catMaybes (map parseRepository chunks)
+  in  fromJust (mkLocalInfo repositories)
   where
-    knownRepos = ["installed-virtuals", "virtuals", "gentoo", "installed"]
+  parseRepository :: [String] -> Maybe (String, (String, String))
+  parseRepository (firstLine:lns) = do
+    name <- case words firstLine of
+                ["Repository", nm] -> return (init nm)
+                _ -> fail "not a repository chunk"
+    let dict = [ (head ln, unwords (tail ln)) | ln <- map words lns ]
+    location <- lookup "location:" dict
+    distfiles <- lookup "distdir:" dict
+    return (name, (location, distfiles))
 
-paludisParseRepositories :: String -> [String]
-paludisParseRepositories = map (tail . tail) . lines
-{- * installed-virtuals
-   * virtuals
-   * gentoo
-   * installed
-   * gentoo-haskell -}
+  knownRepos = ["installed-virtuals", "virtuals", "gentoo", "installed"]
 
-paludisRepositoryLocation :: String -> IO (Maybe String)
-paludisRepositoryLocation repo = fmap init <$> run_cmd ("paludis --configuration-variable " ++ repo ++ " location")
+  mkLocalInfo :: [(String, (String, String))] -> Maybe LocalInfo
+  mkLocalInfo repos = do
+    (gentooLocation, gentooDistfiles) <- lookup "gentoo" repos
+    let overlays = [ loc | (name, (loc, _dist)) <- repos, name `notElem` knownRepos ]
+    return (LocalInfo
+              { distfiles_dir = gentooDistfiles
+              , portage_dir = gentooLocation
+              , overlay_list = overlays
+              })
 
-paludisRepositoryDistdir :: String -> IO (Maybe String)
-paludisRepositoryDistdir repo = fmap init <$> run_cmd ("paludis --configuration-variable " ++ repo ++ " distdir")
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy c [] = []
+splitBy c lst =
+  let (x,xs) = break c lst
+      (_,xs') = span c xs
+  in x : splitBy c xs'
 
-parse_paludis_output :: String -> LocalInfo
-parse_paludis_output raw_data =
-    foldl updateInfo defaultInfo $ parse_paludis_overlays raw_data
-    where updateInfo info po =
-              case (format po) of
-                  "ebuild" | (repo_name po) /= "gentoo" -- hack, skip main repo
-                      -> info{ distfiles_dir = distdir po -- we override last distdir here (FIXME?)
-                             , overlay_list  = (location po) : overlay_list info
-                             }
-                  "ebuild" -- hack, main repo -- (repo_name po) == "gentoo"
-                      -> info{ portage_dir = location po }
-
-                  _   -> info
-
-parse_paludis_overlays :: String -> [LocalPaludisOverlay]
-parse_paludis_overlays raw_data =
-    parse_paludis_overlays' (reverse $ lines raw_data) bad_paludis_overlay
-
--- parse in reverse order :]
-parse_paludis_overlays' :: [String] -> LocalPaludisOverlay -> [LocalPaludisOverlay]
-parse_paludis_overlays' [] _ = []
-parse_paludis_overlays' (l:ls) info =
-    case (words l) of
-    -- look for "Repository <repo-name>:"
-    ["Repository", r_name] -> info{repo_name = init r_name} :
-                                      go bad_paludis_overlay
-    -- else - parse attributes
-    _ -> case (break (== ':') (refine l)) of
-            ("location", ':':value)
-                -> go info{location = refine value}
-            ("distdir", ':':value)
-                -> go info{distdir = refine value}
-            ("format", ':':value)
-                -> go info{format = refine value}
-            _   -> go info
-    where go = parse_paludis_overlays' ls
-          refine = dropWhile isSpace
+---------
+-- Emerge
+---------
 
 parse_emerge_output :: String -> LocalInfo
 parse_emerge_output raw_data =
