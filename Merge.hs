@@ -155,7 +155,7 @@ merge verbosity repo serverURI args overlayPath = do
           (\dep -> trace ("accepting dep(?): " ++ display dep) True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
-          (CompilerId GHC (Cabal.Version [6,10,4] []))
+          (CompilerId GHC (Cabal.Version [6,12,3] []))
           [] pkgGenericDesc
       pkgDesc = let deps = [ Dependency pn (Cabal.simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
