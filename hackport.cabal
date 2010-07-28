@@ -58,7 +58,6 @@ Executable	hackport
     Error
     Paths_hackport
     Main
-    MaybeRead
     Overlays
     P2
     Portage
