@@ -1,6 +1,10 @@
 
 -- Guess GHC version from packages depended upon.
-module Portage.GHCCore (minimumGHCVersionToBuildPackage) where
+module Portage.GHCCore
+        ( minimumGHCVersionToBuildPackage
+        , cabalFromGHC
+        , defaultGHC
+        ) where
 
 import Distribution.Package
 import Distribution.Version
@@ -15,12 +19,32 @@ import Distribution.System
 import Distribution.Text
 
 import Data.Maybe
-import Data.Monoid
+import Data.List ( nub )
 
 import Text.PrettyPrint.HughesPJ
 
+defaultGHC :: (CompilerId, [PackageName])
+defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
+
 ghcs :: [(CompilerId, PackageIndex)]
 ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122, ghc6123]
+
+cabalFromGHC :: [Int] -> Maybe Version
+cabalFromGHC ver = lookup ver table
+  where
+  table = [([6,6,0],  Version [1,1,6] [])
+          ,([6,6,1],  Version [1,1,6,2] [])
+          ,([6,8,1],  Version [1,2,2,0] [])
+          ,([6,8,2],  Version [1,2,3,0] [])
+          ,([6,8,3],  Version [1,2,4,0] [])
+          ,([6,10,1], Version [1,6,0,1] [])
+          ,([6,10,2], Version [1,6,0,3] [])
+          ,([6,10,3], Version [1,6,0,3] [])
+          ,([6,10,4], Version [1,6,0,3] [])
+          ,([6,12,1], Version [1,8,0,2] [])
+          ,([6,12,2], Version [1,8,0,4] [])
+          ,([6,12,3], Version [1,8,0,6] [])
+          ]
 
 platform :: Platform
 platform = Platform X86_64 Linux
@@ -49,9 +73,13 @@ packageBuildableWithGHCVersion
 packageBuildableWithGHCVersion pkg (compiler, pkgIndex) =
   finalizePackageDescription [] (dependencySatisfiable pkgIndex) platform compiler [] pkg
 
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe CompilerId
+-- | Given a 'GenericPackageDescription' it returns the miminum GHC version
+-- to build a package, and a list of core packages to that GHC version.
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName])
 minimumGHCVersionToBuildPackage gpd =
-  listToMaybe [ cid | g@(cid, pix) <- ghcs, Right _ <- return (packageBuildableWithGHCVersion gpd g)]
+  listToMaybe [ (cid, packageNamesFromPackageIndex pix)
+              | g@(cid, pix) <- ghcs
+              , Right _ <- return (packageBuildableWithGHCVersion gpd g)]
 
 mkIndex :: [PackageIdentifier] -> PackageIndex
 mkIndex pids = fromList
@@ -61,6 +89,10 @@ mkIndex pids = fromList
       , exposed = True
       }
   | pi@(PackageIdentifier name version) <- pids ]
+
+packageNamesFromPackageIndex :: PackageIndex -> [PackageName]
+packageNamesFromPackageIndex pix = nub $
+  [ (pkgName . sourcePackageId) p | (p:_) <- allPackagesByName pix ]
 
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])

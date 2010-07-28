@@ -46,6 +46,8 @@ import qualified Portage.Host as Host
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
 
+import qualified Portage.GHCCore as GHCCore
+
 import qualified Merge.Dependencies as Merge
 
 import Debug.Trace ( trace )
@@ -155,13 +157,17 @@ merge verbosity repo serverURI args overlayPath = do
           (\dep -> trace ("accepting dep(?): " ++ display dep) True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
-          (CompilerId GHC (Cabal.Version [6,12,3] []))
+          (fst GHCCore.defaultGHC)
           [] pkgGenericDesc
+
+      (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id (GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc)
+
       pkgDesc = let deps = [ Dependency pn (Cabal.simplifyVersionRange vr)
                            | Dependency pn vr <- buildDepends pkgDesc0
+                           , pn `notElem` excludePkgs
                            ]
                 in pkgDesc0 { buildDepends = deps }
-      edeps = Merge.resolveDependencies pkgDesc
+      edeps = Merge.resolveDependencies pkgDesc (Just compilerId)
 
   debug verbosity ("Selected flags: " ++ show flags)
 

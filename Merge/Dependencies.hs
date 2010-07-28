@@ -58,10 +58,15 @@ import Data.Maybe ( isNothing )
 import Data.List ( nub )
 
 import qualified Distribution.Package as Cabal
+import qualified Distribution.Version as Cabal
+import Distribution.Compiler
 
+import qualified Portage.Version as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Dependency as Portage
 import qualified Cabal2Ebuild as C2E
+
+import qualified Portage.GHCCore as GHCCore
 
 import Debug.Trace ( trace )
 
@@ -83,8 +88,8 @@ emptyEDep = EDep
     dep_e = []
   }
 
-resolveDependencies :: PackageDescription -> EDep
-resolveDependencies pkg =
+resolveDependencies :: PackageDescription -> Maybe CompilerId -> EDep
+resolveDependencies pkg mcompiler =
     edeps
       {
         dep  = Portage.simplify_deps ( dep edeps),
@@ -93,11 +98,13 @@ resolveDependencies pkg =
         -- version as in dep
       }
   where
+    compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
+
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
     haskell_deps = haskellDependencies pkg
-    cabal_dep = cabalDependency pkg
-    ghc_dep = ghcDependency pkg
+    cabal_dep = cabalDependency pkg compiler
+    ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
     build_tools = buildToolsDependencies pkg
     pkg_config = pkgConfigDependencies pkg
@@ -122,6 +129,7 @@ resolveDependencies pkg =
                     rdep = extra_libs ++ pkg_config
                   }
 
+
 ---------------------------------------------------------------
 -- Haskell packages
 ---------------------------------------------------------------
@@ -135,19 +143,34 @@ haskellDependencies pkg =
 -- Cabal Dependency
 ---------------------------------------------------------------
 
-cabalDependency :: PackageDescription -> Portage.Dependency
-cabalDependency pkg =
+-- | Select the most restrictive dependency on Cabal, either the .cabal
+-- file's descCabalVersion, or the Cabal GHC shipped with.
+cabalDependency :: PackageDescription -> CompilerId -> Portage.Dependency
+cabalDependency pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _)) =
   head $ C2E.convertDependency (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
-                                                 (descCabalVersion pkg))
+                                                 finalCabalDep)
+  where
+    userCabalVersion = descCabalVersion pkg
+    shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
+    shippedCabalDep = maybe Cabal.anyVersion
+                            (\shipped -> Cabal.intersectVersionRanges
+                                (Cabal.thisVersion  shipped)
+                                (Cabal.laterVersion shipped))
+                            shippedCabalVersion
+    finalCabalDep = Cabal.simplifyVersionRange
+                                (Cabal.intersectVersionRanges
+                                          userCabalVersion
+                                          shippedCabalDep)
 
 ---------------------------------------------------------------
 -- GHC Dependency
 ---------------------------------------------------------------
 
-ghcDependency :: PackageDescription -> Portage.Dependency
-ghcDependency _pkg = C2E.default_ghc_dependency
- 
+compilerIdToDependency :: CompilerId -> Portage.Dependency
+compilerIdToDependency (CompilerId GHC versionNumbers) =
+  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc")
+
 ---------------------------------------------------------------
 -- C Libraries
 ---------------------------------------------------------------
@@ -166,7 +189,6 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
 
   notFound = [ p | p <- allE, isNothing (staticTranslateExtraLib p) ]
   found =    [ p | Just p <- map staticTranslateExtraLib allE ]
-  
 
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m

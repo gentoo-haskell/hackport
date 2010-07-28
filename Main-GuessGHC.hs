@@ -24,4 +24,4 @@ guess gpd = do
   putStr "\t\t"
   putStrLn $ case mghc of
               Nothing -> "Unknown"
-              Just v -> display v
+              Just (compiler, _pkgs) -> display compiler

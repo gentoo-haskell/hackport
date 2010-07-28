@@ -24,8 +24,7 @@
 module Cabal2Ebuild
         (cabal2ebuild
         ,convertDependencies
-        ,convertDependency
-        ,default_ghc_dependency) where
+        ,convertDependency) where
 
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
@@ -42,9 +41,6 @@ import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
 import qualified Portage.EBuild as E
 import Portage.Version
-
-default_ghc_dependency :: Dependency
-default_ghc_dependency = OrLaterVersionOf (Version [6,8,1] Nothing [] 0) (Portage.mkPackageName "dev-lang" "ghc")
 
 cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild pkg = Portage.ebuildTemplate {
