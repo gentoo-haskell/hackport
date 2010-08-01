@@ -77,6 +77,9 @@ Executable	hackport
 
 Executable	hackport-guess-ghc-version
   Main-Is:	Main-GuessGHC.hs
+  Buildable:    False
+  -- this was used as a test while developing the
+  -- ghc-guessfeature. now we can disable building
   Build-Depends:
     base >= 2.0 && < 5,
     filepath,
