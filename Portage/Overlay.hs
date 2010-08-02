@@ -23,14 +23,7 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
 
---main = do
---  pkgs <- blingProgress . Progress.fromList . readOverlay
---      =<< getDirectoryTree "."
---  putStrLn $ unlines [ display pkg
---                     | pkg <- pkgs
---                     , isNothing (Portage.toCabalPackageId pkg) ]
 
---TODO: move this to another module:
 data ExistingEbuild = ExistingEbuild {
     ebuildId      :: Portage.PackageId,
     ebuildCabalId :: Cabal.PackageIdentifier,
