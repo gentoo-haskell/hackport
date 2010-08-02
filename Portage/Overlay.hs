@@ -59,7 +59,7 @@ inOverlay overlay pkgId = not (Map.null packages)
 loadLazy :: FilePath -> IO Overlay
 loadLazy path = do
   dir <- getDirectoryTree path
-  metadata <- mkMetadataMap dir
+  metadata <- mkMetadataMap path dir
   return $ mkOverlay metadata $ readOverlayByPackage dir
   where
     allowed v = case v of
@@ -87,12 +87,12 @@ loadLazy path = do
            ]
     }
 
-mkMetadataMap :: DirectoryTree -> IO (Map Portage.PackageName Portage.Metadata)
-mkMetadataMap dir =
+mkMetadataMap :: FilePath -> DirectoryTree -> IO (Map Portage.PackageName Portage.Metadata)
+mkMetadataMap root dir =
   fmap (Map.mapMaybe id) $
     traverse Portage.metadataFromFile $
       Map.fromList
-        [ (Portage.mkPackageName category package, category </> package </> "metadata.xml")
+        [ (Portage.mkPackageName category package, root </> category </> package </> "metadata.xml")
         | Directory category packages <- dir
         , Directory package files <- packages
         , File "metadata.xml" <- files
