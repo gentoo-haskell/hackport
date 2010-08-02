@@ -9,8 +9,6 @@ import Control.Applicative
 
 import Text.XML.Light
 
-import Debug.Trace ( trace )
-import System
 import Control.Monad
 
 data Metadata = Metadata
