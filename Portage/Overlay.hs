@@ -5,6 +5,7 @@ module Portage.Overlay
   , readOverlayByPackage, getDirectoryTree, DirectoryTree
 
   , reduceOverlay
+  , filterByHerd
   , inOverlay
   )
   where
@@ -96,6 +97,16 @@ mkMetadataMap dir =
         , Directory package files <- packages
         , File "metadata.xml" <- files
         ]
+
+filterByHerd :: Overlay -> ([String] -> Bool) -> Overlay
+filterByHerd overlay p = overlay
+                            { overlayMetadata = metadataMap'
+                            , overlayMap = pkgMap'
+                            }
+  where
+    metadataMap' = Map.filter (p . Portage.metadataHerds) (overlayMetadata overlay)
+    pkgMap' = Map.intersection (overlayMap overlay) metadataMap'
+
 
 -- make sure there is only one ebuild for each version number (by selecting
 -- the highest ebuild version revision)
