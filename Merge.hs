@@ -7,7 +7,7 @@ import Control.Exception
 import Data.Maybe
 import Data.List
 import Distribution.Package
-import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
+-- import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
                                        )
