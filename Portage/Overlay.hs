@@ -2,7 +2,8 @@ module Portage.Overlay
   ( ExistingEbuild(..)
   , Overlay(..)
   , loadLazy
-  , readOverlayByPackage, getDirectoryTree, DirectoryTree
+  , readOverlay, readOverlayByPackage
+  , getDirectoryTree, DirectoryTree
 
   , reduceOverlay
   , filterByHerd
@@ -25,7 +26,6 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
 
-import Control.Applicative
 import Data.Traversable ( traverse )
 
 data ExistingEbuild = ExistingEbuild {
