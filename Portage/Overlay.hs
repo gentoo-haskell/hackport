@@ -1,7 +1,7 @@
 module Portage.Overlay
   ( ExistingEbuild(..)
   , Overlay(..)
-  , load, loadLazy
+  , loadLazy
   , readOverlayByPackage, getDirectoryTree, DirectoryTree
 
   , reduceOverlay
@@ -57,16 +57,6 @@ inOverlay overlay pkgId = not (Map.null packages)
                                   ]
                     in cabal_pn == overlay_pn && (not (null ebs))) om
     om = overlayMap overlay
-
-load :: FilePath -> IO Overlay
-load dir = fmap (mkOverlay . readOverlay) (getDirectoryTree dir)
-  where
-    mkOverlay _packages = Overlay {
-      overlayPath  = dir
---      TODO: ignore all ebuilds that have no Cabal version number
---    , overlayIndex = PackageIndex.fromList packages
-      , overlayMap   = undefined
-    }
 
 loadLazy :: FilePath -> IO Overlay
 loadLazy dir = fmap (mkOverlay . readOverlayByPackage) (getDirectoryTree dir)
