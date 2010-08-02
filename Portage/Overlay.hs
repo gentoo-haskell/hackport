@@ -10,6 +10,7 @@ module Portage.Overlay
   where
 
 import qualified Portage.PackageId as Portage
+import qualified Portage.Metadata as Portage
 
 import qualified Distribution.Package as Cabal
 
@@ -23,6 +24,8 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
 
+import Control.Applicative
+import Data.Traversable ( traverse )
 
 data ExistingEbuild = ExistingEbuild {
     ebuildId      :: Portage.PackageId,
@@ -34,7 +37,8 @@ instance Cabal.Package ExistingEbuild where packageId = ebuildCabalId
 
 data Overlay = Overlay {
     overlayPath  :: FilePath,
-    overlayMap :: Map Portage.PackageName [ExistingEbuild]
+    overlayMap :: Map Portage.PackageName [ExistingEbuild],
+    overlayMetadata :: Map Portage.PackageName Portage.Metadata
   } deriving Show
 
 inOverlay :: Overlay -> Cabal.PackageId -> Bool
@@ -52,7 +56,10 @@ inOverlay overlay pkgId = not (Map.null packages)
     om = overlayMap overlay
 
 loadLazy :: FilePath -> IO Overlay
-loadLazy dir = fmap (mkOverlay . readOverlayByPackage) (getDirectoryTree dir)
+loadLazy path = do
+  dir <- getDirectoryTree path
+  metadata <- mkMetadataMap dir
+  return $ mkOverlay metadata $ readOverlayByPackage dir
   where
     allowed v = case v of
       (Portage.Version _ Nothing [] _) -> True
@@ -60,22 +67,35 @@ loadLazy dir = fmap (mkOverlay . readOverlayByPackage) (getDirectoryTree dir)
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
-    mkOverlay :: [(Portage.PackageName, [Portage.Version])] -> Overlay
-    mkOverlay packages = Overlay {
-      overlayPath  = dir,
+    mkOverlay :: Map Portage.PackageName Portage.Metadata
+              -> [(Portage.PackageName, [Portage.Version])]
+              -> Overlay
+    mkOverlay meta packages = Overlay {
+      overlayPath  = path,
+      overlayMetadata = meta,
       overlayMap =
           Map.fromList
             [ (pkgName, [ ExistingEbuild portageId cabalId filepath
                         | version <- allowedVersions
                         , let portageId = Portage.PackageId pkgName version
                         , Just cabalId <- [ Portage.toCabalPackageId portageId ]
-                        , let filepath =
-                                dir </> display pkgName <-> display version <.> "ebuild"
+                        , let filepath = path </> display pkgName <-> display version <.> "ebuild"
                         ])
             | (pkgName, allVersions) <- packages
             , let allowedVersions = filter allowed allVersions
            ]
     }
+
+mkMetadataMap :: DirectoryTree -> IO (Map Portage.PackageName Portage.Metadata)
+mkMetadataMap dir =
+  fmap (Map.mapMaybe id) $
+    traverse Portage.metadataFromFile $
+      Map.fromList
+        [ (Portage.mkPackageName category package, category </> package </> "metadata.xml")
+        | Directory category packages <- dir
+        , Directory package files <- packages
+        , File "metadata.xml" <- files
+        ]
 
 -- make sure there is only one ebuild for each version number (by selecting
 -- the highest ebuild version revision)

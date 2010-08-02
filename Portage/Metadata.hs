@@ -1,6 +1,6 @@
 module Portage.Metadata
         ( Metadata(..)
-        , fromFile
+        , metadataFromFile
         ) where
 
 import qualified Data.ByteString as B
@@ -17,8 +17,8 @@ data Metadata = Metadata
       -- , metadataUseFlags :: [(String,String)]
       } deriving (Show)
 
-fromFile :: FilePath -> IO (Maybe Metadata)
-fromFile fp = do
+metadataFromFile :: FilePath -> IO (Maybe Metadata)
+metadataFromFile fp = do
   doc <- parseXMLDoc <$> B.readFile fp
   return (doc >>= parseMetadata)
 
