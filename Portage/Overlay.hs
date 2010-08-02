@@ -59,7 +59,7 @@ inOverlay overlay pkgId = not (Map.null packages)
 loadLazy :: FilePath -> IO Overlay
 loadLazy path = do
   dir <- getDirectoryTree path
-  metadata <- mkMetadataMap path dir
+  metadata <- unsafeInterleaveIO $ mkMetadataMap path dir
   return $ mkOverlay metadata $ readOverlayByPackage dir
   where
     allowed v = case v of
