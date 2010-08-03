@@ -10,7 +10,8 @@ module Portage.PackageId (
     toCabalPackageId,
     parseFriendlyPackage,
     normalizeCabalPackageName,
-    normalizeCabalPackageId
+    normalizeCabalPackageId,
+    packageIdToFilePath
   ) where
 
 import qualified Distribution.Package as Cabal
@@ -23,8 +24,9 @@ import qualified Portage.Version as Portage
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
--- import qualified Data.Char as Char (isDigit)
--- import Data.List (intersperse)
+
+import Distribution.Text(display)
+import System.FilePath ( (</>) )
 
 newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)
@@ -48,6 +50,13 @@ instance Text PN where
         -- each component must contain an alphabetic character, to avoid
         -- ambiguity in identifiers like foo-1 (the 1 is the version number).
 -}
+
+packageIdToFilePath :: PackageId -> FilePath
+packageIdToFilePath (PackageId (PackageName cat pn) version) =
+  display cat </> display pn </> display pn <-> display version <.> "ebuild"
+  where
+    a <-> b = a ++ '-':b
+    a <.> b = a ++ '.':b
 
 mkPackageName :: String -> String -> PackageName
 mkPackageName cat package = PackageName (Category cat) (Cabal.PackageName package)
