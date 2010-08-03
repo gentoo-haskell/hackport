@@ -80,7 +80,7 @@ loadLazy path = do
                         | version <- allowedVersions
                         , let portageId = Portage.PackageId pkgName version
                         , Just cabalId <- [ Portage.toCabalPackageId portageId ]
-                        , let filepath = path </> display pkgName <-> display version <.> "ebuild"
+                        , let filepath = path </> display pkgName </> display pn <-> display version <.> "ebuild"
                         ])
             | (pkgName, allVersions) <- packages
             , let allowedVersions = filter allowed allVersions
