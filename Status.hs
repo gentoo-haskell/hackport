@@ -6,7 +6,9 @@ module Status
     ) where
 
 import AnsiColor
-import P2
+
+import Portage.Overlay
+import Portage.PackageId
 
 import Control.Monad.State
 
@@ -19,11 +21,12 @@ import qualified Data.Map as Map
 import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
+import Control.Applicative
 
 -- cabal
 import Distribution.Verbosity
 import Distribution.Simple.Utils (equating, comparing)
-import Distribution.Text(display)
+import Distribution.Text(display, simpleParse)
 
 data FileStatus a
         = Same a
@@ -51,20 +54,20 @@ fromStatus fs =
         OverlayOnly a -> a
         PortageOnly a -> a
 
-status :: Verbosity -> FilePath -> FilePath -> IO (Map Package [FileStatus Ebuild])
-status _verbosity portdir overlayPath = do
-    overlay <- readPortageTree overlayPath
-    portage <- readPortagePackages portdir (Map.keys overlay)
-    let (over, both, port) = portageDiff overlay portage
+status :: Verbosity -> FilePath -> FilePath -> IO (Map PackageName [FileStatus ExistingEbuild])
+status _verbosity portdir overlaydir = do
+    overlay <- loadLazy overlaydir
+    portage <- filterByHerd ("haskell" `elem`) <$> loadLazy portdir
+    let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
     both' <- T.forM both $ mapM $ \e -> liftIO $ do
             -- can't fail, we know the ebuild exists in both portagedirs
             -- also, one of them is already bound to 'e'
-            let (Just e1) = lookupEbuildWith portage (ePackage e) (equating eVersion e)
-                (Just e2) = lookupEbuildWith overlay (ePackage e) (equating eVersion e)
-            eq <- equals (eFilePath e1) (eFilePath e2)
+            let (Just e1) = lookupEbuildWith (overlayMap portage) (ebuildId e)
+                (Just e2) = lookupEbuildWith (overlayMap overlay) (ebuildId e)
+            eq <- equals (ebuildPath e1) (ebuildPath e2)
             return $ if eq
-                        then Same e
+                        then Same e1
                         else Differs e1 e2
 
     let meld = Map.unionsWith (\a b -> List.sort (a++b))
@@ -74,50 +77,59 @@ status _verbosity portdir overlayPath = do
                 ]
     return meld
 
+type EMap = Map PackageName [ExistingEbuild]
+
+lookupEbuildWith :: EMap -> PackageId -> Maybe ExistingEbuild
+lookupEbuildWith overlay pkgid = do
+  ebuilds <- Map.lookup (packageId pkgid) overlay
+  List.find (\e -> ebuildId e == pkgid) ebuilds
+
 runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> [String] -> IO ()
-runStatus verbosity portdir overlayPath toPortageFlag pkgs = do
+runStatus verbosity portdir overlaydir toPortageFlag pkgs = do
   let pkgFilter | toPortageFlag = toPortageFilter
                 | otherwise = id
-  tree0 <- status verbosity portdir overlayPath
+  tree0 <- status verbosity portdir overlaydir
   let tree = pkgFilter tree0
   if (null pkgs)
     then statusPrinter tree
     else forM_ pkgs $ \pkg -> do
-          let filteredTree = Map.filterWithKey (\k _ -> pPackage k == pkg) tree
-          statusPrinter filteredTree
+          case simpleParse pkg of
+            Nothing -> putStrLn ("Could not parse package name: " ++ pkg ++ ". Format cat/pkg")
+            Just p -> do
+              statusPrinter (Map.filterWithKey (\k _ -> k == p) tree)
 
 -- |Only return packages that seems interesting to sync to portage;
 --
 --   * Ebuild differs, or
 --   * Newer version in overlay than in portage
-toPortageFilter :: Map Package [FileStatus Ebuild] -> Map Package [FileStatus Ebuild]
+toPortageFilter :: Map PackageName [FileStatus ExistingEbuild] -> Map PackageName [FileStatus ExistingEbuild]
 toPortageFilter = Map.mapMaybe $ \ sts ->
     let inPortage = flip filter sts $ \st ->
                         case st of
                             OverlayOnly _ -> False
                             _ -> True
-        latestPortageVersion = List.maximum $ map (eVersion . fromStatus) inPortage
+        latestPortageVersion = List.maximum $ map (pkgVersion . ebuildId . fromStatus) inPortage
         interestingPackages = flip filter sts $ \st ->
             case st of
                 Differs _ _ -> True
-                _ | eVersion (fromStatus st) > latestPortageVersion -> True
+                _ | pkgVersion (ebuildId (fromStatus st)) > latestPortageVersion -> True
                   | otherwise -> False
     in if not (null inPortage) && not (null interestingPackages)
         then Just sts
         else Nothing
 
-statusPrinter :: Map Package [FileStatus Ebuild] -> IO ()
+statusPrinter :: Map PackageName [FileStatus ExistingEbuild] -> IO ()
 statusPrinter packages = do
     putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
     putStrLn $ toColor (Differs "Yellow" "") ++ ": package in portage and overlay differs"
     putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
     putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
     forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> do
-        let (P c p) = pkg
-        putStr $ c ++ '/' : bold p
+        let (PackageName c p) = pkg
+        putStr $ display c ++ '/' : bold (display p)
         putStr " "
         forM_ ebuilds $ \e -> do
-            putStr $ toColor (fmap (display . eVersion) e)
+            putStr $ toColor (fmap (display . pkgVersion . ebuildId) e)
             putChar ' '
         putStrLn ""
 
@@ -130,15 +142,15 @@ toColor st = inColor c False Default (fromStatus st)
         (OverlayOnly _) -> Red
         (PortageOnly _) -> Magenta
 
-portageDiff :: Portage -> Portage -> (Portage, Portage, Portage)
+
+portageDiff :: EMap -> EMap -> (EMap, EMap, EMap)
 portageDiff p1 p2 = (in1, ins, in2)
-    where ins = Map.filter (not . null) $
-                    Map.intersectionWith (List.intersectBy $ equating eVersion) p1 p2
+    where ins = Map.filter (not . null) $ Map.intersectionWith (List.intersectBy $ equating ebuildId) p1 p2
           in1 = difference p1 p2
           in2 = difference p2 p1
           difference x y = Map.filter (not . null) $
                        Map.differenceWith (\xs ys ->
-                        let lst = foldr (List.deleteBy (equating eVersion)) xs ys in
+                        let lst = foldr (List.deleteBy (equating ebuildId)) xs ys in
                         if null lst
                             then Nothing
                             else Just lst

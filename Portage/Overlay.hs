@@ -16,7 +16,7 @@ import qualified Portage.Metadata as Portage
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Text (simpleParse, display)
+import Distribution.Text (simpleParse)
 import Distribution.Simple.Utils ( comparing, equating )
 
 import Data.List as List
@@ -65,8 +65,6 @@ loadLazy path = do
     allowed v = case v of
       (Portage.Version _ Nothing [] _) -> True
       _                                -> False
-    a <-> b = a ++ '-':b
-    a <.> b = a ++ '.':b
 
     mkOverlay :: Map Portage.PackageName Portage.Metadata
               -> [(Portage.PackageName, [Portage.Version])]
@@ -80,7 +78,7 @@ loadLazy path = do
                         | version <- allowedVersions
                         , let portageId = Portage.PackageId pkgName version
                         , Just cabalId <- [ Portage.toCabalPackageId portageId ]
-                        , let filepath = path </> display pkgName </> display pn <-> display version <.> "ebuild"
+                        , let filepath = path </> Portage.packageIdToFilePath portageId
                         ])
             | (pkgName, allVersions) <- packages
             , let allowedVersions = filter allowed allVersions
@@ -98,8 +96,8 @@ mkMetadataMap root dir =
         , File "metadata.xml" <- files
         ]
 
-filterByHerd :: Overlay -> ([String] -> Bool) -> Overlay
-filterByHerd overlay p = overlay
+filterByHerd :: ([String] -> Bool) -> Overlay -> Overlay
+filterByHerd p overlay = overlay
                             { overlayMetadata = metadataMap'
                             , overlayMap = pkgMap'
                             }
