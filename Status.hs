@@ -26,7 +26,8 @@ import Control.Applicative
 -- cabal
 import Distribution.Verbosity
 import Distribution.Simple.Utils (equating, comparing)
-import Distribution.Text(display, simpleParse)
+import Distribution.Text ( display, simpleParse )
+import Distribution.Simple.Utils ( die )
 
 data FileStatus a
         = Same a
@@ -88,15 +89,15 @@ runStatus :: Verbosity -> FilePath -> FilePath -> Bool -> [String] -> IO ()
 runStatus verbosity portdir overlaydir toPortageFlag pkgs = do
   let pkgFilter | toPortageFlag = toPortageFilter
                 | otherwise = id
+  pkgs' <- forM pkgs $ \p ->
+            case simpleParse p of
+              Nothing -> die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
+              Just pn -> return pn
   tree0 <- status verbosity portdir overlaydir
   let tree = pkgFilter tree0
-  if (null pkgs)
+  if (null pkgs')
     then statusPrinter tree
-    else forM_ pkgs $ \pkg -> do
-          case simpleParse pkg of
-            Nothing -> putStrLn ("Could not parse package name: " ++ pkg ++ ". Format cat/pkg")
-            Just p -> do
-              statusPrinter (Map.filterWithKey (\k _ -> k == p) tree)
+    else forM_ pkgs' $ \pkg -> statusPrinter (Map.filterWithKey (\k _ -> k == pkg) tree)
 
 -- |Only return packages that seems interesting to sync to portage;
 --
