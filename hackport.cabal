@@ -60,7 +60,6 @@ Executable	hackport
     Paths_hackport
     Main
     Overlays
-    P2
     Portage
     Portage.Version
     Portage.Dependency
