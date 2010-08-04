@@ -1,6 +1,8 @@
 {-# OPTIONS -XPatternGuards #-}
 module Merge
-  ( merge ) where
+  ( merge
+  , mergeGenericPackageDescription
+  ) where
 
 import Control.Monad.Error
 import Control.Exception
@@ -10,6 +12,7 @@ import Distribution.Package
 -- import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
+                                       , GenericPackageDescription
                                        )
 import Distribution.PackageDescription.Configuration
          ( finalizePackageDescription )
@@ -143,12 +146,13 @@ merge verbosity repo serverURI args overlayPath = do
     info verbosity $ match_text ++ (display . packageInfoId $ avail)
 
   let cabal_pkgId = packageInfoId selectedPkg
-      norm_pkgId = Portage.normalizeCabalPackageId cabal_pkgId
-      norm_pkgName = packageName norm_pkgId
+      norm_pkgName = packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
+  mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True
 
-  let pkgGenericDesc = packageDescription selectedPkg
-      Right (pkgDesc0, flags) =
+mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> GenericPackageDescription -> Bool -> IO ()
+mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = do
+  let Right (pkgDesc0, flags) =
         finalizePackageDescription
           [ -- XXX: common things we should enable/disable?
             -- (FlagName "small_base", True) -- try to use small base
@@ -173,19 +177,21 @@ merge verbosity repo serverURI args overlayPath = do
   debug verbosity ("Selected flags: " ++ show flags)
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
 
-  let ebuild = fixSrc serverURI (packageId pkgDesc)
-               . (\e -> e { E.depend        = Merge.dep edeps } )
+  let ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
                . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
                . (\e -> e { E.rdepend       = Merge.rdep edeps } )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e edeps } )
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
-  fetchAndDigest
-    verbosity
-    (overlayPath </> display cat </> display norm_pkgName)
-    (display cabal_pkgId <.> "tar.gz")
-    (mkUri cabal_pkgId)
+  when fetch $ do
+    let cabal_pkgId = packageId pkgDesc
+        norm_pkgName = packageName (Portage.normalizeCabalPackageId cabal_pkgId)
+    fetchAndDigest
+      verbosity
+      (overlayPath </> display cat </> display norm_pkgName)
+      (display cabal_pkgId <.> "tar.gz")
+      (mkUri cabal_pkgId)
 
 mkUri :: Cabal.PackageIdentifier -> URI
 mkUri pid =
@@ -243,9 +249,5 @@ fixSrc serverURI p ebuild =
           </> display (pkgVersion p) 
           </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
           <.> "tar.gz"
-      },
-    E.homepage = case E.homepage ebuild of
-                "" -> "http://hackage.haskell.org/package/"
-                        ++ display (pkgName p)
-                x -> x
+      }
     }

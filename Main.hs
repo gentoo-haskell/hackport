@@ -14,15 +14,13 @@ import Distribution.Simple.Setup
         , flagToList
         , optionVerbosity
         )
-import Distribution.PackageDescription.Configuration
-         ( flattenPackageDescription )
 import Distribution.ReadE ( succeedReadE )
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die, cabalVersion, warn )
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
-import Distribution.Text (display)
+import Distribution.Text (display, simpleParse)
 
 import Distribution.Client.Types
 import Distribution.Client.Update
@@ -39,9 +37,6 @@ import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
-
-import qualified Cabal2Ebuild as C2E
-import qualified Portage.EBuild as E
 
 import Diff
 import Error
@@ -145,15 +140,18 @@ defaultMakeEbuildFlags = MakeEbuildFlags {
   }
 
 makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
-makeEbuildAction flags args _globalFlags = do
-  when (null args) $
-    die "make-ebuild needs at least one argument"
-  let _verbosity = fromFlag (makeEbuildVerbosity flags)
-  forM_ args $ \cabalFileName -> do
+makeEbuildAction flags args globalFlags = do
+  (catstr,cabals) <- case args of
+                      (category:cabal1:cabaln) -> return (category, cabal1:cabaln)
+                      _ -> throwEx (ArgumentError "make-ebuild needs at least two arguments. <category> <cabal-1> <cabal-n>")
+  cat <- case simpleParse catstr of
+            Just c -> return c
+            Nothing -> throwEx (ArgumentError ("could not parse category: " ++ catstr))
+  let verbosity = fromFlag (makeEbuildVerbosity flags)
+  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
+  forM_ cabals $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
-    let ebuild = C2E.cabal2ebuild (flattenPackageDescription pkg)
-    let ebuildFileName = E.name ebuild ++ "-" ++ E.version ebuild ++ ".ebuild"
-    writeFile ebuildFileName (display ebuild)
+    mergeGenericPackageDescription verbosity overlayPath cat pkg False
 
 makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
