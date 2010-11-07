@@ -160,8 +160,13 @@ replaceCommonVars pn mypn pv str
 		++ maybe [] (\x->[("${MY_P}",x++"-"++pv)]) mypn
 		++[("${PN}",pn)]
 		++ maybe [] (\x->[("${MY_PN}",x)]) mypn
-		++[("${PV}",pv)]) str
-
+		++[("${PV}",pv)]
+		++my_p_back_expansion) str
+    where -- this part is an evil hack to convert back from ${P} to ${MY_P} in
+          -- SRC_URI and HOMEPAGE descriptions (ebuildTemplate already has them wrong)
+          my_p_back_expansion = maybe [] (const [ ("${MY_P}",  "${P}")
+                                                , ("${MY_PN}", "${PN}")
+                                                ]) mypn
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String

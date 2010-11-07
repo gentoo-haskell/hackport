@@ -238,16 +238,3 @@ mergeEbuild verbosity target cat ebuild = do
   createDirectoryIfMissing True edir
   info verbosity $ "Writing " ++ elocal
   writeFile epath (display ebuild)
-
-fixSrc :: URI -> PackageIdentifier -> E.EBuild -> E.EBuild
-fixSrc serverURI p ebuild =
-  ebuild {
-    E.src_uri = show $ serverURI {
-      uriPath =
-        uriPath serverURI
-          </> display (pkgName p) 
-          </> display (pkgVersion p) 
-          </> display (pkgName p) ++ "-" ++ display (pkgVersion p) 
-          <.> "tar.gz"
-      }
-    }
