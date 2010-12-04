@@ -44,6 +44,7 @@ cabalFromGHC ver = lookup ver table
           ,([6,12,1], Version [1,8,0,2] [])
           ,([6,12,2], Version [1,8,0,4] [])
           ,([6,12,3], Version [1,8,0,6] [])
+          ,([7,0,1],  Version [1,10,0,0] [])
           ]
 
 platform :: Platform
@@ -97,7 +98,10 @@ packageNamesFromPackageIndex pix = nub $
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
--- | Core packages in GHC 6.12.3 as a 'PackageIndex'.
+-- | Core packages in GHC 7.0.1 as a 'PackageIndex'.
+ghc701 :: (CompilerId, PackageIndex)
+ghc701 = (ghc [7,0,1], mkIndex ghc701_pkgs)
+
 ghc6123 :: (CompilerId, PackageIndex)
 ghc6123 = (ghc [6,12,3], mkIndex ghc6123_pkgs)
 
@@ -118,6 +122,33 @@ ghc682 = (ghc [6,8,2], mkIndex ghc682_pkgs)
 
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+ghc701_pkgs :: [PackageIdentifier]
+ghc701_pkgs = 
+  [ p "array" [0,3,0,2]
+  , p "base" [4,3,0,0]
+  , p "bytestring" [0,9,1,8]
+--  , p "Cabal" [1,10,0,0]  package is upgradeable
+  , p "containers" [0,4,0,0]
+  , p "directory" [1,1,0,0]
+  , p "extensible-exceptions" [0,1,1,2]
+  , p "filepath" [1,2,0,0]
+  , p "haskell2010" [1,0,0,0]
+  , p "haskell98" [1,1,0,0]
+  , p "hpc" [0,5,0,6]
+  , p "integer-gmp" [0,2,0,2]
+  , p "integer-simple" [0,1,0,0]
+  , p "old-locale" [1,0,0,2]
+  , p "old-time" [1,0,0,6]
+  , p "pretty" [1,0,1,2]
+  , p "process" [1,0,1,4]
+  , p "random" [1,0,0,3]
+  , p "syb" [0,2,2] -- not distributed with ghc-7, but ghc-7 PDEPENDs on it
+  , p "template-haskell" [2,5,0,0]
+--  , p "time" [1,2,0,3] package is upgradeable
+  , p "unix" [2,4,1,0]
+--  , p "utf8-string" [0,3,4] package is upgradeable
+  ]
+
 ghc6123_pkgs :: [PackageIdentifier]
 ghc6123_pkgs = 
   [ p "array" [0,3,0,1]
