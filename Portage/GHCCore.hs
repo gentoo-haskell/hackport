@@ -27,7 +27,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122, ghc6123]
+ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122, ghc6123, ghc701]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
