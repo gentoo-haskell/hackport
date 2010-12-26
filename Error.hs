@@ -1,4 +1,5 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Error (HackPortError(..), throwEx, catchEx, hackPortShowError) where
 
 import Data.Typeable
