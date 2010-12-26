@@ -1,0 +1,93 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Distribution.Client.Dependency.TopDown.Types
+-- Copyright   :  (c) Duncan Coutts 2008
+-- License     :  BSD-like
+--
+-- Maintainer  :  cabal-devel@haskell.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- Types for the top-down dependency resolver.
+-----------------------------------------------------------------------------
+module Distribution.Client.Dependency.TopDown.Types where
+
+import Distribution.Client.Types
+         ( AvailablePackage(..), InstalledPackage )
+
+import Distribution.Package
+         ( PackageIdentifier, Dependency
+         , Package(packageId), PackageFixedDeps(depends) )
+import Distribution.PackageDescription
+         ( FlagAssignment )
+
+-- ------------------------------------------------------------
+-- * The various kinds of packages
+-- ------------------------------------------------------------
+
+type SelectablePackage
+   = InstalledOrAvailable InstalledPackageEx UnconfiguredPackage
+
+type SelectedPackage
+   = InstalledOrAvailable InstalledPackageEx SemiConfiguredPackage
+
+data InstalledOrAvailable installed available
+   = InstalledOnly         installed
+   | AvailableOnly                   available
+   | InstalledAndAvailable installed available
+
+type TopologicalSortNumber = Int
+
+data InstalledPackageEx
+   = InstalledPackageEx
+       InstalledPackage
+       !TopologicalSortNumber
+       [PackageIdentifier]    -- transative closure of installed deps
+
+data UnconfiguredPackage
+   = UnconfiguredPackage
+       AvailablePackage
+       !TopologicalSortNumber
+       FlagAssignment
+
+data SemiConfiguredPackage
+   = SemiConfiguredPackage
+       AvailablePackage  -- package info
+       FlagAssignment    -- total flag assignment for the package
+       [Dependency]      -- dependencies we end up with when we apply
+                         -- the flag assignment
+
+instance Package InstalledPackageEx where
+  packageId (InstalledPackageEx p _ _) = packageId p
+
+instance PackageFixedDeps InstalledPackageEx where
+  depends (InstalledPackageEx _ _ deps) = deps
+
+instance Package UnconfiguredPackage where
+  packageId (UnconfiguredPackage p _ _) = packageId p
+
+instance Package SemiConfiguredPackage where
+  packageId (SemiConfiguredPackage p _ _) = packageId p
+
+instance (Package installed, Package available)
+      => Package (InstalledOrAvailable installed available) where
+  packageId (InstalledOnly         p  ) = packageId p
+  packageId (AvailableOnly         p  ) = packageId p
+  packageId (InstalledAndAvailable p _) = packageId p
+
+-- ------------------------------------------------------------
+-- * Tagged Dependency type
+-- ------------------------------------------------------------
+
+-- | Installed packages can only depend on other installed packages while
+-- packages that are not yet installed but which we plan to install can depend
+-- on installed or other not-yet-installed packages.
+--
+-- This makes life more complex as we have to remember these constraints.
+--
+data TaggedDependency = TaggedDependency InstalledConstraint Dependency
+data InstalledConstraint = InstalledConstraint | NoInstalledConstraint
+  deriving Eq
+
+untagDependency :: TaggedDependency -> Dependency
+untagDependency (TaggedDependency _ dep) = dep
