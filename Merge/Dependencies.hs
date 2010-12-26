@@ -53,7 +53,9 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , extraLibs
                                        , buildTools
                                        , pkgconfigDepends
-                                       , hasLibs )
+                                       , hasLibs
+                                       , specVersion
+                                       )
 import Data.Maybe ( isNothing )
 import Data.List ( nub )
 
@@ -151,7 +153,7 @@ cabalDependency pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _))
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                  finalCabalDep)
   where
-    userCabalVersion = descCabalVersion pkg
+    userCabalVersion = Cabal.orLaterVersion (specVersion pkg)
     shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
     shippedCabalDep = maybe Cabal.anyVersion
                             (\shipped -> Cabal.intersectVersionRanges
