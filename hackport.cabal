@@ -9,7 +9,7 @@ Synopsis:	Hackage and Portage integration tool
 Description:    A command line tool to manage an overlay of Gentoo ebuilds
                 that are generated from a hackage repo of Cabal packages.
 Build-Type:     Simple
-Cabal-Version:  >=1.8
+Cabal-Version:  >=1.10
 
 source-repository head
   type: darcs
@@ -19,7 +19,8 @@ Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
-  Hs-Source-Dirs: ., cabal-install-0.8.2
+  Default-Language: Haskell2010
+  Hs-Source-Dirs: ., cabal-install-0.9.5_rc20101226
   Build-Depends:
     base >= 2.0 && < 5,
     filepath,
@@ -28,7 +29,7 @@ Executable	hackport
     network,
     pretty,
     regex-compat,
-    Cabal == 1.8.*,
+    Cabal == 1.10.*,
     HTTP >= 4000.0.3,
     zlib,
     tar,
@@ -37,6 +38,17 @@ Executable	hackport
   -- array is inherited from cabal-install 
   -- tar >= 0.3.0.0 && < 0.4
     extensible-exceptions
+
+  -- extensions due to hackport
+  other-extensions:
+    DeriveDataTypeable,
+    PatternGuards
+
+  -- extensions due to bundled cabal-install
+  other-extensions:
+    CPP,
+    ForeignFunctionInterface,
+    PatternGuards
 
   if flag(split-base)
     Build-Depends:
@@ -77,6 +89,7 @@ Executable	hackport
 
 Executable	hackport-guess-ghc-version
   Main-Is:	Main-GuessGHC.hs
+  Default-Language: Haskell2010
   Buildable:    False
   -- this was used as a test while developing the
   -- ghc-guessfeature. now we can disable building
@@ -88,7 +101,7 @@ Executable	hackport-guess-ghc-version
     network,
     pretty,
     regex-compat,
-    Cabal == 1.8.*,
+    Cabal > 1.8 && < 1.11,
     HTTP >= 4000.0.3,
     zlib,
     tar,
