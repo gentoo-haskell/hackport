@@ -1,6 +1,7 @@
 module Portage.EBuild
         ( EBuild(..)
         , ebuildTemplate
+        , src_uri
         ) where
 
 import Distribution.Text ( Text(..), display )
@@ -19,7 +20,6 @@ data EBuild = EBuild {
     hackportVersion :: String,
     description :: String,
     homepage :: String,
-    src_uri :: String,
     license :: Cabal.License,
     slot :: String,
     keywords :: [String],
@@ -29,7 +29,7 @@ data EBuild = EBuild {
     rdepend :: [Dependency],
     rdepend_extra :: [String],
     features :: [String],
-    my_pn :: Maybe String --If the package's name contains upper-case
+    my_pn :: Maybe String -- ^ Just 'myOldName' if the package name contains upper characters
   }
 
 getHackportVersion :: Version -> String
@@ -43,7 +43,6 @@ ebuildTemplate = EBuild {
     hackportVersion = getHackportVersion Paths_hackport.version,
     description = "",
     homepage = "http://hackage.haskell.org/package/${PN}",
-    src_uri = "http://hackage.haskell.org/packages/archive/${PN}/${PV}/${P}.tar.gz",
     license = Cabal.UnknownLicense "xxx UNKNOWN xxx",
     slot = "0",
     keywords = ["~amd64","~x86"],
@@ -58,6 +57,18 @@ ebuildTemplate = EBuild {
 
 instance Text EBuild where
   disp = Disp.text . showEBuild
+
+-- | Given an EBuild, give the URI to the tarball of the source code.
+-- Assumes that the server is always hackage.haskell.org.
+src_uri :: EBuild -> String
+src_uri e = 
+  case my_pn e of
+    -- use standard address given that the package name has no upper
+    -- characters
+    Nothing -> "http://hackage.haskell.org/packages/archive/${PN}/${PV}/${P}.tar.gz"
+    -- use MY_X variables (defined in showEBuild) as we've renamed the
+    -- package
+    Just _  -> "http://hackage.haskell.org/packages/archive/${MY_PN}/${PV}/${MY_P}.tar.gz"
 
 showEBuild :: EBuild -> String
 showEBuild ebuild =
@@ -76,7 +87,7 @@ showEBuild ebuild =
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (description ebuild). nl.
   ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
-  ss "SRC_URI=". quote (replaceVars (src_uri ebuild)). nl.
+  ss "SRC_URI=". quote (src_uri ebuild). nl.
   nl.
   ss "LICENSE=". quote (convertLicense . license $ ebuild).
      (if null (licenseComment . license $ ebuild) then id
@@ -91,8 +102,7 @@ showEBuild ebuild =
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
-  where replaceVars = replaceCommonVars (name ebuild) (my_pn ebuild) (version ebuild)
-        expandVars = replaceMultiVars [(name ebuild, "${PN}")]
+  where expandVars = replaceMultiVars [(name ebuild, "${PN}")]
 
 ss :: String -> String -> String
 ss = showString
@@ -147,26 +157,6 @@ replaceMultiVars [] str = str
 replaceMultiVars whole@((pname,cont):rest) str = case subStr cont str of
 	Nothing -> replaceMultiVars rest str
 	Just (pre,post) -> (replaceMultiVars rest pre)++pname++(replaceMultiVars whole post)
-
-replaceCommonVars ::
-	String ->	-- ^ PN
-	Maybe String ->	-- ^ MYPN
-	String ->	-- ^ PV
-	String ->	-- ^ the string to be replaced
-	String
-replaceCommonVars pn mypn pv str
-	= replaceMultiVars
-		([("${P}",pn++"-"++pv)]
-		++ maybe [] (\x->[("${MY_P}",x++"-"++pv)]) mypn
-		++[("${PN}",pn)]
-		++ maybe [] (\x->[("${MY_PN}",x)]) mypn
-		++[("${PV}",pv)]
-		++my_p_back_expansion) str
-    where -- this part is an evil hack to convert back from ${P} to ${MY_P} in
-          -- SRC_URI and HOMEPAGE descriptions (ebuildTemplate already has them wrong)
-          my_p_back_expansion = maybe [] (const [ ("${MY_P}",  "${P}")
-                                                , ("${MY_PN}", "${PN}")
-                                                ]) mypn
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
