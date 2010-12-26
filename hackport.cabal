@@ -19,7 +19,7 @@ Flag split-base
 
 Executable	hackport
   Main-Is:	Main.hs
-  Default-Language: Haskell2010
+  Default-Language: Haskell98
   Hs-Source-Dirs: ., cabal-install-0.9.5_rc20101226
   Build-Depends:
     base >= 2.0 && < 5,
@@ -89,7 +89,7 @@ Executable	hackport
 
 Executable	hackport-guess-ghc-version
   Main-Is:	Main-GuessGHC.hs
-  Default-Language: Haskell2010
+  Default-Language: Haskell98
   Buildable:    False
   -- this was used as a test while developing the
   -- ghc-guessfeature. now we can disable building
