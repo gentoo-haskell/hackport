@@ -187,7 +187,7 @@ readRepoIndex verbosity repo = handleNotFound $ do
         case repoKind repo of
           Left  remoteRepo -> warn verbosity $
                "The package list for '" ++ remoteRepoName remoteRepo
-            ++ "' does not exist. Run 'cabal update' to download it."
+            ++ "' does not exist. Run 'hackport update' to download it."
           Right _localRepo -> warn verbosity $
                "The package list for the local repo '" ++ repoLocalDir repo
             ++ "' is missing. The repo is invalid."
@@ -203,7 +203,7 @@ readRepoIndex verbosity repo = handleNotFound $ do
         Left  remoteRepo -> warn verbosity $
              "The package list for '" ++ remoteRepoName remoteRepo
           ++ "' is " ++ show (tdDay diff)  ++ " days old.\nRun "
-          ++ "'cabal update' to get the latest list of available packages."
+          ++ "'hackport update' to get the latest list of available packages."
         Right _localRepo -> return ()
 
 parsePreferredVersions :: String -> [Dependency]

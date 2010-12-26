@@ -595,7 +595,7 @@ reportPackageTargetProblems verbosity problems = do
       pkgs  -> die $ unlines
                        [ "There is no package named '" ++ display name ++ "'. "
                        | name <- pkgs ]
-                  ++ "You may need to run 'cabal update' to get the latest "
+                  ++ "You may need to run 'hackport update' to get the latest "
                   ++ "list of available packages."
 
     case [ (pkg, matches) | PackageNameAmbigious pkg matches _ <- problems ] of
