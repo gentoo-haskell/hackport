@@ -89,7 +89,8 @@ convertDependency category (Cabal.Dependency pname versionRange)
             )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn] -- ^ @\"<= v\"@
             )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\g1 g2 -> [DependEither (flatten g1 ++ flatten g2)   ] -- ^ @\"_ || _\"@ union
-            )(\r1 r2 -> r1 ++ r2
+            )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
+            )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
             )
       where
       flatten :: [Dependency] -> [[Dependency]]

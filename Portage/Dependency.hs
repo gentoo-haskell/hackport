@@ -9,7 +9,7 @@ import Distribution.Text ( display, Text(..) )
 import Portage.PackageId
 
 import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ( (<>) )
+import Text.PrettyPrint ( (<>), hsep )
 
 import Data.Maybe ( fromJust, catMaybes )
 import Data.List ( nub, groupBy, partition, sortBy )
@@ -26,6 +26,7 @@ data Dependency = AnyVersionOf               PackageName
                 | DependEither [[Dependency]]              -- || ( depend_group1 ..depend_groupN )
                 | DependIfUse  UseFlag    Dependency   -- use? ( depend )
                 | ThisMajorOf        Version PackageName   -- =package-version*
+                | AllOf        [Dependency]                -- ( package-version* )
     deriving (Eq,Show)
 
 instance Text Dependency where
@@ -50,6 +51,7 @@ showDepend (DependIfUse        useflag dep@(DependEither _))
 showDepend (DependIfUse        useflag dep)
               = Disp.text useflag <> Disp.text "? " <>  Disp.parens (disp dep)
 showDepend (ThisMajorOf        v p) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*'
+showDepend (AllOf              dp ) = Disp.text "( " <> hsep (map showDepend dp) <> Disp.text " )"
 
 {- Here goes code for dependencies simplification -}
 
