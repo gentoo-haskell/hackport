@@ -271,6 +271,7 @@ table =
   ,("cairo-ps",        ("x11-libs", "cairo"))
   ,("cairo-pdf",        ("x11-libs", "cairo"))
   ,("cairo-svg",        ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
+  ,("pangocairo",       ("x11-libs", "cairo"))
   ,("pango",        ("x11-libs", "pango"))
   ,("libglade-2.0", ("gnome-base", "libglade"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
