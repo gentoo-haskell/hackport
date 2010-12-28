@@ -259,14 +259,19 @@ resolvePkgConfig (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
 table :: [(String, (String, String))]
 table =
   [("gconf-2.0",    ("gnome-base", "gconf"))
+
   ,("gthread-2.0",  ("dev-libs", "glib")) -- should be slot 2
+  ,("gio-2.0",      ("dev-libs", "glib"))
+  ,("glib-2.0",     ("dev-libs", "glib"))
+  ,("gobject-2.0",  ("dev-libs", "glib"))
+
   ,("gtk+-2.0",     ("x11-libs", "gtk+")) -- should be slot 2
+
   ,("cairo",        ("x11-libs", "cairo"))
   ,("cairo-ps",        ("x11-libs", "cairo"))
   ,("cairo-pdf",        ("x11-libs", "cairo"))
   ,("cairo-svg",        ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
   ,("pango",        ("x11-libs", "pango"))
-  ,("gio-2.0",      ("dev-libs", "glib"))
   ,("libglade-2.0", ("gnome-base", "libglade"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
