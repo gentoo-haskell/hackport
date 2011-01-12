@@ -261,33 +261,61 @@ table :: [(String, (String, String))]
 table =
   [("gconf-2.0",    ("gnome-base", "gconf"))
 
-  ,("gthread-2.0",  ("dev-libs", "glib")) -- should be slot 2
-  ,("gio-2.0",      ("dev-libs", "glib"))
-  ,("glib-2.0",     ("dev-libs", "glib"))
-  ,("gobject-2.0",  ("dev-libs", "glib"))
+  ,("gio-2.0",                ("dev-libs", "glib"))
+  ,("gio-unix-2.0",           ("dev-libs", "glib"))
+  ,("glib-2.0",               ("dev-libs", "glib"))
+  ,("gmodule-2.0",            ("dev-libs", "glib"))
+  ,("gmodule-export-2.0",     ("dev-libs", "glib"))
+  ,("gmodule-no-export-2.0",  ("dev-libs", "glib"))
+  ,("gobject-2.0",            ("dev-libs", "glib"))
+  ,("gthread-2.0",            ("dev-libs", "glib")) -- should be slot 2
 
-  ,("gtk+-2.0",     ("x11-libs", "gtk+")) -- should be slot 2
+  ,("gtk+-2.0",            ("x11-libs", "gtk+")) -- should be slot 2
+  ,("gdk-2.0",             ("x11-libs", "gtk+"))
+  ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+"))
+  ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+"))
+  ,("gdk-x11-2.0",         ("x11-libs", "gtk+"))
+  ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+"))
+  ,("gtk+-x11-2.0",        ("x11-libs", "gtk+"))
 
-  ,("cairo",        ("x11-libs", "cairo"))
-  ,("cairo-ps",        ("x11-libs", "cairo"))
+  ,("cairo",            ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
+  ,("cairo-ft",         ("x11-libs", "cairo"))
+  ,("cairo-ps",         ("x11-libs", "cairo"))
+  ,("cairo-png",        ("x11-libs", "cairo"))
   ,("cairo-pdf",        ("x11-libs", "cairo"))
-  ,("cairo-svg",        ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
-  ,("pangocairo",       ("x11-libs", "cairo"))
-  ,("pango",        ("x11-libs", "pango"))
+  ,("cairo-svg",        ("x11-libs", "cairo"))
+  ,("cairo-xlib",         ("x11-libs", "cairo"))
+  ,("cairo-xlib-xrender", ("x11-libs", "cairo"))
+
+  ,("pangocairo",       ("x11-libs", "pango"))
+  ,("pangoft2",         ("x11-libs", "pango"))
+  ,("pango",            ("x11-libs", "pango"))
+  ,("pangoxft",         ("x11-libs", "pango"))
+  ,("pangox",           ("x11-libs", "pango"))
+
   ,("libglade-2.0", ("gnome-base", "libglade"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
   ,("webkit-1.0", ("net-libs","webkit-gtk"))
+
   ,("gstreamer-0.10",              ("media-libs", "gstreamer"))
-  ,("gstreamer-audio-0.10",        ("media-libs","gst-plugins-base"))
-  ,("gstreamer-base-0.10",         ("media-libs","gstreamer"))
+  ,("gstreamer-base-0.10",         ("media-libs", "gstreamer"))
+  ,("gstreamer-check-0.10",        ("media-libs", "gstreamer"))
   ,("gstreamer-controller-0.10",   ("media-libs", "gstreamer"))
   ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer"))
   ,("gstreamer-net-0.10",          ("media-libs", "gstreamer"))
+
+  ,("gstreamer-app-0.10",          ("media-libs", "gst-plugins-base"))
+  ,("gstreamer-audio-0.10",        ("media-libs", "gst-plugins-base"))
+  ,("gstreamer-video-0.10",        ("media-libs", "gst-plugins-base"))
   ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base"))
+
   ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview"))
   ,("librsvg-2.0",                 ("gnome-base","librsvg"))
   ,("vte",                         ("x11-libs","vte"))
   ,("gtkglext-1.0",                ("x11-libs","gtkglext"))
+
   ,("curl",                        ("net-misc", "curl"))
+  ,("libxml2",                     ("dev-libs", "libxml2"))
+
   ]
