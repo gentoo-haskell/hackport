@@ -1,0 +1,35 @@
+
+Easier
+====
+
+* Document the commands in Main.hs with text from README.
+   commandDescription and commandSynopsis fields in the CommandUI records
+
+* continue on the CLI. see what additional flags the commands need, if there
+    still are any missing. set good default values, and make sure we don't
+    get any 'fromFlag' errors due to missing defaults for all commands
+
+* catch baseconstraints and upgrade ghc requirement
+      (like in vty-4.0.0.1: base >= 4 leads to ghc >= 6.10)
+
+Harder
+======
+
+* translate the dev-db/libpq dependency into virtual/postgresql-base
+    the cabal field to describe c libs should be translated if we know the
+    proper gentoo package name.
+
+* see if PackageIndex and IndexUtils from cabal install can be used instead of Index
+    see Distribution.Simple.PackageIndex
+    PackageIndex Ebuild?
+
+* make clear destinction of Hackage.Package and Portage.Package (notice the namespaces)
+   Look into Portage, P2 and whatever other hacks there might be and
+   properly separate them into the two categories.
+   See the already existing Portage.PackageId
+
+* look into Ebuild's field ePkgDesc and its uses
+
+* Merge the separate tool keyword-stat into hackport, and make it use the
+    hackport API.
+    See http://code.haskell.org/gentoo/keyword-stat/
