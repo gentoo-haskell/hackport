@@ -1,5 +1,5 @@
 Name:           hackport
-Version:	0.2.12
+Version:	0.2.13
 License:	GPL
 License-file:   LICENSE
 Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
@@ -12,8 +12,8 @@ Build-Type:     Simple
 Cabal-Version:  >=1.10
 
 source-repository head
-  type: darcs
-  location: http://code.haskell.org/gentoo/hackport/
+  type: git
+  location: git://github.com/gentoo-haskell/hackport.git
 
 Flag split-base
 
