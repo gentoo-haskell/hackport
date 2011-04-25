@@ -33,3 +33,7 @@ Harder
 * Merge the separate tool keyword-stat into hackport, and make it use the
     hackport API.
     See http://code.haskell.org/gentoo/keyword-stat/
+
+* Pick keywords from latest available ebuild
+
+* Autogenerate metadata.xml from .cabal file if does not present
