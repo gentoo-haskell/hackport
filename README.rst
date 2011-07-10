@@ -11,13 +11,33 @@ The main purpose for Hackport is to interact with Hackage and create
 Ebuilds from Cabal packages. It also does handy functions to compare
 hackage, the overlay and the portage tree.
 
+Quick start
+-----------
+
+1. Build hackport binary by hand (or install it from haskell overlay).
+2. Setup hackport database into overlay you plan to merge new ebuilds:
+
+    $ mkdir ~/overlays
+    $ cd ~/overlays
+    $ git clone git clone git://github.com/gentoo-haskell/gentoo-haskell.git
+    $ cd gentoo-haskell
+    $ hackport update
+    $ ls -1 .hackport/
+        00-index.tar
+        00-index.tar.gz
+
+3. Add your ~/overlays/gentoo-haskell to PORTDIR_OVERLAY in /etc/make.conf.
+
+Done! Now you can `hackport merge <package-name>` to get an ebuild merged to
+your overlay!
+
 Features
 --------
 
     'hackport update'
         Update the local copy of hackage's package list. You should run this
         every once in a while to get a more recent copy.
-    
+
     'hackport list [FILTER]'
         Print packages from hackage, with an optional substring matching.
 
