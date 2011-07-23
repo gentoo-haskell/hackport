@@ -17,6 +17,8 @@ Quick start
 1. Build hackport binary by hand (or install it from haskell overlay).
 2. Setup hackport database into overlay you plan to merge new ebuilds:
 
+::
+
     $ mkdir ~/overlays
     $ cd ~/overlays
     $ git clone git clone git://github.com/gentoo-haskell/gentoo-haskell.git
