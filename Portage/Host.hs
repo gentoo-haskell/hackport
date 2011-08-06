@@ -4,7 +4,6 @@ module Portage.Host
   ) where
 
 import Util (run_cmd)
-import Data.Char (isSpace)
 import Data.Maybe (fromJust, isJust, catMaybes)
 import Control.Applicative ( (<$>) )
 

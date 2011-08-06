@@ -9,8 +9,6 @@ import Control.Applicative
 
 import Text.XML.Light
 
-import Control.Monad
-
 data Metadata = Metadata
       { metadataHerds :: [String]
       -- , metadataMaintainers :: [String],

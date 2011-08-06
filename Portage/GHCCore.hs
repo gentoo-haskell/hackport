@@ -21,8 +21,6 @@ import Distribution.Text
 import Data.Maybe
 import Data.List ( nub )
 
-import Text.PrettyPrint.HughesPJ
-
 defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
