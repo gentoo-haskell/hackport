@@ -72,7 +72,6 @@ Executable	hackport
     Paths_hackport
     Main
     Overlays
-    Portage
     Portage.Version
     Portage.Dependency
     Portage.GHCCore
