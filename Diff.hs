@@ -23,7 +23,7 @@ import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Simple.Utils (equating)
 
 -- cabal-install
-import qualified Distribution.Client.IndexUtils as Index (getAvailablePackages )
+import qualified Distribution.Client.IndexUtils as Index (getSourcePackages)
 import qualified Distribution.Client.Types as Cabal
 import Distribution.Client.Utils (mergeBy, MergeResult(..))
 
@@ -61,8 +61,8 @@ showDiffState pkg st = (tabs (display pkg)) ++ " [" ++ (case st of
 runDiff :: Verbosity -> FilePath -> DiffMode -> Cabal.Repo -> IO ()
 runDiff verbosity overlayPath dm repo = do
   -- get package list from hackage
-  pkgDB <- Index.getAvailablePackages verbosity [ repo ]
-  let (Cabal.AvailablePackageDb hackageIndex _) = pkgDB
+  pkgDB <- Index.getSourcePackages verbosity [ repo ]
+  let (Cabal.SourcePackageDb hackageIndex _) = pkgDB
 
   -- get package list from the overlay
   overlay0 <- (Portage.loadLazy overlayPath)
@@ -71,8 +71,8 @@ runDiff verbosity overlayPath dm repo = do
   let (subHackage, subOverlay)
         = case dm of
             ShowPackages pkgs ->
-              (concatMap (Index.searchByNameSubstring hackageIndex) pkgs
-              ,concatMap (Index.searchByNameSubstring overlayIndex) pkgs)
+              (concatMap (concatMap snd . Index.searchByNameSubstring hackageIndex) pkgs
+              ,concatMap (concatMap snd . Index.searchByNameSubstring overlayIndex) pkgs)
             _ ->
               (Index.allPackages hackageIndex
               ,Index.allPackages overlayIndex)
@@ -100,7 +100,7 @@ showPackageCompareInfo pkgCmpInfo =
           GT -> ">"
           LT -> "<"
 
-diff :: [Cabal.AvailablePackage]
+diff :: [Cabal.SourcePackage]
      -> [Portage.ExistingEbuild]
      -> DiffMode
      -> IO ()

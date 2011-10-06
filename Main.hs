@@ -102,10 +102,10 @@ listAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (listVerbosity flags)
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   let repo = defaultRepo overlayPath
-  index <- fmap packageIndex (Index.getAvailablePackages verbosity [ repo ])
+  index <- fmap packageIndex (Index.getSourcePackages verbosity [ repo ])
   overlay <- Overlay.loadLazy overlayPath
   let pkgs | null extraArgs = Index.allPackages index
-           | otherwise = concatMap (Index.searchByNameSubstring index) extraArgs
+           | otherwise = concatMap (concatMap snd . Index.searchByNameSubstring index) extraArgs
       normalized = map (normalizeCabalPackageId . packageInfoId) pkgs
   let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
   mapM_ (putStrLn . pretty) decorated

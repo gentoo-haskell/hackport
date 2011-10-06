@@ -38,7 +38,7 @@ import Distribution.Simple.Utils
 
 import Network.URI
 
-import Distribution.Client.IndexUtils ( getAvailablePackages )
+import Distribution.Client.IndexUtils ( getSourcePackages )
 import Distribution.Client.HttpUtils ( downloadURI )
 import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
@@ -92,7 +92,7 @@ readPackageString args = do
 -- | Given a list of available packages, and maybe a preferred version,
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
-resolveVersion :: [AvailablePackage] -> Maybe Cabal.Version -> Maybe AvailablePackage
+resolveVersion :: [SourcePackage] -> Maybe Cabal.Version -> Maybe SourcePackage
 resolveVersion avails Nothing = Just $ maximumBy (comparing packageInfoId) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
@@ -119,14 +119,14 @@ merge verbosity repo serverURI args overlayPath = do
   overlay <- Overlay.loadLazy overlayPath
   -- portage_path <- Host.portage_dir `fmap` Host.getInfo
   -- portage <- Overlay.loadLazy portage_path
-  index <- fmap packageIndex $ getAvailablePackages verbosity [ repo ]
+  index <- fmap packageIndex $ getSourcePackages verbosity [ repo ]
 
   -- find all packages that maches the user specified package name
   availablePkgs <-
-    case Index.searchByName index user_pname_str of
-      Index.None -> throwEx (PackageNotFound user_pname_str)
-      Index.Ambiguous pkgs -> throwEx (ArgumentError ("Ambiguous name: " ++ unwords (map show pkgs)))
-      Index.Unambiguous pkg -> return pkg
+    case map snd (Index.searchByName index user_pname_str) of
+      [] -> throwEx (PackageNotFound user_pname_str)
+      [pkg] -> return pkg
+      pkgs  -> throwEx (ArgumentError ("Ambiguous name: " ++ unwords (map show pkgs)))
 
   -- select a single package taking into account the user specified version
   selectedPkg <-

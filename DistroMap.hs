@@ -46,7 +46,7 @@ import Data.Maybe ( fromJust )
 
 import Distribution.Verbosity
 import Distribution.Text ( display )
-import Distribution.Client.Types ( Repo, AvailablePackageDb(..), AvailablePackage(..) )
+import Distribution.Client.Types ( Repo, SourcePackageDb(..), SourcePackage(..) )
 import Distribution.Simple.Utils ( info )
 
 import qualified Data.Version as Cabal
@@ -83,8 +83,8 @@ distroMap verbosity repo portagePath overlayPath args = do
   info verbosity ("overlay map: " ++ show (Map.size overlayMap))
   info verbosity ("complete map: " ++ show (Map.size completeMap))
 
-  AvailablePackageDb { packageIndex = packageIndex } <-
-    CabalInstall.getAvailablePackages verbosity [repo]
+  SourcePackageDb { packageIndex = packageIndex } <-
+    CabalInstall.getSourcePackages verbosity [repo]
 
   let pkgs0 = map (map packageInfoId) (CabalInstall.allPackagesByName packageIndex)
       hackagePkgs = [ (Cabal.pkgName (head p), map Cabal.pkgVersion p) | p <- pkgs0 ]
