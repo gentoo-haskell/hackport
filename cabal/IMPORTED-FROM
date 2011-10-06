@@ -1,0 +1,7 @@
+http://darcs.haskell.org/cabal-branches/cabal-1.12
+
+Fri Jul 15 15:04:46 EEST 2011  Ian Lynagh <igloo@earth.li>
+  * Bump version number
+    hunk ./cabal/Cabal.cabal 2
+    -Version: 1.11.2
+    +Version: 1.12.0
