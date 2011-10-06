@@ -31,7 +31,7 @@ import System.Win32.Registry
          , regQueryValue, regQueryValueEx )
 import Control.Exception
          ( bracket )
-import Distribution.Compat.Exception
+import Distribution.Compat.ExceptionCI
          ( handleIO )
 import Foreign
          ( toBool, Storable(peek, sizeOf), castPtr, alloca )
