@@ -121,7 +121,7 @@ Features
                     - the ebuilds differ, or
                     - the overlay has a more recent version
 
-    'hackport make-ebuild <path/to/package.ebuild>'
+    'hackport make-ebuild <path/to/package.cabal>'
         Generates standalone .ebuild file from .cabal spec and stores result in same
         directory.
         Option is useful for packages not-on-hackage and for debug purposes.
