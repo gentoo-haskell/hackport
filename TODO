@@ -9,13 +9,13 @@ Easier
     still are any missing. set good default values, and make sure we don't
     get any 'fromFlag' errors due to missing defaults for all commands
 
-* catch baseconstraints and upgrade ghc requirement
+* catch base constraints and upgrade ghc requirement
       (like in vty-4.0.0.1: base >= 4 leads to ghc >= 6.10)
 
 Harder
 ======
 
-* translate the dev-db/libpq dependency into virtual/postgresql-base
+* translate the dev-db/libpq dependency into dev-db/postgresql-base
     the cabal field to describe c libs should be translated if we know the
     proper gentoo package name.
 
@@ -35,5 +35,3 @@ Harder
     See http://code.haskell.org/gentoo/keyword-stat/
 
 * Pick keywords from latest available ebuild
-
-* Autogenerate metadata.xml from .cabal file if does not present

@@ -48,6 +48,8 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
+    E.long_desc       = if null (Cabal.description pkg) then Cabal.synopsis pkg
+                                               else Cabal.description pkg,
     E.homepage        = thisHomepage,
     E.license         = Cabal.license pkg,
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,

@@ -21,6 +21,7 @@ import Distribution.Text (display)
 import System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
+                        , doesFileExist
                         )
 import System.Cmd (system)
 import System.FilePath ((</>))
@@ -46,6 +47,7 @@ import Distribution.Client.Types
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Host as Host
+import qualified Portage.Metadata as Portage
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
 
@@ -235,6 +237,17 @@ mergeEbuild verbosity target cat ebuild = do
   let edir = target </> cat </> E.name ebuild
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
+      emeta = "metadata.xml"
+      mpath = edir </> emeta
+      default_meta = Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
-  info verbosity $ "Writing " ++ elocal
+  notice verbosity $ "Writing " ++ elocal
   writeFile epath (display ebuild)
+
+  yet_meta <- doesFileExist mpath
+  if (not yet_meta) -- TODO: add --force-meta-rewrite to opts
+      then do notice verbosity $ "Writing " ++ emeta
+              writeFile mpath default_meta
+      else do current_meta <- readFile mpath
+              when (current_meta /= default_meta) $
+                  notice verbosity $ "Default and current " ++ emeta ++ " differ."
