@@ -35,3 +35,5 @@ Harder
     See http://code.haskell.org/gentoo/keyword-stat/
 
 * Pick keywords from latest available ebuild
+
+* hacport status --to-portage should warn about different 'ChangeLog' and 'metadata.xml' files
