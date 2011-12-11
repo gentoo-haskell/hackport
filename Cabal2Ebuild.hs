@@ -110,7 +110,8 @@ coreLibs = map Cabal.PackageName
   ,"ghc-prim"
   ,"haskell98"
   ,"hpc"          --has ebuild, but only in the overlay
-  ,"integer"
+  ,"integer"      -- up to ghc-6.10
+  ,"integer-gmp"  -- ghc-6.12+
   ,"old-locale"
   ,"old-time"
   ,"packedstring"
