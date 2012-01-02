@@ -117,10 +117,9 @@ coreLibs = map Cabal.PackageName
   ,"packedstring"
   ,"pretty"
   ,"process"
-  ,"random"
-  ,"readline"     --has ebuild, but only in the overlay
+  -- ,"random"    -- not a core package since ghc-7.2
   ,"rts"
   -- ,"syb"       -- was splitted off from ghc again
   ,"template-haskell"
-  ,"unix"         --has ebuild, but only in the overlay
+  ,"unix"         -- unsafe to upgrade
   ]
