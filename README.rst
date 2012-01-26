@@ -21,7 +21,7 @@ Quick start
 
     $ mkdir ~/overlays
     $ cd ~/overlays
-    $ git clone git clone git://github.com/gentoo-haskell/gentoo-haskell.git
+    $ git clone git://github.com/gentoo-haskell/gentoo-haskell.git
     $ cd gentoo-haskell
     $ hackport update
     $ ls -1 .hackport/
