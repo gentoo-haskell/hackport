@@ -9,7 +9,6 @@ import Control.Exception
 import Data.Maybe
 import Data.List
 import Distribution.Package
--- import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
                                        , GenericPackageDescription
@@ -25,6 +24,7 @@ import System.Directory ( getCurrentDirectory
                         )
 import System.Cmd (system)
 import System.FilePath ((</>))
+import System.Exit
 
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
@@ -40,13 +40,11 @@ import Distribution.Simple.Utils
 import Network.URI
 
 import Distribution.Client.IndexUtils ( getSourcePackages )
-import Distribution.Client.HttpUtils ( downloadURI )
 import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
-import qualified Portage.Host as Host
 import qualified Portage.Metadata as Portage
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
@@ -56,9 +54,6 @@ import qualified Portage.GHCCore as GHCCore
 import qualified Merge.Dependencies as Merge
 
 import Debug.Trace ( trace )
-
-(<->) :: String -> String -> String
-a <-> b = a ++ '-':b
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
@@ -101,7 +96,7 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
     match avail = ver == pkgVersion (packageInfoId avail)
 
 merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> IO ()
-merge verbosity repo serverURI args overlayPath = do
+merge verbosity repo _serverURI args overlayPath = do
   (m_category, user_pName, m_version) <-
     case readPackageString args of
       Left err -> throwEx err
@@ -192,36 +187,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
     fetchAndDigest
       verbosity
       (overlayPath </> display cat </> display norm_pkgName)
-      (display cabal_pkgId <.> "tar.gz")
-      (mkUri cabal_pkgId)
-
-mkUri :: Cabal.PackageIdentifier -> URI
-mkUri pid =
-   -- example:
-   -- http://hackage.haskell.org/packages/archive/Cabal/1.4.0.2/Cabal-1.4.0.2.tar.gz
-   fromJust $ parseURI $
-    "http://hackage.haskell.org/packages/archive/"
-             </> p_name </> p_ver </> p_name <-> p_ver <.> "tar.gz"
-  where
-    p_ver = display (packageVersion pid)
-    p_name = display (packageName pid)
 
 fetchAndDigest :: Verbosity
                -> FilePath -- ^ directory of ebuild
-               -> String -- ^ tarball name
-               -> URI -- ^ tarball uri
                -> IO ()
-fetchAndDigest verbosity ebuildDir tarballName tarballURI =
+fetchAndDigest verbosity ebuildDir =
   withWorkingDirectory ebuildDir $ do
-     repo_info <- Host.getInfo
-     let tarDestination = (Host.distfiles_dir repo_info) </> tarballName
-     downloadURI verbosity tarballURI tarDestination
-     -- Just err -> throwEx (Portage.DownloadFailed (show tarballURI) (show err))
-     -- TODO: downloadURI will throw a non-hackport exception if the
-     -- download fails
-     notice verbosity $ "Saved to " ++ tarDestination
-     notice verbosity "Recalculating digests..."
-     _ <- system "repoman manifest"
+     notice verbosity "Recalculating digests (repoman manifest)..."
+     r <- system "repoman manifest"
+     when (r /= ExitSuccess) $
+         notice verbosity "repoman manifest failed horribly. Do something about it!"
      return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
