@@ -45,6 +45,7 @@ import Portage.Version
 cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild pkg = Portage.ebuildTemplate {
     E.name        = map toLower cabalPkgName,
+    E.hackage_name= cabalPkgName,
     E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,

@@ -16,6 +16,7 @@ import qualified Paths_hackport(version)
 
 data EBuild = EBuild {
     name :: String,
+    hackage_name :: String, -- might differ a bit (we mangle case)
     version :: String,
     hackportVersion :: String,
     description :: String,
@@ -40,11 +41,12 @@ getHackportVersion Version {versionBranch=[]} = ""
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
     name = "foobar",
+    hackage_name = "FooBar",
     version = "0.1",
     hackportVersion = getHackportVersion Paths_hackport.version,
     description = "",
     long_desc = "",
-    homepage = "http://hackage.haskell.org/package/${PN}",
+    homepage = "http://hackage.haskell.org/package/${HACKAGE_N}",
     license = Cabal.UnknownLicense "xxx UNKNOWN xxx",
     slot = "0",
     keywords = ["~amd64","~x86"],
@@ -106,7 +108,9 @@ showEBuild ebuild =
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
   $ []
-  where expandVars = replaceMultiVars [(name ebuild, "${PN}")]
+  where expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
+                                      , (hackage_name ebuild, "${HACKAGE_N}")
+                                      ]
 
 ss :: String -> String -> String
 ss = showString
