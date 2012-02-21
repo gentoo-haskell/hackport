@@ -219,9 +219,10 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   , pkg <- return (lookup pn buildToolsTable) 
   ]
   where
-  cabalDeps = depL ++ depE
+  cabalDeps = filter notProvided $ depL ++ depE
   depL = maybe [] (buildTools.libBuildInfo) lib
   depE = concatMap buildTools (filter buildable (map buildInfo exes))
+  notProvided (Cabal.Dependency (Cabal.PackageName pn) _range) = pn `notElem` buildToolsProvided
 
 buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
@@ -232,6 +233,12 @@ buildToolsTable =
   , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
   ]
+
+-- tools that are provided by ghc or some other existing program
+-- so we do not need dependencies on them
+buildToolsProvided :: [String]
+buildToolsProvided = ["hsc2hs"]
+
 
 ---------------------------------------------------------------
 -- pkg-config
