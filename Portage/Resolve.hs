@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternGuards #-}
 
-module Portage.Resolve where
+module Portage.Resolve (resolveCategory) where
 
 import qualified Portage.Overlay as Overlay
 import qualified Portage.PackageId as Portage
@@ -69,4 +69,3 @@ resolveFullPortageName overlay pn =
              , mkC "net-libs"
              , mkC "sci-libs"
              ]
-

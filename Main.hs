@@ -297,24 +297,13 @@ updateAction flags extraArgs globalFlags = do
 
 data StatusFlags = StatusFlags {
     statusVerbosity :: Flag Verbosity,
-    statusToPortage :: Flag Bool
+    statusDirection :: Flag StatusDirection
   }
-
-instance Monoid StatusFlags where
-  mempty = StatusFlags {
-    statusVerbosity = mempty,
-    statusToPortage = mempty
-  }
-  mappend a b = StatusFlags {
-    statusVerbosity = combine statusVerbosity,
-    statusToPortage = combine statusToPortage
-  }
-    where combine field = field a `mappend` field b
 
 defaultStatusFlags :: StatusFlags
 defaultStatusFlags = StatusFlags {
     statusVerbosity = Flag normal,
-    statusToPortage = Flag False
+    statusDirection = Flag PortagePlusOverlay
   }
 
 statusCommand :: CommandUI StatusFlags
@@ -329,18 +318,22 @@ statusCommand = CommandUI {
       [ optionVerbosity statusVerbosity (\v flags -> flags { statusVerbosity = v })
       , option [] ["to-portage"]
           "Print only packages likely to be interesting to move to the portage tree."
-          statusToPortage (\v flags -> flags { statusToPortage = v })
-          trueArg
+          statusDirection (\v flags -> flags { statusDirection = v })
+          (noArg (Flag OverlayToPortage))
+      , option [] ["from-hackage"]
+          "Print only packages likely to be interesting to move from hackage tree."
+          statusDirection (\v flags -> flags { statusDirection = v })
+          (noArg (Flag HackageToOverlay))
       ]
   }
 
 statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
   let verbosity = fromFlag (statusVerbosity flags)
-      toPortdir = fromFlag (statusToPortage flags)
+      direction = fromFlag (statusDirection flags)
   portagePath <- getPortageDir verbosity globalFlags
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  runStatus verbosity portagePath overlayPath toPortdir args
+  runStatus verbosity portagePath overlayPath direction args
 
 -----------------------------------------------------------------------
 -- Merge
