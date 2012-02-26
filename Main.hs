@@ -28,11 +28,13 @@ import Distribution.Client.Update
 import qualified Distribution.Client.PackageIndex as Index
 import qualified Distribution.Client.IndexUtils as Index
 
+import Hackage (defaultRepo, defaultRepoURI)
+
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 import Portage.Host as Host ( getInfo, portage_dir )
 import Portage.PackageId ( normalizeCabalPackageId )
 
-import Network.URI ( URI(..), URIAuth(..), parseURI )
+import Network.URI ( URI(..), parseURI )
 import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
@@ -440,23 +442,6 @@ distroMapAction flags extraArgs globalFlags = do
 -----------------------------------------------------------------------
 -- Utils
 -----------------------------------------------------------------------
-
-defaultRepo :: FilePath -> Repo
-defaultRepo overlayPath =
-  Repo {
-      repoKind = Left hackage,
-      repoLocalDir = overlayPath </> ".hackport"
-    }
-  where
-    hackage = RemoteRepo server_name uri
-    server_name = "hackage.haskell.org"
-    uri  = URI "http:" (Just (URIAuth "" server_name "")) "/packages/archive" "" ""
-
-defaultRepoURI :: FilePath -> URI
-defaultRepoURI overlayPath =
-  case repoKind (defaultRepo overlayPath) of
-    Left (RemoteRepo { remoteRepoURI = uri }) -> uri
-    Right _                                   -> error $ "defaultRepoURI: unable to get URI for " ++ overlayPath
 
 getServerURI :: String -> IO URI
 getServerURI str =

@@ -68,9 +68,10 @@ Executable	hackport
     CacheFile
     Diff
     Error
-    Paths_hackport
+    Hackage
     Main
     Overlays
+    Paths_hackport
     Portage.Version
     Portage.Dependency
     Portage.GHCCore
