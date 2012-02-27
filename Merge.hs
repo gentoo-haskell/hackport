@@ -7,7 +7,7 @@ module Merge
 import Control.Monad.Error
 import Control.Exception
 import Data.Maybe
-import Data.List
+import Data.List as L
 import Distribution.Package
 import Distribution.PackageDescription ( PackageDescription(..)
                                        , FlagName(..)
@@ -123,7 +123,9 @@ merge verbosity repo _serverURI args overlayPath = do
     case map snd (Index.searchByName index user_pname_str) of
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
-      pkgs  -> throwEx (ArgumentError ("Ambiguous name: " ++ unwords (map show pkgs)))
+      pkgs  -> let names      = map (pkgName . packageInfoId . L.head) pkgs
+                   whole_list = map (L.intercalate "\n" . map (show . packageInfoId)) pkgs
+               in throwEx $ ArgumentError $ L.intercalate "\n---\n" $ ["Ambiguous names: " ++ show names] ++ whole_list
 
   -- select a single package taking into account the user specified version
   selectedPkg <-
