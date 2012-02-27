@@ -38,7 +38,7 @@ getInfo = fromJust `fmap`
 ----------
 
 getPaludisInfo :: IO (Maybe LocalInfo)
-getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "paludis --info"
+getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "cave info"
 
 parsePaludisInfo :: String -> LocalInfo
 parsePaludisInfo text =
@@ -52,16 +52,14 @@ parsePaludisInfo text =
                 ["Repository", nm] -> return (init nm)
                 _ -> fail "not a repository chunk"
     let dict = [ (head ln, unwords (tail ln)) | ln <- map words lns ]
-    location <- lookup "location:" dict
-    distfiles <- lookup "distdir:" dict
+    location <- lookup "location" dict
+    distfiles <- lookup "distdir" dict
     return (name, (location, distfiles))
-
-  knownRepos = ["installed-virtuals", "virtuals", "gentoo", "installed"]
 
   mkLocalInfo :: [(String, (String, String))] -> Maybe LocalInfo
   mkLocalInfo repos = do
     (gentooLocation, gentooDistfiles) <- lookup "gentoo" repos
-    let overlays = [ loc | (name, (loc, _dist)) <- repos, name `notElem` knownRepos ]
+    let overlays = [ loc | (name, (loc, _dist)) <- repos ]
     return (LocalInfo
               { distfiles_dir = gentooDistfiles
               , portage_dir = gentooLocation
