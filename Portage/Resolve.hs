@@ -1,6 +1,9 @@
 {-# LANGUAGE PatternGuards #-}
 
-module Portage.Resolve (resolveCategory) where
+module Portage.Resolve
+    ( resolveCategory
+    , resolveFullPortageName
+    ) where
 
 import qualified Portage.Overlay as Overlay
 import qualified Portage.PackageId as Portage
