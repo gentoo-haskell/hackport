@@ -2,6 +2,7 @@ module Portage.Use (
   -- * main structures
   UseFlag(..),
   Use,
+  dispUses,
   -- * helpers
   mkUse,
   mkNotUse,
@@ -41,6 +42,9 @@ showModificator (Q u)     = disp u <> Disp.char '?'
 showModificator (E u)     = disp u <> Disp.char '='
 showModificator (N u)     = Disp.char '-' <> disp u
 
+dispUses :: [UseFlag] -> Disp.Doc
+dispUses [] = Disp.empty
+dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ", ")) $ map disp  us
 
 type Use = String
 
