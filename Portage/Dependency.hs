@@ -79,7 +79,7 @@ simplify_group_table    p (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ 
 
 -- TODO: simplify constraints of type: >=a-v1; > a-v2 and such
 
--- o3) therwise sink:
+-- 3) otherwise sink:
 simplify_group_table    p (Just v)     l@(_)       e@(_)        oe@(_)       exact@(_) =   OrLaterVersionOf v p : simplify_group_table p Nothing  l e oe exact
 simplify_group_table    p ol@(Nothing) (Just v)    e@(_)        oe@(_)       exact@(_) =     LaterVersionOf v p : simplify_group_table p ol Nothing e oe exact
 simplify_group_table    p ol@(Nothing) l@(Nothing) (Just v)     oe@(_)       exact@(_) =   EarlierVersionOf v p : simplify_group_table p ol l Nothing oe exact
