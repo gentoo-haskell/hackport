@@ -203,6 +203,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat"))
       , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl"))
       , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2"))
+      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab"))
       ]
 
 ---------------------------------------------------------------
