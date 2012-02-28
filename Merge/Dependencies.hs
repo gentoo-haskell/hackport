@@ -105,7 +105,9 @@ resolveDependencies pkg mcompiler =
 
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
-    haskell_deps = haskellDependencies pkg
+    haskell_deps 
+        | treatAsLibrary = add_profile $ haskellDependencies pkg
+        | otherwise      = haskellDependencies pkg
     cabal_dep = cabalDependency pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
@@ -131,6 +133,7 @@ resolveDependencies pkg mcompiler =
                     dep_e = [ "${RDEPEND}" ],
                     rdep = extra_libs ++ pkg_config
                   }
+    add_profile = map (flip Portage.addDepUseFlag (Portage.mkQUse "profile")) 
 
 
 ---------------------------------------------------------------
@@ -139,7 +142,6 @@ resolveDependencies pkg mcompiler =
 
 haskellDependencies :: PackageDescription -> [Portage.Dependency]
 haskellDependencies pkg =
-  map (flip Portage.addDepUseFlag (Portage.mkQUse "profile")) $
     Portage.simplify_deps
       $ C2E.convertDependencies (Portage.Category "dev-haskell") (buildDepends pkg)
 
