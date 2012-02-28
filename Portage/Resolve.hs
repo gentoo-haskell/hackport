@@ -2,6 +2,7 @@
 
 module Portage.Resolve
     ( resolveCategory
+    , resolveCategories
     , resolveFullPortageName
     ) where
 

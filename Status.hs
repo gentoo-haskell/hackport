@@ -12,6 +12,7 @@ import qualified Data.Version as V()
 
 import Portage.Overlay
 import Portage.PackageId
+import Portage.Resolve
 
 import Control.Monad.State
 
@@ -30,6 +31,7 @@ import Control.Applicative
 -- cabal
 import Distribution.Client.Types ( Repo, SourcePackageDb(..), SourcePackage(..) )
 import Distribution.Verbosity
+import Distribution.Package (pkgName)
 import Distribution.Simple.Utils (comparing, die, equating)
 import Distribution.Text ( display, simpleParse )
 
@@ -75,11 +77,14 @@ fromStatus fs =
 
 
 
-loadHackage :: Verbosity -> Distribution.Client.Types.Repo -> IO [[PackageId]]
-loadHackage verbosity repo = do
+loadHackage :: Verbosity -> Distribution.Client.Types.Repo -> Overlay -> IO [[PackageId]]
+loadHackage verbosity repo overlay = do
     SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity [repo]
-    let pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
-                        . map (fromCabalPackageId (Category "dev-haskell")
+    let get_cat cabal_pkg = case resolveCategories overlay (pkgName cabal_pkg) of
+                                [cat] -> cat
+                                _     -> {- ambig -} Category "dev-haskell"
+        pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
+                        . map ((\p -> fromCabalPackageId (get_cat p) p)
                               . packageInfoId))
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
@@ -87,9 +92,8 @@ loadHackage verbosity repo = do
 status :: Verbosity -> FilePath -> FilePath -> IO (Map PackageName [FileStatus ExistingEbuild])
 status verbosity portdir overlaydir = do
     let repo = defaultRepo overlaydir
-    hackage <- loadHackage verbosity repo
-
     overlay <- loadLazy overlaydir
+    hackage <- loadHackage verbosity repo overlay
     portage <- filterByHerd ("haskell" `elem`) <$> loadLazy portdir
     let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
