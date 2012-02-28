@@ -63,10 +63,11 @@ import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
 import Distribution.Compiler
 
-import qualified Portage.Version as Portage
-import qualified Portage.PackageId as Portage
 import qualified Portage.Dependency as Portage
 import qualified Portage.Overlay as Portage
+import qualified Portage.PackageId as Portage
+import qualified Portage.Use as Portage
+import qualified Portage.Version as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -105,7 +106,9 @@ resolveDependencies overlay pkg mcompiler =
 
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
-    haskell_deps = haskellDependencies overlay pkg
+    haskell_deps
+        | treatAsLibrary = add_profile $ haskellDependencies overlay pkg
+        | otherwise      = haskellDependencies overlay pkg
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
@@ -131,6 +134,7 @@ resolveDependencies overlay pkg mcompiler =
                     dep_e = [ "${RDEPEND}" ],
                     rdep = extra_libs ++ pkg_config
                   }
+    add_profile = map (flip Portage.addDepUseFlag (Portage.mkQUse "profile"))
 
 
 ---------------------------------------------------------------
@@ -139,8 +143,8 @@ resolveDependencies overlay pkg mcompiler =
 
 haskellDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
 haskellDependencies overlay pkg =
-  Portage.simplify_deps
-    $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") (buildDepends pkg)
+    Portage.simplify_deps
+      $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") (buildDepends pkg)
 
 ---------------------------------------------------------------
 -- Cabal Dependency
@@ -173,7 +177,7 @@ cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNum
 
 compilerIdToDependency :: CompilerId -> Portage.Dependency
 compilerIdToDependency (CompilerId GHC versionNumbers) =
-  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc")
+  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc") []
 
 ---------------------------------------------------------------
 -- C Libraries
@@ -182,7 +186,7 @@ compilerIdToDependency (CompilerId GHC versionNumbers) =
 findCLibs :: PackageDescription -> [Portage.Dependency]
 findCLibs (PackageDescription { library = lib, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
-          (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p))
+          (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p) [])
   | p <- notFound
   ] ++ 
   found
@@ -197,15 +201,15 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib"))
-      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib"))
-      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql"))
-      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base"))
-      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev"))
-      , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat"))
-      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl"))
-      , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2"))
-      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab"))
+  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") [])
+      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib") [])
+      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") [])
+      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base") [])
+      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") [])
+      , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat") [])
+      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl") [])
+      , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2") [])
+      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab") [])
       ]
 
 ---------------------------------------------------------------
@@ -217,7 +221,7 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-build-tool" pn))
+                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-build-tool" pn) [])
   | Cabal.Dependency (Cabal.PackageName pn) _range <- cabalDeps
   , pkg <- return (lookup pn buildToolsTable) 
   ]
@@ -229,12 +233,12 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
 
 buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
-  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy"))
-  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex"))
-  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs"))
-  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
-  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools"))
+  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy") [])
+  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex") [])
+  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs") [])
+  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
+  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
+  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
   ]
 
 -- tools that are provided by ghc or some other existing program
@@ -259,7 +263,7 @@ resolvePkgConfigs overlay cdeps =
   [ case resolvePkgConfig overlay pkg of
       Just d -> d
       Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn))
+                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn) [])
   | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
 
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
