@@ -37,6 +37,7 @@ import Distribution.Text (display)
 import Data.Char          (toLower,isUpper)
 
 import Portage.Dependency
+import Portage.Use
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
 import qualified Portage.Resolve as Portage
@@ -82,13 +83,13 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             Nothing -> Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
-             (          [AnyVersionOf                            pn] -- ^ @\"-any\"@ version
-            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn] -- ^ @\"== v\"@
-            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn] -- ^ @\"> v\"@
-            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn] -- ^ @\"< v\"@
-            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn] -- ^ @\">= v\"@
-            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn] -- ^ @\"<= v\"@
-            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+             (          [AnyVersionOf                            pn []] -- ^ @\"-any\"@ version
+            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn []] -- ^ @\"== v\"@
+            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn []] -- ^ @\"> v\"@
+            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn []] -- ^ @\"< v\"@
+            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn []] -- ^ @\">= v\"@
+            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn []] -- ^ @\"<= v\"@
+            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn []] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\g1 g2 -> [DependEither (flatten g1 ++ flatten g2)   ] -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
             )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
@@ -97,7 +98,6 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
       flatten :: [Dependency] -> [[Dependency]]
       flatten [DependEither ds] = concatMap flatten ds
       flatten other = [other]
-
 
 coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName
