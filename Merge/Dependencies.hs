@@ -66,6 +66,7 @@ import Distribution.Compiler
 import qualified Portage.Version as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Dependency as Portage
+import qualified Portage.Overlay as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -90,8 +91,8 @@ emptyEDep = EDep
     dep_e = []
   }
 
-resolveDependencies :: PackageDescription -> Maybe CompilerId -> EDep
-resolveDependencies pkg mcompiler =
+resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId -> EDep
+resolveDependencies overlay pkg mcompiler =
     edeps
       {
         dep  = Portage.simplify_deps ( dep edeps),
@@ -104,12 +105,12 @@ resolveDependencies pkg mcompiler =
 
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
-    haskell_deps = haskellDependencies pkg
-    cabal_dep = cabalDependency pkg compiler
+    haskell_deps = haskellDependencies overlay pkg
+    cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
     build_tools = buildToolsDependencies pkg
-    pkg_config = pkgConfigDependencies pkg
+    pkg_config = pkgConfigDependencies overlay pkg
     edeps
         | treatAsLibrary = emptyEDep
                   {
@@ -136,10 +137,10 @@ resolveDependencies pkg mcompiler =
 -- Haskell packages
 ---------------------------------------------------------------
 
-haskellDependencies :: PackageDescription -> [Portage.Dependency]
-haskellDependencies pkg =
+haskellDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
+haskellDependencies overlay pkg =
   Portage.simplify_deps
-    $ C2E.convertDependencies (Portage.Category "dev-haskell") (buildDepends pkg)
+    $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") (buildDepends pkg)
 
 ---------------------------------------------------------------
 -- Cabal Dependency
@@ -147,9 +148,10 @@ haskellDependencies pkg =
 
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
-cabalDependency :: PackageDescription -> CompilerId -> Portage.Dependency
-cabalDependency pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _)) =
-  head $ C2E.convertDependency (Portage.Category "dev-haskell")
+cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
+cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _)) =
+  head $ C2E.convertDependency overlay
+                               (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                  finalCabalDep)
   where
@@ -245,25 +247,25 @@ buildToolsProvided = ["hsc2hs"]
 -- pkg-config
 ---------------------------------------------------------------
 
-pkgConfigDependencies :: PackageDescription -> [Portage.Dependency]
-pkgConfigDependencies (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs cabalDeps
+pkgConfigDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
+pkgConfigDependencies overlay (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
   where
   cabalDeps = depL ++ depE
   depL = maybe [] (pkgconfigDepends.libBuildInfo) lib
   depE = concatMap pkgconfigDepends (filter buildable (map buildInfo exes))
 
-resolvePkgConfigs :: [Cabal.Dependency] -> [Portage.Dependency]
-resolvePkgConfigs cdeps =
-  [ case resolvePkgConfig pkg of
+resolvePkgConfigs :: Portage.Overlay -> [Cabal.Dependency] -> [Portage.Dependency]
+resolvePkgConfigs overlay cdeps =
+  [ case resolvePkgConfig overlay pkg of
       Just d -> d
       Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
                        (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn))
   | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
 
-resolvePkgConfig :: Cabal.Dependency -> Maybe Portage.Dependency
-resolvePkgConfig (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
+resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
+resolvePkgConfig overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
   (cat,portname) <- lookup pn table
-  return . head $ (C2E.convertDependency (Portage.Category cat) (Cabal.Dependency (Cabal.PackageName portname) _cabalVersion))
+  return . head $ (C2E.convertDependency overlay (Portage.Category cat) (Cabal.Dependency (Cabal.PackageName portname) _cabalVersion))
 
 table :: [(String, (String, String))]
 table =

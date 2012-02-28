@@ -151,6 +151,7 @@ merge verbosity repo _serverURI args overlayPath = do
 
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> GenericPackageDescription -> Bool -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = do
+  overlay <- Overlay.loadLazy overlayPath
   let Right (pkgDesc0, flags) =
         finalizePackageDescription
           [ -- XXX: common things we should enable/disable?
@@ -171,7 +172,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                            , pn `notElem` excludePkgs
                            ]
                 in pkgDesc0 { buildDepends = deps }
-      edeps = Merge.resolveDependencies pkgDesc (Just compilerId)
+      edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
 
   debug verbosity ("Selected flags: " ++ show flags)
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)

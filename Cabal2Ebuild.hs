@@ -39,7 +39,9 @@ import Data.Char          (toLower,isUpper)
 import Portage.Dependency
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
+import qualified Portage.Resolve as Portage
 import qualified Portage.EBuild as E
+import qualified Portage.Overlay as O
 import Portage.Version
 
 cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
@@ -66,18 +68,18 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                          then E.homepage E.ebuildTemplate
                          else Cabal.homepage pkg
 
-convertDependencies :: Portage.Category -> [Cabal.Dependency] -> [Dependency]
-convertDependencies category = concatMap (convertDependency category)
+convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [Dependency]
+convertDependencies overlay category = concatMap (convertDependency overlay category)
 
-convertDependency :: Portage.Category -> Cabal.Dependency -> [Dependency]
-convertDependency _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
+convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> [Dependency]
+convertDependency overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
-convertDependency category (Cabal.Dependency pname versionRange)
+convertDependency overlay category (Cabal.Dependency pname versionRange)
   = convert versionRange
   where
-    -- XXX: not always true, we should look properly for deps in the overlay
-    -- to find the correct category
-    pn = Portage.PackageName category (Portage.normalizeCabalPackageName pname)
+    pn = case Portage.resolveFullPortageName overlay pname of
+            Just r  -> r
+            Nothing -> Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
              (          [AnyVersionOf                            pn] -- ^ @\"-any\"@ version
