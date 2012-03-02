@@ -122,3 +122,21 @@ Executable	hackport-guess-ghc-version
   ghc-options: -Wall
   other-modules:
     Portage.GHCCore
+
+Test-Suite test-resolve-category
+  Type:                 exitcode-stdio-1.0
+  Default-Language:     Haskell98
+  Main-Is:              tests/resolveCat.hs
+  Hs-Source-Dirs:       ., cabal/cabal, cabal/cabal-install
+  Build-Depends:        base >= 3 && < 5,
+                        bytestring,
+                        containers,
+                        directory,
+                        extensible-exceptions,
+                        filepath,
+                        HUnit,
+                        mtl,
+                        pretty,
+                        process,
+                        unix,
+                        xml
