@@ -204,7 +204,7 @@ staticTranslateExtraLib lib = lookup lib m
   m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") [])
       , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib") [])
       , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") [])
-      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "virtual" "postgresql-base") [])
+      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "dev-db" "postgresql-base") [])
       , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") [])
       , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat") [])
       , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl") [])
