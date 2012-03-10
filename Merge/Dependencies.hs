@@ -332,5 +332,6 @@ table =
 
   ,("curl",                        ("net-misc", "curl"))
   ,("libxml2",                     ("dev-libs", "libxml2"))
+  ,("libgsasl",                    ("virtual", "gsasl"))
 
   ]
