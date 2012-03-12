@@ -270,20 +270,20 @@ resolvePkgConfigs overlay cdeps =
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
 resolvePkgConfig overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
   (cat,portname) <- lookup pn table
-  return . head $ (C2E.convertDependency overlay (Portage.Category cat) (Cabal.Dependency (Cabal.PackageName portname) _cabalVersion))
+  return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) []
 
 table :: [(String, (String, String))]
 table =
   [("gconf-2.0",    ("gnome-base", "gconf"))
 
-  ,("gio-2.0",                ("dev-libs", "glib"))
-  ,("gio-unix-2.0",           ("dev-libs", "glib"))
-  ,("glib-2.0",               ("dev-libs", "glib"))
-  ,("gmodule-2.0",            ("dev-libs", "glib"))
-  ,("gmodule-export-2.0",     ("dev-libs", "glib"))
-  ,("gmodule-no-export-2.0",  ("dev-libs", "glib"))
-  ,("gobject-2.0",            ("dev-libs", "glib"))
-  ,("gthread-2.0",            ("dev-libs", "glib")) -- should be slot 2
+  ,("gio-2.0",                ("dev-libs", "glib:2"))
+  ,("gio-unix-2.0",           ("dev-libs", "glib:2"))
+  ,("glib-2.0",               ("dev-libs", "glib:2"))
+  ,("gmodule-2.0",            ("dev-libs", "glib:2"))
+  ,("gmodule-export-2.0",     ("dev-libs", "glib:2"))
+  ,("gmodule-no-export-2.0",  ("dev-libs", "glib:2"))
+  ,("gobject-2.0",            ("dev-libs", "glib:2"))
+  ,("gthread-2.0",            ("dev-libs", "glib:2"))
 
   ,("gtk+-2.0",            ("x11-libs", "gtk+")) -- should be slot 2
   ,("gdk-2.0",             ("x11-libs", "gtk+"))
