@@ -8,7 +8,7 @@ module Status
 
 import AnsiColor
 
-import qualified Portage.Version as V (versionNumber)
+import qualified Portage.Version as V (is_live)
 
 import Portage.Overlay
 import Portage.PackageId
@@ -176,10 +176,10 @@ fromHackageFilter = Map.mapMaybe $ \ sts ->
                         case st of
                             HackageOnly _ -> False
                             _ -> True
-        -- treat versionNumber=[9999*] as oldest version not avoid masking hackage releases
-        mangle_live_versions v = case V.versionNumber v of
-            [n] | n >= 9999 && (all (== '9') . show) n -> v {versionNumber=[-1]}
-            _                                          -> v
+        -- treat live as oldest version not avoid masking hackage releases
+        mangle_live_versions v
+            | V.is_live v = v {versionNumber=[-1]}
+            | otherwise   = v
         latestVersion = List.maximumBy (compare `on` mangle_live_versions . pkgVersion . ebuildId . fromStatus) sts
     in case latestVersion of
             HackageOnly _ | not (null inEbuilds) -> Just sts

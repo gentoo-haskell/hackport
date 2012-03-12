@@ -14,6 +14,7 @@ module Portage.Version (
     Suffix(..),
     fromCabalVersion,
     toCabalVersion,
+    is_live
   ) where
 
 import qualified Distribution.Version as Cabal
@@ -31,6 +32,13 @@ data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
                        , versionRevision :: Int           -- revision, 0 means none
                        }
   deriving (Eq, Ord, Show, Read)
+
+-- foo-9999* is treated as live ebuild
+is_live :: Version -> Bool
+is_live v =
+    case versionNumber v of
+        [n] | n >= 9999 && (all (== '9') . show) n -> True
+        _                                          -> False
 
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
