@@ -139,8 +139,7 @@ ghc701_pkgs =
   , p "old-time" [1,0,0,6]
   , p "pretty" [1,0,1,2]
   , p "process" [1,0,1,4]
-  , p "random" [1,0,0,3]
-  , p "syb" [0,2,2] -- not distributed with ghc-7, but ghc-7 PDEPENDs on it
+--   , p "random" [1,0,0,3] -- will not be shipped starting from ghc-7.2
   , p "template-haskell" [2,5,0,0]
 --  , p "time" [1,2,0,3] package is upgradeable
   , p "unix" [2,4,1,0]
@@ -166,8 +165,8 @@ ghc6123_pkgs =
   , p "old-time" [1,0,0,5]
   , p "pretty" [1,0,1,1]
   , p "process" [1,0,1,3]
-  , p "random" [1,0,0,2]
-  , p "syb" [0,1,0,2]
+--  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
+--  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,1]
 --  , p "time" [1,1,4] package is upgradeable
   , p "unix" [2,4,0,2]
@@ -193,8 +192,8 @@ ghc6122_pkgs =
   , p "old-time" [1,0,0,4]
   , p "pretty" [1,0,1,1]
   , p "process" [1,0,1,2]
-  , p "random" [1,0,0,2]
-  , p "syb" [0,1,0,2]
+--  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
+--  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,1]
 --  , p "time" [1,1,4] package is upgradeable
   , p "unix" [2,4,0,1]
@@ -220,8 +219,8 @@ ghc6121_pkgs =
   , p "old-time" [1,0,0,3]
   , p "pretty" [1,0,1,1]
   , p "process" [1,0,1,2]
-  , p "random" [1,0,0,2]
-  , p "syb" [0,1,0,2]
+--  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
+--  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,0]
 --  , p "time" [1,1,4] package is upgradeable
   , p "unix" [2,4,0,0]
@@ -246,8 +245,8 @@ ghc6104_pkgs =
   , p "packedstring" [0,1,0,1]
   , p "pretty" [1,0,1,0]
   , p "process" [1,0,1,1]
-  , p "random" [1,0,0,1]
-  , p "syb" [0,1,0,1]
+--  , p "random" [1,0,0,1] -- will not be shipped starting from ghc-7.2
+--  , p "syb" [0,1,0,1] -- not distributed with ghc-7
   , p "template-haskell" [2,3,0,1]
 --  , p "time" [1,1,4] package is upgradeable
   , p "unix" [2,3,2,0]
@@ -271,8 +270,8 @@ ghc6101_pkgs =
   , p "packedstring" [0,1,0,1]
   , p "pretty" [1,0,1,0]
   , p "process" [1,0,1,0]
-  , p "random" [1,0,0,1]
-  , p "syb" [0,1,0,0]
+--  , p "random" [1,0,0,1] -- will not be shipped starting from ghc-7.2
+--  , p "syb" [0,1,0,0] -- not distributed with ghc-7
   , p "template-haskell" [2,3,0,0]
   , p "unix" [2,3,1,0]
   ]
@@ -293,7 +292,7 @@ ghc682_pkgs =
   , p "packedstring" [0,1,0,0]
   , p "pretty" [1,0,0,0]
   , p "process" [1,0,0,0]
-  , p "random" [1,0,0,0]
+--  , p "random" [1,0,0,0] -- will not be shipped starting from ghc-7.2
 --  , p "readline" [1,0,1,0]
   , p "template-haskell" [2,2,0,0]
   , p "unix" [2,3,0,0]
