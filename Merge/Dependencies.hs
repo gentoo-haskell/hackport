@@ -237,6 +237,7 @@ buildToolsTable =
   [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy") [])
   , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex") [])
   , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs") [])
+  , ("cabal-install", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") [])
   , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
   , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
   , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
