@@ -51,7 +51,7 @@ showDepend (DependIfUse        useflag dep@(DependEither _))
 showDepend (DependIfUse        useflag dep)
               = disp useflag <> Disp.text "? " <>  Disp.parens (disp dep)
 showDepend (ThisMajorOf        v p u) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*' <> dispUses u
-showDepend (AllOf              dp ) = Disp.text "( " <> hsep (map showDepend dp) <> Disp.text " )"
+showDepend (AllOf              dp ) = Disp.text " ( " <> hsep (map showDepend dp) <> Disp.text " ) "
 
 {- Here goes code for dependencies simplification -}
 
