@@ -55,6 +55,8 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , pkgconfigDepends
                                        , hasLibs
                                        , specVersion
+                                       , TestSuite(..)
+                                       , targetBuildDepends
                                        )
 import Data.Maybe ( isNothing )
 import Data.List ( nub )
@@ -109,6 +111,9 @@ resolveDependencies overlay pkg mcompiler =
     haskell_deps
         | treatAsLibrary = add_profile $ haskellDependencies overlay pkg
         | otherwise      = haskellDependencies overlay pkg
+    test_deps
+        | (not . null) (testSuites pkg) = testDependencies overlay pkg
+        | otherwise = [] -- tests not enabled
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
@@ -124,18 +129,30 @@ resolveDependencies overlay pkg mcompiler =
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config
+                            ++ test_deps
                   }
         | otherwise = emptyEDep
                   {
                     dep = ghc_dep
                           : cabal_dep
                           : build_tools
-                          ++ haskell_deps,
+                          ++ haskell_deps
+                          ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
                     rdep = extra_libs ++ pkg_config
                   }
     add_profile = map (flip Portage.addDepUseFlag (Portage.mkQUse "profile"))
 
+---------------------------------------------------------------
+-- Test-suite dependencies
+---------------------------------------------------------------
+
+testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
+testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
+    [Portage.DependIfUse (Portage.UseFlag "test") (Portage.AllOf $ Portage.simplify_deps deps)]
+    where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
+          cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
+          deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
 
 ---------------------------------------------------------------
 -- Haskell packages

@@ -59,12 +59,14 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
                    ++ (if hasExe then ["bin"] else [])
+                   ++ (if hasTests then ["test-suite"] else [])
                    ++ maybe [] (const (["lib","profile","haddock","hoogle"]
                         ++ if cabalPkgName == "hscolour" then [] else ["hscolour"])
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
   } where
         cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
         hasExe = (not . null) (Cabal.executables pkg) 
+        hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
                          else Cabal.homepage pkg
