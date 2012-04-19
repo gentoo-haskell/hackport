@@ -123,13 +123,13 @@ resolveDependencies overlay pkg mcompiler =
         | treatAsLibrary = emptyEDep
                   {
                     dep = cabal_dep
-                          : build_tools,
+                          : build_tools
+                          ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
                     rdep = ghc_dep
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config
-                            ++ test_deps
                   }
         | otherwise = emptyEDep
                   {
