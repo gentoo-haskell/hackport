@@ -23,10 +23,10 @@ data Dependency = AnyVersionOf               PackageName [UseFlag]
                 | EarlierVersionOf   Version PackageName [UseFlag]  -- <package-version
                 | OrLaterVersionOf   Version PackageName [UseFlag]  -- >=package-version
                 | OrEarlierVersionOf Version PackageName [UseFlag]  -- <=package-version
-                | DependEither [[Dependency]]           -- || ( depend_group1 ..depend_groupN )
-                | DependIfUse  UseFlag    Dependency   -- use? ( depend )
+                | DependEither [Dependency]                         -- || ( depend1 depend2 ... )
+                | DependIfUse  UseFlag    Dependency                -- use? ( depend )
                 | ThisMajorOf        Version PackageName [UseFlag]  -- =package-version*
-                | AllOf        [Dependency]                -- ( package-version* )
+                | AllOf        [Dependency]                         -- ( depend1 depend2 ... )
     deriving (Eq,Show)
 
 instance Text Dependency where
@@ -37,21 +37,18 @@ a <-> b = a <> Disp.char '-' <> b
 
 showDepend :: Dependency -> Disp.Doc
 showDepend (AnyVersionOf         p u) = disp p <> dispUses u 
-showDepend (ThisVersionOf      v p u) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 }<>dispUses u
+showDepend (ThisVersionOf      v p u) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 } <> dispUses u
 showDepend (LaterVersionOf     v p u) = Disp.char '>' <> disp p <-> disp v <> dispUses u
 showDepend (EarlierVersionOf   v p u) = Disp.char '<' <> disp p <-> disp v <> dispUses u
 showDepend (OrLaterVersionOf   v p u) = Disp.text ">=" <> disp p <-> disp v <> dispUses u
 showDepend (OrEarlierVersionOf v p u) = Disp.text "<=" <> disp p <-> disp v <> dispUses u
-showDepend (DependEither       dep_groups0)
-              = Disp.text "|| " <> spaceParens dep_groups
-  where dep_groups = map (spaceParens . map disp) dep_groups0
-        spaceParens ds = Disp.parens (Disp.space <> Disp.hsep ds <> Disp.space)
-showDepend (DependIfUse        useflag dep@(DependEither _))
-              = disp useflag <> Disp.text "? " <> disp dep 
-showDepend (DependIfUse        useflag dep)
-              = disp useflag <> Disp.text "? " <>  Disp.parens (disp dep)
+showDepend (DependEither       dp ) = Disp.text "|| ( " <> hsep (map showDepend dp) <> Disp.text " )"
+showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text "? " <> pp_deps dep
+    where -- special case to avoid double braces: test? ( ( ) )
+          pp_deps (AllOf _) =                               disp dep
+          pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")
 showDepend (ThisMajorOf        v p u) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*' <> dispUses u
-showDepend (AllOf              dp ) = Disp.text " ( " <> hsep (map showDepend dp) <> Disp.text " ) "
+showDepend (AllOf              dp ) = Disp.text "( " <> hsep (map showDepend dp) <> Disp.text " )"
 
 {- Here goes code for dependencies simplification -}
 
@@ -182,5 +179,5 @@ addDepUseFlag (EarlierVersionOf v p u) n = EarlierVersionOf v p (n:u)
 addDepUseFlag (OrLaterVersionOf v p u) n = OrLaterVersionOf v p (n:u)
 addDepUseFlag (OrEarlierVersionOf v p u) n = OrEarlierVersionOf v p (n:u)
 addDepUseFlag (ThisMajorOf v p u) n = ThisMajorOf v p (n:u)
-addDepUseFlag (DependEither d) n = DependEither $ map (\d' -> map (flip addDepUseFlag n) d') d
+addDepUseFlag (DependEither d) n = DependEither $ map (flip addDepUseFlag n) d
 addDepUseFlag (DependIfUse u d) n = DependIfUse u (addDepUseFlag d n)

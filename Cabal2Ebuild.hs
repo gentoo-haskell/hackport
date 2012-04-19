@@ -37,7 +37,6 @@ import Distribution.Text (display)
 import Data.Char          (toLower,isUpper)
 
 import Portage.Dependency
-import Portage.Use
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
 import qualified Portage.Resolve as Portage
@@ -75,7 +74,7 @@ convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [D
 convertDependencies overlay category = concatMap (convertDependency overlay category)
 
 convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> [Dependency]
-convertDependency overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
+convertDependency _overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
   | pname `elem` coreLibs = []      -- no explicit dep on core libs
 convertDependency overlay category (Cabal.Dependency pname versionRange)
   = convert versionRange
@@ -92,14 +91,10 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn []] -- ^ @\">= v\"@
             )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn []] -- ^ @\"<= v\"@
             )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn []] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
-            )(\g1 g2 -> [DependEither (flatten g1 ++ flatten g2)   ] -- ^ @\"_ || _\"@ union
+            )(\g1 g2 -> [DependEither                       (g1 ++ g2)] -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
             )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
             )
-      where
-      flatten :: [Dependency] -> [[Dependency]]
-      flatten [DependEither ds] = concatMap flatten ds
-      flatten other = [other]
 
 coreLibs :: [Cabal.PackageName]
 coreLibs = map Cabal.PackageName
