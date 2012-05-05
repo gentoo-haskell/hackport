@@ -48,6 +48,7 @@ showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text "? " <> 
           pp_deps (AllOf _) =                               disp dep
           pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")
 showDepend (ThisMajorOf        v p u) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*' <> dispUses u
+showDepend (AllOf []) = Disp.empty
 showDepend (AllOf              (d:dp) ) =
     Disp.text "( " <> showDepend d <> line
     <> Disp.hcat (map (\x -> Disp.text "\t\t\t" <> (showDepend x) <> line) dp)
@@ -149,6 +150,7 @@ simplify_deps deps = (concatMap (simplify_group.nub) $
           cmpMaybe _         _         = False
           --
 getPackage :: Dependency -> Maybe PackageName
+getPackage (AllOf _dependency) = Nothing
 getPackage (AnyVersionOf package _uses) = Just package
 getPackage (ThisVersionOf      _version package _uses) = Just package
 getPackage (LaterVersionOf     _version package _uses) = Just package
@@ -160,6 +162,7 @@ getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
 getPackage (ThisMajorOf        _version package _uses) = Just package
 
 getUses  :: Dependency -> Maybe [UseFlag]
+getUses (AllOf _d) = Nothing
 getUses (AnyVersionOf _p u) = Just u
 getUses (ThisVersionOf _v _p u) = Just u
 getUses (LaterVersionOf _v _p u) = Just u
@@ -176,6 +179,7 @@ getPackagePart dep = fromJust (getPackage dep)
 
 --
 addDepUseFlag :: Dependency -> UseFlag -> Dependency
+addDepUseFlag (AllOf d) n = AllOf $ map (flip addDepUseFlag n) d
 addDepUseFlag (AnyVersionOf p u) n = AnyVersionOf p (n:u)
 addDepUseFlag (ThisVersionOf v p u) n = ThisVersionOf v p (n:u)
 addDepUseFlag (LaterVersionOf v p u) n = LaterVersionOf v p (n:u)
