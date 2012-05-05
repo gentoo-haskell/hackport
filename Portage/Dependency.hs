@@ -1,6 +1,7 @@
 module Portage.Dependency (
   Dependency(..),
   simplify_deps,
+  simplifyUseDeps,
   addDepUseFlag
   ) where
 
@@ -13,7 +14,7 @@ import Portage.PackageId
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( (<>), hsep )
 
-import Data.Maybe ( fromJust, catMaybes )
+import Data.Maybe ( fromJust, catMaybes, mapMaybe )
 import Data.List ( nub, groupBy, partition, sortBy )
 import Data.Ord           (comparing)
 
@@ -189,3 +190,30 @@ addDepUseFlag (OrEarlierVersionOf v p u) n = OrEarlierVersionOf v p (n:u)
 addDepUseFlag (ThisMajorOf v p u) n = ThisMajorOf v p (n:u)
 addDepUseFlag (DependEither d) n = DependEither $ map (flip addDepUseFlag n) d
 addDepUseFlag (DependIfUse u d) n = DependIfUse u (addDepUseFlag d n)
+
+--
+-- | remove all Use dependencies that overlap with normal dependencies
+simplifyUseDeps :: [Dependency]         -- list where use deps is taken
+                    -> [Dependency]     -- list where common deps is taken
+                    -> [Dependency]     -- result deps
+simplifyUseDeps ds cs =
+    let (u,o) = partition isUseDep ds
+        c = mapMaybe getPackage cs
+    in (mapMaybe (intersectD c) u)++o
+
+intersectD :: [PackageName] -> Dependency -> Maybe Dependency
+intersectD fs (DependIfUse u d) = intersectD fs d >>= Just . DependIfUse u
+intersectD fs (DependEither ds) =
+    let ds' = mapMaybe (intersectD fs) ds
+    in if null ds' then Nothing else Just (DependEither ds')
+intersectD fs (AllOf ds) =
+    let ds' = mapMaybe (intersectD fs) ds
+    in if null ds' then Nothing else Just (AllOf ds')
+intersectD fs x =
+    let pkg = fromJust $ getPackage x -- this is unsafe but will save from error later
+    in if any (==pkg) fs then Nothing else Just x
+
+isUseDep :: Dependency -> Bool
+isUseDep (DependIfUse _ _) = True
+isUseDep _ = False
+--

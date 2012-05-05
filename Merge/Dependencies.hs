@@ -98,12 +98,16 @@ resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId
 resolveDependencies overlay pkg mcompiler =
     edeps
       {
-        dep  = Portage.simplify_deps ( dep edeps),
-        rdep = Portage.simplify_deps (rdep edeps)
+        dep  = dep2,
+        rdep = rdep2
         -- todo: if rdep includes cabal or ghc, make sure it's the same
         -- version as in dep
       }
   where
+    dep1  = Portage.simplify_deps ( dep edeps)
+    dep2  = Portage.simplifyUseDeps dep1 (dep1++rdep2)
+    rdep1  = Portage.simplify_deps (rdep edeps)
+    rdep2  = Portage.simplifyUseDeps rdep1 rdep1
     compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
