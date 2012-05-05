@@ -48,7 +48,11 @@ showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text "? " <> 
           pp_deps (AllOf _) =                               disp dep
           pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")
 showDepend (ThisMajorOf        v p u) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*' <> dispUses u
-showDepend (AllOf              dp ) = Disp.text "( " <> hsep (map showDepend dp) <> Disp.text " )"
+showDepend (AllOf              (d:dp) ) =
+    Disp.text "( " <> showDepend d <> line
+    <> Disp.hcat (map (\x -> Disp.text "\t\t\t" <> (showDepend x) <> line) dp)
+    <> Disp.text "\t\t)"
+    where line = Disp.char '\n'
 
 {- Here goes code for dependencies simplification -}
 
