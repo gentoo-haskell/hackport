@@ -307,13 +307,13 @@ table =
   ,("gobject-2.0",            ("dev-libs", "glib:2"))
   ,("gthread-2.0",            ("dev-libs", "glib:2"))
 
-  ,("gtk+-2.0",            ("x11-libs", "gtk+")) -- should be slot 2
-  ,("gdk-2.0",             ("x11-libs", "gtk+"))
-  ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+"))
-  ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+"))
-  ,("gdk-x11-2.0",         ("x11-libs", "gtk+"))
-  ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+"))
-  ,("gtk+-x11-2.0",        ("x11-libs", "gtk+"))
+  ,("gtk+-2.0",            ("x11-libs", "gtk+:2"))
+  ,("gdk-2.0",             ("x11-libs", "gtk+:2"))
+  ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+:2"))
+  ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+:2"))
+  ,("gdk-x11-2.0",         ("x11-libs", "gtk+:2"))
+  ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+:2"))
+  ,("gtk+-x11-2.0",        ("x11-libs", "gtk+:2"))
 
   ,("cairo",            ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
   ,("cairo-ft",         ("x11-libs", "cairo"))
@@ -333,7 +333,7 @@ table =
   ,("libglade-2.0", ("gnome-base", "libglade"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
-  ,("webkit-1.0", ("net-libs","webkit-gtk"))
+  ,("webkit-1.0", ("net-libs","webkit-gtk:2"))
 
   ,("gstreamer-0.10",              ("media-libs", "gstreamer"))
   ,("gstreamer-base-0.10",         ("media-libs", "gstreamer"))
@@ -347,9 +347,9 @@ table =
   ,("gstreamer-video-0.10",        ("media-libs", "gst-plugins-base"))
   ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base"))
 
-  ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview"))
+  ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview:2.0"))
   ,("librsvg-2.0",                 ("gnome-base","librsvg"))
-  ,("vte",                         ("x11-libs","vte"))
+  ,("vte",                         ("x11-libs","vte:0"))
   ,("gtkglext-1.0",                ("x11-libs","gtkglext"))
 
   ,("curl",                        ("net-misc", "curl"))
