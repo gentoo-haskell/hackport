@@ -91,7 +91,7 @@ mkIndex pids = fromList
 
 packageNamesFromPackageIndex :: PackageIndex -> [PackageName]
 packageNamesFromPackageIndex pix = nub $
-  [ (pkgName . sourcePackageId) p | (p:_) <- allPackagesByName pix ]
+  [ (pkgName . sourcePackageId) p | (_,(p:_)) <- allPackagesByName pix ]
 
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
