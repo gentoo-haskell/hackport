@@ -20,7 +20,7 @@ Flag split-base
 Executable	hackport
   Main-Is:	Main.hs
   Default-Language: Haskell98
-  Hs-Source-Dirs: ., cabal/cabal, cabal/cabal-install
+  Hs-Source-Dirs: ., cabal, cabal/Cabal, cabal/cabal-install
   Build-Depends:
     base >= 2.0 && < 5,
     filepath,
