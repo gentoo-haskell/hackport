@@ -11,6 +11,7 @@ import Portage.Dependency
 
 import Distribution.License as Cabal
 
+import Data.String.Utils
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
@@ -93,7 +94,7 @@ showEBuild ebuild =
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (description ebuild). nl.
   ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
-  ss "SRC_URI=". quote (src_uri ebuild). nl.
+  ss "SRC_URI=". quote (toMirror $ src_uri ebuild). nl.
   nl.
   ss "LICENSE=". quote (convertLicense . license $ ebuild).
      (if null (licenseComment . license $ ebuild) then id
@@ -111,6 +112,7 @@ showEBuild ebuild =
   where expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
+        toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/" 
 
 ss :: String -> String -> String
 ss = showString

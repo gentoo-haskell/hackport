@@ -29,6 +29,7 @@ Executable	hackport
     network,
     pretty,
     regex-compat,
+    MissingH,
     HTTP >= 4000.0.3,
     zlib,
     tar,
