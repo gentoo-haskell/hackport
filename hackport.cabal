@@ -37,6 +37,7 @@ Executable	hackport
     xml>1.3.5,
     array,
     extensible-exceptions,
+    time,
     -- cabal depends
     unix
 
@@ -141,5 +142,6 @@ Test-Suite test-resolve-category
                         mtl,
                         pretty,
                         process,
+                        time,
                         unix,
                         xml
