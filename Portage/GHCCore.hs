@@ -25,7 +25,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc6101, ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc742, ghc761]
+ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc742, ghc761]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -118,9 +118,6 @@ ghc6121 = (ghc [6,12,1], mkIndex ghc6121_pkgs)
 ghc6104 :: (CompilerId, PackageIndex)
 ghc6104 = (ghc [6,10,4], mkIndex ghc6104_pkgs)
 
-ghc6101 :: (CompilerId, PackageIndex)
-ghc6101 = (ghc [6,10,1], mkIndex ghc6101_pkgs)
-
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 
@@ -159,7 +156,7 @@ ghc742_pkgs =
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
   , p "directory" [1,1,0,2]
-  , p "extensible-exceptions" [0,1,1,4] -- stopped shipping in 7.6
+-- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,3,0,0]
   , p "ghc-prim" [0,2,0,0]
   , p "haskell2010" [1,1,0,1]
@@ -184,7 +181,7 @@ ghc701_pkgs =
 --  , p "Cabal" [1,10,0,0]  package is upgradeable
   , p "containers" [0,4,0,0]
   , p "directory" [1,1,0,0]
-  , p "extensible-exceptions" [0,1,1,2]
+-- , p "extensible-exceptions" [0,1,1,2] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,2,0,0]
   , p "haskell2010" [1,0,0,0]
   , p "haskell98" [1,1,0,0]
@@ -211,7 +208,7 @@ ghc6123_pkgs =
 --  , p "Cabal" [1,8,0,6]  package is upgradeable
   , p "containers" [0,3,0,0]
   , p "directory" [1,0,1,1]
-  , p "extensible-exceptions" [0,1,1,1]
+-- , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,4]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,5]
@@ -238,7 +235,7 @@ ghc6122_pkgs =
 --  , p "Cabal" [1,8,0,4]  package is upgradeable
   , p "containers" [0,3,0,0]
   , p "directory" [1,0,1,1]
-  , p "extensible-exceptions" [0,1,1,1]
+--  , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,4]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,5]
@@ -265,7 +262,7 @@ ghc6121_pkgs =
 --  , p "Cabal" [1,8,0,2]  package is upgradeable
   , p "containers" [0,3,0,0]
   , p "directory" [1,0,1,0]
-  , p "extensible-exceptions" [0,1,1,1]
+--  , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,3]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,4]
@@ -292,7 +289,7 @@ ghc6104_pkgs =
 --  , p "Cabal" [1,6,0,3] package is upgradeable
   , p "containers" [0,2,0,1 ]
   , p "directory" [1,0,0,3]
-  , p "extensible-exceptions" [0,1,1,0]
+--  , p "extensible-exceptions" [0,1,1,0] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,2]
   , p "haskell98" [1,0,1,0]
   , p "hpc" [0,5,0,3]
@@ -306,30 +303,6 @@ ghc6104_pkgs =
   , p "template-haskell" [2,3,0,1]
 --  , p "time" [1,1,4] package is upgradeable
   , p "unix" [2,3,2,0]
-  ]
-
-ghc6101_pkgs :: [PackageIdentifier]
-ghc6101_pkgs =
-  [ p "array" [0,2,0,0]
-  , p "base" [3,0,3,0]
-  , p "base" [4,0,0,0]
-  , p "bytestring" [0,9,1,4]
---  , p "Cabal" [1,6,0,1] package is upgradeable
-  , p "containers" [0,2,0,0]
-  , p "directory" [1,0,0,2]
-  , p "extensible-exceptions" [0,1,0,0]
-  , p "filepath" [1,1,0,1]
-  , p "haskell98" [1,0,1,0]
-  , p "hpc" [0,5,0,2]
-  , p "old-locale" [1,0,0,1]
-  , p "old-time" [1,0,0,1]
-  , p "packedstring" [0,1,0,1]
-  , p "pretty" [1,0,1,0]
-  , p "process" [1,0,1,0]
---  , p "random" [1,0,0,1] -- will not be shipped starting from ghc-7.2
---  , p "syb" [0,1,0,0] -- not distributed with ghc-7
-  , p "template-haskell" [2,3,0,0]
-  , p "unix" [2,3,1,0]
   ]
 
 p :: String -> [Int] -> PackageIdentifier
