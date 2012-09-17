@@ -25,7 +25,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc682, ghc6101, ghc6104, ghc6121, ghc6122, ghc6123, ghc701]
+ghcs = [ghc6101, ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc742, ghc761]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -43,6 +43,8 @@ cabalFromGHC ver = lookup ver table
           ,([6,12,2], Version [1,8,0,4] [])
           ,([6,12,3], Version [1,8,0,6] [])
           ,([7,0,1],  Version [1,10,0,0] [])
+          ,([7,4,2],  Version [1,14,0] [])
+          ,([7,6,1],  Version [1,16,0] [])
           ]
 
 platform :: Platform
@@ -95,7 +97,12 @@ packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
--- | Core packages in GHC 7.0.1 as a 'PackageIndex'.
+ghc761 :: (CompilerId, PackageIndex)
+ghc761 = (ghc [7,6,1], mkIndex ghc761_pkgs)
+
+ghc742 :: (CompilerId, PackageIndex)
+ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
+
 ghc701 :: (CompilerId, PackageIndex)
 ghc701 = (ghc [7,0,1], mkIndex ghc701_pkgs)
 
@@ -114,13 +121,63 @@ ghc6104 = (ghc [6,10,4], mkIndex ghc6104_pkgs)
 ghc6101 :: (CompilerId, PackageIndex)
 ghc6101 = (ghc [6,10,1], mkIndex ghc6101_pkgs)
 
-ghc682 :: (CompilerId, PackageIndex)
-ghc682 = (ghc [6,8,2], mkIndex ghc682_pkgs)
-
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+
+ghc761_pkgs :: [PackageIdentifier]
+ghc761_pkgs =
+  [ p "array" [0,4,0,1]
+  , p "base" [4,6,0,0]
+--  , p "binary" [0,5,1,1]  package is upgradeable
+  , p "bytestring" [0,10,0,8]
+--  , p "Cabal" [1,16,0]  package is upgradeable
+  , p "containers" [0,5,0,0]
+  , p "deepseq" [1,3,0,1]
+  , p "directory" [1,2,0,0]
+  , p "filepath" [1,3,0,1]
+  , p "ghc-prim" [0,3,0,0]
+  , p "haskell2010" [1,1,1,0]
+  , p "haskell98" [2,0,0,2]
+  , p "hoopl" [3,9,0,0] -- used by libghc
+  , p "hpc" [0,6,0,0] -- used by libghc
+  , p "integer-gmp" [0,5,0,0]
+  , p "old-locale" [1,0,0,5]
+  , p "old-time" [1,1,0,1]
+  , p "pretty" [1,1,1,0]
+  , p "process" [1,1,0,2]
+  , p "template-haskell" [2,8,0,0] -- used by libghc
+  , p "time" [1,4,0,1] -- used by haskell98
+  , p "unix" [2,6,0,0]
+  ]
+
+ghc742_pkgs :: [PackageIdentifier]
+ghc742_pkgs = 
+  [ p "array" [0,4,0,0]
+  , p "base" [4,5,1,0]
+--  , p "binary" [0,5,1,0]  package is upgradeable
+  , p "bytestring" [0,9,1,8]
+--  , p "Cabal" [1,14,0]  package is upgradeable
+  , p "containers" [0,4,2,1]
+  , p "directory" [1,1,0,2]
+  , p "extensible-exceptions" [0,1,1,4] -- stopped shipping in 7.6
+  , p "filepath" [1,3,0,0]
+  , p "ghc-prim" [0,2,0,0]
+  , p "haskell2010" [1,1,0,1]
+  , p "haskell98" [2,0,0,1]
+  , p "hoopl" [3,8,7,3] -- used by libghc
+  , p "hpc" [0,5,1,1] -- used by libghc
+  , p "integer-gmp" [0,4,0,0]
+  , p "old-locale" [1,0,0,4]
+  , p "old-time" [1,1,0,0]
+  , p "pretty" [1,1,1,0]
+  , p "process" [1,1,0,1]
+  , p "template-haskell" [2,7,0,0] -- used by libghc
+  , p "time" [1,4] -- used by haskell98
+  , p "unix" [2,5,1,1]
+  ]
+
 ghc701_pkgs :: [PackageIdentifier]
-ghc701_pkgs = 
+ghc701_pkgs =
   [ p "array" [0,3,0,2]
   , p "base" [4,3,0,0]
   , p "bytestring" [0,9,1,8]
@@ -146,7 +203,7 @@ ghc701_pkgs =
   ]
 
 ghc6123_pkgs :: [PackageIdentifier]
-ghc6123_pkgs = 
+ghc6123_pkgs =
   [ p "array" [0,3,0,1]
   , p "base" [3,0,3,2]
   , p "base" [4,2,0,2]
@@ -200,7 +257,7 @@ ghc6122_pkgs =
   ]
 
 ghc6121_pkgs :: [PackageIdentifier]
-ghc6121_pkgs = 
+ghc6121_pkgs =
   [ p "array" [0,3,0,0]
   , p "base" [3,0,3,2]
   , p "base" [4,2,0,0]
@@ -273,28 +330,6 @@ ghc6101_pkgs =
 --  , p "syb" [0,1,0,0] -- not distributed with ghc-7
   , p "template-haskell" [2,3,0,0]
   , p "unix" [2,3,1,0]
-  ]
-
-ghc682_pkgs :: [PackageIdentifier]
-ghc682_pkgs =
-  [ p "array" [0,1,0,0]
-  , p "base" [3,0,1,0]
-  , p "bytestring" [0,9,0,1]
---  , p "Cabal" [1,2,3,0] package is upgradeable
-  , p "containers" [0,1,0,1]
-  , p "dictionary" [1,0,0,0]
-  , p "filepath" [1,1,0,0]
-  , p "haskell98" [1,0,1,0]
-  , p "hpc" [0,5,0,0]
-  , p "old-locale" [1,0,0,0]
-  , p "old-time" [1,0,0,0]
-  , p "packedstring" [0,1,0,0]
-  , p "pretty" [1,0,0,0]
-  , p "process" [1,0,0,0]
---  , p "random" [1,0,0,0] -- will not be shipped starting from ghc-7.2
---  , p "readline" [1,0,1,0]
-  , p "template-haskell" [2,2,0,0]
-  , p "unix" [2,3,0,0]
   ]
 
 p :: String -> [Int] -> PackageIdentifier
