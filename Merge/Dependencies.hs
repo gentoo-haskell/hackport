@@ -296,7 +296,9 @@ resolvePkgConfig overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion)
 
 table :: [(String, (String, String))]
 table =
-  [("gconf-2.0",    ("gnome-base", "gconf"))
+  [
+   ("alsa",         ("media-libs", "alsa-lib"))
+  ,("gconf-2.0",    ("gnome-base", "gconf"))
 
   ,("gio-2.0",                ("dev-libs", "glib:2"))
   ,("gio-unix-2.0",           ("dev-libs", "glib:2"))
