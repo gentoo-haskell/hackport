@@ -232,6 +232,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2") [])
       , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab") [])
       , ("zmq", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "zeromq") [])
+      , ("SDL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libsdl") [])
       ]
 
 ---------------------------------------------------------------
