@@ -113,7 +113,7 @@ resolveDependencies overlay pkg mcompiler =
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
     haskell_deps
-        | treatAsLibrary = add_profile $ haskellDependencies overlay pkg
+        | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay pkg
         | otherwise      = haskellDependencies overlay pkg
     test_deps
         | (not . null) (testSuites pkg) = testDependencies overlay pkg
@@ -130,7 +130,7 @@ resolveDependencies overlay pkg mcompiler =
                           : build_tools
                           ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
-                    rdep = ghc_dep
+                    rdep = set_build_slot ghc_dep
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config
@@ -145,7 +145,8 @@ resolveDependencies overlay pkg mcompiler =
                     dep_e = [ "${RDEPEND}" ],
                     rdep = extra_libs ++ pkg_config
                   }
-    add_profile = map (flip Portage.addDepUseFlag (Portage.mkQUse "profile"))
+    add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
+    set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
 ---------------------------------------------------------------
 -- Test-suite dependencies
@@ -198,7 +199,7 @@ cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNum
 
 compilerIdToDependency :: CompilerId -> Portage.Dependency
 compilerIdToDependency (CompilerId GHC versionNumbers) =
-  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc") []
+  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc") Portage.AnySlot []
 
 ---------------------------------------------------------------
 -- C Libraries
@@ -207,7 +208,7 @@ compilerIdToDependency (CompilerId GHC versionNumbers) =
 findCLibs :: PackageDescription -> [Portage.Dependency]
 findCLibs (PackageDescription { library = lib, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
-          (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p) [])
+          (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p) Portage.AnySlot [])
   | p <- notFound
   ] ++ 
   found
@@ -222,17 +223,17 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") [])
-      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib") [])
-      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") [])
-      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "dev-db" "postgresql-base") [])
-      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") [])
-      , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat") [])
-      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl") [])
-      , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2") [])
-      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab") [])
-      , ("zmq", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "zeromq") [])
-      , ("SDL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libsdl") [])
+  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") Portage.AnySlot [])
+      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib") Portage.AnySlot [])
+      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") Portage.AnySlot [])
+      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "dev-db" "postgresql-base") Portage.AnySlot [])
+      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") Portage.AnySlot [])
+      , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat") Portage.AnySlot [])
+      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl") Portage.AnySlot [])
+      , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2") Portage.AnySlot [])
+      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab") Portage.AnySlot [])
+      , ("zmq", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "zeromq") Portage.AnySlot [])
+      , ("SDL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libsdl") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
@@ -244,7 +245,7 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-build-tool" pn) [])
+                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-build-tool" pn) Portage.AnySlot [])
   | Cabal.Dependency (Cabal.PackageName pn) _range <- cabalDeps
   , pkg <- return (lookup pn buildToolsTable) 
   ]
@@ -256,13 +257,13 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
 
 buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
-  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy") [])
-  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex") [])
-  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs") [])
-  , ("cabal-install", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") [])
-  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
-  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
-  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") [])
+  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy") Portage.AnySlot [])
+  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex") Portage.AnySlot [])
+  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs") Portage.AnySlot [])
+  , ("cabal-install", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") Portage.AnySlot [])
+  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
+  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
+  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
   ]
 
 -- tools that are provided by ghc or some other existing program
@@ -287,76 +288,76 @@ resolvePkgConfigs overlay cdeps =
   [ case resolvePkgConfig overlay pkg of
       Just d -> d
       Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn) [])
+                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn) Portage.AnySlot [])
   | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
 
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
 resolvePkgConfig overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
-  (cat,portname) <- lookup pn table
-  return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) []
+  (cat,portname, slot) <- lookup pn table
+  return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) slot []
 
-table :: [(String, (String, String))]
+table :: [(String, (String, String, Portage.SlotDepend))]
 table =
   [
-   ("alsa",         ("media-libs", "alsa-lib"))
-  ,("gconf-2.0",    ("gnome-base", "gconf"))
+   ("alsa",         ("media-libs", "alsa-lib", Portage.AnySlot))
+  ,("gconf-2.0",    ("gnome-base", "gconf", Portage.AnySlot))
 
-  ,("gio-2.0",                ("dev-libs", "glib:2"))
-  ,("gio-unix-2.0",           ("dev-libs", "glib:2"))
-  ,("glib-2.0",               ("dev-libs", "glib:2"))
-  ,("gmodule-2.0",            ("dev-libs", "glib:2"))
-  ,("gmodule-export-2.0",     ("dev-libs", "glib:2"))
-  ,("gmodule-no-export-2.0",  ("dev-libs", "glib:2"))
-  ,("gobject-2.0",            ("dev-libs", "glib:2"))
-  ,("gthread-2.0",            ("dev-libs", "glib:2"))
+  ,("gio-2.0",                ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gio-unix-2.0",           ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("glib-2.0",               ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gmodule-2.0",            ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gmodule-export-2.0",     ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gmodule-no-export-2.0",  ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gobject-2.0",            ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gthread-2.0",            ("dev-libs", "glib", Portage.GivenSlot "2"))
 
-  ,("gtk+-2.0",            ("x11-libs", "gtk+:2"))
-  ,("gdk-2.0",             ("x11-libs", "gtk+:2"))
-  ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+:2"))
-  ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+:2"))
-  ,("gdk-x11-2.0",         ("x11-libs", "gtk+:2"))
-  ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+:2"))
-  ,("gtk+-x11-2.0",        ("x11-libs", "gtk+:2"))
+  ,("gtk+-2.0",            ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gdk-2.0",             ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gdk-x11-2.0",         ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gtk+-x11-2.0",        ("x11-libs", "gtk+", Portage.GivenSlot "2"))
 
-  ,("cairo",            ("x11-libs", "cairo")) -- need [svg] for dev-haskell/cairo
-  ,("cairo-ft",         ("x11-libs", "cairo"))
-  ,("cairo-ps",         ("x11-libs", "cairo"))
-  ,("cairo-png",        ("x11-libs", "cairo"))
-  ,("cairo-pdf",        ("x11-libs", "cairo"))
-  ,("cairo-svg",        ("x11-libs", "cairo"))
-  ,("cairo-xlib",         ("x11-libs", "cairo"))
-  ,("cairo-xlib-xrender", ("x11-libs", "cairo"))
+  ,("cairo",            ("x11-libs", "cairo", Portage.AnySlot)) -- need [svg] for dev-haskell/cairo
+  ,("cairo-ft",         ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-ps",         ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-png",        ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-pdf",        ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-svg",        ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-xlib",         ("x11-libs", "cairo", Portage.AnySlot))
+  ,("cairo-xlib-xrender", ("x11-libs", "cairo", Portage.AnySlot))
 
-  ,("pangocairo",       ("x11-libs", "pango"))
-  ,("pangoft2",         ("x11-libs", "pango"))
-  ,("pango",            ("x11-libs", "pango"))
-  ,("pangoxft",         ("x11-libs", "pango"))
-  ,("pangox",           ("x11-libs", "pango"))
+  ,("pangocairo",       ("x11-libs", "pango", Portage.AnySlot))
+  ,("pangoft2",         ("x11-libs", "pango", Portage.AnySlot))
+  ,("pango",            ("x11-libs", "pango", Portage.AnySlot))
+  ,("pangoxft",         ("x11-libs", "pango", Portage.AnySlot))
+  ,("pangox",           ("x11-libs", "pango", Portage.AnySlot))
 
-  ,("libglade-2.0", ("gnome-base", "libglade"))
-  ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs"))
-  ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs"))
-  ,("webkit-1.0", ("net-libs","webkit-gtk:2"))
+  ,("libglade-2.0", ("gnome-base", "libglade", Portage.AnySlot))
+  ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
+  ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
+  ,("webkit-1.0", ("net-libs","webkit-gtk", Portage.GivenSlot "2"))
 
-  ,("gstreamer-0.10",              ("media-libs", "gstreamer"))
-  ,("gstreamer-base-0.10",         ("media-libs", "gstreamer"))
-  ,("gstreamer-check-0.10",        ("media-libs", "gstreamer"))
-  ,("gstreamer-controller-0.10",   ("media-libs", "gstreamer"))
-  ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer"))
-  ,("gstreamer-net-0.10",          ("media-libs", "gstreamer"))
+  ,("gstreamer-0.10",              ("media-libs", "gstreamer", Portage.AnySlot))
+  ,("gstreamer-base-0.10",         ("media-libs", "gstreamer", Portage.AnySlot))
+  ,("gstreamer-check-0.10",        ("media-libs", "gstreamer", Portage.AnySlot))
+  ,("gstreamer-controller-0.10",   ("media-libs", "gstreamer", Portage.AnySlot))
+  ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer", Portage.AnySlot))
+  ,("gstreamer-net-0.10",          ("media-libs", "gstreamer", Portage.AnySlot))
 
-  ,("gstreamer-app-0.10",          ("media-libs", "gst-plugins-base"))
-  ,("gstreamer-audio-0.10",        ("media-libs", "gst-plugins-base"))
-  ,("gstreamer-video-0.10",        ("media-libs", "gst-plugins-base"))
-  ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base"))
+  ,("gstreamer-app-0.10",          ("media-libs", "gst-plugins-base", Portage.AnySlot))
+  ,("gstreamer-audio-0.10",        ("media-libs", "gst-plugins-base", Portage.AnySlot))
+  ,("gstreamer-video-0.10",        ("media-libs", "gst-plugins-base", Portage.AnySlot))
+  ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base", Portage.AnySlot))
 
-  ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview:2.0"))
-  ,("librsvg-2.0",                 ("gnome-base","librsvg"))
-  ,("vte",                         ("x11-libs","vte:0"))
-  ,("gtkglext-1.0",                ("x11-libs","gtkglext"))
+  ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview", Portage.GivenSlot "2.0"))
+  ,("librsvg-2.0",                 ("gnome-base","librsvg", Portage.AnySlot))
+  ,("vte",                         ("x11-libs","vte", Portage.GivenSlot "0"))
+  ,("gtkglext-1.0",                ("x11-libs","gtkglext", Portage.AnySlot))
 
-  ,("curl",                        ("net-misc", "curl"))
-  ,("libxml2",                     ("dev-libs", "libxml2"))
-  ,("libgsasl",                    ("virtual", "gsasl"))
+  ,("curl",                        ("net-misc", "curl", Portage.AnySlot))
+  ,("libxml2",                     ("dev-libs", "libxml2", Portage.AnySlot))
+  ,("libgsasl",                    ("virtual", "gsasl", Portage.AnySlot))
 
   ]

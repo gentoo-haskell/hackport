@@ -1,8 +1,10 @@
-module Portage.Dependency (
-  Dependency(..),
-  simplify_deps,
-  simplifyUseDeps,
-  addDepUseFlag
+module Portage.Dependency
+  ( Dependency(..)
+  , SlotDepend(..)
+  , simplify_deps
+  , simplifyUseDeps
+  , addDepUseFlag
+  , setSlotDep
   ) where
 
 import Portage.Version
@@ -18,15 +20,25 @@ import Data.Maybe ( fromJust, catMaybes, mapMaybe )
 import Data.List ( nub, groupBy, partition, sortBy )
 import Data.Ord           (comparing)
 
-data Dependency = AnyVersionOf               PackageName [UseFlag]
-                | ThisVersionOf      Version PackageName [UseFlag]  -- ~package-version
-                | LaterVersionOf     Version PackageName [UseFlag]  -- >package-version
-                | EarlierVersionOf   Version PackageName [UseFlag]  -- <package-version
-                | OrLaterVersionOf   Version PackageName [UseFlag]  -- >=package-version
-                | OrEarlierVersionOf Version PackageName [UseFlag]  -- <=package-version
-                | DependEither [Dependency]                         -- || ( depend1 depend2 ... )
+data SlotDepend = AnySlot          -- nothing special
+                | AnyBuildTimeSlot -- ':='
+                | GivenSlot String -- ':slotno'
+    deriving (Eq, Show)
+
+dispSlot :: SlotDepend -> Disp.Doc
+dispSlot AnySlot          = Disp.empty
+dispSlot AnyBuildTimeSlot = Disp.text ":="
+dispSlot (GivenSlot slot) = Disp.text (':' : slot)
+
+data Dependency = AnyVersionOf               PackageName SlotDepend [UseFlag]
+                | ThisVersionOf      Version PackageName SlotDepend [UseFlag]  -- ~package-version
+                | LaterVersionOf     Version PackageName SlotDepend [UseFlag]  -- >package-version
+                | EarlierVersionOf   Version PackageName SlotDepend [UseFlag]  -- <package-version
+                | OrLaterVersionOf   Version PackageName SlotDepend [UseFlag]  -- >=package-version
+                | OrEarlierVersionOf Version PackageName SlotDepend [UseFlag]  -- <=package-version
+                | ThisMajorOf        Version PackageName SlotDepend [UseFlag]  -- =package-version*
                 | DependIfUse  UseFlag    Dependency                -- use? ( depend )
-                | ThisMajorOf        Version PackageName [UseFlag]  -- =package-version*
+                | DependEither [Dependency]                         -- || ( depend1 depend2 ... )
                 | AllOf        [Dependency]                         -- ( depend1 depend2 ... )
     deriving (Eq,Show)
 
@@ -37,18 +49,18 @@ instance Text Dependency where
 a <-> b = a <> Disp.char '-' <> b
 
 showDepend :: Dependency -> Disp.Doc
-showDepend (AnyVersionOf         p u) = disp p <> dispUses u 
-showDepend (ThisVersionOf      v p u) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 } <> dispUses u
-showDepend (LaterVersionOf     v p u) = Disp.char '>' <> disp p <-> disp v <> dispUses u
-showDepend (EarlierVersionOf   v p u) = Disp.char '<' <> disp p <-> disp v <> dispUses u
-showDepend (OrLaterVersionOf   v p u) = Disp.text ">=" <> disp p <-> disp v <> dispUses u
-showDepend (OrEarlierVersionOf v p u) = Disp.text "<=" <> disp p <-> disp v <> dispUses u
+showDepend (AnyVersionOf         p s u) = disp p <> dispSlot s <> dispUses u
+showDepend (ThisVersionOf      v p s u) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 } <> dispSlot s <> dispUses u
+showDepend (LaterVersionOf     v p s u) = Disp.char '>' <> disp p <-> disp v <> dispSlot s <> dispUses u
+showDepend (EarlierVersionOf   v p s u) = Disp.char '<' <> disp p <-> disp v <> dispSlot s <> dispUses u
+showDepend (OrLaterVersionOf   v p s u) = Disp.text ">=" <> disp p <-> disp v <> dispSlot s <> dispUses u
+showDepend (OrEarlierVersionOf v p s u) = Disp.text "<=" <> disp p <-> disp v <> dispSlot s <> dispUses u
+showDepend (ThisMajorOf        v p s u) = Disp.char '='  <> disp p <-> disp v <> Disp.char '*' <> dispSlot s <> dispUses u
 showDepend (DependEither       dp ) = Disp.text "|| ( " <> hsep (map showDepend dp) <> Disp.text " )"
 showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text "? " <> pp_deps dep
     where -- special case to avoid double braces: test? ( ( ) )
           pp_deps (AllOf _) =                               disp dep
           pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")
-showDepend (ThisMajorOf        v p u) = Disp.char '=' <> disp p <-> disp v <> Disp.char '*' <> dispUses u
 showDepend (AllOf []) = Disp.empty
 showDepend (AllOf              (d:dp) ) =
     Disp.text "( " <> showDepend d <> line
@@ -59,6 +71,7 @@ showDepend (AllOf              (d:dp) ) =
 {- Here goes code for dependencies simplification -}
 
 simplify_group_table :: PackageName ->
+                        SlotDepend  ->
                         [UseFlag]   ->
                         Maybe Version ->
                         Maybe Version ->
@@ -68,36 +81,37 @@ simplify_group_table :: PackageName ->
 
 -- simplify_group_table p ol       l        e        oe       exact
 -- 1) trivial cases:
-simplify_group_table    p u Nothing  Nothing  Nothing  Nothing  Nothing  = error $ display p ++ ": unsolvable constraints"
-simplify_group_table    p u (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p u]
-simplify_group_table    p u Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p u]
-simplify_group_table    p u Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p u]
-simplify_group_table    p u Nothing  Nothing  Nothing  (Just v) Nothing  = [OrEarlierVersionOf v p u]
-simplify_group_table    p u Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVersionOf v p u]
+simplify_group_table    p _s _u Nothing  Nothing  Nothing  Nothing  Nothing  = error $ display p ++ ": unsolvable constraints"
+simplify_group_table    p s u (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p s u]
+simplify_group_table    p s u Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p s u]
+simplify_group_table    p s u Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p s u]
+simplify_group_table    p s u Nothing  Nothing  Nothing  (Just v) Nothing  = [OrEarlierVersionOf v p s u]
+simplify_group_table    p s u Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVersionOf v p s u]
 
 -- 2) simplification passes
-simplify_group_table    p u (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ _ _)) Nothing Nothing
+simplify_group_table    p s u (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ _ _)) Nothing Nothing
     -- special case: >=a-v.N a<v.(N+1)   => =a-v.N*
-    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1 Nothing [] 0) p u]
-    | otherwise                                        = [OrLaterVersionOf (Version v1 Nothing [] 0) p u, EarlierVersionOf (Version v2 Nothing [] 0) p u]
+    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1 Nothing [] 0) p s u]
+    | otherwise                                        = [OrLaterVersionOf (Version v1 Nothing [] 0) p s u, EarlierVersionOf (Version v2 Nothing [] 0) p s u]
 
 -- TODO: simplify constraints of type: >=a-v1; > a-v2 and such
 
 -- 3) otherwise sink:
-simplify_group_table    p u (Just v)     l@(_)       e@(_)        oe@(_)       exact@(_) =   OrLaterVersionOf v p u: simplify_group_table p u Nothing  l e oe exact
-simplify_group_table    p u ol@(Nothing) (Just v)    e@(_)        oe@(_)       exact@(_) =     LaterVersionOf v p u: simplify_group_table p u ol Nothing e oe exact
-simplify_group_table    p u ol@(Nothing) l@(Nothing) (Just v)     oe@(_)       exact@(_) =   EarlierVersionOf v p u: simplify_group_table p u ol l Nothing oe exact
-simplify_group_table    p u ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)     exact@(_) = OrEarlierVersionOf v p u: simplify_group_table p u ol l e Nothing  exact
+simplify_group_table    p s u (Just v)     l@(_)       e@(_)        oe@(_)       exact@(_) =   OrLaterVersionOf v p s u: simplify_group_table p s u Nothing  l e oe exact
+simplify_group_table    p s u ol@(Nothing) (Just v)    e@(_)        oe@(_)       exact@(_) =     LaterVersionOf v p s u: simplify_group_table p s u ol Nothing e oe exact
+simplify_group_table    p s u ol@(Nothing) l@(Nothing) (Just v)     oe@(_)       exact@(_) =   EarlierVersionOf v p s u: simplify_group_table p s u ol l Nothing oe exact
+simplify_group_table    p s u ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)     exact@(_) = OrEarlierVersionOf v p s u: simplify_group_table p s u ol l e Nothing  exact
 -- already defined earlier
--- simplify_group_table    p ol@(Nothing) l@(Nothing) e@(Nothing)  oe@(Nothing) (Just v)  = OrEarlierVersionOf v p : simplify_group_table p ol l e oe Nothing
+-- simplify_group_table    p s u ol@(Nothing) l@(Nothing) e@(Nothing)  oe@(Nothing) (Just v)  = OrEarlierVersionOf v p : simplify_group_table p ol l e oe Nothing
 
 --  >a-v1 >a-v2         => >a-(max v1 v2)
 -- key idea: all constraints are enforcing constraints, so we can't get
 -- more, than one interval.
 simplify_group :: [Dependency] -> [Dependency]
-simplify_group [dep@(AnyVersionOf _package _u)] = [dep]
-simplify_group [dep@(ThisMajorOf _v    _p _u)]  = [dep]
+simplify_group [dep@(AnyVersionOf _package _s _u)] = [dep]
+simplify_group [dep@(ThisMajorOf _v    _p _s _u)]  = [dep]
 simplify_group deps = simplify_group_table package
+                                           slot
                                            uses
                                            min_or_later_v   -- >=
                                            min_later_v      -- >
@@ -106,6 +120,7 @@ simplify_group deps = simplify_group_table package
                                            exact_this_v     -- ==
     where
           package = fromJust.getPackage $ head deps
+          slot    = fromJust.getSlot    $ head deps
           uses    = fromJust.getUses    $ head deps
           max_earlier_v    = safe_minimum $ map earlier_v deps
           max_or_earlier_v = safe_minimum $ map or_earlier_v deps
@@ -116,19 +131,19 @@ simplify_group deps = simplify_group_table package
                                   [v] -> Just v
                                   xs  -> error $ "too many exact versions:" ++ show xs
           --
-          earlier_v (EarlierVersionOf v _p _u) = Just v
+          earlier_v (EarlierVersionOf v _p _s _u) = Just v
           earlier_v _                       = Nothing
 
-          or_earlier_v (OrEarlierVersionOf v _p _u) = Just v
+          or_earlier_v (OrEarlierVersionOf v _p _s _u) = Just v
           or_earlier_v _                         = Nothing
 
-          later_v (LaterVersionOf v _p _u) = Just v
+          later_v (LaterVersionOf v _p _s _u) = Just v
           later_v _                     = Nothing
 
-          or_later_v (OrLaterVersionOf v _p _u) = Just v
+          or_later_v (OrLaterVersionOf v _p _s _u) = Just v
           or_later_v _                     = Nothing
 
-          this_v (ThisVersionOf v  _p _u) = Just v
+          this_v (ThisVersionOf v  _p _s _u) = Just v
           this_v _                     = Nothing
           --
           safe_minimum xs = case catMaybes xs of
@@ -152,44 +167,68 @@ simplify_deps deps = (concatMap (simplify_group.nub) $
           --
 getPackage :: Dependency -> Maybe PackageName
 getPackage (AllOf _dependency) = Nothing
-getPackage (AnyVersionOf package _uses) = Just package
-getPackage (ThisVersionOf      _version package _uses) = Just package
-getPackage (LaterVersionOf     _version package _uses) = Just package
-getPackage (EarlierVersionOf   _version package _uses) = Just package
-getPackage (OrLaterVersionOf   _version package _uses) = Just package
-getPackage (OrEarlierVersionOf _version package _uses) = Just package
+getPackage (AnyVersionOf package _s _uses) = Just package
+getPackage (ThisVersionOf      _version package _s _uses) = Just package
+getPackage (LaterVersionOf     _version package _s _uses) = Just package
+getPackage (EarlierVersionOf   _version package _s _uses) = Just package
+getPackage (OrLaterVersionOf   _version package _s _uses) = Just package
+getPackage (OrEarlierVersionOf _version package _s _uses) = Just package
+getPackage (ThisMajorOf        _version package _s _uses) = Just package
 getPackage (DependEither _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
-getPackage (ThisMajorOf        _version package _uses) = Just package
 
 getUses  :: Dependency -> Maybe [UseFlag]
 getUses (AllOf _d) = Nothing
-getUses (AnyVersionOf _p u) = Just u
-getUses (ThisVersionOf _v _p u) = Just u
-getUses (LaterVersionOf _v _p u) = Just u
-getUses (EarlierVersionOf _v _p u) = Just u
-getUses (OrLaterVersionOf _v _p u) = Just u
-getUses (OrEarlierVersionOf _v _p u) = Just u
+getUses (AnyVersionOf _p _s u) = Just u
+getUses (ThisVersionOf _v _p _s u) = Just u
+getUses (LaterVersionOf _v _p _s u) = Just u
+getUses (EarlierVersionOf _v _p _s u) = Just u
+getUses (OrLaterVersionOf _v _p _s u) = Just u
+getUses (OrEarlierVersionOf _v _p _s u) = Just u
+getUses (ThisMajorOf _v _p _s u) = Just u
 getUses (DependEither _d) = Nothing
 getUses (DependIfUse _u _d) = Nothing
-getUses (ThisMajorOf _v _p u) = Just u
+
+getSlot :: Dependency -> Maybe SlotDepend
+getSlot (AllOf _d) = Nothing
+getSlot (AnyVersionOf _p s _u) = Just s
+getSlot (ThisVersionOf _v _p s _u) = Just s
+getSlot (LaterVersionOf _v _p s _u) = Just s
+getSlot (EarlierVersionOf _v _p s _u) = Just s
+getSlot (OrLaterVersionOf _v _p s _u) = Just s
+getSlot (OrEarlierVersionOf _v _p s _u) = Just s
+getSlot (ThisMajorOf _v _p s _u) = Just s
+getSlot (DependEither _d) = Nothing
+getSlot (DependIfUse _u _d) = Nothing
 
 --
 getPackagePart :: Dependency -> PackageName
 getPackagePart dep = fromJust (getPackage dep)
 
 --
-addDepUseFlag :: Dependency -> UseFlag -> Dependency
-addDepUseFlag (AllOf d) n = AllOf $ map (flip addDepUseFlag n) d
-addDepUseFlag (AnyVersionOf p u) n = AnyVersionOf p (n:u)
-addDepUseFlag (ThisVersionOf v p u) n = ThisVersionOf v p (n:u)
-addDepUseFlag (LaterVersionOf v p u) n = LaterVersionOf v p (n:u)
-addDepUseFlag (EarlierVersionOf v p u) n = EarlierVersionOf v p (n:u)
-addDepUseFlag (OrLaterVersionOf v p u) n = OrLaterVersionOf v p (n:u)
-addDepUseFlag (OrEarlierVersionOf v p u) n = OrEarlierVersionOf v p (n:u)
-addDepUseFlag (ThisMajorOf v p u) n = ThisMajorOf v p (n:u)
-addDepUseFlag (DependEither d) n = DependEither $ map (flip addDepUseFlag n) d
-addDepUseFlag (DependIfUse u d) n = DependIfUse u (addDepUseFlag d n)
+setSlotDep :: SlotDepend -> Dependency -> Dependency
+setSlotDep n (AllOf d) = AllOf $ map (setSlotDep n) d
+setSlotDep n (AnyVersionOf p _s u) = AnyVersionOf p n u
+setSlotDep n (ThisVersionOf v p _s u) = ThisVersionOf v p n u
+setSlotDep n (LaterVersionOf v p _s u) = LaterVersionOf v p n u
+setSlotDep n (EarlierVersionOf v p _s u) = EarlierVersionOf v p n u
+setSlotDep n (OrLaterVersionOf v p _s u) = OrLaterVersionOf v p n u
+setSlotDep n (OrEarlierVersionOf v p _s u) = OrEarlierVersionOf v p n u
+setSlotDep n (ThisMajorOf v p _s u) = ThisMajorOf v p n u
+setSlotDep n (DependEither d) = DependEither $ map (setSlotDep n) d
+setSlotDep n (DependIfUse u d) = DependIfUse u (setSlotDep n d)
+
+addDepUseFlag :: UseFlag -> Dependency -> Dependency
+addDepUseFlag n (AllOf d) = AllOf $ map (addDepUseFlag n) d
+addDepUseFlag n (AnyVersionOf p s u) = AnyVersionOf p s (n:u)
+addDepUseFlag n (ThisVersionOf v p s u) = ThisVersionOf v p s (n:u)
+addDepUseFlag n (LaterVersionOf v p s u) = LaterVersionOf v p s (n:u)
+addDepUseFlag n (EarlierVersionOf v p s u) = EarlierVersionOf v p s (n:u)
+addDepUseFlag n (OrLaterVersionOf v p s u) = OrLaterVersionOf v p s (n:u)
+addDepUseFlag n (OrEarlierVersionOf v p s u) = OrEarlierVersionOf v p s (n:u)
+addDepUseFlag n (ThisMajorOf v p s u) = ThisMajorOf v p s (n:u)
+addDepUseFlag n (DependEither d) = DependEither $ map (addDepUseFlag n) d
+addDepUseFlag n (DependIfUse u d) = DependIfUse u (addDepUseFlag n d)
 
 --
 -- | remove all Use dependencies that overlap with normal dependencies
@@ -216,4 +255,3 @@ intersectD fs x =
 isUseDep :: Dependency -> Bool
 isUseDep (DependIfUse _ _) = True
 isUseDep _ = False
---

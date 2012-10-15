@@ -55,6 +55,7 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                                                else Cabal.description pkg,
     E.homepage        = thisHomepage,
     E.license         = Cabal.license pkg,
+    E.slot            = (E.slot E.ebuildTemplate) ++ maybe [] (const "/${PV}") (Cabal.library pkg),
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
                    ++ (if hasExe then ["bin"] else [])
@@ -84,13 +85,13 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             Nothing -> Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
-             (          [AnyVersionOf                            pn []] -- ^ @\"-any\"@ version
-            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn []] -- ^ @\"== v\"@
-            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn []] -- ^ @\"> v\"@
-            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn []] -- ^ @\"< v\"@
-            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn []] -- ^ @\">= v\"@
-            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn []] -- ^ @\"<= v\"@
-            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn []] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+             (          [AnyVersionOf                            pn AnySlot []] -- ^ @\"-any\"@ version
+            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn AnySlot []] -- ^ @\"== v\"@
+            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn AnySlot []] -- ^ @\"> v\"@
+            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn AnySlot []] -- ^ @\"< v\"@
+            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn AnySlot []] -- ^ @\">= v\"@
+            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn AnySlot []] -- ^ @\"<= v\"@
+            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn AnySlot []] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\g1 g2 -> [DependEither                       (g1 ++ g2)] -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
             )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
