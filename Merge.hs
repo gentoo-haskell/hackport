@@ -177,7 +177,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   debug verbosity ("Selected flags: " ++ show flags)
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
   forM_ excludePkgs $
-      \(PackageName name) -> info verbosity $ "Excluded packages (come with ghc): " ++ name
+      \(PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
   let ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
                . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
