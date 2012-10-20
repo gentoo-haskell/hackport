@@ -20,6 +20,9 @@ import Distribution.Text
 
 import Data.Maybe
 import Data.List ( nub )
+import Data.Version
+
+import Debug.Trace
 
 defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
@@ -71,8 +74,20 @@ packageBuildableWithGHCVersion
   :: GenericPackageDescription
   -> (CompilerId, PackageIndex)
   -> Either [Dependency] (PackageDescription, FlagAssignment)
-packageBuildableWithGHCVersion pkg (compiler, pkgIndex) =
+packageBuildableWithGHCVersion pkg (compiler, pkgIndex) = trace_failure $
   finalizePackageDescription [] (dependencySatisfiable pkgIndex) platform compiler [] pkg
+    where trace_failure v = case v of
+              (Left deps) -> trace (unwords ["rejecting dep:" , show_compiler compiler
+                                            , "as", show_deps deps
+                                            , "were not found."
+                                            ]
+                                   ) v
+              _           -> trace (unwords ["accepting dep:" , show_compiler compiler
+                                            ]
+                                   ) v
+          show_deps = show . map display
+          show_compiler (CompilerId GHC v) = "ghc-" ++ showVersion v
+          show_compiler c = show c
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
@@ -129,7 +144,7 @@ ghc761_pkgs =
   , p "bytestring" [0,10,0,8]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
-  , p "deepseq" [1,3,0,1]
+--  , p "deepseq" [1,3,0,1] -- package is upgradeable
   , p "directory" [1,2,0,0]
   , p "filepath" [1,3,0,1]
   , p "ghc-prim" [0,3,0,0]
@@ -143,7 +158,7 @@ ghc761_pkgs =
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,2]
   , p "template-haskell" [2,8,0,0] -- used by libghc
-  , p "time" [1,4,0,1] -- used by haskell98
+-- , p "time" [1,4,0,1] -- upgradeable, but used by haskell98
   , p "unix" [2,6,0,0]
   ]
 
@@ -169,7 +184,7 @@ ghc742_pkgs =
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,1]
   , p "template-haskell" [2,7,0,0] -- used by libghc
-  , p "time" [1,4] -- used by haskell98
+-- , p "time" [1,4] -- upgradeable, but used by haskell98
   , p "unix" [2,5,1,1]
   ]
 
