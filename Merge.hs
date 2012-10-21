@@ -8,15 +8,27 @@ import Control.Monad.Error
 import Control.Exception
 import Data.Maybe
 import Data.List as L
-import Distribution.Package
-import Distribution.PackageDescription ( PackageDescription(..)
-                                       , FlagName(..)
-                                       , GenericPackageDescription
-                                       )
-import Distribution.PackageDescription.Configuration
-         ( finalizePackageDescription )
-import Distribution.Text (display)
 
+-- cabal
+import qualified Distribution.Package as Cabal
+import qualified Distribution.Version as Cabal
+import qualified Distribution.PackageDescription as Cabal ( PackageDescription(..)
+                                       , FlagName(..)
+                                       , GenericPackageDescription(..)
+                                       )
+import qualified Distribution.PackageDescription.Configuration as Cabal ( finalizePackageDescription )
+
+import Distribution.System (buildPlatform)
+import Distribution.Text (display)
+import Distribution.Verbosity
+import Distribution.Simple.Utils
+
+-- cabal-install
+import Distribution.Client.IndexUtils ( getSourcePackages )
+import qualified Distribution.Client.PackageIndex as Index
+import Distribution.Client.Types
+
+-- others
 import System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
@@ -30,18 +42,8 @@ import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
 import Error as E
 
-import qualified Distribution.Package as Cabal
-import qualified Distribution.Version as Cabal
-
-import Distribution.System (buildPlatform)
-import Distribution.Verbosity
-import Distribution.Simple.Utils
-
 import Network.URI
 
-import Distribution.Client.IndexUtils ( getSourcePackages )
-import qualified Distribution.Client.PackageIndex as Index
-import Distribution.Client.Types
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
@@ -93,7 +95,7 @@ resolveVersion :: [SourcePackage] -> Maybe Cabal.Version -> Maybe SourcePackage
 resolveVersion avails Nothing = Just $ maximumBy (comparing packageInfoId) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
-    match avail = ver == pkgVersion (packageInfoId avail)
+    match avail = ver == Cabal.pkgVersion (packageInfoId avail)
 
 merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> IO ()
 merge verbosity repo _serverURI args overlayPath = do
@@ -123,7 +125,7 @@ merge verbosity repo _serverURI args overlayPath = do
     case map snd (Index.searchByName index user_pname_str) of
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
-      pkgs  -> let names      = map (pkgName . packageInfoId . L.head) pkgs
+      pkgs  -> let names      = map (Cabal.pkgName . packageInfoId . L.head) pkgs
                    whole_list = map (L.intercalate "\n" . map (show . packageInfoId)) pkgs
                in throwEx $ ArgumentError $ L.intercalate "\n---\n" $ ["Ambiguous names: " ++ show names] ++ whole_list
 
@@ -145,20 +147,22 @@ merge verbosity repo _serverURI args overlayPath = do
     info verbosity $ match_text ++ (display . packageInfoId $ avail)
 
   let cabal_pkgId = packageInfoId selectedPkg
-      norm_pkgName = packageName (Portage.normalizeCabalPackageId cabal_pkgId)
+      norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
   mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True
 
-mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> GenericPackageDescription -> Bool -> IO ()
+mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = do
   overlay <- Overlay.loadLazy overlayPath
+  let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
+
   let Right (pkgDesc0, flags) =
-        finalizePackageDescription
+        Cabal.finalizePackageDescription
           [ -- XXX: common things we should enable/disable?
             -- (FlagName "small_base", True) -- try to use small base
-            (FlagName "cocoa", False)
+            (Cabal.FlagName "cocoa", False)
           ]
-          (\dep -> trace ("accepting dep(?): " ++ display dep) True)
+          (\_dep -> True)
           -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
           buildPlatform
           (fst GHCCore.defaultGHC)
@@ -167,17 +171,20 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       mminimumGHC = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
       (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id mminimumGHC
 
-      pkgDesc = let deps = [ Dependency pn (Cabal.simplifyVersionRange vr)
-                           | Dependency pn vr <- buildDepends pkgDesc0
+      pkgDesc = let deps = [ Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
+                           | dep@(Cabal.Dependency pn vr) <- Cabal.buildDepends pkgDesc0
                            , pn `notElem` excludePkgs
+                           , if pn /= merged_cabal_pkg_name
+                               then trace ("accepting dep(?): " ++ display dep) True
+                               else trace ("rejecting selfdep(?): " ++ display dep) False
                            ]
-                in pkgDesc0 { buildDepends = deps }
+                in pkgDesc0 { Cabal.buildDepends = deps }
       edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
 
   debug verbosity ("Selected flags: " ++ show flags)
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
   forM_ excludePkgs $
-      \(PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
+      \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
   let ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
                . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
@@ -187,8 +194,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
   when fetch $ do
-    let cabal_pkgId = packageId pkgDesc
-        norm_pkgName = packageName (Portage.normalizeCabalPackageId cabal_pkgId)
+    let cabal_pkgId = Cabal.packageId pkgDesc
+        norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchAndDigest
       verbosity
       (overlayPath </> display cat </> display norm_pkgName)
