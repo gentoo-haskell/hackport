@@ -58,11 +58,13 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , TestSuite(..)
                                        , targetBuildDepends
                                        )
-import Data.Maybe ( isNothing )
+import Data.Maybe ( isJust, isNothing )
 import Data.List ( nub )
 
 import qualified Distribution.Package as Cabal
+import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
+
 import Distribution.Compiler
 
 import qualified Portage.Dependency as Portage
@@ -111,7 +113,7 @@ resolveDependencies overlay pkg mcompiler =
     compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
     hasBuildableExes p = any (buildable . buildInfo) . executables $ p
-    treatAsLibrary = (not . hasBuildableExes) pkg || hasLibs pkg
+    treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
         | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay pkg
         | otherwise      = haskellDependencies overlay pkg
