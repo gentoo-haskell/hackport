@@ -6,6 +6,7 @@ module Merge
 
 import Control.Monad.Error
 import Control.Exception
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Maybe
 import Data.List as L
 
@@ -226,15 +227,15 @@ mergeEbuild verbosity target cat ebuild = do
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-      default_meta = Portage.makeDefaultMetadata (E.long_desc ebuild)
+      default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
   notice verbosity $ "Writing " ++ elocal
-  writeFile epath (display ebuild)
+  BL.writeFile epath (BL.pack $ display ebuild)
 
   yet_meta <- doesFileExist mpath
   if (not yet_meta) -- TODO: add --force-meta-rewrite to opts
       then do notice verbosity $ "Writing " ++ emeta
-              writeFile mpath default_meta
-      else do current_meta <- readFile mpath
+              BL.writeFile mpath default_meta
+      else do current_meta <- BL.readFile mpath
               when (current_meta /= default_meta) $
                   notice verbosity $ "Default and current " ++ emeta ++ " differ."
