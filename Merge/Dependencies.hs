@@ -226,7 +226,7 @@ staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
   m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") Portage.AnySlot [])
-      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "bzlib") Portage.AnySlot [])
+      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "app-arch" "bzip2") Portage.AnySlot [])
       , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") Portage.AnySlot [])
       , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "dev-db" "postgresql-base") Portage.AnySlot [])
       , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") Portage.AnySlot [])
