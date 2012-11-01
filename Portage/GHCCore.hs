@@ -167,7 +167,7 @@ ghc742_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,1,0]
 --  , p "binary" [0,5,1,0]  package is upgradeable
-  , p "bytestring" [0,9,1,8]
+  , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
   , p "directory" [1,1,0,2]
