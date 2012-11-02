@@ -28,7 +28,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc742, ghc761]
+ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc741, ghc742, ghc761]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -115,6 +115,9 @@ ghc nrs = CompilerId GHC (Version nrs [])
 ghc761 :: (CompilerId, PackageIndex)
 ghc761 = (ghc [7,6,1], mkIndex ghc761_pkgs)
 
+ghc741 :: (CompilerId, PackageIndex)
+ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
+
 ghc742 :: (CompilerId, PackageIndex)
 ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
 
@@ -163,7 +166,7 @@ ghc761_pkgs =
   ]
 
 ghc742_pkgs :: [PackageIdentifier]
-ghc742_pkgs = 
+ghc742_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,1,0]
 --  , p "binary" [0,5,1,0]  package is upgradeable
@@ -186,6 +189,32 @@ ghc742_pkgs =
   , p "template-haskell" [2,7,0,0] -- used by libghc
 -- , p "time" [1,4] -- upgradeable, but used by haskell98
   , p "unix" [2,5,1,1]
+  ]
+
+ghc741_pkgs :: [PackageIdentifier]
+ghc741_pkgs =
+  [ p "array" [0,4,0,0]
+  , p "base" [4,5,0,0]
+--  , p "binary" [0,5,1,0]  package is upgradeable
+  , p "bytestring" [0,9,2,1]
+--  , p "Cabal" [1,14,0]  package is upgradeable
+  , p "containers" [0,4,2,1]
+  , p "directory" [1,1,0,2]
+-- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
+  , p "filepath" [1,3,0,0]
+  , p "ghc-prim" [0,2,0,0]
+  , p "haskell2010" [1,1,0,1]
+  , p "haskell98" [2,0,0,1]
+  , p "hoopl" [3,8,7,3] -- used by libghc
+  , p "hpc" [0,5,1,1] -- used by libghc
+  , p "integer-gmp" [0,4,0,0]
+  , p "old-locale" [1,0,0,4]
+  , p "old-time" [1,1,0,0]
+  , p "pretty" [1,1,1,0]
+  , p "process" [1,1,0,1]
+  , p "template-haskell" [2,7,0,0] -- used by libghc
+-- , p "time" [1,4] -- upgradeable, but used by haskell98
+  , p "unix" [2,5,1,0]
   ]
 
 ghc701_pkgs :: [PackageIdentifier]
