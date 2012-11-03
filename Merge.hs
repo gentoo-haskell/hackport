@@ -182,7 +182,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                 in pkgDesc0 { Cabal.buildDepends = deps }
       edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
 
-  debug verbosity ("Selected flags: " ++ show flags)
+  notice verbosity $ "Selected flags: " ++ show flags
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
   forM_ excludePkgs $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
