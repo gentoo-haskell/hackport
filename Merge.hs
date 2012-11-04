@@ -56,8 +56,6 @@ import qualified Portage.GHCCore as GHCCore
 
 import qualified Merge.Dependencies as Merge
 
-import Debug.Trace ( trace )
-
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
 
@@ -172,16 +170,23 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       mminimumGHC = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
       (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id mminimumGHC
 
-      pkgDesc = let deps = [ Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
-                           | dep@(Cabal.Dependency pn vr) <- Cabal.buildDepends pkgDesc0
-                           , pn `notElem` excludePkgs
-                           , if pn /= merged_cabal_pkg_name
-                               then trace ("accepting dep(?): " ++ display dep) True
-                               else trace ("rejecting selfdep(?): " ++ display dep) False
-                           ]
-                in pkgDesc0 { Cabal.buildDepends = deps }
+      (accepted_deps, skipped_deps, dropped_deps) =
+          foldl (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
+                  let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
+                  in case () of
+                        _ | pn `elem` excludePkgs       -> (    ad, dep:sd,     rd)
+                        _ | pn == merged_cabal_pkg_name -> (    ad,     sd, dep:rd)
+                        _                               -> (dep:ad,     sd,     rd)
+                )
+                ([],[],[])
+                (Cabal.buildDepends pkgDesc0)
+      pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
+
       edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
 
+  notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
+  notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
+  notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Selected flags: " ++ show flags
   info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
   forM_ excludePkgs $
