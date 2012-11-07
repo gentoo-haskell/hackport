@@ -240,6 +240,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("pcre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libpcre") Portage.AnySlot [])
       , ("GL", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "opengl") Portage.AnySlot [])
       , ("GLU", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "glu") Portage.AnySlot [])
+      , ("glut", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "freeglut") Portage.AnySlot [])
       , ("X11", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libX11") Portage.AnySlot [])
       ]
 
