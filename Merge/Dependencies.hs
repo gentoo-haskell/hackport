@@ -238,6 +238,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("SDL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libsdl") Portage.AnySlot [])
       , ("adns", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "adns") Portage.AnySlot [])
       , ("pcre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libpcre") Portage.AnySlot [])
+      , ("GL", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "opengl") Portage.AnySlot [])
+      , ("X11", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libX11") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
