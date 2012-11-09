@@ -368,5 +368,6 @@ table =
   ,("curl",                        ("net-misc", "curl", Portage.AnySlot))
   ,("libxml2",                     ("dev-libs", "libxml2", Portage.AnySlot))
   ,("libgsasl",                    ("virtual", "gsasl", Portage.AnySlot))
+  ,("libzip",                      ("dev-libs", "libzip", Portage.AnySlot))
 
   ]
