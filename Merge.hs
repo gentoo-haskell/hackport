@@ -9,6 +9,7 @@ import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Maybe
 import Data.List as L
+import Data.Version
 
 -- cabal
 import qualified Distribution.Package as Cabal
@@ -124,9 +125,15 @@ merge verbosity repo _serverURI args overlayPath = do
     case map snd (Index.searchByName index user_pname_str) of
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
-      pkgs  -> let names      = map (Cabal.pkgName . packageInfoId . L.head) pkgs
-                   whole_list = map (L.intercalate "\n" . map (display . packageInfoId)) pkgs
-               in throwEx $ ArgumentError $ L.intercalate "\n---\n" $ ["Ambiguous names: " ++ show names] ++ whole_list
+      pkgs  -> do let cabal_pkg_to_pn pkg =
+                          case Cabal.pkgName (packageInfoId pkg) of
+                              Cabal.PackageName pn -> pn
+                      names      = map (cabal_pkg_to_pn . L.head) pkgs
+                  notice verbosity $ "Ambiguous names: " ++ L.intercalate ", " names
+                  forM_ pkgs $ \ps ->
+                      do let p_name = (cabal_pkg_to_pn . L.head) ps
+                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (showVersion . Cabal.pkgVersion . packageInfoId) ps)
+                  return $ concat pkgs
 
   -- select a single package taking into account the user specified version
   selectedPkg <-
