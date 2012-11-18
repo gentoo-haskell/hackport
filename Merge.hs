@@ -125,7 +125,7 @@ merge verbosity repo _serverURI args overlayPath = do
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
       pkgs  -> let names      = map (Cabal.pkgName . packageInfoId . L.head) pkgs
-                   whole_list = map (L.intercalate "\n" . map (show . packageInfoId)) pkgs
+                   whole_list = map (L.intercalate "\n" . map (display . packageInfoId)) pkgs
                in throwEx $ ArgumentError $ L.intercalate "\n---\n" $ ["Ambiguous names: " ++ show names] ++ whole_list
 
   -- select a single package taking into account the user specified version
