@@ -81,6 +81,7 @@ loadHackage :: Verbosity -> Distribution.Client.Types.Repo -> Overlay -> IO [[Pa
 loadHackage verbosity repo overlay = do
     SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity [repo]
     let get_cat cabal_pkg = case resolveCategories overlay (pkgName cabal_pkg) of
+                                []    -> Category "dev-haskell"
                                 [cat] -> cat
                                 _     -> {- ambig -} Category "dev-haskell"
         pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
