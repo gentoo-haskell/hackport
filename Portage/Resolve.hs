@@ -61,7 +61,7 @@ resolveFullPortageName overlay pn =
     cats | (cat:_) <- (filter (`elem` cats) priority) -> ret cat
          | otherwise -> trace ("Ambiguous package name: " ++ show pn ++ ", hits: " ++ show cats) Nothing
   where
-  ret c = return (Portage.PackageName c pn)
+  ret c = return (Portage.PackageName c (Portage.normalizeCabalPackageName pn))
   mkC = Portage.Category
   -- if any of these categories show up in the result list, the match isn't
   -- ambiguous, pick the first match in the list
