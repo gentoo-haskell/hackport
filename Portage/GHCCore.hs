@@ -28,7 +28,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc701, ghc741, ghc742, ghc761]
+ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704, ghc741, ghc742, ghc761]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -121,8 +121,8 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 ghc742 :: (CompilerId, PackageIndex)
 ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
 
-ghc701 :: (CompilerId, PackageIndex)
-ghc701 = (ghc [7,0,1], mkIndex ghc701_pkgs)
+ghc704 :: (CompilerId, PackageIndex)
+ghc704 = (ghc [7,0,1], mkIndex ghc704_pkgs)
 
 ghc6123 :: (CompilerId, PackageIndex)
 ghc6123 = (ghc [6,12,3], mkIndex ghc6123_pkgs)
@@ -173,6 +173,7 @@ ghc742_pkgs =
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
+--  , p "deepseq" [1,3,0,0]  package is upgradeable
   , p "directory" [1,1,0,2]
 -- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,3,0,0]
@@ -199,6 +200,7 @@ ghc741_pkgs =
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
+--  , p "deepseq" [1,3,0,0]  package is upgradeable
   , p "directory" [1,1,0,2]
 -- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,3,0,0]
@@ -217,30 +219,30 @@ ghc741_pkgs =
   , p "unix" [2,5,1,0]
   ]
 
-ghc701_pkgs :: [PackageIdentifier]
-ghc701_pkgs =
+ghc704_pkgs :: [PackageIdentifier]
+ghc704_pkgs =
   [ p "array" [0,3,0,2]
-  , p "base" [4,3,0,0]
-  , p "bytestring" [0,9,1,8]
---  , p "Cabal" [1,10,0,0]  package is upgradeable
+  , p "base" [4,3,1,0]
+  , p "bytestring" [0,9,1,10]
+--  , p "Cabal" [1,10,2,0]  package is upgradeable
   , p "containers" [0,4,0,0]
   , p "directory" [1,1,0,0]
 -- , p "extensible-exceptions" [0,1,1,2] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,2,0,0]
+  , p "ghc-binary" [0,5,0,2]
+  , p "ghc-prim" [0,2,0,0]
   , p "haskell2010" [1,0,0,0]
-  , p "haskell98" [1,1,0,0]
+  , p "haskell98" [1,1,0,1]
   , p "hpc" [0,5,0,6]
   , p "integer-gmp" [0,2,0,2]
-  , p "integer-simple" [0,1,0,0]
   , p "old-locale" [1,0,0,2]
   , p "old-time" [1,0,0,6]
   , p "pretty" [1,0,1,2]
-  , p "process" [1,0,1,4]
+  , p "process" [1,0,1,5]
 --   , p "random" [1,0,0,3] -- will not be shipped starting from ghc-7.2
   , p "template-haskell" [2,5,0,0]
 --  , p "time" [1,2,0,3] package is upgradeable
-  , p "unix" [2,4,1,0]
---  , p "utf8-string" [0,3,4] package is upgradeable
+  , p "unix" [2,4,2,0]
   ]
 
 ghc6123_pkgs :: [PackageIdentifier]
@@ -254,6 +256,8 @@ ghc6123_pkgs =
   , p "directory" [1,0,1,1]
 -- , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,4]
+  , p "ghc-binary" [0,5,0,2]
+  , p "ghc-prim" [0,2,0,0]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,5]
   , p "integer-gmp" [0,2,0,1]
@@ -281,10 +285,11 @@ ghc6122_pkgs =
   , p "directory" [1,0,1,1]
 --  , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,4]
+  , p "ghc-binary" [0,5,0,2]
+  , p "ghc-prim" [0,2,0,0]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,5]
   , p "integer-gmp" [0,2,0,1]
-  , p "integer-simple" [0,1,0,0]
   , p "old-locale" [1,0,0,2]
   , p "old-time" [1,0,0,4]
   , p "pretty" [1,0,1,1]
@@ -308,10 +313,11 @@ ghc6121_pkgs =
   , p "directory" [1,0,1,0]
 --  , p "extensible-exceptions" [0,1,1,1] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,3]
+  , p "ghc-binary" [0,5,0,2]
+  , p "ghc-prim" [0,2,0,0]
   , p "haskell98" [1,0,1,1]
   , p "hpc" [0,5,0,4]
   , p "integer-gmp" [0,2,0,0]
-  , p "integer-simple" [0,1,0,0]
   , p "old-locale" [1,0,0,2]
   , p "old-time" [1,0,0,3]
   , p "pretty" [1,0,1,1]
@@ -331,12 +337,14 @@ ghc6104_pkgs =
   , p "base" [4,1,0,0]
   , p "bytestring" [0,9,1,4]
 --  , p "Cabal" [1,6,0,3] package is upgradeable
-  , p "containers" [0,2,0,1 ]
+  , p "containers" [0,2,0,1]
   , p "directory" [1,0,0,3]
 --  , p "extensible-exceptions" [0,1,1,0] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,1,0,2]
+  , p "ghc-prim" [0,1,0,0]
   , p "haskell98" [1,0,1,0]
   , p "hpc" [0,5,0,3]
+  , p "integer" [0,1,0,1]
   , p "old-locale" [1,0,0,1]
   , p "old-time" [1,0,0,2]
   , p "packedstring" [0,1,0,1]
