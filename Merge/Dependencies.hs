@@ -244,6 +244,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("X11", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libX11") Portage.AnySlot [])
       , ("libzip", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libzip") Portage.AnySlot [])
       , ("ssl", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "openssl") Portage.AnySlot [])
+      , ("Judy", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "judy") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
