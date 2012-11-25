@@ -48,7 +48,7 @@ resolveCategories :: Overlay.Overlay -> Cabal.PackageName -> [Portage.Category]
 resolveCategories overlay pn =
   [ cat 
   | (Portage.PackageName cat pn') <- Map.keys om
-  , pn == Portage.normalizeCabalPackageName pn'
+  , Portage.normalizeCabalPackageName pn == pn'
   ]
   where
     om = Overlay.overlayMap overlay
