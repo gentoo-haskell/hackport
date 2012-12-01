@@ -7,6 +7,7 @@ module Merge
 import Control.Monad.Error
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.Char (isSpace)
 import Data.Maybe
 import Data.List as L
 import Data.Version
@@ -32,6 +33,7 @@ import Distribution.Client.Types
 
 -- others
 import System.Directory ( getCurrentDirectory
+                        , getDirectoryContents
                         , setCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
@@ -62,11 +64,8 @@ a <.> b = a ++ '.':b
 
 {-
 Requested features:
-  * Copy the old keywords and ~arch them
-  * Add files to darcs?
+  * Add files to git?
   * Print diff with the next latest version?
-BUGS:
-  * Dependencies are always expected to be in dev-haskell
 -}
 
 readPackageString :: [String]
@@ -232,8 +231,34 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
+extractKeywords :: FilePath -> String -> Maybe [String]
+extractKeywords ebuild_path s_ebuild =
+    let ltrim :: String -> String
+        ltrim = dropWhile isSpace
+        lns    = lines s_ebuild
+        -- TODO: nicer pattern match and errno
+    in case (findIndices (isPrefixOf "KEYWORDS=\"" . ltrim) lns) of
+           []      -> Nothing
+           [kw_ln] -> let kw_line  = lns !! kw_ln
+                          kw_str   = (fst . break (== '"') . tail . snd . break (== '"')) kw_line
+                          keywords = words kw_str
+                      in Just keywords
+           other   -> error $ ebuild_path ++ ": parse_ebuild: strange KEYWORDS lines: " ++ show other
+
+findExistingKeywords :: FilePath -> IO (Maybe [String])
+findExistingKeywords edir =
+    do ebuilds <- filter (isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
+       -- TODO: version sort
+       e_kw_s <- forM ebuilds $ \e ->
+                     do let e_path = edir </> e
+                        e_conts <- readFile e_path
+                        return (e, extractKeywords e_path e_conts)
+       if null e_kw_s
+           then return Nothing
+           else return (snd $ last e_kw_s)
+
 mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO () 
-mergeEbuild verbosity target cat ebuild = do 
+mergeEbuild verbosity target cat ebuild = do
   let edir = target </> cat </> E.name ebuild
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
@@ -241,8 +266,15 @@ mergeEbuild verbosity target cat ebuild = do
       mpath = edir </> emeta
       default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
+  existing_keywords <- findExistingKeywords edir
+
+  notice verbosity $ "Current keywords " ++ show existing_keywords
+
+  let new_keywords = maybe (E.keywords ebuild) id existing_keywords
+      ebuild'      = ebuild { E.keywords = new_keywords }
+      s_ebuild'    = display ebuild'
   notice verbosity $ "Writing " ++ elocal
-  BL.writeFile epath (BL.pack $ display ebuild)
+  (length s_ebuild') `seq` BL.writeFile epath (BL.pack s_ebuild')
 
   yet_meta <- doesFileExist mpath
   if (not yet_meta) -- TODO: add --force-meta-rewrite to opts
