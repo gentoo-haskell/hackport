@@ -65,7 +65,7 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                    ++ (if hasTests then ["test-suite"] else [])
   } where
         cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
-        hasExe = (not . null) (Cabal.executables pkg) 
+        hasExe = (not . null) (Cabal.executables pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
