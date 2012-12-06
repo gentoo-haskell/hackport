@@ -162,7 +162,7 @@ ghc761_pkgs =
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,2]
   , p "template-haskell" [2,8,0,0] -- used by libghc
--- , p "time" [1,4,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
+  , p "time" [1,4,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
   , p "unix" [2,6,0,0]
   ]
 
@@ -189,7 +189,7 @@ ghc742_pkgs =
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,1]
   , p "template-haskell" [2,7,0,0] -- used by libghc
--- , p "time" [1,4] -- upgradeable, but used by haskell98
+  , p "time" [1,4]
   , p "unix" [2,5,1,1]
   ]
 
@@ -216,7 +216,7 @@ ghc741_pkgs =
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,1]
   , p "template-haskell" [2,7,0,0] -- used by libghc
--- , p "time" [1,4] -- upgradeable, but used by haskell98
+  , p "time" [1,4]
   , p "unix" [2,5,1,0]
   ]
 
@@ -242,7 +242,7 @@ ghc704_pkgs =
   , p "process" [1,0,1,5]
 --   , p "random" [1,0,0,3] -- will not be shipped starting from ghc-7.2
   , p "template-haskell" [2,5,0,0]
---  , p "time" [1,2,0,3] package is upgradeable, user by random
+  , p "time" [1,2,0,3]
   , p "unix" [2,4,2,0]
   ]
 
@@ -270,7 +270,7 @@ ghc6123_pkgs =
 --  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
 --  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,1]
---  , p "time" [1,1,4] package is upgradeable, user by random
+  , p "time" [1,1,4]
   , p "unix" [2,4,0,2]
 --  , p "utf8-string" [0,3,4] package is upgradeable
   ]
@@ -298,7 +298,7 @@ ghc6122_pkgs =
 --  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
 --  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,1]
---  , p "time" [1,1,4] package is upgradeable
+  , p "time" [1,1,4]
   , p "unix" [2,4,0,1]
 --  , p "utf8-string" [0,3,4] package is upgradeable
   ]
@@ -326,7 +326,7 @@ ghc6121_pkgs =
 --  , p "random" [1,0,0,2] -- will not be shipped starting from ghc-7.2
 --  , p "syb" [0,1,0,2] -- not distributed with ghc-7
   , p "template-haskell" [2,4,0,0]
---  , p "time" [1,1,4] package is upgradeable
+  , p "time" [1,1,4]
   , p "unix" [2,4,0,0]
 --  , p "utf8-string" [0,3,4] package is upgradeable
   ]
