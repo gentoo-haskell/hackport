@@ -39,6 +39,7 @@ import Data.Char          (toLower,isUpper)
 import Portage.Dependency
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
+import qualified Portage.GHCCore as Portage
 import qualified Portage.Resolve as Portage
 import qualified Portage.EBuild as E
 import qualified Portage.Overlay as O
@@ -76,7 +77,7 @@ convertDependencies overlay category = concatMap (convertDependency overlay cate
 
 convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> [Dependency]
 convertDependency _overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
-  | pname `elem` coreLibs = []      -- no explicit dep on core libs
+  | pname `elem` Portage.coreLibs = []      -- no explicit dep on core libs
 convertDependency overlay category (Cabal.Dependency pname versionRange)
   = convert versionRange
   where
@@ -96,31 +97,3 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
             )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
             )
-
-coreLibs :: [Cabal.PackageName]
-coreLibs = map Cabal.PackageName
-  ["array"
-  ,"base"
-  ,"bytestring"   -- intentionally no ebuild. use ghc's version
-                  -- to avoid dreaded 'diamond dependency' problem
-  ,"containers"
-  ,"directory"
-  --,"editline"
-  ,"filepath"     -- intentionally no ebuild. use ghc's version
-  ,"ghc"
-  ,"ghc-prim"
-  ,"haskell98"
-  ,"hpc"          --has ebuild, but only in the overlay
-  ,"integer"      -- up to ghc-6.10
-  ,"integer-gmp"  -- ghc-6.12+
-  ,"old-locale"
-  ,"old-time"
-  ,"packedstring"
-  ,"pretty"
-  ,"process"
-  -- ,"random"    -- not a core package since ghc-7.2
-  ,"rts"
-  -- ,"syb"       -- was splitted off from ghc again
-  ,"template-haskell"
-  ,"unix"         -- unsafe to upgrade
-  ]

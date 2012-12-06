@@ -304,7 +304,7 @@ resolvePkgConfigs overlay cdeps =
   | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
 
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
-resolvePkgConfig overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
+resolvePkgConfig _overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
   (cat,portname, slot) <- lookup pn table
   return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) slot []
 

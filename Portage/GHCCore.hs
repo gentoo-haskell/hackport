@@ -1,7 +1,8 @@
 
 -- Guess GHC version from packages depended upon.
 module Portage.GHCCore
-        ( minimumGHCVersionToBuildPackage
+        ( coreLibs
+        , minimumGHCVersionToBuildPackage
         , cabalFromGHC
         , defaultGHC
         ) where
@@ -64,7 +65,7 @@ packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
 -- Packages that are not core will always be accepted, packages that are
 -- core in any ghc must be satisfied by the 'PackageIndex'.
 dependencySatisfiable :: PackageIndex -> Dependency -> Bool
-dependencySatisfiable pi dep@(Dependency pn rang)
+dependencySatisfiable pi dep@(Dependency pn _rang)
   | pn == PackageName "Win32" = False -- only exists on windows, not in linux
   | not . null $ lookupDependency pi dep = True -- the package index satisfies the dep
   | packageIsCoreInAnyGHC pn = False -- some other ghcs support the dependency
@@ -358,3 +359,31 @@ ghc6104_pkgs =
 
 p :: String -> [Int] -> PackageIdentifier
 p pn vs = PackageIdentifier (PackageName pn) (Version vs [])
+
+coreLibs :: [PackageName]
+coreLibs = map PackageName
+  ["array"
+  ,"base"
+  ,"bytestring"   -- intentionally no ebuild. use ghc's version
+                  -- to avoid dreaded 'diamond dependency' problem
+  ,"containers"
+  ,"directory"
+  --,"editline"
+  ,"filepath"     -- intentionally no ebuild. use ghc's version
+  ,"ghc"
+  ,"ghc-prim"
+  ,"haskell98"
+  ,"hpc"          --has ebuild, but only in the overlay
+  ,"integer"      -- up to ghc-6.10
+  ,"integer-gmp"  -- ghc-6.12+
+  ,"old-locale"
+  ,"old-time"
+  ,"packedstring"
+  ,"pretty"
+  ,"process"
+  -- ,"random"    -- not a core package since ghc-7.2
+  ,"rts"
+  -- ,"syb"       -- was splitted off from ghc again
+  ,"template-haskell"
+  ,"unix"         -- unsafe to upgrade
+  ]
