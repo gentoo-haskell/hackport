@@ -385,5 +385,8 @@ coreLibs = map PackageName
   ,"rts"
   -- ,"syb"       -- was splitted off from ghc again
   ,"template-haskell"
+  ,"time" -- ghc-6.12+. startig from ghc-7.6.1 it is very
+          -- unsafe to unpgrade as most others (like directory)
+          -- depend on it
   ,"unix"         -- unsafe to upgrade
   ]
