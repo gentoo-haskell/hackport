@@ -246,6 +246,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("ssl", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "openssl") Portage.AnySlot [])
       , ("Judy", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "judy") Portage.AnySlot [])
       , ("fcgi", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "fcgi") Portage.AnySlot [])
+      , ("gnutls", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "gnutls") Portage.AnySlot [])
+      , ("idn", Portage.AnyVersionOf (Portage.mkPackageName "net-dns" "libidn") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
@@ -372,5 +374,6 @@ table =
   ,("libxml2",                     ("dev-libs", "libxml2", Portage.AnySlot))
   ,("libgsasl",                    ("virtual", "gsasl", Portage.AnySlot))
   ,("libzip",                      ("dev-libs", "libzip", Portage.AnySlot))
-
+  ,("gnutls",                      ("net-libs", "gnutls", Portage.AnySlot))
+  ,("libidn",                      ("net-dns", "libidn", Portage.AnySlot))
   ]
