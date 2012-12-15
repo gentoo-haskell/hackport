@@ -257,6 +257,14 @@ findExistingKeywords edir =
            then return Nothing
            else return (snd $ last e_kw_s)
 
+-- "amd64" -> "~amd64"
+to_unstable :: String -> String
+to_unstable kw =
+    case kw of
+        '~':_ -> kw
+        '-':_ -> kw
+        _     -> '~':kw
+
 mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO () 
 mergeEbuild verbosity target cat ebuild = do
   let edir = target </> cat </> E.name ebuild
@@ -268,11 +276,12 @@ mergeEbuild verbosity target cat ebuild = do
   createDirectoryIfMissing True edir
   existing_keywords <- findExistingKeywords edir
 
-  notice verbosity $ "Current keywords " ++ show existing_keywords
-
-  let new_keywords = maybe (E.keywords ebuild) id existing_keywords
+  let new_keywords = maybe (E.keywords ebuild) (map to_unstable) (existing_keywords)
       ebuild'      = ebuild { E.keywords = new_keywords }
       s_ebuild'    = display ebuild'
+
+  notice verbosity $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
+
   notice verbosity $ "Writing " ++ elocal
   (length s_ebuild') `seq` BL.writeFile epath (BL.pack s_ebuild')
 
