@@ -33,6 +33,8 @@ data EBuild = EBuild {
     rdepend_extra :: [String],
     features :: [String],
     my_pn :: Maybe String -- ^ Just 'myOldName' if the package name contains upper characters
+    , src_prepare :: [String] -- ^ raw block for src_prepare() contents
+    , src_configure :: [String] -- ^ raw block for src_configure() contents
   }
 
 getHackportVersion :: Version -> String
@@ -58,6 +60,8 @@ ebuildTemplate = EBuild {
     rdepend_extra = [],
     features = [],
     my_pn = Nothing
+    , src_prepare = []
+    , src_configure = []
   }
 
 instance Text EBuild where
@@ -107,33 +111,50 @@ showEBuild ebuild =
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
   (case my_pn ebuild of
      Nothing -> id
-     Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl)
-  $ []
-  where expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
+     Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
+  verbatim (nl. ss "src_prepare() {" . nl)
+               (src_prepare ebuild)
+           (ss "}" . nl).
+  verbatim (nl. ss "src_configure() {" . nl)
+               (src_configure ebuild)
+           (ss "}" . nl).
+  id $ []
+  where
+        expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
-        toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/" 
+        toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
 
-ss :: String -> String -> String
+type DString = String -> String
+
+ss :: String -> DString
 ss = showString
 
-sc :: Char -> String -> String
+sc :: Char -> DString
 sc = showChar
 
-nl :: String -> String
+nl :: DString
 nl = sc '\n'
 
-dep_str :: String -> [String] -> [Dependency] -> (String -> String)
+verbatim :: DString -> [String] -> DString -> DString
+verbatim pre s post =
+    if null s
+        then id
+        else pre .
+            (foldl (\acc v -> acc . ss "\t" . ss v . nl) id s) .
+            post
+
+dep_str :: String -> [String] -> [Dependency] -> DString
 dep_str var extra deps = ss var. sc '='. quote' (sepBy "\n\t\t" $ extra ++ map display deps). nl
 
-quote :: String -> String -> String
+quote :: String -> DString
 quote str = sc '"'. ss (esc str). sc '"'
   where
   esc = concatMap esc'
   esc' '"' = "\""
   esc' c = [c]
 
-quote' :: (String -> String) -> String -> String
+quote' :: DString -> DString
 quote' str = sc '"'. str. sc '"'
 
 sepBy :: String -> [String] -> ShowS
