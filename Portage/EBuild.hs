@@ -142,31 +142,31 @@ sepBy _ [x]    = ss x
 sepBy s (x:xs) = ss x. ss s. sepBy s xs
 
 getRestIfPrefix ::
-	String ->	-- ^ the prefix
-	String ->	-- ^ the string
-	Maybe String
+    String ->    -- ^ the prefix
+    String ->    -- ^ the string
+    Maybe String
 getRestIfPrefix (p:ps) (x:xs) = if p==x then getRestIfPrefix ps xs else Nothing
 getRestIfPrefix [] rest = Just rest
 getRestIfPrefix _ [] = Nothing
 
 subStr ::
-	String ->	-- ^ the search string
-	String ->	-- ^ the string to be searched
-	Maybe (String,String)  -- ^ Just (pre,post) if string is found
+    String ->    -- ^ the search string
+    String ->    -- ^ the string to be searched
+    Maybe (String,String)  -- ^ Just (pre,post) if string is found
 subStr sstr str = case getRestIfPrefix sstr str of
-	Nothing -> if null str then Nothing else case subStr sstr (tail str) of
-		Nothing -> Nothing
-		Just (pre,post) -> Just (head str:pre,post)
-	Just rest -> Just ([],rest)
+    Nothing -> if null str then Nothing else case subStr sstr (tail str) of
+        Nothing -> Nothing
+        Just (pre,post) -> Just (head str:pre,post)
+    Just rest -> Just ([],rest)
 
 replaceMultiVars ::
-	[(String,String)] ->	-- ^ pairs of variable name and content
-	String ->		-- ^ string to be searched
-	String 			-- ^ the result
+    [(String,String)] ->    -- ^ pairs of variable name and content
+    String ->        -- ^ string to be searched
+    String             -- ^ the result
 replaceMultiVars [] str = str
 replaceMultiVars whole@((pname,cont):rest) str = case subStr cont str of
-	Nothing -> replaceMultiVars rest str
-	Just (pre,post) -> (replaceMultiVars rest pre)++pname++(replaceMultiVars whole post)
+    Nothing -> replaceMultiVars rest str
+    Just (pre,post) -> (replaceMultiVars rest pre)++pname++(replaceMultiVars whole post)
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> String
