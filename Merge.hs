@@ -198,10 +198,23 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   forM_ excludePkgs $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
-  let ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
+  let p_flag (Cabal.FlagName fn, True)  =     fn
+      p_flag (Cabal.FlagName fn, False) = '-':fn
+
+      -- appends 's' to each line except the last one
+      --  handy to build multiline shell expressions
+      icalate _s []     = []
+      icalate _s [x]    = [x]
+      icalate  s (x:xs) = (x ++ s) : icalate s xs
+
+      selected_flags [] = []
+      selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure" : map (("\t--flag=" ++) . p_flag) fs
+
+      ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
                . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
                . (\e -> e { E.rdepend       = Merge.rdep edeps } )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e edeps } )
+               . (\e -> e { E.src_configure = selected_flags flags } )
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
