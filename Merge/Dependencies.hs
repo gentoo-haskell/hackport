@@ -249,6 +249,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("gnutls", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "gnutls") Portage.AnySlot [])
       , ("idn", Portage.AnyVersionOf (Portage.mkPackageName "net-dns" "libidn") Portage.AnySlot [])
       , ("tre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "tre") Portage.AnySlot [])
+      , ("m", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "libc") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
