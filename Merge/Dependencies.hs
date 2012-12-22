@@ -250,6 +250,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("idn", Portage.AnyVersionOf (Portage.mkPackageName "net-dns" "libidn") Portage.AnySlot [])
       , ("tre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "tre") Portage.AnySlot [])
       , ("m", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "libc") Portage.AnySlot [])
+      , ("asound", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "alsa-lib") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
