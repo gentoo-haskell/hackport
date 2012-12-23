@@ -123,8 +123,11 @@ resolveDependencies overlay pkg mcompiler =
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
-    build_tools = buildToolsDependencies pkg
-    pkg_config = pkgConfigDependencies overlay pkg
+    pkg_config_libs = pkgConfigDependencies overlay pkg
+    pkg_config_tools = if null pkg_config_libs
+                           then []
+                           else [Portage.AnyVersionOf (Portage.mkPackageName "virtual" "pkgconfig") Portage.AnySlot []]
+    build_tools = buildToolsDependencies pkg ++ pkg_config_tools
     edeps
         | treatAsLibrary = emptyEDep
                   {
@@ -135,7 +138,7 @@ resolveDependencies overlay pkg mcompiler =
                     rdep = set_build_slot ghc_dep
                             : haskell_deps
                             ++ extra_libs
-                            ++ pkg_config
+                            ++ pkg_config_libs
                   }
         | otherwise = emptyEDep
                   {
@@ -145,7 +148,7 @@ resolveDependencies overlay pkg mcompiler =
                           ++ haskell_deps
                           ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
-                    rdep = extra_libs ++ pkg_config
+                    rdep = extra_libs ++ pkg_config_libs
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
     set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
