@@ -382,4 +382,5 @@ table =
   ,("libzip",                      ("dev-libs", "libzip", Portage.AnySlot))
   ,("gnutls",                      ("net-libs", "gnutls", Portage.AnySlot))
   ,("libidn",                      ("net-dns", "libidn", Portage.AnySlot))
+  ,("libxml-2.0",                  ("dev-libs", "libxml2", Portage.AnySlot))
   ]
