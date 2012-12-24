@@ -254,6 +254,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("tre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "tre") Portage.AnySlot [])
       , ("m", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "libc") Portage.AnySlot [])
       , ("asound", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "alsa-lib") Portage.AnySlot [])
+      , ("sqlite3", Portage.OrLaterVersionOf (Portage.Version [3,0] Nothing [] 0) (Portage.mkPackageName "dev-db" "sqlite") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
