@@ -155,7 +155,8 @@ runStatus verbosity portdir overlaydir direction pkgs = do
 --   * Newer version in overlay than in portage
 toPortageFilter :: Map PackageName [FileStatus ExistingEbuild] -> Map PackageName [FileStatus ExistingEbuild]
 toPortageFilter = Map.mapMaybe $ \ sts ->
-    let inPortage = flip filter sts $ \st ->
+    let filter_out_lives = filter (not . V.is_live . pkgVersion . ebuildId . fromStatus)
+        inPortage = flip filter sts $ \st ->
                         case st of
                             OverlayOnly _ -> False
                             HackageOnly _ -> False
@@ -166,7 +167,7 @@ toPortageFilter = Map.mapMaybe $ \ sts ->
                 Differs _ _ -> True
                 _ | pkgVersion (ebuildId (fromStatus st)) > latestPortageVersion -> True
                   | otherwise -> False
-    in if not (null inPortage) && not (null interestingPackages)
+    in if not (null inPortage) && not (null $ filter_out_lives interestingPackages)
         then Just sts
         else Nothing
 
