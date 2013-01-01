@@ -1,11 +1,11 @@
 Name:           hackport
-Version:	0.3.1
-License:	GPL
+Version:        0.3.2
+License:        GPL
 License-file:   LICENSE
-Author:		Henning Günther, Duncan Coutts, Lennart Kolmodin
+Author:         Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
 Category:       Distribution
-Synopsis:	Hackage and Portage integration tool
+Synopsis:       Hackage and Portage integration tool
 Description:    A command line tool to manage an overlay of Gentoo ebuilds
                 that are generated from a hackage repo of Cabal packages.
 Build-Type:     Simple
@@ -17,8 +17,8 @@ source-repository head
 
 Flag split-base
 
-Executable	hackport
-  Main-Is:	Main.hs
+Executable    hackport
+  Main-Is:    Main.hs
   Default-Language: Haskell98
   Hs-Source-Dirs: ., cabal, cabal/Cabal, cabal/cabal-install
   Build-Depends:
@@ -89,8 +89,8 @@ Executable	hackport
     Util
 
 
-Executable	hackport-guess-ghc-version
-  Main-Is:	Main-GuessGHC.hs
+Executable    hackport-guess-ghc-version
+  Main-Is:    Main-GuessGHC.hs
   Default-Language: Haskell98
   Buildable:    False
   -- this was used as a test while developing the
