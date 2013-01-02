@@ -257,6 +257,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("sqlite3", Portage.OrLaterVersionOf (Portage.Version [3,0] Nothing [] 0) (Portage.mkPackageName "dev-db" "sqlite") Portage.AnySlot [])
       , ("stdc++", Portage.AnyVersionOf (Portage.mkPackageName "sys-devel" "gcc") Portage.AnySlot [Portage.mkUse "cxx"])
       , ("crack", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "cracklib") Portage.AnySlot [])
+      , ("exif", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libexif") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
