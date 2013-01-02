@@ -19,9 +19,6 @@ import qualified Distribution.PackageDescription as Cabal ( PackageDescription(.
                                        , FlagName(..)
                                        , GenericPackageDescription(..)
                                        )
-import qualified Distribution.PackageDescription.Configuration as Cabal ( finalizePackageDescription )
-
-import Distribution.System (buildPlatform)
 import Distribution.Text (display)
 import Distribution.Verbosity
 import Distribution.Simple.Utils
@@ -161,26 +158,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
 
-  let Right (pkgDesc0, flags) =
-        Cabal.finalizePackageDescription
-          [ -- XXX: common things we should enable/disable?
-            -- (FlagName "small_base", True) -- try to use small base
-            (Cabal.FlagName "cocoa", False)
-          ]
-          (\_dep -> True)
-          -- (Nothing :: Maybe (Index.PackageIndex PackageIdentifier))
-          buildPlatform
-          (fst GHCCore.defaultGHC)
-          [] pkgGenericDesc
-
-      mminimumGHC = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
-      (compilerId, excludePkgs) = maybe GHCCore.defaultGHC id mminimumGHC
+  let Just (compilerId, ghc_packages, pkgDesc0, flags) = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
 
       (accepted_deps, skipped_deps, dropped_deps) =
           foldl (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
                   let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
                   in case () of
-                        _ | pn `elem` excludePkgs       -> (    ad, dep:sd,     rd)
+                        _ | pn `elem` ghc_packages      -> (    ad, dep:sd,     rd)
                         _ | pn == merged_cabal_pkg_name -> (    ad,     sd, dep:rd)
                         _                               -> (dep:ad,     sd,     rd)
                 )
@@ -190,12 +174,15 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
       edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
 
+  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
+  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
+
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Selected flags: " ++ show flags
-  info verbosity ("Guessing GHC version: " ++ maybe "could not guess" (display.fst) mminimumGHC)
-  forM_ excludePkgs $
+
+  forM_ ghc_packages $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
   let p_flag (Cabal.FlagName fn, True)  =     fn

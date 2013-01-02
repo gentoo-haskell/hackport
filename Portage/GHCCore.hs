@@ -92,11 +92,11 @@ packageBuildableWithGHCVersion pkg (compiler, pkgIndex) = trace_failure $
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName])
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment)
 minimumGHCVersionToBuildPackage gpd =
-  listToMaybe [ (cid, packageNamesFromPackageIndex pix)
+  listToMaybe [ (cid, packageNamesFromPackageIndex pix, pkg_desc, picked_flags)
               | g@(cid, pix) <- ghcs
-              , Right _ <- return (packageBuildableWithGHCVersion gpd g)]
+              , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
 
 mkIndex :: [PackageIdentifier] -> PackageIndex
 mkIndex pids = fromList
