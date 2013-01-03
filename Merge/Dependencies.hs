@@ -258,6 +258,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("stdc++", Portage.AnyVersionOf (Portage.mkPackageName "sys-devel" "gcc") Portage.AnySlot [Portage.mkUse "cxx"])
       , ("crack", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "cracklib") Portage.AnySlot [])
       , ("exif", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libexif") Portage.AnySlot [])
+      , ("IL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "devil") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
