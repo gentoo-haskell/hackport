@@ -260,6 +260,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("exif", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libexif") Portage.AnySlot [])
       , ("IL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "devil") Portage.AnySlot [])
       , ("Imlib2", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "imlib2") Portage.AnySlot [])
+      , ("pcap", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "libpcap") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
