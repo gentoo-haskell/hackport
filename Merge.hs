@@ -208,19 +208,22 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   when fetch $ do
     let cabal_pkgId = Cabal.packageId pkgDesc
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-    fetchAndDigest
+    fetchDigestAndCheck
       verbosity
       (overlayPath </> display cat </> display norm_pkgName)
 
-fetchAndDigest :: Verbosity
-               -> FilePath -- ^ directory of ebuild
-               -> IO ()
-fetchAndDigest verbosity ebuildDir =
+fetchDigestAndCheck :: Verbosity
+                    -> FilePath -- ^ directory of ebuild
+                    -> IO ()
+fetchDigestAndCheck verbosity ebuildDir =
   withWorkingDirectory ebuildDir $ do
      notice verbosity "Recalculating digests (repoman manifest)..."
-     r <- system "repoman manifest"
-     when (r /= ExitSuccess) $
+     rm <- system "repoman manifest"
+     when (rm /= ExitSuccess) $
          notice verbosity "repoman manifest failed horribly. Do something about it!"
+     rf <- system "repoman full --include-dev"
+     when (rf /= ExitSuccess) $
+         notice verbosity "repoman full --include-dev found an error. Do something about it!"
      return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
