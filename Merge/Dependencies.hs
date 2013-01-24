@@ -263,6 +263,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("pcap", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "libpcap") Portage.AnySlot [])
       , ("lber", Portage.AnyVersionOf (Portage.mkPackageName "net-nds" "openldap") Portage.AnySlot [])
       , ("ldap", Portage.AnyVersionOf (Portage.mkPackageName "net-nds" "openldap") Portage.AnySlot [])
+      , ("expect", Portage.AnyVersionOf (Portage.mkPackageName "dev-tcltk" "expect") Portage.AnySlot [])
+      , ("tcl", Portage.AnyVersionOf (Portage.mkPackageName "dev-lang" "tcl") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
