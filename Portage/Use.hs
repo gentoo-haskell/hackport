@@ -34,6 +34,7 @@ mkQUse = Q . UseFlag
 
 instance Text UseFlag where
   disp = showModificator
+  parse = parse
 
 showModificator :: UseFlag -> Disp.Doc
 showModificator (UseFlag u) = Disp.text u

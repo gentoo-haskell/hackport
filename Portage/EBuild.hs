@@ -67,6 +67,7 @@ ebuildTemplate = EBuild {
 
 instance Text EBuild where
   disp = Disp.text . showEBuild
+  parse = parse
 
 -- | Given an EBuild, give the URI to the tarball of the source code.
 -- Assumes that the server is always hackage.haskell.org.

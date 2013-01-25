@@ -83,8 +83,8 @@ distroMap verbosity repo portagePath overlayPath args = do
   info verbosity ("overlay map: " ++ show (Map.size overlayMap))
   info verbosity ("complete map: " ++ show (Map.size completeMap))
 
-  SourcePackageDb { packageIndex = packageIndex } <-
-    CabalInstall.getSourcePackages verbosity [repo]
+  SourcePackageDb {packageIndex = packageIndex} <-
+      CabalInstall.getSourcePackages verbosity [repo]
 
   let pkgs0 = map (map packageInfoId) (CabalInstall.allPackagesByName packageIndex)
       hackagePkgs = [ (Cabal.pkgName (head p), map Cabal.pkgVersion p) | p <- pkgs0 ]
@@ -151,8 +151,8 @@ lookupPVU pvu_map pn cvs =
     [ item
     | item@(Portage.PackageName cat _pn, _vs) <- items
     , cat == Portage.Category "dev-haskell"]
-  findItems pvu_map cpn = Map.toList $ Map.filterWithKey f pvu_map
+  findItems _pvu_map cpn = Map.toList $ Map.filterWithKey f pvu_map
     where
-    f (Portage.PackageName _cat pn) _vs = cpn == pn
+    f (Portage.PackageName _cat _pn) _vs = cpn == pn
 
 
