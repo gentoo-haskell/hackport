@@ -29,7 +29,7 @@ defaultGHC :: (CompilerId, [PackageName])
 defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704, ghc741, ghc742, ghc761]
+ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704, ghc741, ghc742, ghc761, ghc762]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -49,6 +49,7 @@ cabalFromGHC ver = lookup ver table
           ,([7,0,1],  Version [1,10,0,0] [])
           ,([7,4,2],  Version [1,14,0] [])
           ,([7,6,1],  Version [1,16,0] [])
+          ,([7,6,2],  Version [1,16,0] [])
           ]
 
 platform :: Platform
@@ -113,14 +114,17 @@ packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
+ghc762 :: (CompilerId, PackageIndex)
+ghc762 = (ghc [7,6,2], mkIndex ghc762_pkgs)
+
 ghc761 :: (CompilerId, PackageIndex)
 ghc761 = (ghc [7,6,1], mkIndex ghc761_pkgs)
 
-ghc741 :: (CompilerId, PackageIndex)
-ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
-
 ghc742 :: (CompilerId, PackageIndex)
 ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
+
+ghc741 :: (CompilerId, PackageIndex)
+ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 
 ghc704 :: (CompilerId, PackageIndex)
 ghc704 = (ghc [7,0,1], mkIndex ghc704_pkgs)
@@ -140,12 +144,38 @@ ghc6104 = (ghc [6,10,4], mkIndex ghc6104_pkgs)
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 
+ghc762_pkgs :: [PackageIdentifier]
+ghc762_pkgs =
+  [ p "array" [0,4,0,1]
+  , p "base" [4,6,0,1]
+--  , p "binary" [0,5,1,1]  package is upgradeable
+  , p "bytestring" [0,10,0,2]
+--  , p "Cabal" [1,16,0]  package is upgradeable
+  , p "containers" [0,5,0,0]
+--  , p "deepseq" [1,3,0,1] -- package is upgradeable
+  , p "directory" [1,2,0,1]
+  , p "filepath" [1,3,0,1]
+  , p "ghc-prim" [0,3,0,0]
+  , p "haskell2010" [1,1,1,0]
+  , p "haskell98" [2,0,0,2]
+  , p "hoopl" [3,9,0,0] -- used by libghc
+  , p "hpc" [0,6,0,0] -- used by libghc
+  , p "integer-gmp" [0,5,0,0]
+  , p "old-locale" [1,0,0,5]
+  , p "old-time" [1,1,0,1]
+  , p "pretty" [1,1,1,0]
+  , p "process" [1,1,0,2]
+  , p "template-haskell" [2,8,0,0] -- used by libghc
+  , p "time" [1,4,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
+  , p "unix" [2,6,0,1]
+  ]
+
 ghc761_pkgs :: [PackageIdentifier]
 ghc761_pkgs =
   [ p "array" [0,4,0,1]
   , p "base" [4,6,0,0]
 --  , p "binary" [0,5,1,1]  package is upgradeable
-  , p "bytestring" [0,10,0,8]
+  , p "bytestring" [0,10,0,0]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
 --  , p "deepseq" [1,3,0,1] -- package is upgradeable
