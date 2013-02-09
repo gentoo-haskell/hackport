@@ -245,7 +245,9 @@ extractKeywords ebuild_path s_ebuild =
            [kw_ln] -> let kw_line  = lns !! kw_ln
                           kw_str   = (fst . break (== '"') . tail . snd . break (== '"')) kw_line
                           keywords = words kw_str
-                      in Just keywords
+                      in if null keywords
+                             then Nothing
+                             else Just keywords
            other   -> error $ ebuild_path ++ ": parse_ebuild: strange KEYWORDS lines: " ++ show other
 
 findExistingKeywords :: FilePath -> IO (Maybe [String])
