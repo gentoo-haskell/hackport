@@ -12,6 +12,7 @@ import Portage.Dependency
 import Distribution.License as Cabal
 
 import Data.String.Utils
+import Data.List (sort)
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
@@ -105,7 +106,7 @@ showEBuild ebuild =
          else ss "\t#". ss (licenseComment . license $ ebuild)). nl.
   ss "SLOT=". quote (slot ebuild). nl.
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
-  ss "IUSE=". quote' (sepBy ", " $ iuse ebuild). nl.
+  ss "IUSE=". quote' (sepBy " " . sort $ iuse ebuild). nl.
   nl.
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
