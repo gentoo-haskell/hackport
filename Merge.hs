@@ -16,6 +16,7 @@ import Data.Version
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.PackageDescription as Cabal ( PackageDescription(..)
+                                       , Flag(..)
                                        , FlagName(..)
                                        , GenericPackageDescription(..)
                                        )
@@ -173,6 +174,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
 
       edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
+      aflags = Cabal.genPackageFlags pkgGenericDesc
 
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
   debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
@@ -181,6 +183,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Selected flags: " ++ show flags
+  notice verbosity $ "All flags: " ++ show aflags
 
   forM_ ghc_packages $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
@@ -188,20 +191,26 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   let p_flag (Cabal.FlagName fn, True)  =     fn
       p_flag (Cabal.FlagName fn, False) = '-':fn
 
+      flagName f = let Cabal.FlagName y = Cabal.flagName f
+                   in y
+
       -- appends 's' to each line except the last one
       --  handy to build multiline shell expressions
       icalate _s []     = []
       icalate _s [x]    = [x]
       icalate  s (x:xs) = (x ++ s) : icalate s xs
+      iuses fs = map flagName fs
 
       selected_flags [] = []
-      selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure" : map (("\t--flag=" ++) . p_flag) fs
+      selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure"
+                                        : map (\p -> "\t$(cabal_flag "++flagName p++" "++flagName p++")") fs
 
       ebuild =   (\e -> e { E.depend        = Merge.dep edeps } )
                . (\e -> e { E.depend_extra  = Merge.dep_e edeps } )
                . (\e -> e { E.rdepend       = Merge.rdep edeps } )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e edeps } )
-               . (\e -> e { E.src_configure = selected_flags flags } )
+               . (\e -> e { E.src_configure = selected_flags aflags } )
+               . (\e -> e { E.iuse = E.iuse e ++ iuses aflags })
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
