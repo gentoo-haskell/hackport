@@ -44,6 +44,7 @@ data Dependency = AnyVersionOf               PackageName SlotDepend [UseFlag]
 
 instance Text Dependency where
   disp = showDepend
+  parse = parse
 
 (<->) :: Disp.Doc -> Disp.Doc -> Disp.Doc
 a <-> b = a <> Disp.char '-' <> b

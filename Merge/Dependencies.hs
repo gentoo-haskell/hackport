@@ -53,7 +53,7 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , extraLibs
                                        , buildTools
                                        , pkgconfigDepends
-                                       , hasLibs
+                                       --, hasLibs
                                        , specVersion
                                        , TestSuite(..)
                                        , targetBuildDepends
@@ -112,7 +112,7 @@ resolveDependencies overlay pkg mcompiler =
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
     compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
-    hasBuildableExes p = any (buildable . buildInfo) . executables $ p
+    --hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
         | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay pkg
@@ -180,7 +180,7 @@ haskellDependencies overlay pkg =
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
 cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
-cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _)) =
+cabalDependency overlay pkg (CompilerId GHC (Cabal.Version versionNumbers _)) =
   head $ C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
@@ -197,7 +197,11 @@ cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNum
                                 (Cabal.intersectVersionRanges
                                           userCabalVersion
                                           shippedCabalDep)
-
+cabalDependency _ _ _ =
+  trace ("WARNING: This compiler is not supported.")
+  --return unknown compiler package to satisfy return to cabalDependency
+  Portage.AnyVersionOf (Portage.mkPackageName "unknown" "compiler") Portage.AnySlot []
+  
 ---------------------------------------------------------------
 -- GHC Dependency
 ---------------------------------------------------------------
@@ -205,7 +209,11 @@ cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNum
 compilerIdToDependency :: CompilerId -> Portage.Dependency
 compilerIdToDependency (CompilerId GHC versionNumbers) =
   Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc") Portage.AnySlot []
-
+compilerIdToDependency _ =
+  trace ("WARNING: This compiler is not supported.")
+  --return unknown compiler package to satisfy return to cabalDependency
+  Portage.AnyVersionOf (Portage.mkPackageName "unknown" "compiler") Portage.AnySlot []
+  
 ---------------------------------------------------------------
 -- C Libraries
 ---------------------------------------------------------------
