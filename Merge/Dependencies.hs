@@ -53,7 +53,6 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , extraLibs
                                        , buildTools
                                        , pkgconfigDepends
-                                       , hasLibs
                                        , specVersion
                                        , TestSuite(..)
                                        , targetBuildDepends
@@ -112,7 +111,7 @@ resolveDependencies overlay pkg mcompiler =
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
     compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
-    hasBuildableExes p = any (buildable . buildInfo) . executables $ p
+    -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
         | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay pkg
@@ -153,14 +152,6 @@ resolveDependencies overlay pkg mcompiler =
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
     set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
-resolvePureDeps :: Portage.Overlay -> [Cabal.Dependency] -> Bool -> EDep
-resolvePureDeps overlay deps treatAsLibrary = undefined
-    where haskell_deps
-            | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay deps
-            | otherwise      = haskellDependencies overlay deps
-          add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
-          set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
-
 ---------------------------------------------------------------
 -- Test-suite dependencies
 ---------------------------------------------------------------
@@ -188,7 +179,7 @@ haskellDependencies overlay pkg =
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
 cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
-cabalDependency overlay pkg (CompilerId GHC ghcVersion@(Cabal.Version versionNumbers _)) =
+cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
   head $ C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
@@ -223,7 +214,7 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
           (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p) Portage.AnySlot [])
   | p <- notFound
-  ] ++ 
+  ] ++
   found
   where
   libE = maybe [] (extraLibs.libBuildInfo) lib
