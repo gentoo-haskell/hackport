@@ -6,7 +6,6 @@ module Merge
 
 import Control.Monad.Error
 import Control.Exception
-import Control.Arrow (second)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Char (isSpace)
 import Data.Maybe
@@ -19,6 +18,7 @@ import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.PackageDescription as Cabal ( PackageDescription(..)
                                        , Flag(..)
+                                       , FlagAssignment
                                        , FlagName(..)
                                        , GenericPackageDescription(..)
                                        )
@@ -168,20 +168,42 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
       (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
-      edeps = Merge.resolveDependencies overlay pkgDesc (Just compilerId)
       aflags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
-      deps   = [ (f, genDeps pkgDesc1) | f <- aflags
-               , Right (pkgDesc1,_) <- return (GHCCore.finalizePackageDescription (setFlag f aflags)
+      lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
+      lflags  [] = [[]]
+      lflags  (x:xs) = let tp = lflags xs 
+                       in (map ((Cabal.flagName x,False) :) tp)
+                          ++ (map ((Cabal.flagName x,True):) tp)
+      deps1  = filter (not.null.fst)
+               [ (sort $ map fst f', genDeps pkgDesc1) 
+               | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
+               , Right (pkgDesc1,_) <- return (GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   (GHCCore.platform)
                                                                   compilerId
                                                                   []
                                                                   pkgGenericDesc)
+               , f' <- return $ filter snd f
                ]
-      cdeps = L.foldl1 (Merge.intersection) $ map snd deps
-      fdeps = map (uncurry liftFlag) $ filter (not . Merge.null . snd)
-                                     $ map (second (`Merge.difference` cdeps)) deps
-      tdeps = L.foldl (<>) cdeps fdeps
+      cdeps1 = L.foldl1 (Merge.intersection) $ map snd deps1
+      fdeps1 = map (uncurry liftFlags1) 
+                $ filter (not . Merge.null . snd)
+                $ map diffParts deps1
+      diffParts (f, x) = (f, (foldl go x $ (filter (/= (sort f)) (map sort $ L.subsequences f))) `Merge.difference` cdeps1) -- ^ we need reverse to preserve ordering
+         where go y l = case lookup l deps1 of
+                          Nothing -> y
+                          Just z  -> y `Merge.difference` z
+      liftFlags1 :: [Cabal.FlagName] -> Merge.EDep -> Merge.EDep
+      liftFlags1 fs e = let k =  foldr (\y x -> Portage.DependIfUse (Portage.mkQUse $ unFlagName y) . x) 
+                                      (id::Portage.Dependency->Portage.Dependency) fs
+                        in e { Merge.dep = if  null (Merge.dep e)  
+                                                then []
+                                                else Portage.simplify_deps [k $! Portage.AllOf (Merge.dep e)]
+                             , Merge.rdep = if null (Merge.rdep e) 
+                                                then []
+                                                else Portage.simplify_deps [k $! Portage.AllOf (Merge.rdep e)]}
+
+      tdeps = L.foldl (<>) cdeps1 fdeps1
 
       genSimple = 
           foldl (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
@@ -193,9 +215,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                 )
                 ([],[],[])
       genDeps x = Merge.resolveDependencies overlay x (Just compilerId)
-      setFlag f = map (\f' -> if f' == f then (f',True) else (f',False))
-      liftFlag f e = e { Merge.dep = Portage.simplify_deps $ [Portage.DependIfUse (Portage.mkQUse $ unFlagName f) 
-                                                                                  (Portage.AllOf (Merge.dep e))] }
 
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
   debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
@@ -204,13 +223,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Selected flags: " ++ show flags
-  notice verbosity $ "Normal deps: " ++ show edeps
+  notice verbosity $ "Fixed depends: " ++ show (length deps1)
 
   forM_ ghc_packages $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
-  let p_flag (Cabal.FlagName fn, True)  =     fn
-      p_flag (Cabal.FlagName fn, False) = '-':fn
+  let -- p_flag (Cabal.FlagName fn, True)  =     fn
+      -- p_flag (Cabal.FlagName fn, False) = '-':fn
 
 
       -- appends 's' to each line except the last one
