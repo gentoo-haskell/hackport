@@ -1,4 +1,4 @@
-{- | Merge a package from hackage to an ebuild.  
+{- | Merge a package from hackage to an ebuild.
 
 Merging a library
 =================
@@ -40,10 +40,12 @@ RDEPEND="${EXTRALIBS}"
 DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
 
 -}
-
 module Merge.Dependencies
   ( EDep(..)
   , resolveDependencies
+  , intersection
+  , difference
+  , null
   ) where
 
 import Distribution.PackageDescription ( PackageDescription(..)
@@ -57,8 +59,12 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , TestSuite(..)
                                        , targetBuildDepends
                                        )
+import Prelude hiding (null)
 import Data.Maybe ( isJust, isNothing )
+import Data.Monoid ( Monoid, mempty, mappend)
 import Data.List ( nub )
+import qualified Data.List as L
+import qualified Data.Set as S
 
 import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
@@ -85,15 +91,39 @@ data EDep = EDep
     dep :: [Portage.Dependency],
     dep_e :: [String]
   }
+  deriving (Show, Eq)
 
-emptyEDep :: EDep
-emptyEDep = EDep
-  {
-    rdep = [],
-    rdep_e = [],
-    dep = [],
-    dep_e = []
-  }
+instance Monoid EDep where
+  mempty = EDep
+      {
+        rdep = [],
+        rdep_e = [],
+        dep = [],
+        dep_e = []
+      }
+  (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
+    { rdep = Portage.simplify_deps $ rdepA ++ rdepB
+    , rdep_e = S.toList $ (S.fromList rdep_eA) `S.union` (S.fromList rdep_eB)
+    , dep  = Portage.simplify_deps $ depA ++ depB
+    , dep_e = S.toList $ (S.fromList dep_eA) `S.union` (S.fromList dep_eB)
+    }
+
+
+intersection :: EDep -> EDep -> EDep
+intersection (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (L.intersect a1 b1)
+                                                          (L.intersect a2 b2)
+                                                          (L.intersect a3 b3)
+                                                          (L.intersect a4 b4)
+
+difference :: EDep -> EDep -> EDep
+difference (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (f a1 b1)
+                                                        (f a2 b2)
+                                                        (f a3 b3)
+                                                        (f a4 b4)
+  where f a b = L.filter (`L.notElem` b) a
+
+null :: EDep -> Bool
+null e = e == mempty
 
 resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId -> EDep
 resolveDependencies overlay pkg mcompiler =
@@ -114,21 +144,21 @@ resolveDependencies overlay pkg mcompiler =
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
-        | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay pkg
-        | otherwise      = haskellDependencies overlay pkg
+        | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
+        | otherwise      = haskellDependencies overlay (buildDepends pkg)
     test_deps
-        | (not . null) (testSuites pkg) = testDependencies overlay pkg
+        | (not . L.null) (testSuites pkg) = testDependencies overlay pkg
         | otherwise = [] -- tests not enabled
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
     extra_libs = findCLibs pkg
     pkg_config_libs = pkgConfigDependencies overlay pkg
-    pkg_config_tools = if null pkg_config_libs
+    pkg_config_tools = if L.null pkg_config_libs
                            then []
                            else [Portage.AnyVersionOf (Portage.mkPackageName "virtual" "pkgconfig") Portage.AnySlot []]
     build_tools = buildToolsDependencies pkg ++ pkg_config_tools
     edeps
-        | treatAsLibrary = emptyEDep
+        | treatAsLibrary = mempty
                   {
                     dep = cabal_dep
                           : build_tools
@@ -139,7 +169,7 @@ resolveDependencies overlay pkg mcompiler =
                             ++ extra_libs
                             ++ pkg_config_libs
                   }
-        | otherwise = emptyEDep
+        | otherwise = mempty
                   {
                     dep = ghc_dep
                           : cabal_dep
@@ -167,10 +197,10 @@ testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdenti
 -- Haskell packages
 ---------------------------------------------------------------
 
-haskellDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
-haskellDependencies overlay pkg =
+haskellDependencies :: Portage.Overlay -> [Cabal.Dependency] {- PackageDescription -} -> [Portage.Dependency]
+haskellDependencies overlay deps =
     Portage.simplify_deps
-      $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") (buildDepends pkg)
+      $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") deps
 
 ---------------------------------------------------------------
 -- Cabal Dependency

@@ -5,6 +5,9 @@ module Portage.GHCCore
         , minimumGHCVersionToBuildPackage
         , cabalFromGHC
         , defaultGHC
+        , finalizePackageDescription
+        , platform
+        , dependencySatisfiable
         ) where
 
 import Distribution.Package
@@ -93,9 +96,9 @@ packageBuildableWithGHCVersion pkg (compiler, pkgIndex) = trace_failure $
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment)
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment, PackageIndex)
 minimumGHCVersionToBuildPackage gpd =
-  listToMaybe [ (cid, packageNamesFromPackageIndex pix, pkg_desc, picked_flags)
+  listToMaybe [ (cid, packageNamesFromPackageIndex pix, pkg_desc, picked_flags, pix)
               | g@(cid, pix) <- ghcs
               , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
 
