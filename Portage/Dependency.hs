@@ -57,7 +57,7 @@ showDepend (OrLaterVersionOf   v p s u) = Disp.text ">=" <> disp p <-> disp v <>
 showDepend (OrEarlierVersionOf v p s u) = Disp.text "<=" <> disp p <-> disp v <> dispSlot s <> dispUses u
 showDepend (ThisMajorOf        v p s u) = Disp.char '='  <> disp p <-> disp v <> Disp.char '*' <> dispSlot s <> dispUses u
 showDepend (DependEither       dp ) = Disp.text "|| ( " <> hsep (map showDepend dp) <> Disp.text " )"
-showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text "? " <> pp_deps dep
+showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text " " <> pp_deps dep
     where -- special case to avoid double braces: test? ( ( ) )
           pp_deps (AllOf _) =                               disp dep
           pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")

@@ -153,13 +153,21 @@ resolveDependencies overlay pkg mcompiler =
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
     set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
+resolvePureDeps :: Portage.Overlay -> [Cabal.Dependency] -> Bool -> EDep
+resolvePureDeps overlay deps treatAsLibrary = undefined
+    where haskell_deps
+            | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay deps
+            | otherwise      = haskellDependencies overlay deps
+          add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
+          set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
+
 ---------------------------------------------------------------
 -- Test-suite dependencies
 ---------------------------------------------------------------
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
 testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
-    [Portage.DependIfUse (Portage.UseFlag "test") (Portage.AllOf $ Portage.simplify_deps deps)]
+    [Portage.DependIfUse (Portage.mkQUse "test") (Portage.AllOf $ Portage.simplify_deps deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
