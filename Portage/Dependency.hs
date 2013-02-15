@@ -155,16 +155,22 @@ simplify_group deps = simplify_group_table package
 
 -- divide packages to groups (by package name), simplify groups, merge again
 simplify_deps :: [Dependency] -> [Dependency]
-simplify_deps deps = (concatMap (simplify_group.nub) $
-                       groupBy cmpPkgName $
-                         sortBy (comparing getPackagePart) groupable)
-                     ++ ungroupable
+simplify_deps deps = flattenDep $ 
+                        (concatMap (simplify_group.nub) $
+                            groupBy cmpPkgName $
+                                sortBy (comparing getPackagePart) groupable)
+                        ++ ungroupable
     where (ungroupable, groupable) = partition ((==Nothing).getPackage) deps
           --
           cmpPkgName p1 p2 = cmpMaybe (getPackage p1) (getPackage p2)
           cmpMaybe (Just p1) (Just p2) = p1 == p2
           cmpMaybe _         _         = False
           --
+          flattenDep :: [Dependency] -> [Dependency]
+          flattenDep [] = []
+          flattenDep (AllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
+          flattenDep (x:xs) = x:flattenDep xs
+          -- TODO concat 2 dep either in the same group
 getPackage :: Dependency -> Maybe PackageName
 getPackage (AllOf _dependency) = Nothing
 getPackage (AnyVersionOf package _s _uses) = Just package
