@@ -171,11 +171,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       aflags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
       lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
       lflags  [] = [[]]
-      lflags  (x:xs) = let tp = lflags xs 
+      lflags  (x:xs) = let tp = lflags xs
                        in (map ((Cabal.flagName x,False) :) tp)
                           ++ (map ((Cabal.flagName x,True):) tp)
       deps1  = filter (not.null.fst)
-               [ (sort $ map fst f', genDeps pkgDesc1) 
+               [ (sort $ map fst f', genDeps pkgDesc1)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
                , Right (pkgDesc1,_) <- return (GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
@@ -185,8 +185,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                                   pkgGenericDesc)
                , f' <- return $ filter snd f
                ]
-      cdeps1 = L.foldl1 (Merge.intersection) $ map snd deps1
-      fdeps1 = map (uncurry liftFlags1) 
+      cdeps1 = if null deps1 then mempty else L.foldl1 (Merge.intersection) $ map snd deps1
+      fdeps1 = map (uncurry liftFlags1)
                 $ filter (not . Merge.null . snd)
                 $ map diffParts deps1
       diffParts (f, x) = (f, (foldl go x $ (filter (/= (sort f)) (map sort $ L.subsequences f))) `Merge.difference` cdeps1) -- ^ we need reverse to preserve ordering
@@ -194,18 +194,18 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                           Nothing -> y
                           Just z  -> y `Merge.difference` z
       liftFlags1 :: [Cabal.FlagName] -> Merge.EDep -> Merge.EDep
-      liftFlags1 fs e = let k =  foldr (\y x -> Portage.DependIfUse (Portage.mkQUse $ unFlagName y) . x) 
+      liftFlags1 fs e = let k =  foldr (\y x -> Portage.DependIfUse (Portage.mkQUse $ unFlagName y) . x)
                                       (id::Portage.Dependency->Portage.Dependency) fs
-                        in e { Merge.dep = if  null (Merge.dep e)  
+                        in e { Merge.dep = if  null (Merge.dep e)
                                                 then []
                                                 else Portage.simplify_deps [k $! Portage.AllOf (Merge.dep e)]
-                             , Merge.rdep = if null (Merge.rdep e) 
+                             , Merge.rdep = if null (Merge.rdep e)
                                                 then []
                                                 else Portage.simplify_deps [k $! Portage.AllOf (Merge.rdep e)]}
 
       tdeps = L.foldl (<>) cdeps1 fdeps1
 
-      genSimple = 
+      genSimple =
           foldl (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
                   let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
                   in case () of
@@ -316,7 +316,7 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
-mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO () 
+mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO ()
 mergeEbuild verbosity target cat ebuild = do
   let edir = target </> cat </> E.name ebuild
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
@@ -345,6 +345,6 @@ mergeEbuild verbosity target cat ebuild = do
                   notice verbosity $ "Default and current " ++ emeta ++ " differ."
 
 unFlagName :: Cabal.FlagName -> String
-unFlagName f = 
+unFlagName f =
   let Cabal.FlagName y = f
   in y
