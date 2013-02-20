@@ -174,8 +174,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       lflags  (x:xs) = let tp = lflags xs
                        in (map ((Cabal.flagName x,False) :) tp)
                           ++ (map ((Cabal.flagName x,True):) tp)
-      deps1  = filter (not.null.fst)
-               [ (sort $ map fst f', genDeps pkgDesc1)
+      deps1  = [ (sort $ map fst f', genDeps pkgDesc1)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
                , Right (pkgDesc1,_) <- return (GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
