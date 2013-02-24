@@ -171,6 +171,7 @@ simplify_deps deps = flattenDep $
           flattenDep (AllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
           flattenDep (x:xs) = x:flattenDep xs
           -- TODO concat 2 dep either in the same group
+
 getPackage :: Dependency -> Maybe PackageName
 getPackage (AllOf _dependency) = Nothing
 getPackage (AnyVersionOf package _s _uses) = Just package
@@ -261,3 +262,5 @@ intersectD fs x =
 isUseDep :: Dependency -> Bool
 isUseDep (DependIfUse _ _) = True
 isUseDep _ = False
+
+
