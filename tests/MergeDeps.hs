@@ -19,7 +19,7 @@ test_merge1 = map (\(a,b,c) -> assertEqual "excepting merge" c (a `Portage.merge
       --, (["foo/bar"],["use? (foo/baz)"],["foo/bar", "use? (foo/baz)"]) -- covered by 1st
       --, (["foo/bar"],["use? (foo/bar)"],["foo/bar"])  -- a <> (use? a) => a
       --, (["foo/bar"],["use? ( use2? (foo/bar))"],["foo/bar"])
-      -- , ([!use("foo/bar")],["use? (foo/baz)"],["!use? (foo/bar)","use? (foo/baz)"]) -- extract dep
+      -- , ([!use? ("foo/bar")],["use? (foo/baz)"],["!use? (foo/bar)","use? (foo/baz)"]) -- extract dep
       ]
 
 -- A <> B
