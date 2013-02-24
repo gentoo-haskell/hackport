@@ -166,7 +166,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
 
-  let Just (compilerId, ghc_packages, pkgDesc0, flags, pix) = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
+  let Just (compilerId, ghc_packages, pkgDesc0, _flags, pix) = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
       (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
@@ -202,14 +202,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) (lflags (Cabal.genPackageFlags pkgGenericDesc))
       -- and finaly prettify all deps:
       tdeps = (foldl (\x y -> x `mappend` (snd y)) mempty deps1){
-            Merge.dep  = perfectDeps $ simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
-          , Merge.rdep = perfectDeps $ simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
+            Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
+          , Merge.rdep = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
           }
       
 
-      -- we simplify deps by constructing next data structure
-      -- (common-flags, common-deps,[other-deps])
-      -- then we fold a
       common :: [FlagDepH] -> FlagDepH
       common xs = 
               let n = go xs
@@ -220,38 +217,23 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
               in k n 
           where 
             go [] = []
-            go [x] = [x]
-            go (x1:x2:xs) = x1 `merge1` x2 : go xs
-      merge1 :: FlagDepH -> FlagDepH -> FlagDepH
-      merge1 ((f1, d1),x1) ((f2, d2),x2) = ((f1 `intersect` f2, Portage.simplify_deps $ d1 `intersect` d2)
-                                            ,--foldl (\o n -> n `merge2` o) []
-                                                   ( (f1, filter (`notElem` d2) d1)
-                                                   : (f2, filter (`notElem` d1) d2)
-                                                   : x1
-                                                   ++ x2
-                                                   ))
-      merge2 :: FlagDep -> [FlagDep] -> [FlagDep]
-      merge2 x y = go [] x y 
-        where go a1 x1 [] = x1:a1
-              go a1 x1@(f1,d1) (z@(f2,d2):zs) =
-                let fi = f1 `intersect` f2
-                    di = d1 `intersect` d2
-                in if null fi
-                      then go (z:a1) x zs
-                      else if null di 
-                                then go (z:a1) x zs
-                                else if d1==d2
-                                        then go a1 (fi,d1) zs
-                                        else go ((fi,di):(f2,filter (`notElem` di) d2):a1)
-                                                (f1,filter (`notElem` di) d1)
-                                                zs
+            go [y] = [y]
+            go (y1:y2:ys) = y1 `merge1` y2 : go ys
+
+            merge1 :: FlagDepH -> FlagDepH -> FlagDepH
+            merge1 ((f1, d1),x1) ((f2, d2),x2) = ((f1 `intersect` f2, Portage.simplify_deps $ d1 `intersect` d2)
+                                                 , (f1, filter (`notElem` d2) d1)
+                                                    : (f2, filter (`notElem` d1) d2)
+                                                    : x1
+                                                    ++ x2
+                                                    )
                                
 
-      simplify :: [FlagDepH] -> [[Portage.Dependency]]
+      simplify :: [FlagDepH] -> [Portage.Dependency]
       simplify xs = 
         let -- extract common part of the depends
             -- filtering out empty groups
-            ((f,c), zs) = second (filter (not.null.snd)) $ common xs  
+            ((fl,c), zs) = second (filter (not.null.snd)) $ common xs  
             -- Regroup flags according to packages, i.e.
             -- if 2 groups of flagged deps containg same package, then
             -- extract common flags, but if common flags will be empty
@@ -262,13 +244,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
             mergeD x [] = [x]
-            mergeD x@(f1,d1) (y@(f2,d2):ys) = 
+            mergeD x@(f1,d1) (t@(f2,d2):ts) = 
               let is = f1 `intersect` f2
               in if d1 == d2
                       then if null is 
-                                then ys
-                                else (is,d1):ys
-                      else y:mergeD x ys
+                                then ts
+                                else (is,d1):ts
+                      else t:mergeD x ts
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
             sd = foldl (\o (f,d) -> case lookup f o of
                                           Just ds -> (f,d:ds):filter ((f/=).fst) o
@@ -277,47 +259,33 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                     [] 
                                     (concatMap (\(f,d) -> map ((,) f) d) zs)
             -- filter out splitted packages from common cgroup
-            t  :: [Portage.Dependency]
-            t  = concatMap snd zs
-            ys = filter (not.null.snd) $ map (second (filter (\d -> all (d/=) t))) zs
+            ys = filter (not.null.snd) $ map (second (filter (\d -> all (d/=) 
+                                                              (concatMap snd sd))
+                                                     )) zs
             -- Now we need to find noniteracting use flags if they are then we 
             -- don't need to simplify them more, and output as-is
-            zs' = sd ++ ys
-            us = getMultiFlags zs'
-            (xs',ss) = (\y -> any (`hasFlag` y) us) `partition` zs'
+            simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
+            simplifyMore [] = []
+            simplifyMore ws = 
+                let us = getMultiFlags ws
+                    (u,_) = maximumBy (compare `on` snd) $ getMultiFlags ws
+                    (xs, ls) = (hasFlag u) `partition` ws
+                in if null us 
+                      then concatMap (\(a, b) -> liftFlags a b) ws
+                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs)++simplifyMore ls
+        in (liftFlags fl c) ++ simplifyMore (sd ++ ys)
 
-            {-
-            simplifyMore _ [] = [[]]
-            simplifyMore fs ys = [ ts' ++ bs'
-                              | u <- fs
-                              , (ts,bs) <- return $ partition (hasFlag u) ys 
-                              , bs' <- simplifyMore (getMultiFlags bs) bs
-                              , ts' <- map (liftFlags [u]) $ simplify $ map (\x -> (x,[])) $ dropFlag u ts
-                              ]-}
-        in [(liftFlags f c) ++ (concatMap (\(f,d) -> liftFlags f d) ss)
-                            ++ (concatMap (\(f,d) -> liftFlags f d) xs')]
-           -- map (\z -> (liftFlags f c) ++ (concatMap (\(f,d) -> liftFlags f d) ss) ++ z) (simplifyMore us ys')
       -- drop selected use flag from a list
-      getMultiFlags :: [FlagDep] -> [(Cabal.FlagName,Bool)]
-      getMultiFlags xs = go [] [] (concatMap fst xs)
-            where go a _ [] = a
-                  go a !b (x:xs) | x `elem` a = go a b xs                       -- O(len a)
-                                 | x `elem` b = go (x:a) b xs                   -- O(len b)
-                                 | otherwise  = go a (x:b) xs                   -- O(1)
+      getMultiFlags :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
+      getMultiFlags ys = go [] (concatMap fst ys)
+            where go a [] = a
+                  go a (x:xs) = case lookup x a of
+                                  Nothing -> go ((x,1):a) xs
+                                  Just n  -> go ((x,n+1):filter ((x/=).fst) a) xs 
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
       hasFlag :: (Cabal.FlagName,Bool) -> FlagDep -> Bool
       hasFlag u = any ((u ==)) . fst
-      perfectDeps :: [[Portage.Dependency]] -> [Portage.Dependency]
-      perfectDeps [] = [] 
-      perfectDeps xs = minimumBy (compare `on` depWeight) xs
-      depWeight :: [Portage.Dependency] -> Int
-      depWeight [] = 0
-      depWeight (Portage.DependIfUse _ (Portage.AllOf x):ds) = 100000 + depWeight ds + (max 1 (depWeight x `div` 10))
-      depWeight (Portage.DependIfUse _ _:ds) = 100000 + depWeight ds
-      depWeight (Portage.AllOf x:ds) = depWeight x + depWeight ds
-      depWeight (_:ds)  = 0 + depWeight ds
-
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse ((if b then id else Portage.X) . Portage.mkQUse $ unFlagName y) . x)

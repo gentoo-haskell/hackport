@@ -5,6 +5,7 @@ module Portage.Dependency
   , simplifyUseDeps
   , addDepUseFlag
   , setSlotDep
+  , sortDeps
   ) where
 
 import Portage.Version
@@ -16,9 +17,10 @@ import Portage.PackageId
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( (<>), hsep )
 
+import Data.Function ( on )
 import Data.Maybe ( fromJust, catMaybes, mapMaybe )
-import Data.List ( nub, groupBy, partition, sortBy )
-import Data.Ord           (comparing)
+import Data.List ( nub, groupBy, partition, sortBy, sort )
+import Data.Ord           (comparing, Ordering(..))
 
 data SlotDepend = AnySlot          -- nothing special
                 | AnyBuildTimeSlot -- ':='
@@ -264,3 +266,27 @@ isUseDep (DependIfUse _ _) = True
 isUseDep _ = False
 
 
+sortDeps :: [Dependency] -> [Dependency]
+sortDeps = sortBy dsort . map deeper
+  where
+    deeper :: Dependency -> Dependency
+    deeper (DependIfUse u1 d) = DependIfUse u1 $ deeper d
+    deeper (AllOf ds)         = AllOf  $ sortDeps ds
+    deeper (DependEither ds)  = DependEither $ sortDeps ds
+    deeper x = x
+    dsort :: Dependency -> Dependency -> Ordering
+    dsort (DependIfUse u1 _) (DependIfUse u2 _) = u1 `compare` u2
+    dsort (DependIfUse _ _)  (DependEither _)   = LT
+    dsort (DependIfUse _ _)  (AllOf  _)         = LT
+    dsort (DependIfUse _ _)  _                  = GT
+    dsort (DependEither _)   (DependEither _)   = EQ
+    dsort (DependEither _)  (DependIfUse _ _)   = GT
+    dsort (DependEither _)   (AllOf _)          = LT
+    dsort (DependEither _)   _                  = GT
+    dsort (AllOf _)    (AllOf _)                = EQ
+    dsort (AllOf _)    (DependIfUse  _ _)       = LT
+    dsort (AllOf _)    (DependEither _)         = GT
+    dsort _ (DependIfUse _ _)                   = LT
+    dsort _ (AllOf _)                           = LT
+    dsort _ (DependEither _)                    = LT
+    dsort a b = (compare `on` getPackage) a b
