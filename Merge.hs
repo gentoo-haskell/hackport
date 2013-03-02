@@ -198,6 +198,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       commonFlags = foldl1 intersect $ map fst deps1
       aflags' | null commonFlags  = aflags
               | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) aflags
+      aflags'' = filter (\x -> Cabal.flagName x `elem` aflags') $ Cabal.genPackageFlags pkgGenericDesc
       -- flags that are faild to build
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) (lflags (Cabal.genPackageFlags pkgGenericDesc))
       -- and finaly prettify all deps:
@@ -330,13 +331,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       selected_flags [] = []
       selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure"
                                         : map (\p -> "\t$(cabal_flag "++ p ++" "++ p ++")") fs
+      to_iuse x = let fn = unFlagName $ Cabal.flagName x
+                      p  = if Cabal.flagDefault x then "+" else ""
+                  in p++fn
 
       ebuild =   (\e -> e { E.depend        = Merge.dep tdeps} )
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       = Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (map unFlagName aflags') } )
-               . (\e -> e { E.iuse = E.iuse e ++ map unFlagName aflags' })
+               . (\e -> e { E.iuse = E.iuse e ++ map to_iuse aflags'' })
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
