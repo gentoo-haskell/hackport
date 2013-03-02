@@ -326,6 +326,7 @@ buildToolsTable =
   , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
   , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
   , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
+  , ("cabal",               Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") Portage.AnySlot [])
   ]
 
 -- tools that are provided by ghc or some other existing program
