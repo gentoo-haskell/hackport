@@ -206,7 +206,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
           , Merge.rdep = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
           }
-      
 
       common :: [FlagDepH] -> FlagDepH
       common xs = 
@@ -228,7 +227,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                     : x1
                                                     ++ x2
                                                     )
-                               
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
       simplify xs = 
