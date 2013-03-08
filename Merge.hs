@@ -62,7 +62,6 @@ import qualified Portage.Dependency as Portage
 import qualified Portage.GHCCore as GHCCore
 
 import qualified Merge.Dependencies as Merge
-import Debug.Trace
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
@@ -301,7 +300,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                         _                               -> (dep:ad,     sd,     rd)
                 )
                 ([],[],[])
-      genDeps x = Merge.resolveDependencies overlay x (Just compilerId)
+      genDeps pkg = Merge.resolveDependencies overlay pkg (Just compilerId)
 
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
   debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
