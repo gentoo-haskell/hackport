@@ -325,6 +325,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       icalate _s [x]    = [x]
       icalate  s (x:xs) = (x ++ s) : icalate s xs
 
+      selected_flags :: [String] -> [String]
       selected_flags [] = []
       selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure"
                                         : map (\p -> "\t$(cabal_flag "++ p ++" "++ p ++")") fs
@@ -336,7 +337,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       = Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = selected_flags (map unFlagName aflags') } )
+               . (\e -> e { E.src_configure = selected_flags $ sort $ map unFlagName aflags' } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse aflags'' })
                $ C2E.cabal2ebuild pkgDesc
 
