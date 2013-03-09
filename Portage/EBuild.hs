@@ -12,7 +12,8 @@ import Portage.Dependency
 import Distribution.License as Cabal
 
 import Data.String.Utils
-import Data.List (sort)
+import qualified Data.Function as F
+import qualified Data.List as L
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
@@ -106,7 +107,7 @@ showEBuild ebuild =
          else ss "\t#". ss (licenseComment . license $ ebuild)). nl.
   ss "SLOT=". quote (slot ebuild). nl.
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
-  ss "IUSE=". quote' (sepBy " " . sort $ iuse ebuild). nl.
+  ss "IUSE=". quote' (sepBy " " . sort_iuse $ iuse ebuild). nl.
   nl.
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
@@ -125,6 +126,11 @@ showEBuild ebuild =
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
         toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
+
+-- "+a" -> "a"
+-- "b"  -> "b"
+sort_iuse :: [String] -> [String]
+sort_iuse = L.sortBy (compare `F.on` dropWhile ( `elem` "+"))
 
 type DString = String -> String
 
