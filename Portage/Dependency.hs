@@ -83,7 +83,7 @@ simplify_group_table :: PackageName ->
 
 -- simplify_group_table p ol       l        e        oe       exact
 -- 1) trivial cases:
-simplify_group_table    p _s _u Nothing  Nothing  Nothing  Nothing  Nothing  = error $ display p ++ ": unsolvable constraints"
+simplify_group_table    p _s _u Nothing  Nothing  Nothing  Nothing  Nothing  = error $ "Portage/Dependency.hs: " ++ display p ++ ": unsolvable constraints"
 simplify_group_table    p s u (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p s u]
 simplify_group_table    p s u Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p s u]
 simplify_group_table    p s u Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p s u]
