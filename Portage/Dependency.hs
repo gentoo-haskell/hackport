@@ -112,6 +112,12 @@ simplify_group_table    p s u ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)    
 simplify_group :: [Dependency] -> [Dependency]
 simplify_group [dep@(AnyVersionOf _package _s _u)] = [dep]
 simplify_group [dep@(ThisMajorOf _v    _p _s _u)]  = [dep]
+
+-- "zlib, zlib == 0.5.*" => "zlib == 0.5.*"
+simplify_group deps
+    | any isAVO deps = simplify_group $ filter (not . isAVO) deps
+  where isAVO (AnyVersionOf _package _slot _use) = True
+        isAVO _                                  = False
 simplify_group deps = simplify_group_table package
                                            slot
                                            uses
