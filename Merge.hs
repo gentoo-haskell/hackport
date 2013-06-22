@@ -24,6 +24,8 @@ import qualified Distribution.PackageDescription as Cabal ( PackageDescription(.
                                        , FlagName(..)
                                        , GenericPackageDescription(..)
                                        )
+import qualified Distribution.PackageDescription.Parse as Cabal (showPackageDescription)
+
 import Distribution.Text (display)
 import Distribution.Verbosity
 import Distribution.Simple.Utils
@@ -302,6 +304,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                 ([],[],[])
       genDeps pkg = Merge.resolveDependencies overlay pkg (Just compilerId)
 
+  debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
   debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
 
