@@ -34,11 +34,17 @@ data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
   deriving (Eq, Ord, Show, Read)
 
 -- foo-9999* is treated as live ebuild
+-- Cabal-1.17.9999* as well
 is_live :: Version -> Bool
 is_live v =
-    case versionNumber v of
-        [n] | n >= 9999 && (all (== '9') . show) n -> True
-        _                                          -> False
+    case vs of
+        -- nonempty
+        (_:_) | many_nines (last vs) -> True
+        _                            -> False
+  where vs = versionNumber v
+        many_nines n = is_big n && all_nines n
+        is_big n     = n >= 9999
+        all_nines n  = (all (== '9') . show) n
 
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
