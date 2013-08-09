@@ -361,11 +361,11 @@ resolvePkgConfigs overlay cdeps =
 
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
 resolvePkgConfig _overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
-  (cat,portname, slot) <- lookup pn table
+  (cat,portname, slot) <- lookup pn pkgconfig_table
   return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) slot []
 
-table :: [(String, (String, String, Portage.SlotDepend))]
-table =
+pkgconfig_table :: [(String, (String, String, Portage.SlotDepend))]
+pkgconfig_table =
   [
    ("alsa",         ("media-libs", "alsa-lib", Portage.AnySlot))
   ,("gconf-2.0",    ("gnome-base", "gconf", Portage.AnySlot))
@@ -432,4 +432,5 @@ table =
   ,("libidn",                      ("net-dns", "libidn", Portage.AnySlot))
   ,("libxml-2.0",                  ("dev-libs", "libxml2", Portage.AnySlot))
   ,("yaml-0.1",                    ("dev-libs", "libyaml", Portage.AnySlot))
+  ,("QtCore",                      ("dev-qt", "qtcore", Portage.AnySlot))
   ]
