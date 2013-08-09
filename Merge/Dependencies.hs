@@ -300,6 +300,9 @@ staticTranslateExtraLib lib = lookup lib m
       , ("gmp", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "gmp") Portage.AnySlot [])
       , ("fuse", Portage.AnyVersionOf (Portage.mkPackageName "sys-fs" "fuse") Portage.AnySlot [])
       , ("zip", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libzip") Portage.AnySlot [])
+      , ("QtCore", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtcore") Portage.AnySlot [])
+      , ("QtGui", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtgui") Portage.AnySlot [])
+      , ("QtOpenGL", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtopengl") Portage.AnySlot [])
       ]
 
 ---------------------------------------------------------------
