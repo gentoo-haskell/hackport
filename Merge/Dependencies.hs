@@ -254,55 +254,64 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
   notFound = [ p | p <- allE, isNothing (staticTranslateExtraLib p) ]
   found =    [ p | Just p <- map staticTranslateExtraLib allE ]
 
+any_c_p_s_u :: String -> String -> Portage.SlotDepend -> [Portage.UseFlag] -> Portage.Dependency
+any_c_p_s_u cat pn slot uses = Portage.AnyVersionOf (Portage.mkPackageName cat pn) slot uses
+
+any_c_p :: String -> String -> Portage.Dependency
+any_c_p cat pn = any_c_p_s_u cat pn Portage.AnySlot []
+
+at_least_c_p_v :: String -> String -> [Int] -> Portage.Dependency
+at_least_c_p_v cat pn v = Portage.OrLaterVersionOf (Portage.Version v Nothing [] 0) (Portage.mkPackageName cat pn) Portage.AnySlot []
+
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "zlib") Portage.AnySlot [])
-      , ("bz2", Portage.AnyVersionOf (Portage.mkPackageName "app-arch" "bzip2") Portage.AnySlot [])
-      , ("mysqlclient", Portage.LaterVersionOf (Portage.Version [4,0] Nothing [] 0) (Portage.mkPackageName "virtual" "mysql") Portage.AnySlot [])
-      , ("pq", Portage.LaterVersionOf (Portage.Version [7] Nothing [] 0) (Portage.mkPackageName "dev-db" "postgresql-base") Portage.AnySlot [])
-      , ("ev", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libev") Portage.AnySlot [])
-      , ("expat", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "expat") Portage.AnySlot [])
-      , ("curl", Portage.AnyVersionOf (Portage.mkPackageName "net-misc" "curl") Portage.AnySlot [])
-      , ("xml2", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libxml2") Portage.AnySlot [])
-      , ("mecab", Portage.AnyVersionOf (Portage.mkPackageName "app-text" "mecab") Portage.AnySlot [])
-      , ("zmq", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "zeromq") Portage.AnySlot [])
-      , ("SDL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libsdl") Portage.AnySlot [])
-      , ("adns", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "adns") Portage.AnySlot [])
-      , ("pcre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libpcre") Portage.AnySlot [])
-      , ("GL", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "opengl") Portage.AnySlot [])
-      , ("GLU", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "glu") Portage.AnySlot [])
-      , ("glut", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "freeglut") Portage.AnySlot [])
-      , ("X11", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libX11") Portage.AnySlot [])
-      , ("libzip", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libzip") Portage.AnySlot [])
-      , ("ssl", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "openssl") Portage.AnySlot [])
-      , ("Judy", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "judy") Portage.AnySlot [])
-      , ("fcgi", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "fcgi") Portage.AnySlot [])
-      , ("gnutls", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "gnutls") Portage.AnySlot [])
-      , ("idn", Portage.AnyVersionOf (Portage.mkPackageName "net-dns" "libidn") Portage.AnySlot [])
-      , ("tre", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "tre") Portage.AnySlot [])
-      , ("m", Portage.AnyVersionOf (Portage.mkPackageName "virtual" "libc") Portage.AnySlot [])
-      , ("asound", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "alsa-lib") Portage.AnySlot [])
-      , ("sqlite3", Portage.OrLaterVersionOf (Portage.Version [3,0] Nothing [] 0) (Portage.mkPackageName "dev-db" "sqlite") Portage.AnySlot [])
-      , ("stdc++", Portage.AnyVersionOf (Portage.mkPackageName "sys-devel" "gcc") Portage.AnySlot [Portage.mkUse "cxx"])
-      , ("crack", Portage.AnyVersionOf (Portage.mkPackageName "sys-libs" "cracklib") Portage.AnySlot [])
-      , ("exif", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "libexif") Portage.AnySlot [])
-      , ("IL", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "devil") Portage.AnySlot [])
-      , ("Imlib2", Portage.AnyVersionOf (Portage.mkPackageName "media-libs" "imlib2") Portage.AnySlot [])
-      , ("pcap", Portage.AnyVersionOf (Portage.mkPackageName "net-libs" "libpcap") Portage.AnySlot [])
-      , ("lber", Portage.AnyVersionOf (Portage.mkPackageName "net-nds" "openldap") Portage.AnySlot [])
-      , ("ldap", Portage.AnyVersionOf (Portage.mkPackageName "net-nds" "openldap") Portage.AnySlot [])
-      , ("expect", Portage.AnyVersionOf (Portage.mkPackageName "dev-tcltk" "expect") Portage.AnySlot [])
-      , ("tcl", Portage.AnyVersionOf (Portage.mkPackageName "dev-lang" "tcl") Portage.AnySlot [])
-      , ("Xext", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libXext") Portage.AnySlot [])
-      , ("Xrandr", Portage.AnyVersionOf (Portage.mkPackageName "x11-libs" "libXrandr") Portage.AnySlot [])
-      , ("crypto", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "openssl") Portage.AnySlot [])
-      , ("gmp", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "gmp") Portage.AnySlot [])
-      , ("fuse", Portage.AnyVersionOf (Portage.mkPackageName "sys-fs" "fuse") Portage.AnySlot [])
-      , ("zip", Portage.AnyVersionOf (Portage.mkPackageName "dev-libs" "libzip") Portage.AnySlot [])
-      , ("QtCore", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtcore") Portage.AnySlot [])
-      , ("QtGui", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtgui") Portage.AnySlot [])
-      , ("QtOpenGL", Portage.AnyVersionOf (Portage.mkPackageName "dev-qt" "qtopengl") Portage.AnySlot [])
+  m = [ ("z", any_c_p "sys-libs" "zlib")
+      , ("bz2", any_c_p "app-arch" "bzip2")
+      , ("mysqlclient", at_least_c_p_v "virtual" "mysql" [4,0])
+      , ("pq", at_least_c_p_v "dev-db" "postgresql-base" [7])
+      , ("ev", any_c_p "dev-libs" "libev")
+      , ("expat", any_c_p "dev-libs" "expat")
+      , ("curl", any_c_p "net-misc" "curl")
+      , ("xml2", any_c_p "dev-libs" "libxml2")
+      , ("mecab", any_c_p "app-text" "mecab")
+      , ("zmq", any_c_p "net-libs" "zeromq")
+      , ("SDL", any_c_p "media-libs" "libsdl")
+      , ("adns", any_c_p "net-libs" "adns")
+      , ("pcre", any_c_p "dev-libs" "libpcre")
+      , ("GL", any_c_p "virtual" "opengl")
+      , ("GLU", any_c_p "virtual" "glu")
+      , ("glut", any_c_p "media-libs" "freeglut")
+      , ("X11", any_c_p "x11-libs" "libX11")
+      , ("libzip", any_c_p "dev-libs" "libzip")
+      , ("ssl", any_c_p "dev-libs" "openssl")
+      , ("Judy", any_c_p "dev-libs" "judy")
+      , ("fcgi", any_c_p "dev-libs" "fcgi")
+      , ("gnutls", any_c_p "net-libs" "gnutls")
+      , ("idn", any_c_p "net-dns" "libidn")
+      , ("tre", any_c_p "dev-libs" "tre")
+      , ("m", any_c_p "virtual" "libc")
+      , ("asound", any_c_p "media-libs" "alsa-lib")
+      , ("sqlite3", at_least_c_p_v "dev-db" "sqlite" [3,0])
+      , ("stdc++", any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse "cxx"])
+      , ("crack", any_c_p "sys-libs" "cracklib")
+      , ("exif", any_c_p "media-libs" "libexif")
+      , ("IL", any_c_p "media-libs" "devil")
+      , ("Imlib2", any_c_p "media-libs" "imlib2")
+      , ("pcap", any_c_p "net-libs" "libpcap")
+      , ("lber", any_c_p "net-nds" "openldap")
+      , ("ldap", any_c_p "net-nds" "openldap")
+      , ("expect", any_c_p "dev-tcltk" "expect")
+      , ("tcl", any_c_p "dev-lang" "tcl")
+      , ("Xext", any_c_p "x11-libs" "libXext")
+      , ("Xrandr", any_c_p "x11-libs" "libXrandr")
+      , ("crypto", any_c_p "dev-libs" "openssl")
+      , ("gmp", any_c_p "dev-libs" "gmp")
+      , ("fuse", any_c_p "sys-fs" "fuse")
+      , ("zip", any_c_p "dev-libs" "libzip")
+      , ("QtCore", any_c_p "dev-qt" "qtcore")
+      , ("QtGui", any_c_p "dev-qt" "qtgui")
+      , ("QtOpenGL", any_c_p "dev-qt" "qtopengl")
       ]
 
 ---------------------------------------------------------------
@@ -314,9 +323,9 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-build-tool" pn) Portage.AnySlot [])
+                       (any_c_p "unknown-build-tool" pn)
   | Cabal.Dependency (Cabal.PackageName pn) _range <- cabalDeps
-  , pkg <- return (lookup pn buildToolsTable) 
+  , pkg <- return (lookup pn buildToolsTable)
   ]
   where
   cabalDeps = filter notProvided $ depL ++ depE
@@ -326,15 +335,15 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
 
 buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
-  [ ("happy", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "happy") Portage.AnySlot [])
-  , ("alex", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "alex") Portage.AnySlot [])
-  , ("c2hs", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "c2hs") Portage.AnySlot [])
-  , ("cabal-install", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") Portage.AnySlot [])
-  , ("gtk2hsTypeGen",       Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
-  , ("gtk2hsHookGenerator", Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
-  , ("gtk2hsC2hs",          Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "gtk2hs-buildtools") Portage.AnySlot [])
-  , ("cabal",               Portage.AnyVersionOf (Portage.mkPackageName "dev-haskell" "cabal-install") Portage.AnySlot [])
-  , ("llvm-config",         Portage.AnyVersionOf (Portage.mkPackageName "sys-devel" "llvm") Portage.AnySlot [])
+  [ ("happy", any_c_p "dev-haskell" "happy")
+  , ("alex", any_c_p "dev-haskell" "alex")
+  , ("c2hs", any_c_p "dev-haskell" "c2hs")
+  , ("cabal-install", any_c_p "dev-haskell" "cabal-install")
+  , ("gtk2hsTypeGen",       any_c_p "dev-haskell" "gtk2hs-buildtools")
+  , ("gtk2hsHookGenerator", any_c_p "dev-haskell" "gtk2hs-buildtools")
+  , ("gtk2hsC2hs",          any_c_p "dev-haskell" "gtk2hs-buildtools")
+  , ("cabal",               any_c_p "dev-haskell" "cabal-install")
+  , ("llvm-config",         any_c_p "sys-devel" "llvm")
   ]
 
 -- tools that are provided by ghc or some other existing program
@@ -359,13 +368,13 @@ resolvePkgConfigs overlay cdeps =
   [ case resolvePkgConfig overlay pkg of
       Just d -> d
       Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
-                       (Portage.AnyVersionOf (Portage.mkPackageName "unknown-pkg-config" pn) Portage.AnySlot [])
+                       (any_c_p "unknown-pkg-config" pn)
   | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
 
 resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
 resolvePkgConfig _overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
   (cat,portname, slot) <- lookup pn pkgconfig_table
-  return $ Portage.AnyVersionOf (Portage.mkPackageName cat portname) slot []
+  return $ any_c_p_s_u cat portname slot []
 
 pkgconfig_table :: [(String, (String, String, Portage.SlotDepend))]
 pkgconfig_table =
