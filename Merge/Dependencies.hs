@@ -155,7 +155,7 @@ resolveDependencies overlay pkg mcompiler =
     pkg_config_libs = pkgConfigDependencies overlay pkg
     pkg_config_tools = if L.null pkg_config_libs
                            then []
-                           else [Portage.AnyVersionOf (Portage.mkPackageName "virtual" "pkgconfig") Portage.AnySlot []]
+                           else [any_c_p "virtual" "pkgconfig"]
     build_tools = buildToolsDependencies pkg ++ pkg_config_tools
     edeps
         | treatAsLibrary = mempty
@@ -188,7 +188,7 @@ resolveDependencies overlay pkg mcompiler =
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
 testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
-    [Portage.DependIfUse (Portage.mkQUse "test") (Portage.AllOf $ Portage.simplify_deps deps)]
+    [Portage.DependIfUse (Portage.mkQUse "test") (Portage.DependAllOf $ Portage.simplify_deps deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
@@ -233,7 +233,7 @@ cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNu
 
 compilerIdToDependency :: CompilerId -> Portage.Dependency
 compilerIdToDependency (CompilerId GHC versionNumbers) =
-  Portage.OrLaterVersionOf (Portage.fromCabalVersion versionNumbers) (Portage.mkPackageName "dev-lang" "ghc") Portage.AnySlot []
+  at_least_c_p_v "dev-lang" "ghc" (Cabal.versionBranch versionNumbers)
 
 ---------------------------------------------------------------
 -- C Libraries
@@ -242,7 +242,7 @@ compilerIdToDependency (CompilerId GHC versionNumbers) =
 findCLibs :: PackageDescription -> [Portage.Dependency]
 findCLibs (PackageDescription { library = lib, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
-          (Portage.AnyVersionOf (Portage.mkPackageName "unknown-c-lib" p) Portage.AnySlot [])
+          (any_c_p "unknown-c-lib" p)
   | p <- notFound
   ] ++
   found
@@ -255,13 +255,17 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
   found =    [ p | Just p <- map staticTranslateExtraLib allE ]
 
 any_c_p_s_u :: String -> String -> Portage.SlotDepend -> [Portage.UseFlag] -> Portage.Dependency
-any_c_p_s_u cat pn slot uses = Portage.AnyVersionOf (Portage.mkPackageName cat pn) slot uses
+any_c_p_s_u cat pn slot uses = Portage.Atom (Portage.mkPackageName cat pn)
+                                            (Portage.DRange Portage.ZeroB Portage.InfinityB)
+                                            (Portage.DAttr slot uses)
 
 any_c_p :: String -> String -> Portage.Dependency
 any_c_p cat pn = any_c_p_s_u cat pn Portage.AnySlot []
 
 at_least_c_p_v :: String -> String -> [Int] -> Portage.Dependency
-at_least_c_p_v cat pn v = Portage.OrLaterVersionOf (Portage.Version v Nothing [] 0) (Portage.mkPackageName cat pn) Portage.AnySlot []
+at_least_c_p_v cat pn v = Portage.Atom (Portage.mkPackageName cat pn)
+                                       (Portage.DRange (Portage.NonstrictLB (Portage.Version v Nothing [] 0)) Portage.InfinityB)
+                                       (Portage.DAttr Portage.AnySlot [])
 
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m

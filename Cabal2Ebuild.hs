@@ -84,16 +84,20 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
     pn = case Portage.resolveFullPortageName overlay pname of
             Just r  -> r
             Nothing -> Portage.PackageName category (Portage.normalizeCabalPackageName pname)
+    mk_p :: DRange -> Dependency
+    mk_p dr = Atom pn dr (DAttr AnySlot [])
+    p_v v   = fromCabalVersion v
+
     convert :: Cabal.VersionRange -> [Dependency]
     convert =  Cabal.foldVersionRange'
-             (          [AnyVersionOf                            pn AnySlot []] -- ^ @\"-any\"@ version
-            )(\v     -> [ThisVersionOf      (fromCabalVersion v) pn AnySlot []] -- ^ @\"== v\"@
-            )(\v     -> [LaterVersionOf     (fromCabalVersion v) pn AnySlot []] -- ^ @\"> v\"@
-            )(\v     -> [EarlierVersionOf   (fromCabalVersion v) pn AnySlot []] -- ^ @\"< v\"@
-            )(\v     -> [OrLaterVersionOf   (fromCabalVersion v) pn AnySlot []] -- ^ @\">= v\"@
-            )(\v     -> [OrEarlierVersionOf (fromCabalVersion v) pn AnySlot []] -- ^ @\"<= v\"@
-            )(\v _   -> [ThisMajorOf        (fromCabalVersion v) pn AnySlot []] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
-            )(\g1 g2 -> [DependEither                       (g1 ++ g2)] -- ^ @\"_ || _\"@ union
-            )(\r1 r2 -> r1 ++ r2                                     -- ^ @\"_ && _\"@ intersection
-            )(\dp    -> [AllOf dp                                  ] -- ^ @\"(_)\"@ parentheses
+             (          [mk_p (DRange ZeroB                 InfinityB)]         -- ^ @\"-any\"@ version
+            )(\v     -> [mk_p (DExact (p_v v))]                                 -- ^ @\"== v\"@
+            )(\v     -> [mk_p (DRange (StrictLB (p_v v))    InfinityB)]         -- ^ @\"> v\"@
+            )(\v     -> [mk_p (DRange ZeroB                 (StrictUB (p_v v)))] -- ^ @\"< v\"@
+            )(\v     -> [mk_p (DRange (NonstrictLB (p_v v)) InfinityB)]         -- ^ @\">= v\"@
+            )(\v     -> [mk_p (DRange (NonstrictLB (p_v v)) InfinityB)]         -- ^ @\"<= v\"@
+            )(\v1 v2 -> [mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2)))] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\g1 g2 -> [DependAnyOf (g1 ++ g2)]                                -- ^ @\"_ || _\"@ union
+            )(\r1 r2 -> r1 ++ r2                                                -- ^ @\"_ && _\"@ intersection
+            )(\dp    -> [DependAllOf dp]                                        -- ^ @\"(_)\"@ parentheses
             )

@@ -1,26 +1,31 @@
 module Portage.Dependency
-  ( Dependency(..)
+  ( DRange(..)
+  , DAttr(..)
+  , LBound(..)
+  , UBound(..)
+  , Dependency(..)
   , SlotDepend(..)
   , simplify_deps
   , simplifyUseDeps
   , addDepUseFlag
   , setSlotDep
   , sortDeps
+  , dep2str
   ) where
 
 import Portage.Version
 import Portage.Use
-import Distribution.Text ( display, Text(..) )
 
 import Portage.PackageId
 
+import Distribution.Text ( Text(..) )
 import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ( (<>), hsep )
+import Text.PrettyPrint ( (<>), vcat, nest, render )
 
 import Data.Function ( on )
-import Data.Maybe ( fromJust, catMaybes, mapMaybe )
-import Data.List ( nub, groupBy, partition, sortBy, sort )
-import Data.Ord           (comparing, Ordering(..))
+import Data.Maybe ( fromJust, mapMaybe )
+import Data.List ( nub, groupBy, partition, sortBy )
+import Data.Ord           ( comparing )
 
 data SlotDepend = AnySlot          -- nothing special
                 | AnyBuildTimeSlot -- ':='
@@ -32,139 +37,153 @@ dispSlot AnySlot          = Disp.empty
 dispSlot AnyBuildTimeSlot = Disp.text ":="
 dispSlot (GivenSlot slot) = Disp.text (':' : slot)
 
-data Dependency = AnyVersionOf               PackageName SlotDepend [UseFlag]
-                | ThisVersionOf      Version PackageName SlotDepend [UseFlag]  -- ~package-version
-                | LaterVersionOf     Version PackageName SlotDepend [UseFlag]  -- >package-version
-                | EarlierVersionOf   Version PackageName SlotDepend [UseFlag]  -- <package-version
-                | OrLaterVersionOf   Version PackageName SlotDepend [UseFlag]  -- >=package-version
-                | OrEarlierVersionOf Version PackageName SlotDepend [UseFlag]  -- <=package-version
-                | ThisMajorOf        Version PackageName SlotDepend [UseFlag]  -- =package-version*
-                | DependIfUse  UseFlag    Dependency                -- use? ( depend )
-                | DependEither [Dependency]                         -- || ( depend1 depend2 ... )
-                | AllOf        [Dependency]                         -- ( depend1 depend2 ... )
-    deriving (Eq,Show)
+data LBound = StrictLB    Version
+            | NonstrictLB Version
+            | ZeroB
+    deriving (Eq, Show)
 
-instance Text Dependency where
-  disp = showDepend
+instance Ord LBound where
+    compare ZeroB ZeroB = EQ
+    compare ZeroB _     = LT
+    compare _     ZeroB = GT
+    compare (StrictLB lv) (StrictLB rv) = compare lv rv
+    compare l r = error $ unwords ["i am too lazy to implement LBound:compare ", show l, " ", show r]
+
+dispLBound :: PackageName -> LBound -> Disp.Doc
+dispLBound pn (StrictLB    v) = Disp.char '>' <> disp pn <-> disp v
+dispLBound pn (NonstrictLB v) = Disp.text ">=" <> disp pn <-> disp v
+dispLBound _pn ZeroB = error "unhandled 'dispLBound ZeroB'"
+
+data UBound = StrictUB Version   -- <
+            | NonstrictUB Version -- <=
+            | InfinityB
+    deriving (Eq, Show)
+
+instance Ord UBound where
+    compare InfinityB InfinityB = EQ
+    compare InfinityB _     = GT
+    compare _         InfinityB = LT
+    compare (StrictUB lv) (StrictUB rv) = compare lv rv
+    compare l r = error $ unwords ["i am too lazy to implement UBound:compare ", show l, " ", show r]
+
+dispUBound :: PackageName -> UBound -> Disp.Doc
+dispUBound pn (StrictUB    v) = Disp.char '<' <> disp pn <-> disp v
+dispUBound pn (NonstrictUB v) = Disp.text "<=" <> disp pn <-> disp v
+dispUBound _pn InfinityB = error "unhandled 'dispUBound Infinity'"
+
+data DRange = DRange LBound UBound
+            | DExact Version
+    deriving (Eq, Show)
+
+mergeDRanges :: DRange -> DRange -> DRange
+mergeDRanges _ r@(DExact _) = r
+mergeDRanges l@(DExact _) _ = l
+mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
+
+data DAttr = DAttr SlotDepend [UseFlag]
+    deriving (Eq, Show)
+
+dispDAttr :: DAttr -> Disp.Doc
+dispDAttr (DAttr s u) = dispSlot s <> dispUses u
+
+data Dependency = Atom PackageName DRange DAttr
+                | DependIfUse UseFlag Dependency
+                | DependAnyOf         [Dependency]
+                | DependAllOf         [Dependency]
+    deriving (Eq, Show)
+
+empty_dependency :: Dependency
+empty_dependency = DependAllOf []
+
+is_empty_dependency :: Dependency -> Bool
+is_empty_dependency (DependIfUse _use dep)  =     is_empty_dependency dep
+is_empty_dependency (DependAnyOf deps)      = all is_empty_dependency deps
+is_empty_dependency (DependAllOf deps)      = all is_empty_dependency deps
+is_empty_dependency d@(Atom _pn _dr _dattr) = False
+
+-- remove one layer of derundancy
+-- currently implemented removal of
+--  * empty nodes from any part of subtree
+--  TODO: implement flatting (if not done yet in other phases)
+--    DependAnyOf [DependAnyOf [something], rest] -> DependAnyOf $ something ++ rest
+--    DependAllOf [DependAllOf [something], rest] -> DependAllOf $ something ++ rest
+normalization_step :: Dependency -> Dependency
+normalization_step d =
+    case d of
+        -- drop full empty nodes
+        d | is_empty_dependency d -> empty_dependency
+        -- drop partial empty nodes
+        (DependAnyOf deps)        -> DependAnyOf $ filter (not . is_empty_dependency) deps
+        (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) deps
+        -- no change
+        _                         -> d
+
+-- remove various types of redundancy
+normalize_depend :: Dependency -> Dependency
+normalize_depend d = d''
+    where d'  = normalization_step d
+          d'' | d == d'   =                    d
+              | otherwise = normalization_step d
+
+mergeAtomRanges :: Dependency -> Dependency -> Dependency 
+mergeAtomRanges (Atom lp ld la) (Atom rp rd ra)
+    | lp /= rp = error "mergeAtomRanges got different 'PackageName's"
+    | la /= ra = error "mergeAtomRanges got different 'DAttr's"
+    | otherwise = Atom lp (mergeDRanges ld rd) la
+mergeAtomRanges l r = error $ unwords ["mergeAtomRanges can't merge non-atoms:", show l, show r]
+
+dep2str :: Int -> Dependency -> String
+dep2str start_indent = render . nest start_indent . showDepend . normalize_depend
 
 (<->) :: Disp.Doc -> Disp.Doc -> Disp.Doc
 a <-> b = a <> Disp.char '-' <> b
 
+sp :: Disp.Doc
+sp = Disp.char ' '
+
+sparens :: Disp.Doc -> Disp.Doc
+sparens doc = Disp.parens (sp <> valign doc <> sp)
+
+valign :: Disp.Doc -> Disp.Doc
+valign d = nest 0 d
+
 showDepend :: Dependency -> Disp.Doc
-showDepend (AnyVersionOf         p s u) = disp p <> dispSlot s <> dispUses u
-showDepend (ThisVersionOf      v p s u) = Disp.char '~' <> disp p <-> disp v { versionRevision = 0 } <> dispSlot s <> dispUses u
-showDepend (LaterVersionOf     v p s u) = Disp.char '>' <> disp p <-> disp v <> dispSlot s <> dispUses u
-showDepend (EarlierVersionOf   v p s u) = Disp.char '<' <> disp p <-> disp v <> dispSlot s <> dispUses u
-showDepend (OrLaterVersionOf   v p s u) = Disp.text ">=" <> disp p <-> disp v <> dispSlot s <> dispUses u
-showDepend (OrEarlierVersionOf v p s u) = Disp.text "<=" <> disp p <-> disp v <> dispSlot s <> dispUses u
-showDepend (ThisMajorOf        v p s u) = Disp.char '='  <> disp p <-> disp v <> Disp.char '*' <> dispSlot s <> dispUses u
-showDepend (DependEither       dp ) = Disp.text "|| ( " <> hsep (map showDepend dp) <> Disp.text " )"
-showDepend (DependIfUse        useflag dep) = disp useflag <> Disp.text " " <> pp_deps dep
-    where -- special case to avoid double braces: test? ( ( ) )
-          pp_deps (AllOf _) =                               disp dep
-          pp_deps         _ = Disp.parens (Disp.text " " <> disp dep <> Disp.text " ")
-showDepend (AllOf []) = Disp.empty
-showDepend (AllOf              (d:dp) ) =
-    Disp.text "( " <> showDepend d <> line
-    <> Disp.hcat (map (\x -> Disp.text "\t\t\t" <> (showDepend x) <> line) dp)
-    <> Disp.text "\t\t)"
-    where line = Disp.char '\n'
+showDepend (Atom pn range dattr)
+    = case range of
+        -- any version
+        DRange ZeroB InfinityB -> disp pn          <> dispDAttr dattr
+        DRange ZeroB ub        -> dispUBound pn ub <> dispDAttr dattr
+        DRange lb InfinityB    -> dispLBound pn lb <> dispDAttr dattr
+        -- TODO: handle >=foo-0    special case
+        -- TODO: handle =foo-x.y.* special case
+        DRange lb ub          ->    showDepend (Atom pn (DRange lb InfinityB) dattr)
+                                 <> Disp.char ' '
+                                 <> showDepend (Atom pn (DRange ZeroB ub)    dattr)
+        DExact v              -> Disp.char '~' <> disp pn <-> disp v { versionRevision = 0 } <> dispDAttr dattr
 
-{- Here goes code for dependencies simplification -}
+showDepend (DependIfUse u dep)  = disp u         <> sp <> sparens (showDepend dep)
+showDepend (DependAnyOf deps)   = Disp.text "||" <> sp <> sparens (vcat $ map showDependInAnyOf deps)
+showDepend (DependAllOf deps)   = valign $ vcat $ map showDepend deps
 
-simplify_group_table :: PackageName ->
-                        SlotDepend  ->
-                        [UseFlag]   ->
-                        Maybe Version ->
-                        Maybe Version ->
-                        Maybe Version ->
-                        Maybe Version ->
-                        Maybe Version -> [Dependency]
+-- needs special grouping
+showDependInAnyOf :: Dependency -> Disp.Doc
+showDependInAnyOf d@(DependAllOf _deps) = sparens (showDepend d)
+-- both lower and upper bounds are present thus needs 2 atoms
+-- TODO: '=foo-x.y.*' will take only one atom, not two
+showDependInAnyOf d@(Atom _pn (DRange lb ub) _dattr)
+    | lb /= ZeroB && ub /= InfinityB
+                                       = sparens (showDepend d)
+-- rest are fine
+showDependInAnyOf d                    =          showDepend d
 
--- simplify_group_table p ol       l        e        oe       exact
--- 1) trivial cases:
-simplify_group_table    p _s _u Nothing  Nothing  Nothing  Nothing  Nothing  = error $ "Portage/Dependency.hs: " ++ display p ++ ": unsolvable constraints"
-simplify_group_table    p s u (Just v) Nothing  Nothing  Nothing  Nothing  = [OrLaterVersionOf v p s u]
-simplify_group_table    p s u Nothing  (Just v) Nothing  Nothing  Nothing  = [LaterVersionOf v p s u]
-simplify_group_table    p s u Nothing  Nothing  (Just v) Nothing  Nothing  = [EarlierVersionOf v p s u]
-simplify_group_table    p s u Nothing  Nothing  Nothing  (Just v) Nothing  = [OrEarlierVersionOf v p s u]
-simplify_group_table    p s u Nothing  Nothing  Nothing  Nothing  (Just v) = [ThisVersionOf v p s u]
-
--- 2) simplification passes
-simplify_group_table    p s u (Just (Version v1 _ _ _)) Nothing (Just (Version v2 _ _ _)) Nothing Nothing
-    -- special case: >=a-v.N a<v.(N+1)   => =a-v.N*
-    | (init v1 == init v2) && (last v2 == last v1 + 1) = [ThisMajorOf (Version v1 Nothing [] 0) p s u]
-    | otherwise                                        = [OrLaterVersionOf (Version v1 Nothing [] 0) p s u, EarlierVersionOf (Version v2 Nothing [] 0) p s u]
-
--- TODO: simplify constraints of type: >=a-v1; > a-v2 and such
-
--- 3) otherwise sink:
-simplify_group_table    p s u (Just v)     l@(_)       e@(_)        oe@(_)       exact@(_) =   OrLaterVersionOf v p s u: simplify_group_table p s u Nothing  l e oe exact
-simplify_group_table    p s u ol@(Nothing) (Just v)    e@(_)        oe@(_)       exact@(_) =     LaterVersionOf v p s u: simplify_group_table p s u ol Nothing e oe exact
-simplify_group_table    p s u ol@(Nothing) l@(Nothing) (Just v)     oe@(_)       exact@(_) =   EarlierVersionOf v p s u: simplify_group_table p s u ol l Nothing oe exact
-simplify_group_table    p s u ol@(Nothing) l@(Nothing) e@(Nothing)  (Just v)     exact@(_) = OrEarlierVersionOf v p s u: simplify_group_table p s u ol l e Nothing  exact
--- already defined earlier
--- simplify_group_table    p s u ol@(Nothing) l@(Nothing) e@(Nothing)  oe@(Nothing) (Just v)  = OrEarlierVersionOf v p : simplify_group_table p ol l e oe Nothing
-
---  >a-v1 >a-v2         => >a-(max v1 v2)
--- key idea: all constraints are enforcing constraints, so we can't get
--- more, than one interval.
-simplify_group :: [Dependency] -> [Dependency]
-simplify_group [dep@(AnyVersionOf _package _s _u)] = [dep]
-simplify_group [dep@(ThisMajorOf _v    _p _s _u)]  = [dep]
-
--- "zlib, zlib == 0.5.*" => "zlib == 0.5.*"
-simplify_group deps
-    | any isAVO deps = simplify_group $ filter (not . isAVO) deps
-  where isAVO (AnyVersionOf _package _slot _use) = True
-        isAVO _                                  = False
-simplify_group deps = simplify_group_table package
-                                           slot
-                                           uses
-                                           min_or_later_v   -- >=
-                                           min_later_v      -- >
-                                           max_earlier_v    -- <
-                                           max_or_earlier_v -- <=
-                                           exact_this_v     -- ==
-    where
-          package = fromJust.getPackage $ head deps
-          slot    = fromJust.getSlot    $ head deps
-          uses    = fromJust.getUses    $ head deps
-          max_earlier_v    = safe_minimum $ map earlier_v deps
-          max_or_earlier_v = safe_minimum $ map or_earlier_v deps
-          min_later_v      = safe_maximum $ map later_v deps
-          min_or_later_v   = safe_maximum $ map or_later_v deps
-          exact_this_v     = case catMaybes (map this_v deps) of
-                                  []  -> Nothing
-                                  [v] -> Just v
-                                  xs  -> error $ "too many exact versions:" ++ show xs
-          --
-          earlier_v (EarlierVersionOf v _p _s _u) = Just v
-          earlier_v _                       = Nothing
-
-          or_earlier_v (OrEarlierVersionOf v _p _s _u) = Just v
-          or_earlier_v _                         = Nothing
-
-          later_v (LaterVersionOf v _p _s _u) = Just v
-          later_v _                     = Nothing
-
-          or_later_v (OrLaterVersionOf v _p _s _u) = Just v
-          or_later_v _                     = Nothing
-
-          this_v (ThisVersionOf v  _p _s _u) = Just v
-          this_v _                     = Nothing
-          --
-          safe_minimum xs = case catMaybes xs of
-                                 [] -> Nothing
-                                 xs' -> Just $ minimum xs'
-          safe_maximum xs = case catMaybes xs of
-                                 [] -> Nothing
-                                 xs' -> Just $ maximum xs'
+simplify_group :: [Dependency] -> Dependency
+simplify_group [x] = x
+simplify_group xs = foldl1 mergeAtomRanges xs
 
 -- divide packages to groups (by package name), simplify groups, merge again
 simplify_deps :: [Dependency] -> [Dependency]
 simplify_deps deps = flattenDep $ 
-                        (concatMap (simplify_group.nub) $
+                        (map (simplify_group.nub) $
                             groupBy cmpPkgName $
                                 sortBy (comparing getPackagePart) groupable)
                         ++ ungroupable
@@ -176,45 +195,28 @@ simplify_deps deps = flattenDep $
           --
           flattenDep :: [Dependency] -> [Dependency]
           flattenDep [] = []
-          flattenDep (AllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
+          flattenDep (DependAllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
           flattenDep (x:xs) = x:flattenDep xs
           -- TODO concat 2 dep either in the same group
 
 getPackage :: Dependency -> Maybe PackageName
-getPackage (AllOf _dependency) = Nothing
-getPackage (AnyVersionOf package _s _uses) = Just package
-getPackage (ThisVersionOf      _version package _s _uses) = Just package
-getPackage (LaterVersionOf     _version package _s _uses) = Just package
-getPackage (EarlierVersionOf   _version package _s _uses) = Just package
-getPackage (OrLaterVersionOf   _version package _s _uses) = Just package
-getPackage (OrEarlierVersionOf _version package _s _uses) = Just package
-getPackage (ThisMajorOf        _version package _s _uses) = Just package
-getPackage (DependEither _dependency           ) = Nothing
+getPackage (DependAllOf _dependency) = Nothing
+getPackage (Atom pn _dr _attrs) = Just pn
+getPackage (DependAnyOf _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
-
+{-
 getUses  :: Dependency -> Maybe [UseFlag]
-getUses (AllOf _d) = Nothing
-getUses (AnyVersionOf _p _s u) = Just u
-getUses (ThisVersionOf _v _p _s u) = Just u
-getUses (LaterVersionOf _v _p _s u) = Just u
-getUses (EarlierVersionOf _v _p _s u) = Just u
-getUses (OrLaterVersionOf _v _p _s u) = Just u
-getUses (OrEarlierVersionOf _v _p _s u) = Just u
-getUses (ThisMajorOf _v _p _s u) = Just u
-getUses (DependEither _d) = Nothing
+getUses (DependAllOf _d) = Nothing
+getUses (Atom _pn _dr (DAttr _s u)) = Just u
+getUses (DependAnyOf _d) = Nothing
 getUses (DependIfUse _u _d) = Nothing
 
 getSlot :: Dependency -> Maybe SlotDepend
-getSlot (AllOf _d) = Nothing
-getSlot (AnyVersionOf _p s _u) = Just s
-getSlot (ThisVersionOf _v _p s _u) = Just s
-getSlot (LaterVersionOf _v _p s _u) = Just s
-getSlot (EarlierVersionOf _v _p s _u) = Just s
-getSlot (OrLaterVersionOf _v _p s _u) = Just s
-getSlot (OrEarlierVersionOf _v _p s _u) = Just s
-getSlot (ThisMajorOf _v _p s _u) = Just s
-getSlot (DependEither _d) = Nothing
+getSlot (DependAllOf _d) = Nothing
+getSlot (Atom _pn _dr (DAttr s _u)) = Just s
+getSlot (DependAnyOf _d) = Nothing
 getSlot (DependIfUse _u _d) = Nothing
+-}
 
 --
 getPackagePart :: Dependency -> PackageName
@@ -222,27 +224,15 @@ getPackagePart dep = fromJust (getPackage dep)
 
 --
 setSlotDep :: SlotDepend -> Dependency -> Dependency
-setSlotDep n (AllOf d) = AllOf $ map (setSlotDep n) d
-setSlotDep n (AnyVersionOf p _s u) = AnyVersionOf p n u
-setSlotDep n (ThisVersionOf v p _s u) = ThisVersionOf v p n u
-setSlotDep n (LaterVersionOf v p _s u) = LaterVersionOf v p n u
-setSlotDep n (EarlierVersionOf v p _s u) = EarlierVersionOf v p n u
-setSlotDep n (OrLaterVersionOf v p _s u) = OrLaterVersionOf v p n u
-setSlotDep n (OrEarlierVersionOf v p _s u) = OrEarlierVersionOf v p n u
-setSlotDep n (ThisMajorOf v p _s u) = ThisMajorOf v p n u
-setSlotDep n (DependEither d) = DependEither $ map (setSlotDep n) d
+setSlotDep n (DependAllOf d) = DependAllOf $ map (setSlotDep n) d
+setSlotDep n (Atom pn dr (DAttr _s u)) = Atom pn dr (DAttr n u)
+setSlotDep n (DependAnyOf d) = DependAnyOf $ map (setSlotDep n) d
 setSlotDep n (DependIfUse u d) = DependIfUse u (setSlotDep n d)
 
 addDepUseFlag :: UseFlag -> Dependency -> Dependency
-addDepUseFlag n (AllOf d) = AllOf $ map (addDepUseFlag n) d
-addDepUseFlag n (AnyVersionOf p s u) = AnyVersionOf p s (n:u)
-addDepUseFlag n (ThisVersionOf v p s u) = ThisVersionOf v p s (n:u)
-addDepUseFlag n (LaterVersionOf v p s u) = LaterVersionOf v p s (n:u)
-addDepUseFlag n (EarlierVersionOf v p s u) = EarlierVersionOf v p s (n:u)
-addDepUseFlag n (OrLaterVersionOf v p s u) = OrLaterVersionOf v p s (n:u)
-addDepUseFlag n (OrEarlierVersionOf v p s u) = OrEarlierVersionOf v p s (n:u)
-addDepUseFlag n (ThisMajorOf v p s u) = ThisMajorOf v p s (n:u)
-addDepUseFlag n (DependEither d) = DependEither $ map (addDepUseFlag n) d
+addDepUseFlag n (DependAllOf d) = DependAllOf $ map (addDepUseFlag n) d
+addDepUseFlag n (Atom pn dr (DAttr s u)) = Atom pn dr (DAttr s (n:u))
+addDepUseFlag n (DependAnyOf d) = DependAnyOf $ map (addDepUseFlag n) d
 addDepUseFlag n (DependIfUse u d) = DependIfUse u (addDepUseFlag n d)
 
 --
@@ -257,12 +247,12 @@ simplifyUseDeps ds cs =
 
 intersectD :: [PackageName] -> Dependency -> Maybe Dependency
 intersectD fs (DependIfUse u d) = intersectD fs d >>= Just . DependIfUse u
-intersectD fs (DependEither ds) =
+intersectD fs (DependAnyOf ds) =
     let ds' = mapMaybe (intersectD fs) ds
-    in if null ds' then Nothing else Just (DependEither ds')
-intersectD fs (AllOf ds) =
+    in if null ds' then Nothing else Just (DependAnyOf ds')
+intersectD fs (DependAllOf ds) =
     let ds' = mapMaybe (intersectD fs) ds
-    in if null ds' then Nothing else Just (AllOf ds')
+    in if null ds' then Nothing else Just (DependAllOf ds')
 intersectD fs x =
     let pkg = fromJust $ getPackage x -- this is unsafe but will save from error later
     in if any (==pkg) fs then Nothing else Just x
@@ -277,22 +267,22 @@ sortDeps = sortBy dsort . map deeper
   where
     deeper :: Dependency -> Dependency
     deeper (DependIfUse u1 d) = DependIfUse u1 $ deeper d
-    deeper (AllOf ds)         = AllOf  $ sortDeps ds
-    deeper (DependEither ds)  = DependEither $ sortDeps ds
+    deeper (DependAllOf ds)   = DependAllOf $ sortDeps ds
+    deeper (DependAnyOf ds)  = DependAnyOf $ sortDeps ds
     deeper x = x
     dsort :: Dependency -> Dependency -> Ordering
     dsort (DependIfUse u1 _) (DependIfUse u2 _) = u1 `compare` u2
-    dsort (DependIfUse _ _)  (DependEither _)   = LT
-    dsort (DependIfUse _ _)  (AllOf  _)         = LT
+    dsort (DependIfUse _ _)  (DependAnyOf _)   = LT
+    dsort (DependIfUse _ _)  (DependAllOf  _)   = LT
     dsort (DependIfUse _ _)  _                  = GT
-    dsort (DependEither _)   (DependEither _)   = EQ
-    dsort (DependEither _)  (DependIfUse _ _)   = GT
-    dsort (DependEither _)   (AllOf _)          = LT
-    dsort (DependEither _)   _                  = GT
-    dsort (AllOf _)    (AllOf _)                = EQ
-    dsort (AllOf _)    (DependIfUse  _ _)       = LT
-    dsort (AllOf _)    (DependEither _)         = GT
+    dsort (DependAnyOf _)   (DependAnyOf _)   = EQ
+    dsort (DependAnyOf _)  (DependIfUse _ _)   = GT
+    dsort (DependAnyOf _)   (DependAllOf _)    = LT
+    dsort (DependAnyOf _)   _                  = GT
+    dsort (DependAllOf _)    (DependAllOf _)    = EQ
+    dsort (DependAllOf _)    (DependIfUse  _ _) = LT
+    dsort (DependAllOf _)    (DependAnyOf _)   = GT
     dsort _ (DependIfUse _ _)                   = LT
-    dsort _ (AllOf _)                           = LT
-    dsort _ (DependEither _)                    = LT
+    dsort _ (DependAllOf _)                     = LT
+    dsort _ (DependAnyOf _)                    = LT
     dsort a b = (compare `on` getPackage) a b

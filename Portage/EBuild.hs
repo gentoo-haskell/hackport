@@ -151,8 +151,27 @@ verbatim pre s post =
             (foldl (\acc v -> acc . ss "\t" . ss v . nl) id s) .
             post
 
+-- takes string and substitutes tabs to spaces
+-- ebuild's convention is 4 spaces for one tab,
+-- BUT! nested USE flags get moved too much to
+-- right. Thus 8 :]
+tab_size :: Int
+tab_size = 8
+
+tabify_line :: String -> String
+tabify_line l = replicate need_tabs '\t'  ++ nonsp
+    where (sp, nonsp)       = break (/= ' ') l
+          (full_tabs, tail) = length sp `divMod` tab_size
+          need_tabs = full_tabs + if tail > 0 then 1 else 0
+
+tabify :: String -> String
+tabify = unlines . map tabify_line . lines
+
 dep_str :: String -> [String] -> [Dependency] -> DString
-dep_str var extra deps = ss var. sc '='. quote' (sepBy "\n\t\t" $ extra ++ map display deps). nl
+dep_str var extra deps = ss var. sc '='. quote' (ss $ drop_leadings $ unlines extra ++ deps_s). nl
+    where indent = 1 * tab_size
+          deps_s = tabify (dep2str indent (DependAllOf deps))
+          drop_leadings = dropWhile (== '\t')
 
 quote :: String -> DString
 quote str = sc '"'. ss (esc str). sc '"'

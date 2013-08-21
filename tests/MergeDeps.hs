@@ -5,8 +5,9 @@ import qualified Distribution.Package as Cabal
 
 import qualified Portage.Dependency as Portage
 
-import System.Exit (exitFailure)
 import Test.HUnit
+
+import qualified RunTests as RT
 
 tests = TestList [ TestLabel "simple merge" test_merge1
                  ]
@@ -27,9 +28,4 @@ test_merge1 = map (\(a,b,c) -> assertEqual "excepting merge" c (a `Portage.merge
 --   1). \forall b \in B: \exists a \in A a ~= b ->  {A <> B \ b}
 --   2). \forall b \in B: \not \exists a \in A ~=b
 
-something_broke :: Counts -> Bool
-something_broke stats = errors stats + failures stats > 0
-
-main =
-    do stats <- runTestTT tests
-       when (something_broke stats) exitFailure
+main = RT.run_tests tests

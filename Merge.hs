@@ -290,7 +290,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse ((if b then id else Portage.X) . Portage.mkQUse $ unFlagName y) . x)
                                       (id::Portage.Dependency->Portage.Dependency) fs
-                       in Portage.simplify_deps [k $! Portage.AllOf e]
+                       in Portage.simplify_deps [k $! Portage.DependAllOf e]
 
 
       genSimple =
