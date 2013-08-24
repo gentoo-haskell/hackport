@@ -24,7 +24,8 @@ import Text.PrettyPrint ( (<>), vcat, nest, render )
 
 import Data.Function ( on )
 import Data.Maybe ( fromJust, mapMaybe )
-import Data.List ( groupBy, partition, sortBy )
+import Data.List ( nub, groupBy, partition, sortBy )
+import Data.Ord           ( comparing )
 
 data SlotDepend = AnySlot          -- nothing special
                 | AnyBuildTimeSlot -- ':='
@@ -104,7 +105,7 @@ is_empty_dependency :: Dependency -> Bool
 is_empty_dependency (DependIfUse _use dep)  =     is_empty_dependency dep
 is_empty_dependency (DependAnyOf deps)      = all is_empty_dependency deps
 is_empty_dependency (DependAllOf deps)      = all is_empty_dependency deps
-is_empty_dependency (Atom _pn _dr _dattr)   = False
+is_empty_dependency d@(Atom _pn _dr _dattr) = False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
@@ -113,7 +114,7 @@ remove_empty :: Dependency -> Dependency
 remove_empty d =
     case d of
         -- drop full empty nodes
-        _ | is_empty_dependency d -> empty_dependency
+        d | is_empty_dependency d -> empty_dependency
         -- drop partial empty nodes
         (DependAnyOf deps)        -> DependAnyOf $ filter (not . is_empty_dependency) deps
         (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) deps
@@ -212,15 +213,54 @@ showDependInAnyOf d@(Atom _pn (DRange lb ub) _dattr)
 showDependInAnyOf d                    =          showDepend d
 
 -- TODO: remove it in favour of more robust 'normalize_depend'
+simplify_group :: [Dependency] -> Dependency
+simplify_group [x] = x
+simplify_group xs = foldl1 merge_pair xs
+
+-- TODO: remove it in favour of more robust 'normalize_depend'
+-- divide packages to groups (by package name), simplify groups, merge again
 simplify_deps :: [Dependency] -> [Dependency]
-simplify_deps = id
+simplify_deps deps = flattenDep $ 
+                        (map (simplify_group.nub) $
+                            groupBy cmpPkgName $
+                                sortBy (comparing getPackagePart) groupable)
+                        ++ ungroupable
+    where (ungroupable, groupable) = partition ((==Nothing).getPackage) deps
+          --
+          cmpPkgName p1 p2 = cmpMaybe (getPackage p1) (getPackage p2)
+          cmpMaybe (Just p1) (Just p2) = p1 == p2
+          cmpMaybe _         _         = False
+          --
+          flattenDep :: [Dependency] -> [Dependency]
+          flattenDep [] = []
+          flattenDep (DependAllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
+          flattenDep (x:xs) = x:flattenDep xs
+          -- TODO concat 2 dep either in the same group
 
 getPackage :: Dependency -> Maybe PackageName
 getPackage (DependAllOf _dependency) = Nothing
 getPackage (Atom pn _dr _attrs) = Just pn
 getPackage (DependAnyOf _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
+{-
+getUses  :: Dependency -> Maybe [UseFlag]
+getUses (DependAllOf _d) = Nothing
+getUses (Atom _pn _dr (DAttr _s u)) = Just u
+getUses (DependAnyOf _d) = Nothing
+getUses (DependIfUse _u _d) = Nothing
 
+getSlot :: Dependency -> Maybe SlotDepend
+getSlot (DependAllOf _d) = Nothing
+getSlot (Atom _pn _dr (DAttr s _u)) = Just s
+getSlot (DependAnyOf _d) = Nothing
+getSlot (DependIfUse _u _d) = Nothing
+-}
+
+--
+getPackagePart :: Dependency -> PackageName
+getPackagePart dep = fromJust (getPackage dep)
+
+--
 setSlotDep :: SlotDepend -> Dependency -> Dependency
 setSlotDep n (DependAllOf d) = DependAllOf $ map (setSlotDep n) d
 setSlotDep n (Atom pn dr (DAttr _s u)) = Atom pn dr (DAttr n u)
