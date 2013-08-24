@@ -105,21 +105,30 @@ is_empty_dependency :: Dependency -> Bool
 is_empty_dependency (DependIfUse _use dep)  =     is_empty_dependency dep
 is_empty_dependency (DependAnyOf deps)      = all is_empty_dependency deps
 is_empty_dependency (DependAllOf deps)      = all is_empty_dependency deps
-is_empty_dependency d@(Atom _pn _dr _dattr) = False
+is_empty_dependency (Atom _pn _dr _dattr)   = False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
-normalization_step = combine_atoms . flatten . remove_empty
+normalization_step = combine_atoms . flatten . remove_duplicates . remove_empty
 remove_empty :: Dependency -> Dependency
 remove_empty d =
     case d of
         -- drop full empty nodes
-        d | is_empty_dependency d -> empty_dependency
+        _ | is_empty_dependency d -> empty_dependency
         -- drop partial empty nodes
         (DependAnyOf deps)        -> DependAnyOf $ filter (not . is_empty_dependency) deps
         (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) deps
         -- no change
         _                         -> d
+
+-- Ideally 'combine_atoms' should handle those as well
+remove_duplicates :: Dependency -> Dependency
+remove_duplicates d =
+    case d of
+        (DependIfUse use dep)     -> (DependIfUse use $ remove_duplicates dep)
+        (DependAnyOf deps)        -> DependAnyOf $ nub $ map remove_duplicates deps
+        (DependAllOf deps)        -> DependAllOf $ nub $ map remove_duplicates deps
+        (Atom _pn _dr _dattr)     -> d
 
 -- TODO: implement flatting (if not done yet in other phases)
 --   DependAnyOf [DependAnyOf [something], rest] -> DependAnyOf $ something ++ rest

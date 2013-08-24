@@ -74,6 +74,11 @@ test_print_mixed = TestCase $ do
                     , "     ( >=dev-haskell/mtl-2.1.1 <dev-haskell/mtl-2.2 ) )"
                     ]
                   )
+                -- remove duplicate entries
+                , ( let d = d_all [d_ge [2, 0], d_lt [2, 2]]
+                    in d_all [d, d]
+                  , [ ">=dev-haskell/mtl-2.0 <dev-haskell/mtl-2.2" ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
