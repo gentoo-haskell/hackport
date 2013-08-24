@@ -46,8 +46,11 @@ instance Ord LBound where
     compare ZeroB ZeroB = EQ
     compare ZeroB _     = LT
     compare _     ZeroB = GT
-    compare (StrictLB lv) (StrictLB rv) = compare lv rv
-    compare l r = error $ unwords ["i am too lazy to implement LBound:compare ", show l, " ", show r]
+    compare (StrictLB lv)    (StrictLB rv)    = compare lv rv
+    compare (NonstrictLB lv) (NonstrictLB rv) = compare lv rv
+    compare l r = error $ unlines ["i am too lazy to implement LBound: compare"
+                                  , show l
+                                  , show r]
 
 dispLBound :: PackageName -> LBound -> Disp.Doc
 dispLBound pn (StrictLB    v) = Disp.char '>' <> disp pn <-> disp v
@@ -63,8 +66,11 @@ instance Ord UBound where
     compare InfinityB InfinityB = EQ
     compare InfinityB _     = GT
     compare _         InfinityB = LT
-    compare (StrictUB lv) (StrictUB rv) = compare lv rv
-    compare l r = error $ unwords ["i am too lazy to implement UBound:compare ", show l, " ", show r]
+    compare (NonstrictUB lv) (NonstrictUB rv) = compare lv rv
+    compare (StrictUB lv)    (StrictUB rv)    = compare lv rv
+    compare l r = error $ unlines ["i am too lazy to implement UBound: compare"
+                                  , show l
+                                  , show r]
 
 dispUBound :: PackageName -> UBound -> Disp.Doc
 dispUBound pn (StrictUB    v) = Disp.char '<' <> disp pn <-> disp v
