@@ -83,8 +83,8 @@ test_print_mixed = TestCase $ do
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
         in assertEqual ("expecting empty result for " ++ show d)
-                       actual
                        (intercalate "\n" expected)
+                       actual
 
 
 main = RT.run_tests tests
