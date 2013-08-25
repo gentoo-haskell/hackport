@@ -23,7 +23,7 @@ is_empty_dependency (Atom _pn _dr _dattr)   = False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
-normalization_step = combine_atoms . flatten . remove_duplicates . remove_empty
+normalization_step = combine_atoms . propagate_context . flatten . remove_duplicates . remove_empty
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -67,6 +67,39 @@ find_intersections = map merge_depends . groupBy is_mergeable
 -- TODO
 find_concatenations :: [Dependency] -> [Dependency]
 find_concatenations = id
+
+-- Eliminate top-down redundancy:
+--   foo/bar
+--   u? ( foo/bar
+--        bar/baz )
+-- gets translated to
+--   foo/bar
+--   u? ( bar/baz )
+propagate_context :: Dependency -> Dependency
+propagate_context = propagate_context' []
+
+-- very simple model: pick all sibling-atom deps and add them to context
+--                    for downward proparation and remove from 'all_of' part
+-- TODO: any-of part can benefit from it by removing useless alternative
+-- TODO: analyze different ranges to remove stricter variants like:
+--       foo/bar
+--       use? ( >=foo/bar-1.0 )
+propagate_context' :: [Dependency] -> Dependency -> Dependency
+propagate_context' ctx d =
+    case d of
+        (DependIfUse use dep) -> DependIfUse use (go ctx dep)
+        (DependAllOf deps)    -> DependAllOf $ [ go ctx' dep
+                                               | dep <- deps
+                                               , let atom_deps = [ a
+                                                                 | a@(Atom _pn _dp _dattr) <- deps
+                                                                 , a /= dep ]
+                                               , let ctx' = ctx ++ atom_deps
+                                               ]
+        (DependAnyOf deps)    -> DependAnyOf $ map (go ctx) deps
+        (Atom _pn _dr _dattr) -> case d `elem` ctx of
+                                     True  -> empty_dependency
+                                     False -> d
+  where go c = propagate_context' c
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency
