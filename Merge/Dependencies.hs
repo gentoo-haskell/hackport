@@ -76,7 +76,6 @@ import qualified Portage.Dependency as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
-import qualified Portage.Version as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -217,11 +216,7 @@ cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNu
   where
     userCabalVersion = Cabal.orLaterVersion (specVersion pkg)
     shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
-    shippedCabalDep = maybe Cabal.anyVersion
-                            (\shipped -> Cabal.intersectVersionRanges
-                                (Cabal.thisVersion  shipped)
-                                (Cabal.laterVersion shipped))
-                            shippedCabalVersion
+    shippedCabalDep = maybe Cabal.anyVersion Cabal.orLaterVersion shippedCabalVersion
     finalCabalDep = Cabal.simplifyVersionRange
                                 (Cabal.intersectVersionRanges
                                           userCabalVersion
