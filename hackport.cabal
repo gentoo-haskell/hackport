@@ -18,6 +18,7 @@ source-repository head
 Flag split-base
 
 Executable    hackport
+  ghc-options: -Wall
   Main-Is:    Main.hs
   Default-Language: Haskell98
   Hs-Source-Dirs: ., cabal, cabal/Cabal, cabal/cabal-install
@@ -63,7 +64,6 @@ Executable    hackport
   else
      Build-Depends: base < 3
 
-  ghc-options: -Wall
   other-modules:
     AnsiColor
     BlingBling
@@ -90,6 +90,7 @@ Executable    hackport
 
 
 Executable    hackport-guess-ghc-version
+  ghc-options: -Wall
   Main-Is:    Main-GuessGHC.hs
   Default-Language: Haskell98
   Buildable:    False
@@ -122,11 +123,11 @@ Executable    hackport-guess-ghc-version
   else
      Build-Depends: base < 3
 
-  ghc-options: -Wall
   other-modules:
     Portage.GHCCore
 
 Test-Suite test-resolve-category
+  ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              tests/resolveCat.hs
@@ -147,6 +148,7 @@ Test-Suite test-resolve-category
                         xml
 
 Test-Suite test-merge-deps
+  ghc-options: -Wall
   -- Build is broken for now
   Buildable:            False
   Type:                 exitcode-stdio-1.0
@@ -169,6 +171,7 @@ Test-Suite test-merge-deps
                         xml
 
 Test-Suite test-print-deps
+  ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              tests/print_deps.hs
