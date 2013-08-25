@@ -182,12 +182,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
       deps1  = [ (f `updateFa` fr, genDeps pkgDesc1)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
-               , Right (pkgDesc1,fr) <- return (GHCCore.finalizePackageDescription f
+               , let Right (pkgDesc1,fr) = GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   (GHCCore.platform)
                                                                   compilerId
                                                                   []
-                                                                  pkgGenericDesc)
+                                                                  pkgGenericDesc
                ]
           where 
             updateFa :: Cabal.FlagAssignment -> Cabal.FlagAssignment -> Cabal.FlagAssignment
