@@ -1,17 +1,14 @@
 module Portage.Dependency
-  ( DRange(..)
-  , DAttr(..)
-  , LBound(..)
-  , UBound(..)
-  , Dependency(..)
-  , SlotDepend(..)
-  , empty_dependency
+  (
+    empty_dependency
   , simplify_deps
   , simplifyUseDeps
   , addDepUseFlag
   , setSlotDep
   , sortDeps
   , dep2str
+  -- reexports
+  , module Portage.Dependency.Types
   ) where
 
 import Portage.Version
@@ -28,76 +25,30 @@ import Data.Maybe ( fromJust, mapMaybe )
 import Data.List ( nub, groupBy, partition, sortBy )
 import Data.Ord           ( comparing )
 
-data SlotDepend = AnySlot          -- nothing special
-                | AnyBuildTimeSlot -- ':='
-                | GivenSlot String -- ':slotno'
-    deriving (Eq, Show)
+import Portage.Dependency.Types
 
 dispSlot :: SlotDepend -> Disp.Doc
 dispSlot AnySlot          = Disp.empty
 dispSlot AnyBuildTimeSlot = Disp.text ":="
 dispSlot (GivenSlot slot) = Disp.text (':' : slot)
 
-data LBound = StrictLB    Version
-            | NonstrictLB Version
-            | ZeroB
-    deriving (Eq, Show)
-
-instance Ord LBound where
-    compare ZeroB ZeroB = EQ
-    compare ZeroB _     = LT
-    compare _     ZeroB = GT
-    compare (StrictLB lv)    (StrictLB rv)    = compare lv rv
-    compare (NonstrictLB lv) (NonstrictLB rv) = compare lv rv
-    compare l r = error $ unlines ["i am too lazy to implement LBound: compare"
-                                  , show l
-                                  , show r]
-
 dispLBound :: PackageName -> LBound -> Disp.Doc
 dispLBound pn (StrictLB    v) = Disp.char '>' <> disp pn <-> disp v
 dispLBound pn (NonstrictLB v) = Disp.text ">=" <> disp pn <-> disp v
 dispLBound _pn ZeroB = error "unhandled 'dispLBound ZeroB'"
-
-data UBound = StrictUB Version   -- <
-            | NonstrictUB Version -- <=
-            | InfinityB
-    deriving (Eq, Show)
-
-instance Ord UBound where
-    compare InfinityB InfinityB = EQ
-    compare InfinityB _     = GT
-    compare _         InfinityB = LT
-    compare (NonstrictUB lv) (NonstrictUB rv) = compare lv rv
-    compare (StrictUB lv)    (StrictUB rv)    = compare lv rv
-    compare l r = error $ unlines ["i am too lazy to implement UBound: compare"
-                                  , show l
-                                  , show r]
 
 dispUBound :: PackageName -> UBound -> Disp.Doc
 dispUBound pn (StrictUB    v) = Disp.char '<' <> disp pn <-> disp v
 dispUBound pn (NonstrictUB v) = Disp.text "<=" <> disp pn <-> disp v
 dispUBound _pn InfinityB = error "unhandled 'dispUBound Infinity'"
 
-data DRange = DRange LBound UBound
-            | DExact Version
-    deriving (Eq, Show)
-
 mergeDRanges :: DRange -> DRange -> DRange
 mergeDRanges _ r@(DExact _) = r
 mergeDRanges l@(DExact _) _ = l
 mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
 
-data DAttr = DAttr SlotDepend [UseFlag]
-    deriving (Eq, Show)
-
 dispDAttr :: DAttr -> Disp.Doc
 dispDAttr (DAttr s u) = dispSlot s <> dispUses u
-
-data Dependency = Atom PackageName DRange DAttr
-                | DependIfUse UseFlag Dependency
-                | DependAnyOf         [Dependency]
-                | DependAllOf         [Dependency]
-    deriving (Eq, Show)
 
 empty_dependency :: Dependency
 empty_dependency = DependAllOf []
