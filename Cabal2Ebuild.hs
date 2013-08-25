@@ -73,11 +73,14 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                          else Cabal.homepage pkg
 
 convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [Dependency]
-convertDependencies overlay category = concatMap (convertDependency overlay category)
+convertDependencies overlay category = map (convertDependency overlay category)
 
-convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> [Dependency]
+convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> Dependency
 convertDependency _overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
-  | pname `elem` Portage.coreLibs = []      -- no explicit dep on core libs
+  -- no explicit dep on core libs.
+  -- TODO: the same is done when filtering in
+  -- merge phase in a more robust way. Do we need it?
+  | pname `elem` Portage.coreLibs = empty_dependency
 convertDependency overlay category (Cabal.Dependency pname versionRange)
   = convert versionRange
   where
@@ -88,16 +91,16 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
     mk_p dr = Atom pn dr (DAttr AnySlot [])
     p_v v   = fromCabalVersion v
 
-    convert :: Cabal.VersionRange -> [Dependency]
+    convert :: Cabal.VersionRange -> Dependency
     convert =  Cabal.foldVersionRange'
-             (          [mk_p (DRange ZeroB                 InfinityB)]         -- ^ @\"-any\"@ version
-            )(\v     -> [mk_p (DExact (p_v v))]                                 -- ^ @\"== v\"@
-            )(\v     -> [mk_p (DRange (StrictLB (p_v v))    InfinityB)]         -- ^ @\"> v\"@
-            )(\v     -> [mk_p (DRange ZeroB                 (StrictUB (p_v v)))] -- ^ @\"< v\"@
-            )(\v     -> [mk_p (DRange (NonstrictLB (p_v v)) InfinityB)]         -- ^ @\">= v\"@
-            )(\v     -> [mk_p (DRange (NonstrictLB (p_v v)) InfinityB)]         -- ^ @\"<= v\"@
-            )(\v1 v2 -> [mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2)))] -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
-            )(\g1 g2 -> [DependAnyOf (g1 ++ g2)]                                -- ^ @\"_ || _\"@ union
-            )(\r1 r2 -> [DependAllOf (r1 ++ r2)]                                -- ^ @\"_ && _\"@ intersection
-            )(\dp    -> [DependAllOf dp]                                        -- ^ @\"(_)\"@ parentheses
+             (          mk_p (DRange ZeroB                 InfinityB)          -- ^ @\"-any\"@ version
+            )(\v     -> mk_p (DExact (p_v v))                                  -- ^ @\"== v\"@
+            )(\v     -> mk_p (DRange (StrictLB (p_v v))    InfinityB)          -- ^ @\"> v\"@
+            )(\v     -> mk_p (DRange ZeroB                 (StrictUB (p_v v))) -- ^ @\"< v\"@
+            )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\">= v\"@
+            )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\"<= v\"@
+            )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\g1 g2 -> DependAnyOf [g1, g2]                                  -- ^ @\"_ || _\"@ union
+            )(\r1 r2 -> DependAllOf [r1, r2]                                  -- ^ @\"_ && _\"@ intersection
+            )(\dp    -> dp                                                    -- ^ @\"(_)\"@ parentheses
             )

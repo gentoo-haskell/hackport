@@ -5,6 +5,7 @@ module Portage.Dependency
   , UBound(..)
   , Dependency(..)
   , SlotDepend(..)
+  , empty_dependency
   , simplify_deps
   , simplifyUseDeps
   , addDepUseFlag

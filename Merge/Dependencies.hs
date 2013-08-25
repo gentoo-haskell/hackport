@@ -209,7 +209,7 @@ haskellDependencies overlay deps =
 -- file's descCabalVersion, or the Cabal GHC shipped with.
 cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
 cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
-  head $ C2E.convertDependency overlay
+         C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
                                                  finalCabalDep)
