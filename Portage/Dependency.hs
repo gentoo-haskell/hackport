@@ -1,14 +1,12 @@
 module Portage.Dependency
   (
-    empty_dependency
-  , simplify_deps
+    simplify_deps
   , simplifyUseDeps
-  , addDepUseFlag
-  , setSlotDep
   , sortDeps
   , dep2str
   -- reexports
   , module Portage.Dependency.Types
+  , module Portage.Dependency.Builder
   ) where
 
 import Portage.Version
@@ -25,6 +23,7 @@ import Data.Maybe ( fromJust, mapMaybe )
 import Data.List ( nub, groupBy, partition, sortBy )
 import Data.Ord           ( comparing )
 
+import Portage.Dependency.Builder
 import Portage.Dependency.Normalize
 import Portage.Dependency.Types
 
@@ -50,9 +49,6 @@ mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
 
 dispDAttr :: DAttr -> Disp.Doc
 dispDAttr (DAttr s u) = dispSlot s <> dispUses u
-
-empty_dependency :: Dependency
-empty_dependency = DependAllOf []
 
 merge_pair :: Dependency -> Dependency -> Dependency
 merge_pair (Atom lp ld la) (Atom rp rd ra)
@@ -153,20 +149,6 @@ getSlot (DependIfUse _u _d) = Nothing
 getPackagePart :: Dependency -> PackageName
 getPackagePart dep = fromJust (getPackage dep)
 
---
-setSlotDep :: SlotDepend -> Dependency -> Dependency
-setSlotDep n (DependAllOf d) = DependAllOf $ map (setSlotDep n) d
-setSlotDep n (Atom pn dr (DAttr _s u)) = Atom pn dr (DAttr n u)
-setSlotDep n (DependAnyOf d) = DependAnyOf $ map (setSlotDep n) d
-setSlotDep n (DependIfUse u d) = DependIfUse u (setSlotDep n d)
-
-addDepUseFlag :: UseFlag -> Dependency -> Dependency
-addDepUseFlag n (DependAllOf d) = DependAllOf $ map (addDepUseFlag n) d
-addDepUseFlag n (Atom pn dr (DAttr s u)) = Atom pn dr (DAttr s (n:u))
-addDepUseFlag n (DependAnyOf d) = DependAnyOf $ map (addDepUseFlag n) d
-addDepUseFlag n (DependIfUse u d) = DependIfUse u (addDepUseFlag n d)
-
---
 -- | remove all Use dependencies that overlap with normal dependencies
 simplifyUseDeps :: [Dependency]         -- list where use deps is taken
                     -> [Dependency]     -- list where common deps is taken
