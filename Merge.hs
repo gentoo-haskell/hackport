@@ -180,7 +180,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                           ++ (map ((Cabal.flagName x,True):) tp)
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
-      deps1  = [ (f `updateFa` fr, genDeps pkgDesc1)
+      deps1  = [ (f `updateFa` fr, genDeps pkgDesc_filtered_bdeps)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
                , let Right (pkgDesc1,fr) = GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
@@ -188,6 +188,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                                   compilerId
                                                                   []
                                                                   pkgGenericDesc
+               -- drop circular deps and shipped deps
+               , let (ad, _sd, _rd) = genSimple (Cabal.buildDepends pkgDesc1)
+               , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
                ]
           where 
             updateFa :: Cabal.FlagAssignment -> Cabal.FlagAssignment -> Cabal.FlagAssignment
