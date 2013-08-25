@@ -1,6 +1,7 @@
 module Portage.Dependency.Print
   (
     dep2str
+  , dep2str_denorm -- for debugging
   ) where
 
 import Portage.Version
@@ -35,6 +36,9 @@ dispDAttr (DAttr s u) = dispSlot s <> dispUses u
 
 dep2str :: Int -> Dependency -> String
 dep2str start_indent = render . nest start_indent . showDepend . normalize_depend
+
+dep2str_denorm :: Dependency -> String
+dep2str_denorm = render . showDepend
 
 (<->) :: Disp.Doc -> Disp.Doc -> Disp.Doc
 a <-> b = a <> Disp.char '-' <> b
