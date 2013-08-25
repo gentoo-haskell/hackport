@@ -9,6 +9,7 @@ import Test.HUnit
 something_broke :: Counts -> Bool
 something_broke stats = errors stats + failures stats > 0
 
+run_tests :: Test -> IO ()
 run_tests tests =
     do stats <- runTestTT tests
        when (something_broke stats) exitFailure
