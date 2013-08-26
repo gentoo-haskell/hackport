@@ -16,6 +16,7 @@ test_normalize_in_use_and_top :: Test
 test_normalize_in_use_and_top = TestCase $ do
     let pnm = P.mkPackageName "dev-haskell" "mtl"
         pnp = P.mkPackageName "dev-haskell" "parsec"
+        pnq = P.mkPackageName "dev-haskell" "quickcheck"
         def_attr = P.DAttr P.AnySlot []
         p_v v = P.Version { P.versionNumber   = v
                           , P.versionChar     = Nothing
@@ -43,6 +44,18 @@ test_normalize_in_use_and_top = TestCase $ do
                                                ])
                           ]
                   , [ ">=dev-haskell/mtl-1.0" ]
+                  )
+                , ( d_any [ d_all [ d_ge pnm [1,0] -- common subdep
+                                  , d_ge pnq [1,2]
+                                  ]
+                          , d_all [ d_ge pnm [1,0]
+                                  , d_ge pnp [3,1]
+                                  ]
+                          ]
+                  , [ ">=dev-haskell/mtl-1.0"
+                    , "|| ( >=dev-haskell/quickcheck-1.2"
+                    , "     >=dev-haskell/parsec-3.1 )"
+                    ]
                   )
                 ]
     forM_ deps $ \(d, expected) ->

@@ -3,7 +3,7 @@ module Portage.Dependency.Normalize
     normalize_depend
   ) where
 
-import Data.List ( nub, groupBy )
+import qualified Data.List as L
 
 import Portage.Dependency.Types
 
@@ -25,7 +25,12 @@ is_empty_dependency (Atom _pn _dr _dattr)   = False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
-normalization_step = combine_atoms . propagate_context . flatten . remove_duplicates . remove_empty
+normalization_step = combine_atoms
+                   . propagate_context
+                   . flatten
+                   . lift_context
+                   . remove_duplicates
+                   . remove_empty
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -44,8 +49,8 @@ remove_duplicates :: Dependency -> Dependency
 remove_duplicates d =
     case d of
         (DependIfUse use dep)     -> (DependIfUse use $ remove_duplicates dep)
-        (DependAnyOf deps)        -> DependAnyOf $ nub $ map remove_duplicates deps
-        (DependAllOf deps)        -> DependAllOf $ nub $ map remove_duplicates deps
+        (DependAnyOf deps)        -> DependAnyOf $ L.nub $ map remove_duplicates deps
+        (DependAllOf deps)        -> DependAllOf $ L.nub $ map remove_duplicates deps
         (Atom _pn _dr _dattr)     -> d
 
 -- TODO: implement flattening (if not done yet in other phases)
@@ -54,10 +59,12 @@ remove_duplicates d =
 flatten :: Dependency -> Dependency
 flatten d =
     case d of
-        (DependAnyOf [dep])       -> dep
-        (DependAllOf [dep])       -> dep
-        -- do nothing
-        _                         -> d
+        (DependIfUse use dep)     -> DependIfUse use (flatten dep)
+        (DependAnyOf [dep])       -> flatten dep
+        (DependAllOf [dep])       -> flatten dep
+        (DependAnyOf deps)        -> DependAnyOf $ map flatten deps
+        (DependAllOf deps)        -> DependAllOf $ map flatten deps
+        (Atom _pn _dr _dattr)     -> d
 
 -- TODO: join atoms with different version constraints
 -- DependAllOf [ DRange ">=foo-1" Inf, Drange Zero "<foo-2" ] -> DRange ">=foo-1" "<foo-2"
@@ -70,7 +77,7 @@ combine_atoms d =
         (Atom _pn _dr _dattr) -> d
 
 find_intersections :: [Dependency] -> [Dependency]
-find_intersections = map merge_depends . groupBy is_mergeable
+find_intersections = map merge_depends . L.groupBy is_mergeable
 
 -- TODO
 find_concatenations :: [Dependency] -> [Dependency]
@@ -108,6 +115,44 @@ propagate_context' ctx d =
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
+
+-- Eliminate bottom-up redundancy:
+--   || ( ( foo/bar bar/baz )
+--        ( foo/bar bar/quux ) )
+-- gets translated to
+--   foo/bar
+--   || ( ( foo/bar bar/baz )
+--        ( foo/bar bar/quux ) )
+-- It looks like became more gross,
+-- but 'propagate_context' phase
+-- cleanups it to the following state:
+--   foo/bar
+--   || ( bar/baz
+--        bar/quux )
+
+lift_context :: Dependency -> Dependency
+lift_context d =
+    case d of
+        (DependIfUse _use _dep) -> d
+        (DependAllOf deps)      -> DependAllOf $ deps ++ (new_ctx L.\\ deps)
+        -- the lift itself
+        (DependAnyOf _deps)     -> case L.null new_ctx of
+                                       True  -> d -- nothing is shared downwards
+                                       False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
+        (Atom _pn _dr _dattr)   -> d
+  where new_ctx = lift_context' d
+
+-- very simple model: pick all sibling-atom deps and add them to context
+--                    for upward proparation and intersect with 'all_of' parts
+lift_context' :: Dependency -> [Dependency]
+lift_context' d =
+    case d of
+        (DependIfUse _use _dep) -> []
+        (DependAllOf deps)      -> [dep | dep@(Atom _pn _dr _dattr) <- deps]
+        (DependAnyOf deps)      -> case map lift_context' deps of
+                                       []    -> []
+                                       ctxes -> foldl1 L.intersect ctxes
+        (Atom _pn _dr _dattr)   -> [d]
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency
