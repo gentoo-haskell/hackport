@@ -23,6 +23,7 @@ test_normalize_in_use_and_top = TestCase $ do
                           , P.versionRevision = 0
                           }
         d_all = P.DependAllOf
+        d_any = P.DependAnyOf
         d_ge pn v = P.Atom pn
                            (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
                            def_attr
@@ -35,6 +36,13 @@ test_normalize_in_use_and_top = TestCase $ do
                   , [ ">=dev-haskell/mtl-1.0"
                     , "foo ( >=dev-haskell/parsec-2.1 )"
                     ]
+                  )
+                , ( d_all [ d_ge pnm [1,0]
+                          , d_use "foo" (d_any [ d_ge pnm [1,0] -- already satisfied
+                                               , d_ge pnp [2,1]
+                                               ])
+                          ]
+                  , [ ">=dev-haskell/mtl-1.0" ]
                   )
                 ]
     forM_ deps $ \(d, expected) ->

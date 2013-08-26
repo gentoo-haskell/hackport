@@ -12,12 +12,14 @@ mergeDRanges _ r@(DExact _) = r
 mergeDRanges l@(DExact _) _ = l
 mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
 
+-- TODO: remove it and switch to 'SatisfiedDepend' instead
 empty_dependency :: Dependency
 empty_dependency = DependAllOf []
 
 is_empty_dependency :: Dependency -> Bool
 is_empty_dependency (DependIfUse _use dep)  =     is_empty_dependency dep
-is_empty_dependency (DependAnyOf deps)      = all is_empty_dependency deps
+is_empty_dependency (DependAnyOf [])        = True -- because any (const True) == False
+is_empty_dependency (DependAnyOf deps)      = any is_empty_dependency deps
 is_empty_dependency (DependAllOf deps)      = all is_empty_dependency deps
 is_empty_dependency (Atom _pn _dr _dattr)   = False
 
@@ -31,10 +33,11 @@ remove_empty d =
         -- drop full empty nodes
         _ | is_empty_dependency d -> empty_dependency
         -- drop partial empty nodes
-        (DependAnyOf deps)        -> DependAnyOf $ filter (not . is_empty_dependency) deps
-        (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) deps
+        (DependIfUse use dep)     -> DependIfUse use $                                      remove_empty dep
+        (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) $ map remove_empty deps
+        (DependAnyOf deps)        -> DependAnyOf $                                      map remove_empty deps
         -- no change
-        _                         -> d
+        (Atom _pn _dr _dattr)     -> d
 
 -- Ideally 'combine_atoms' should handle those as well
 remove_duplicates :: Dependency -> Dependency
@@ -49,7 +52,12 @@ remove_duplicates d =
 --   DependAnyOf [DependAnyOf [something], rest] -> DependAnyOf $ something ++ rest
 --   DependAllOf [DependAllOf [something], rest] -> DependAllOf $ something ++ rest
 flatten :: Dependency -> Dependency
-flatten = id
+flatten d =
+    case d of
+        (DependAnyOf [dep])       -> dep
+        (DependAllOf [dep])       -> dep
+        -- do nothing
+        _                         -> d
 
 -- TODO: join atoms with different version constraints
 -- DependAllOf [ DRange ">=foo-1" Inf, Drange Zero "<foo-2" ] -> DRange ">=foo-1" "<foo-2"
