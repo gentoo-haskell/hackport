@@ -106,7 +106,7 @@ normalize_depend :: Dependency -> Dependency
 normalize_depend d = d''
     where d'  = normalization_step d
           d'' | d == d'   =                    d
-              | otherwise = normalization_step d
+              | otherwise = normalization_step d'
 
 -- TODO: be able to merge
 --     [use? ( a ), use? ( b ) ] -> use? ( a b )
