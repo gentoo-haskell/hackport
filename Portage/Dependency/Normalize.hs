@@ -111,10 +111,10 @@ propagate_context' ctx d =
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency
-normalize_depend d = d''
-    where d'  = normalization_step d
-          d'' | d == d'   =                    d
-              | otherwise = normalization_step d'
+normalize_depend d = next_step next_d
+    where next_d = normalization_step d
+          next_step | d == next_d = id
+                    | otherwise   = normalize_depend
 
 -- TODO: be able to merge
 --     [use? ( a ), use? ( b ) ] -> use? ( a b )
