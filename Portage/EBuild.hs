@@ -161,8 +161,8 @@ tab_size = 8
 tabify_line :: String -> String
 tabify_line l = replicate need_tabs '\t'  ++ nonsp
     where (sp, nonsp)       = break (/= ' ') l
-          (full_tabs, tail) = length sp `divMod` tab_size
-          need_tabs = full_tabs + if tail > 0 then 1 else 0
+          (full_tabs, t) = length sp `divMod` tab_size
+          need_tabs = full_tabs + if t > 0 then 1 else 0
 
 tabify :: String -> String
 tabify = unlines . map tabify_line . lines
