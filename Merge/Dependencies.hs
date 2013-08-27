@@ -311,6 +311,12 @@ staticTranslateExtraLib lib = lookup lib m
       , ("QtCore", any_c_p "dev-qt" "qtcore")
       , ("QtGui", any_c_p "dev-qt" "qtgui")
       , ("QtOpenGL", any_c_p "dev-qt" "qtopengl")
+      , ("gsl", any_c_p "sci-libs" "gsl")
+      , ("gslcblas", any_c_p "sci-libs" "gsl")
+      , ("mkl_core", any_c_p "sci-libs" "mkl")
+      , ("mkl_intel_lp64", any_c_p "sci-libs" "mkl")
+      , ("mkl_lapack", any_c_p "sci-libs" "mkl")
+      , ("mkl_sequential", any_c_p "sci-libs" "mkl")
       ]
 
 ---------------------------------------------------------------
