@@ -40,7 +40,7 @@ d_ge pn v = P.Atom pn
                    def_attr
 
 d_use :: P.Use -> P.Dependency -> P.Dependency
-d_use u d = P.DependIfUse (P.Q $ P.mkUse u) d
+d_use u d = P.DependIfUse (P.DUse (True, u)) d
 
 test_normalize_in_use_and_top :: Test
 test_normalize_in_use_and_top = TestCase $ do

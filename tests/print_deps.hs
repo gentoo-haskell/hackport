@@ -5,7 +5,6 @@ import Test.HUnit
 
 import qualified Portage.Dependency as P
 import qualified Portage.PackageId  as P
-import qualified Portage.Use        as P
 import qualified RunTests as RT
 
 tests :: Test
@@ -19,7 +18,7 @@ test_print_empty = TestCase $ do
     let expect_empty = ""
         d_all = P.DependAllOf
         d_any = P.DependAnyOf
-        d_use u dep = P.DependIfUse (P.mkUse u) dep
+        d_use u dep = P.DependIfUse (P.DUse (True, u)) dep
         deps     = [ d_all []
                    , d_any []
                    , d_use "f" (d_all [])

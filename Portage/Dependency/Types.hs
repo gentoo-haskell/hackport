@@ -5,6 +5,7 @@ module Portage.Dependency.Types
   , UBound(..)
   , DRange(..)
   , DAttr(..)
+  , DUse(..)
   , Dependency(..)
   ) where
 
@@ -53,8 +54,15 @@ data DRange = DRange LBound UBound
 data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show)
 
+-- Simplified version of 'UseFlag'
+--   used as a guarding depend:
+--     foo? ( ... )
+--    !foo? ( ... )
+data DUse = DUse (Bool, Use)
+    deriving (Eq, Show)
+
 data Dependency = Atom PackageName DRange DAttr
-                | DependIfUse UseFlag Dependency
+                | DependIfUse DUse     Dependency
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
     deriving (Eq, Show)

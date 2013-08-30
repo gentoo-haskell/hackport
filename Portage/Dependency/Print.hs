@@ -34,6 +34,11 @@ dispUBound _pn InfinityB = error "unhandled 'dispUBound Infinity'"
 dispDAttr :: DAttr -> Disp.Doc
 dispDAttr (DAttr s u) = dispSlot s <> dispUses u
 
+dispDUse :: DUse -> Disp.Doc
+dispDUse (DUse (is_enabled, name)) = prefix is_enabled <> Disp.text name <> Disp.char '?'
+    where prefix True  = Disp.empty
+          prefix False = Disp.char '!'
+
 dep2str :: Int -> Dependency -> String
 dep2str start_indent = render . nest start_indent . showDepend . normalize_depend
 
@@ -66,7 +71,7 @@ showDepend (Atom pn range dattr)
                                  <> showDepend (Atom pn (DRange ZeroB ub)    dattr)
         DExact v              -> Disp.char '~' <> disp pn <-> disp v { versionRevision = 0 } <> dispDAttr dattr
 
-showDepend (DependIfUse u dep)  = disp u         <> sp <> sparens (showDepend dep)
+showDepend (DependIfUse u dep)  = dispDUse u     <> sp <> sparens (showDepend dep)
 showDepend (DependAnyOf deps)   = Disp.text "||" <> sp <> sparens (vcat $ map showDependInAnyOf deps)
 showDepend (DependAllOf deps)   = valign $ vcat $ map showDepend deps
 

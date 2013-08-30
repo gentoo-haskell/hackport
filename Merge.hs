@@ -58,7 +58,6 @@ import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
-import qualified Portage.Use     as Portage
 import qualified Portage.Dependency as Portage
 
 import qualified Portage.GHCCore as GHCCore
@@ -291,7 +290,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       hasFlag u = any ((u ==)) . fst
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
-      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse ((if b then id else Portage.X) . Portage.mkQUse $ unFlagName y) . x)
+      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, unFlagName y)) . x)
                                       (id::Portage.Dependency->Portage.Dependency) fs
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
 

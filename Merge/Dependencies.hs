@@ -187,7 +187,7 @@ resolveDependencies overlay pkg mcompiler =
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
 testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
-    [Portage.DependIfUse (Portage.mkQUse "test") (Portage.DependAllOf $ Portage.simplify_deps deps)]
+    [Portage.DependIfUse (Portage.DUse (True, "test")) (Portage.DependAllOf $ Portage.simplify_deps deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
