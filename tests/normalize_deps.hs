@@ -12,24 +12,39 @@ tests :: Test
 tests = TestList [ TestLabel "normalize_in_use_and_top" test_normalize_in_use_and_top
                  ]
 
+pnm :: P.PackageName
+pnm = P.mkPackageName "dev-haskell" "mtl"
+pnp :: P.PackageName
+pnp = P.mkPackageName "dev-haskell" "parsec"
+pnq :: P.PackageName
+pnq = P.mkPackageName "dev-haskell" "quickcheck"
+
+def_attr :: P.DAttr
+def_attr = P.DAttr P.AnySlot []
+
+p_v :: [Int] -> P.Version
+p_v v = P.Version { P.versionNumber   = v
+                  , P.versionChar     = Nothing
+                  , P.versionSuffix   = []
+                  , P.versionRevision = 0
+                  }
+
+d_all :: [P.Dependency] -> P.Dependency
+d_all = P.DependAllOf
+d_any :: [P.Dependency] -> P.Dependency
+d_any = P.DependAnyOf
+
+d_ge :: P.PackageName -> [Int] -> P.Dependency
+d_ge pn v = P.Atom pn
+                   (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
+                   def_attr
+
+d_use :: P.Use -> P.Dependency -> P.Dependency
+d_use u d = P.DependIfUse (P.Q $ P.mkUse u) d
+
 test_normalize_in_use_and_top :: Test
 test_normalize_in_use_and_top = TestCase $ do
-    let pnm = P.mkPackageName "dev-haskell" "mtl"
-        pnp = P.mkPackageName "dev-haskell" "parsec"
-        pnq = P.mkPackageName "dev-haskell" "quickcheck"
-        def_attr = P.DAttr P.AnySlot []
-        p_v v = P.Version { P.versionNumber   = v
-                          , P.versionChar     = Nothing
-                          , P.versionSuffix   = []
-                          , P.versionRevision = 0
-                          }
-        d_all = P.DependAllOf
-        d_any = P.DependAnyOf
-        d_ge pn v = P.Atom pn
-                           (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
-                           def_attr
-        d_use u d = P.DependIfUse (P.Q $ P.mkUse u) d
-        deps  = [ ( d_all [ d_ge pnm [1,0]
+    let deps  = [ ( d_all [ d_ge pnm [1,0]
                           , d_use "foo" (d_all [ d_ge pnm [1,0] -- duplicate
                                                , d_ge pnp [2,1]
                                                ])
