@@ -79,6 +79,20 @@ combine_atoms d =
 
 find_intersections :: [Dependency] -> [Dependency]
 find_intersections = map merge_depends . L.groupBy is_mergeable
+    where is_mergeable :: Dependency -> Dependency -> Bool
+          is_mergeable (Atom lpn _ldrange lattr) (Atom rpn _rdrange rattr) = (lpn, lattr) == (rpn, rattr)
+          is_mergeable _                         _                         = False
+
+          merge_depends :: [Dependency] -> Dependency
+          merge_depends [x] = x
+          merge_depends xs = foldl1 merge_pair xs
+
+          merge_pair :: Dependency -> Dependency -> Dependency
+          merge_pair (Atom lp ld la) (Atom rp rd ra)
+              | lp /= rp = error "merge_pair got different 'PackageName's"
+              | la /= ra = error "merge_pair got different 'DAttr's"
+              | otherwise = Atom lp (mergeDRanges ld rd) la
+          merge_pair l r = error $ unwords ["merge_pair can't merge non-atoms:", show l, show r]
 
 -- TODO
 find_concatenations :: [Dependency] -> [Dependency]
@@ -174,20 +188,3 @@ normalize_depend d = next_step next_d
     where next_d = normalization_step d
           next_step | d == next_d = id
                     | otherwise   = normalize_depend
-
--- TODO: be able to merge
---     [use? ( a ), use? ( b ) ] -> use? ( a b )
-is_mergeable :: Dependency -> Dependency -> Bool
-is_mergeable (Atom lpn _ldrange lattr) (Atom rpn _rdrange rattr) = (lpn, lattr) == (rpn, rattr)
-is_mergeable _                         _                         = False
-
-merge_depends :: [Dependency] -> Dependency
-merge_depends [x] = x
-merge_depends xs = foldl1 merge_pair xs
-
-merge_pair :: Dependency -> Dependency -> Dependency
-merge_pair (Atom lp ld la) (Atom rp rd ra)
-    | lp /= rp = error "merge_pair got different 'PackageName's"
-    | la /= ra = error "merge_pair got different 'DAttr's"
-    | otherwise = Atom lp (mergeDRanges ld rd) la
-merge_pair l r = error $ unwords ["merge_pair can't merge non-atoms:", show l, show r]
