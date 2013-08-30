@@ -102,7 +102,7 @@ sortDeps = sortBy dsort . map deeper
     deeper (DependAnyOf ds)  = DependAnyOf $ sortDeps ds
     deeper x = x
     dsort :: Dependency -> Dependency -> Ordering
-    dsort (DependIfUse (DUse (_is_u1, u1)) _) (DependIfUse (DUse (_is_u2, u2)) _) = u1 `compare` u2
+    dsort (DependIfUse u1 _) (DependIfUse u2 _) = u1 `compare` u2
     dsort (DependIfUse _ _)  (DependAnyOf _)   = LT
     dsort (DependIfUse _ _)  (DependAllOf  _)   = LT
     dsort (DependIfUse _ _)  _                  = GT

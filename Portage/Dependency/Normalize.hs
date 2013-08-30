@@ -31,6 +31,7 @@ normalization_step = combine_atoms
                    . lift_context
                    . remove_duplicates
                    . remove_empty
+                   . sort_deps
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -153,6 +154,23 @@ lift_context' d =
                                        []    -> []
                                        ctxes -> foldl1 L.intersect ctxes
         (Atom _pn _dr _dattr)   -> [d]
+
+-- reorders depends to make them more attractive
+-- for other normalization algorithms
+-- TODO: add all logic from 'sortDeps' here
+sort_deps :: Dependency -> Dependency
+
+-- silly bubble-sort on depends
+sort_deps d =
+    case d of
+        (DependIfUse lhs (DependIfUse rhs dep))
+            | rhs < lhs   -> DependIfUse rhs $ sort_deps $ DependIfUse lhs dep
+        (DependIfUse use dep) -> DependIfUse use $ sort_deps dep
+        (DependAnyOf deps)        -> DependAnyOf $ map sort_deps deps
+        (DependAllOf deps)        -> DependAllOf $ map sort_deps deps
+        (Atom _pn _dr _dattr)     -> d
+
+sort_deps x = x
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency

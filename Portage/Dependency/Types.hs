@@ -61,6 +61,15 @@ data DAttr = DAttr SlotDepend [UseFlag]
 data DUse = DUse (Bool, Use)
     deriving (Eq, Show)
 
+-- sort order:
+--   a? < b?
+--   a? < !a?
+instance Ord DUse where
+    compare (DUse (lb, lname)) (DUse (rb, rname)) =
+        case compare lname rname of
+            EQ -> compare rb lb
+            v  -> v
+
 data Dependency = Atom PackageName DRange DAttr
                 | DependIfUse DUse     Dependency
                 | DependAnyOf         [Dependency]
