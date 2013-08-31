@@ -77,6 +77,13 @@ test_normalize_in_use_and_top = TestCase $ do
                           ]
                   , [ "bar? ( foo? ( >=dev-haskell/mtl-1.0 ) )" ]
                   )
+                , ( d_all [ d_use "foo" $ d_ge pnm [1,0]
+                          , d_use "foo" $ d_ge pnp [3,1]
+                          ]
+                  , [ "foo? ( >=dev-haskell/mtl-1.0"
+                    , "       >=dev-haskell/parsec-3.1 )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d

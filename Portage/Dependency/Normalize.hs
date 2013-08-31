@@ -32,6 +32,7 @@ normalization_step = combine_atoms
                    . remove_duplicates
                    . remove_empty
                    . sort_deps
+                   . combine_use_guards
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -97,6 +98,32 @@ find_intersections = map merge_depends . L.groupBy is_mergeable
 -- TODO
 find_concatenations :: [Dependency] -> [Dependency]
 find_concatenations = id
+
+-- Eliminate use guarded redundancy:
+--   a? ( foo )
+--   a? ( bar )
+-- gets translated to
+--   a? ( foo bar )
+combine_use_guards :: Dependency -> Dependency
+combine_use_guards d =
+    case d of
+        (DependIfUse use dep) -> DependIfUse use (combine_use_guards dep)
+        (DependAllOf deps)    -> DependAllOf $ map combine_use_guards $ find_use_intersections  deps
+        (DependAnyOf deps)    -> DependAnyOf $ map combine_use_guards $ find_use_concatenations deps
+        (Atom _pn _dr _dattr) -> d
+    where -- TODO
+          find_use_concatenations :: [Dependency] -> [Dependency]
+          find_use_concatenations = id
+          find_use_intersections :: [Dependency] -> [Dependency]
+          find_use_intersections = map merge_use_intersections . L.groupBy is_use_mergeable
+              where
+                    is_use_mergeable :: Dependency -> Dependency -> Bool
+                    is_use_mergeable (DependIfUse lu _ld) (DependIfUse ru _rd)
+                        | lu == ru       = True
+                    is_use_mergeable _ _ = False
+                    merge_use_intersections :: [Dependency] -> Dependency
+                    merge_use_intersections [x] = x
+                    merge_use_intersections ~(DependIfUse u dep : ds) = DependIfUse u $ DependAllOf (dep : [d' | (DependIfUse _u d') <- ds])
 
 -- Eliminate top-down redundancy:
 --   foo/bar
