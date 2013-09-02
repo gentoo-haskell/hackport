@@ -93,6 +93,11 @@ test_normalize_in_use_and_top = TestCase $ do
                   , [ "b? ( >=dev-haskell/mtl-1.0 )"
                     ]
                   )
+                -- 'test?' is special
+                , ( d_use "a" $ d_use "test" $ d_ge pnm [1,0]
+                  , [ "test? ( a? ( >=dev-haskell/mtl-1.0 ) )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d

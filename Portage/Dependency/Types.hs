@@ -64,11 +64,14 @@ data DUse = DUse (Bool, Use)
 -- sort order:
 --   a? < b?
 --   a? < !a?
+-- but 'test?' is special
 instance Ord DUse where
     compare (DUse (lb, lname)) (DUse (rb, rname)) =
-        case compare lname rname of
-            EQ -> compare rb lb
-            v  -> v
+        case (lname, rname, compare lname rname) of
+            (_, _, EQ)     -> compare rb lb
+            ("test", _, _) -> LT
+            (_, "test", _) -> GT
+            (_, _,      v) -> v
 
 data Dependency = Atom PackageName DRange DAttr
                 | DependIfUse DUse     Dependency
