@@ -181,12 +181,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
       deps1  = [ (f `updateFa` fr, genDeps pkgDesc_filtered_bdeps)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
-               , let Right (pkgDesc1,fr) = GHCCore.finalizePackageDescription f
+               , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   (GHCCore.platform)
                                                                   compilerId
                                                                   []
-                                                                  pkgGenericDesc
+                                                                  pkgGenericDesc]
                -- drop circular deps and shipped deps
                , let (ad, _sd, _rd) = genSimple (Cabal.buildDepends pkgDesc1)
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
