@@ -42,6 +42,9 @@ d_ge pn v = P.Atom pn
 d_use :: P.Use -> P.Dependency -> P.Dependency
 d_use u d = P.DependIfUse (P.DUse (True, u)) d
 
+d_nuse :: P.Use -> P.Dependency -> P.Dependency
+d_nuse u d = P.DependIfUse (P.DUse (False, u)) d
+
 test_normalize_in_use_and_top :: Test
 test_normalize_in_use_and_top = TestCase $ do
     let deps  = [ ( d_all [ d_ge pnm [1,0]
@@ -82,6 +85,12 @@ test_normalize_in_use_and_top = TestCase $ do
                           ]
                   , [ "foo? ( >=dev-haskell/mtl-1.0"
                     , "       >=dev-haskell/parsec-3.1 )"
+                    ]
+                  )
+                , ( d_all [ d_use  "a" $ d_use "b" $ d_ge pnm [1,0]
+                          , d_nuse "a" $ d_use "b" $ d_ge pnm [1,0]
+                          ]
+                  , [ "b? ( >=dev-haskell/mtl-1.0 )"
                     ]
                   )
                 ]

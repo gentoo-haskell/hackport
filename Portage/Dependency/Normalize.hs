@@ -33,6 +33,7 @@ normalization_step = combine_atoms
                    . remove_empty
                    . sort_deps
                    . combine_use_guards
+                   . combine_use_counterguards
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -124,6 +125,42 @@ combine_use_guards d =
                     merge_use_intersections :: [Dependency] -> Dependency
                     merge_use_intersections [x] = x
                     merge_use_intersections ~(DependIfUse u dep : ds) = DependIfUse u $ DependAllOf (dep : [d' | (DependIfUse _u d') <- ds])
+
+-- Eliminate use guarded redundancy:
+--   a? ( foo bar )
+--   !a? ( foo baz )
+-- gets translated to
+--   foo
+--   a? ( bar )
+--   !a? ( baz )
+-- BUT! it's not implemented and handles only simplest case:
+--   a? ( foo )
+--   !a? ( foo )
+-- results in
+--   foo
+combine_use_counterguards :: Dependency -> Dependency
+combine_use_counterguards d =
+    case d of
+        (DependIfUse use dep) -> DependIfUse use (combine_use_counterguards dep)
+        (DependAllOf deps)    -> DependAllOf $ map combine_use_counterguards $ find_use_intersections  deps
+        (DependAnyOf deps)    -> DependAnyOf $ map combine_use_counterguards $ find_use_concatenations deps
+        (Atom _pn _dr _dattr) -> d
+    where -- TODO
+          find_use_concatenations :: [Dependency] -> [Dependency]
+          find_use_concatenations = id
+          find_use_intersections :: [Dependency] -> [Dependency]
+          find_use_intersections = concatMap merge_use_intersections . L.groupBy is_counteruse_mergeable
+              where
+                    is_counteruse_mergeable :: Dependency -> Dependency -> Bool
+                    is_counteruse_mergeable (DependIfUse (DUse (lb,lu)) _ld) (DependIfUse (DUse (rb, ru)) _rd)
+                        -- lookup 'a?' and '!a?'
+                        | lu == ru && lb == not rb = True
+                    is_counteruse_mergeable _ _ = False
+                    merge_use_intersections :: [Dependency] -> [Dependency]
+                    merge_use_intersections deps@[(DependIfUse _lu ld), (DependIfUse _ru rd)]
+                        | ld == rd  = [ld]
+                        | otherwise = deps
+                    merge_use_intersections x = x
 
 -- Eliminate top-down redundancy:
 --   foo/bar
