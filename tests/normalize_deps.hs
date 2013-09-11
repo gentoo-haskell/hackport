@@ -39,6 +39,11 @@ d_ge pn v = P.Atom pn
                    (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
                    def_attr
 
+d_p :: String -> P.Dependency
+d_p pn = P.Atom (P.mkPackageName "c" pn)
+                (P.DRange P.ZeroB P.InfinityB)
+                def_attr
+
 d_use :: P.Use -> P.Dependency -> P.Dependency
 d_use u d = P.DependIfUse (P.DUse (True, u)) d
 
@@ -96,6 +101,19 @@ test_normalize_in_use_and_top = TestCase $ do
                 -- 'test?' is special
                 , ( d_use "a" $ d_use "test" $ d_ge pnm [1,0]
                   , [ "test? ( a? ( >=dev-haskell/mtl-1.0 ) )"
+                    ]
+                  )
+                , -- pop context for complementary depends, like
+                  --   a? ( x y a ) !a? ( x y na )
+                  -- leads to
+                  --   x y a? ( a ) !a? ( na )
+                  ( d_all [ d_use  "a" $ d_all $ map d_p [ "x", "y", "a" ]
+                          , d_nuse "a" $ d_all $ map d_p [ "x", "y", "na" ]
+                          ]
+                  , [ "c/x"
+                    , "c/y"
+                    , "a? ( c/a )"
+                    , "!a? ( c/na )"
                     ]
                   )
                 ]

@@ -133,11 +133,6 @@ combine_use_guards d =
 --   foo
 --   a? ( bar )
 --   !a? ( baz )
--- BUT! it's not implemented and handles only simplest case:
---   a? ( foo )
---   !a? ( foo )
--- results in
---   foo
 combine_use_counterguards :: Dependency -> Dependency
 combine_use_counterguards d =
     case d of
@@ -158,8 +153,16 @@ combine_use_counterguards d =
                     is_counteruse_mergeable _ _ = False
                     merge_use_intersections :: [Dependency] -> [Dependency]
                     merge_use_intersections deps@[(DependIfUse _lu ld), (DependIfUse _ru rd)]
-                        | ld == rd  = [ld]
-                        | otherwise = deps
+                        -- very simple special case,
+                        -- as we can't look through nested use guards
+                        | ld == rd = [ld]
+                    merge_use_intersections deps@[(DependIfUse _lu ld), (DependIfUse _ru rd)] =
+                       case common_ctx of
+                           [] -> deps
+                           _  -> [propagate_context $ DependAllOf $ common_ctx ++ deps ]
+                        where ld_ctx = lift_context' ld
+                              rd_ctx = lift_context' rd
+                              common_ctx = ld_ctx `L.intersect` rd_ctx
                     merge_use_intersections x = x
 
 -- Eliminate top-down redundancy:
