@@ -152,7 +152,7 @@ combine_use_counterguards d =
                         | lu == ru && lb == not rb = True
                     is_counteruse_mergeable _ _ = False
                     merge_use_intersections :: [Dependency] -> [Dependency]
-                    merge_use_intersections deps@[(DependIfUse _lu ld), (DependIfUse _ru rd)]
+                    merge_use_intersections [(DependIfUse _lu ld), (DependIfUse _ru rd)]
                         -- very simple special case,
                         -- as we can't look through nested use guards
                         | ld == rd = [ld]
