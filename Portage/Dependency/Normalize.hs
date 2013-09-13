@@ -178,9 +178,9 @@ propagate_context = propagate_context' []
 -- very simple model: pick all sibling-atom deps and add them to context
 --                    for downward proparation and remove from 'all_of' part
 -- TODO: any-of part can benefit from it by removing useless alternative
--- TODO: analyze different ranges to remove stricter variants like:
---       foo/bar
---       use? ( >=foo/bar-1.0 )
+-- TODO: analyze different ranges to remove looser variants like:
+--       >=foo/bar-1.0
+--       use? ( foo/bar )
 propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
