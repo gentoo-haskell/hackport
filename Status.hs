@@ -18,7 +18,7 @@ import Control.Monad.State
 
 import qualified Data.List as List
 
-import qualified Data.ByteString.Lazy.Char8 as L
+import qualified Data.ByteString.Char8 as BS
 
 import Data.Char
 import Data.Function (on)
@@ -230,13 +230,14 @@ portageDiff p1 p2 = (in1, ins, in2)
 --   Disregards comments.
 equals :: FilePath -> FilePath -> IO Bool
 equals fp1 fp2 = do
-    f1 <- L.readFile fp1
-    f2 <- L.readFile fp2
+    -- don't leave halfopenfiles
+    f1 <- BS.readFile fp1
+    f2 <- BS.readFile fp2
     return (equal' f1 f2)
 
-equal' :: L.ByteString -> L.ByteString -> Bool
+equal' :: BS.ByteString -> BS.ByteString -> Bool
 equal' = equating essence
     where
-    essence = filter (not . isEmpty) . filter (not . isComment) . L.lines
-    isComment = L.isPrefixOf (L.pack "#") . L.dropWhile isSpace
-    isEmpty = L.null . L.dropWhile isSpace
+    essence = filter (not . isEmpty) . filter (not . isComment) . BS.lines
+    isComment = BS.isPrefixOf (BS.pack "#") . BS.dropWhile isSpace
+    isEmpty = BS.null . BS.dropWhile isSpace
