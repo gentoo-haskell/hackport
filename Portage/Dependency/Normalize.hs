@@ -177,10 +177,7 @@ propagate_context = propagate_context' []
 
 -- very simple model: pick all sibling-atom deps and add them to context
 --                    for downward proparation and remove from 'all_of' part
--- TODO: any-of part can benefit from it by removing useless alternative
--- TODO: analyze different ranges to remove looser variants like:
---       >=foo/bar-1.0
---       use? ( foo/bar )
+-- TODO: any-of part can benefit from it by removing unsatisfiable or satisfied alternative
 -- TODO: remove use-guarded redundancy
 --         a? ( x y z )
 --         test? ( a? ( y z t ) )
@@ -199,7 +196,8 @@ propagate_context' ctx d =
                                                , let ctx' = ctx ++ atom_deps
                                                ]
         (DependAnyOf deps)    -> DependAnyOf $ map (go ctx) deps
-        (Atom _pn _dr _dattr) -> case d `elem` ctx of
+                                 -- 'd' is already satisfied by 'ctx' constraint
+        (Atom _pn _dr _dattr) -> case any (\ctx_e ->  ctx_e `dep_is_case_of` d) ctx of
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c

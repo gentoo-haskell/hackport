@@ -116,6 +116,13 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "!a? ( c/na )"
                     ]
                   )
+                , -- push stricter context into less trict
+                  ( d_all [ d_ge pnm [2,0]
+                          , d_use "a" $ d_ge pnm [1,0]
+                          ]
+                  ,
+                    [ ">=dev-haskell/mtl-2.0" ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
