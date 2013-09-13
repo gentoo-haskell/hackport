@@ -181,6 +181,12 @@ propagate_context = propagate_context' []
 -- TODO: analyze different ranges to remove looser variants like:
 --       >=foo/bar-1.0
 --       use? ( foo/bar )
+-- TODO: remove use-guarded redundancy
+--         a? ( x y z )
+--         test? ( a? ( y z t ) )
+--       can be reduced to
+--         a? ( x y z )
+--         test? ( a? ( t ) )
 propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
