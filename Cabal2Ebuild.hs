@@ -98,7 +98,7 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             )(\v     -> mk_p (DRange (StrictLB (p_v v))    InfinityB)          -- ^ @\"> v\"@
             )(\v     -> mk_p (DRange ZeroB                 (StrictUB (p_v v))) -- ^ @\"< v\"@
             )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\">= v\"@
-            )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\"<= v\"@
+            )(\v     -> mk_p (DRange ZeroB                (NonstrictUB (p_v v))) -- ^ @\"<= v\"@
             )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
             )(\g1 g2 -> DependAnyOf [g1, g2]                                  -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> DependAllOf [r1, r2]                                  -- ^ @\"_ && _\"@ intersection
