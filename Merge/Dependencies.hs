@@ -317,6 +317,9 @@ staticTranslateExtraLib lib = lookup lib m
       , ("mkl_intel_lp64", any_c_p "sci-libs" "mkl")
       , ("mkl_lapack", any_c_p "sci-libs" "mkl")
       , ("mkl_sequential", any_c_p "sci-libs" "mkl")
+      , ("Xi", any_c_p "x11-libs" "libXi")
+      , ("Xxf86vm", any_c_p "x11-libs" "libXxf86vm")
+      , ("pthread", any_c_p "virtual" "libc")
       ]
 
 ---------------------------------------------------------------
