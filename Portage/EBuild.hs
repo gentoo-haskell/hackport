@@ -4,12 +4,10 @@ module Portage.EBuild
         , src_uri
         ) where
 
-import Distribution.Text ( Text(..), display )
+import Distribution.Text ( Text(..) )
 import qualified Text.PrettyPrint as Disp
 
 import Portage.Dependency
-
-import Distribution.License as Cabal
 
 import Data.String.Utils
 import qualified Data.Function as F
@@ -25,7 +23,7 @@ data EBuild = EBuild {
     description :: String,
     long_desc :: String,
     homepage :: String,
-    license :: Cabal.License,
+    license :: Either String String,
     slot :: String,
     keywords :: [String],
     iuse :: [String],
@@ -52,7 +50,7 @@ ebuildTemplate = EBuild {
     description = "",
     long_desc = "",
     homepage = "http://hackage.haskell.org/package/${HACKAGE_N}",
-    license = Cabal.UnknownLicense "xxx UNKNOWN xxx",
+    license = Left "unassigned license?",
     slot = "0",
     keywords = ["~amd64","~x86"],
     iuse = [],
@@ -102,9 +100,9 @@ showEBuild ebuild =
   ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
   ss "SRC_URI=". quote (toMirror $ src_uri ebuild). nl.
   nl.
-  ss "LICENSE=". quote (convertLicense . license $ ebuild).
-     (if null (licenseComment . license $ ebuild) then id
-         else ss "\t#". ss (licenseComment . license $ ebuild)). nl.
+  ss "LICENSE=". (either (\err -> quote "" . ss ("\t# FIXME: " ++ err))
+                         quote
+                         (license ebuild)). nl.
   ss "SLOT=". quote (slot ebuild). nl.
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
   ss "IUSE=". quote' (sepBy " " . sort_iuse $ iuse ebuild). nl.
@@ -214,22 +212,3 @@ replaceMultiVars [] str = str
 replaceMultiVars whole@((pname,cont):rest) str = case subStr cont str of
     Nothing -> replaceMultiVars rest str
     Just (pre,post) -> (replaceMultiVars rest pre)++pname++(replaceMultiVars whole post)
-
--- map the cabal license type to the gentoo license string format
-convertLicense :: Cabal.License -> String
-convertLicense (Cabal.GPL mv)     = "GPL-" ++ (maybe "2" display mv)  -- almost certainly version 2
-convertLicense (Cabal.LGPL mv)    = "LGPL-" ++ (maybe "2.1" display mv) -- probably version 2.1
-convertLicense Cabal.BSD3         = "BSD"
-convertLicense Cabal.BSD4         = "BSD-4"
-convertLicense Cabal.PublicDomain = "public-domain"
-convertLicense Cabal.AllRightsReserved = ""
-convertLicense Cabal.MIT          = "MIT"
-convertLicense _                  = ""
-
-licenseComment :: Cabal.License -> String
-licenseComment Cabal.AllRightsReserved =
-  "Note: packages without a license cannot be included in portage"
-licenseComment Cabal.OtherLicense =
-  "Fixme: \"OtherLicense\", please fill in manually"
-licenseComment (Cabal.UnknownLicense _) = "Fixme: license unknown to cabal"
-licenseComment _ = ""

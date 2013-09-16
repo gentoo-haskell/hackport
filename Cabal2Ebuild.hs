@@ -37,6 +37,7 @@ import Distribution.Text (display)
 import Data.Char          (toLower,isUpper)
 
 import Portage.Dependency
+import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
 import qualified Portage.GHCCore as Portage
@@ -55,7 +56,7 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
     E.long_desc       = if null (Cabal.description pkg) then Cabal.synopsis pkg
                                                else Cabal.description pkg,
     E.homepage        = thisHomepage,
-    E.license         = Cabal.license pkg,
+    E.license         = Portage.convertLicense $ Cabal.license pkg,
     E.slot            = (E.slot E.ebuildTemplate) ++ maybe [] (const "/${PV}") (Cabal.library pkg),
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
