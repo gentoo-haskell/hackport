@@ -45,6 +45,7 @@ import System.Directory ( getCurrentDirectory
 import System.Cmd (system)
 import System.FilePath ((</>))
 import System.Exit
+import Text.Printf
 
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
@@ -376,36 +377,34 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
-extractLicense :: FilePath -> String -> Maybe String
-extractLicense ebuild_path s_ebuild =
-    let ltrim :: String -> String
-        ltrim = dropWhile isSpace
-        lns    = lines s_ebuild
-        -- TODO: nicer pattern match and errno
-    in case (findIndices (isPrefixOf "LICENSE=\"" . ltrim) lns) of
-           []       -> Nothing
-           [lic_ln] -> let lic_line = lns !! lic_ln
-                           licence  = (fst . break (== '"') . tail . snd . break (== '"')) lic_line
-                      in if null licence
-                             then Nothing
-                             else Just licence
-           other   -> error $ ebuild_path ++ ": parse_ebuild: strange LICENSE lines: " ++ show other
+-- tries to extract value of variable in var="val" format
+-- There should be exactly one variable assignment in ebuild
+-- It's a bit artificial limitation, but it's common for 'if / else' blocks
+extract_quoted_string :: FilePath -> String -> String -> Maybe String
+extract_quoted_string ebuild_path s_ebuild var_name =
+    case filter (isPrefixOf var_prefix . ltrim) $ lines s_ebuild of
+        []        -> Nothing
+        [kw_line] -> up_to_quote $ skip_prefix $ ltrim kw_line
+        other     -> bail_out $ printf "strange '%s' assignmets:\n%s" var_name (unlines other)
+
+    where ltrim :: String -> String
+          ltrim = dropWhile isSpace
+          var_prefix = var_name ++ "=\""
+          skip_prefix = drop (length var_prefix)
+          up_to_quote l = case break (== '"') l of
+                              ("", _)  -> Nothing -- empty line
+                              (_, "")  -> bail_out $ printf "failed to find closing quote for '%s'" l
+                              (val, _) -> Just val
+          bail_out :: String -> e
+          bail_out msg = error $ printf "%s:%s %s" ebuild_path "extract_quoted_string" msg
 
 extractKeywords :: FilePath -> String -> Maybe [String]
 extractKeywords ebuild_path s_ebuild =
-    let ltrim :: String -> String
-        ltrim = dropWhile isSpace
-        lns    = lines s_ebuild
-        -- TODO: nicer pattern match and errno
-    in case (findIndices (isPrefixOf "KEYWORDS=\"" . ltrim) lns) of
-           []      -> Nothing
-           [kw_ln] -> let kw_line  = lns !! kw_ln
-                          kw_str   = (fst . break (== '"') . tail . snd . break (== '"')) kw_line
-                          keywords = words kw_str
-                      in if null keywords
-                             then Nothing
-                             else Just keywords
-           other   -> error $ ebuild_path ++ ": parse_ebuild: strange KEYWORDS lines: " ++ show other
+    words `fmap ` extract_quoted_string ebuild_path s_ebuild "KEYWORDS"
+
+extractLicense :: FilePath -> String -> Maybe String
+extractLicense ebuild_path s_ebuild =
+    extract_quoted_string ebuild_path s_ebuild "LICENSE"
 
 -- per-ebuild metadata
 data EMeta = EMeta { keywords :: Maybe [String]
