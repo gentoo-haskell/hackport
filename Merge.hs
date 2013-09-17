@@ -376,6 +376,21 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
+extractLicense :: FilePath -> String -> Maybe String
+extractLicense ebuild_path s_ebuild =
+    let ltrim :: String -> String
+        ltrim = dropWhile isSpace
+        lns    = lines s_ebuild
+        -- TODO: nicer pattern match and errno
+    in case (findIndices (isPrefixOf "LICENSE=\"" . ltrim) lns) of
+           []       -> Nothing
+           [lic_ln] -> let lic_line = lns !! lic_ln
+                           licence  = (fst . break (== '"') . tail . snd . break (== '"')) lic_line
+                      in if null licence
+                             then Nothing
+                             else Just licence
+           other   -> error $ ebuild_path ++ ": parse_ebuild: strange LICENSE lines: " ++ show other
+
 extractKeywords :: FilePath -> String -> Maybe [String]
 extractKeywords ebuild_path s_ebuild =
     let ltrim :: String -> String
@@ -392,17 +407,24 @@ extractKeywords ebuild_path s_ebuild =
                              else Just keywords
            other   -> error $ ebuild_path ++ ": parse_ebuild: strange KEYWORDS lines: " ++ show other
 
-findExistingKeywords :: FilePath -> IO (Maybe [String])
-findExistingKeywords edir =
+-- per-ebuild metadata
+data EMeta = EMeta { keywords :: Maybe [String]
+                   , license  :: Maybe String
+                   }
+
+findExistingMeta :: FilePath -> IO (Maybe EMeta)
+findExistingMeta edir =
     do ebuilds <- filter (isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
        -- TODO: version sort
-       e_kw_s <- forM ebuilds $ \e ->
-                     do let e_path = edir </> e
-                        e_conts <- readFile e_path
-                        return (e, extractKeywords e_path e_conts)
-       if null e_kw_s
-           then return Nothing
-           else return (snd $ last e_kw_s)
+       e_metas <- forM ebuilds $ \e ->
+                      do let e_path = edir </> e
+                         e_conts <- readFile e_path
+                         return EMeta { keywords = extractKeywords e e_conts
+                                      , license  = extractLicense  e e_conts
+                                      }
+       return $ if null e_metas
+                    then Nothing
+                    else Just $ last e_metas
 
 -- "amd64" -> "~amd64"
 to_unstable :: String -> String
@@ -421,13 +443,22 @@ mergeEbuild verbosity target cat ebuild = do
       mpath = edir </> emeta
       default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
-  existing_keywords <- findExistingKeywords edir
+  existing_meta <- findExistingMeta edir
 
-  let new_keywords = maybe (E.keywords ebuild) (map to_unstable) (existing_keywords)
-      ebuild'      = ebuild { E.keywords = new_keywords }
+  let (existing_keywords, existing_license)  = maybe (Nothing, Nothing) (\m -> (keywords m, license m)) existing_meta
+      new_keywords = maybe (E.keywords ebuild) (map to_unstable) existing_keywords
+      new_license  = either (\err -> maybe (Left err)
+                                           Right
+                                           existing_license)
+                            Right
+                            (E.license ebuild)
+      ebuild'      = ebuild { E.keywords = new_keywords
+                            , E.license = new_license
+                            }
       s_ebuild'    = display ebuild'
 
   notice verbosity $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
+  notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice verbosity $ "Writing " ++ elocal
   (length s_ebuild') `seq` BL.writeFile epath (BL.pack s_ebuild')
