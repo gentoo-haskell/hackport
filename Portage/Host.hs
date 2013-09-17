@@ -47,6 +47,7 @@ parsePaludisInfo text =
   in  fromJust (mkLocalInfo repositories)
   where
   parseRepository :: [String] -> Maybe (String, (String, String))
+  parseRepository [] = Nothing
   parseRepository (firstLine:lns) = do
     name <- case words firstLine of
                 ["Repository", nm] -> return (init nm)
@@ -59,7 +60,7 @@ parsePaludisInfo text =
   mkLocalInfo :: [(String, (String, String))] -> Maybe LocalInfo
   mkLocalInfo repos = do
     (gentooLocation, gentooDistfiles) <- lookup "gentoo" repos
-    let overlays = [ loc | (name, (loc, _dist)) <- repos ]
+    let overlays = [ loc | (_, (loc, _dist)) <- repos ]
     return (LocalInfo
               { distfiles_dir = gentooDistfiles
               , portage_dir = gentooLocation
@@ -67,7 +68,7 @@ parsePaludisInfo text =
               })
 
 splitBy :: (a -> Bool) -> [a] -> [[a]]
-splitBy c [] = []
+splitBy _ [] = []
 splitBy c lst =
   let (x,xs) = break c lst
       (_,xs') = span c xs
