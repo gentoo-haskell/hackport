@@ -396,7 +396,7 @@ extract_quoted_string ebuild_path s_ebuild var_name =
                               (_, "")  -> bail_out $ printf "failed to find closing quote for '%s'" l
                               (val, _) -> Just val
           bail_out :: String -> e
-          bail_out msg = error $ printf "%s:%s %s" ebuild_path "extract_quoted_string" msg
+          bail_out msg = error $ printf "%s:extract_quoted_string %s" ebuild_path msg
 
 extractKeywords :: FilePath -> String -> Maybe [String]
 extractKeywords ebuild_path s_ebuild =
