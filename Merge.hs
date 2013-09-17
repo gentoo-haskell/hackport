@@ -272,10 +272,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             simplifyMore ws = 
                 let us = getMultiFlags ws
                     (u,_) = maximumBy (compare `on` snd) $ getMultiFlags ws
-                    (xs, ls) = (hasFlag u) `partition` ws
+                    (xs', ls) = (hasFlag u) `partition` ws
                 in if null us 
                       then concatMap (\(a, b) -> liftFlags a b) ws
-                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs)++simplifyMore ls
+                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
         in (liftFlags fl c) ++ simplifyMore (sd ++ ys)
 
       -- drop selected use flag from a list
