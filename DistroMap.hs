@@ -136,7 +136,7 @@ unionMap = Map.unionWith f
 
 lookupPVU :: PVU_Map -> Cabal.PackageName -> [Cabal.Version] -> [PVU]
 lookupPVU pvu_map pn cvs =
-  case findItems pvu_map (Portage.normalizeCabalPackageName pn) of
+  case findItems (Portage.normalizeCabalPackageName pn) of
     [] -> []
     [item] -> ret item
     items | [item] <- preferableItem items -> ret item
@@ -151,8 +151,8 @@ lookupPVU pvu_map pn cvs =
     [ item
     | item@(Portage.PackageName cat _pn, _vs) <- items
     , cat == Portage.Category "dev-haskell"]
-  findItems pvu_map cpn = Map.toList $ Map.filterWithKey f pvu_map
+  findItems cpn = Map.toList $ Map.filterWithKey f pvu_map
     where
-    f (Portage.PackageName _cat pn) _vs = cpn == pn
+    f (Portage.PackageName _cat _pn) _vs = cpn == pn
 
 
