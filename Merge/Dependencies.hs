@@ -320,6 +320,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("Xi", any_c_p "x11-libs" "libXi")
       , ("Xxf86vm", any_c_p "x11-libs" "libXxf86vm")
       , ("pthread", any_c_p "virtual" "libc")
+      , ("panelw", any_c_p "sys-libs" "ncurses")
+      , ("ncursesw", any_c_p "sys-libs" "ncurses")
       ]
 
 ---------------------------------------------------------------
