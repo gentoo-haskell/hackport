@@ -176,6 +176,11 @@ getDirectoryTree = dirEntries
         , not (ignore name)
         , let path = dir </> name ]
 
-    ignore ['.']      = True
-    ignore ['.', '.'] = True
-    ignore _          = False
+    ignore path = path `elem` [ "."
+                              , ".."
+                              -- those speed things up a bit
+                              -- and reduse memory consumption
+                              -- (as we store it in RAM for the whole run)
+                              , ".git"
+                              , "CVS"
+                              ]
