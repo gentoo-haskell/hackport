@@ -7,11 +7,16 @@ import Util (run_cmd)
 import Data.Maybe (fromJust, isJust, catMaybes)
 import Control.Applicative ( (<$>) )
 
+import qualified System.Directory as D
+import           System.FilePath ((</>))
+
+import System.IO
+
 data LocalInfo =
     LocalInfo { distfiles_dir :: String
               , overlay_list  :: [FilePath]
               , portage_dir   :: FilePath
-              } deriving Show
+              } deriving (Read, Show)
 
 defaultInfo :: LocalInfo
 defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
@@ -22,9 +27,11 @@ defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
 -- query paludis and then emerge
 getInfo :: IO LocalInfo
 getInfo = fromJust `fmap`
-    performMaybes [ getPaludisInfo
-                  , fmap parse_emerge_output <$> (run_cmd "emerge --info")
-                  , return (Just defaultInfo)
+    performMaybes [ readConfig
+                  , performMaybes [ getPaludisInfo
+                                  , fmap parse_emerge_output <$> (run_cmd "emerge --info")
+                                  , return (Just defaultInfo)
+                                  ] >>= showAnnoyingWarning
                   ]
     where performMaybes [] = return Nothing
           performMaybes (act:acts) =
@@ -32,6 +39,30 @@ getInfo = fromJust `fmap`
                  if isJust r
                      then return r
                      else performMaybes acts
+
+showAnnoyingWarning :: Maybe LocalInfo -> IO (Maybe LocalInfo)
+showAnnoyingWarning info = do
+    hPutStr stderr $ unlines [ "-- Consider creating ~/" ++ hackport_config ++ " file with contents:"
+                             , show info
+                             , "-- It will speed hackport startup time a bit."
+                             ]
+    return info
+
+-- relative to home dir
+hackport_config :: FilePath
+hackport_config = ".hackport" </> "repositories"
+
+--------------------------
+-- fastest: config reading
+--------------------------
+readConfig :: IO (Maybe LocalInfo)
+readConfig =
+    do home_dir <- D.getHomeDirectory
+       let config_path  = home_dir </> hackport_config
+       exists <- D.doesFileExist config_path
+       case exists of
+           True  -> read <$> readFile config_path
+           False -> return Nothing
 
 ----------
 -- Paludis
