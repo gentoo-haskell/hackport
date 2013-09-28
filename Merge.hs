@@ -406,12 +406,12 @@ extractLicense :: FilePath -> String -> Maybe String
 extractLicense ebuild_path s_ebuild =
     extract_quoted_string ebuild_path s_ebuild "LICENSE"
 
--- per-ebuild metadata
+-- aggregated (best inferred) metadata for a new ebuild of package
 data EMeta = EMeta { keywords :: Maybe [String]
                    , license  :: Maybe String
                    }
 
-findExistingMeta :: FilePath -> IO (Maybe EMeta)
+findExistingMeta :: FilePath -> IO EMeta
 findExistingMeta edir =
     do ebuilds <- filter (isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
        -- TODO: version sort
@@ -421,9 +421,11 @@ findExistingMeta edir =
                          return EMeta { keywords = extractKeywords e e_conts
                                       , license  = extractLicense  e e_conts
                                       }
-       return $ if null e_metas
-                    then Nothing
-                    else Just $ last e_metas
+       let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
+           aggregated_meta = EMeta { keywords = get_latest $ map keywords e_metas
+                                   , license  = get_latest $ map license e_metas
+                                   }
+       return $ aggregated_meta
 
 -- "amd64" -> "~amd64"
 to_unstable :: String -> String
@@ -444,7 +446,7 @@ mergeEbuild verbosity target cat ebuild = do
   createDirectoryIfMissing True edir
   existing_meta <- findExistingMeta edir
 
-  let (existing_keywords, existing_license)  = maybe (Nothing, Nothing) (\m -> (keywords m, license m)) existing_meta
+  let (existing_keywords, existing_license)  = (keywords existing_meta, license existing_meta)
       new_keywords = maybe (E.keywords ebuild) (map to_unstable) existing_keywords
       new_license  = either (\err -> maybe (Left err)
                                            Right
