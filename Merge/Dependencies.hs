@@ -322,6 +322,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("pthread", any_c_p "virtual" "libc")
       , ("panelw", any_c_p "sys-libs" "ncurses")
       , ("ncursesw", any_c_p "sys-libs" "ncurses")
+      , ("ftgl", any_c_p "media-libs" "ftgl")
       ]
 
 ---------------------------------------------------------------
