@@ -456,4 +456,5 @@ pkgconfig_table =
   ,("libxml-2.0",                  ("dev-libs", "libxml2", Portage.AnySlot))
   ,("yaml-0.1",                    ("dev-libs", "libyaml", Portage.AnySlot))
   ,("QtCore",                      ("dev-qt", "qtcore", Portage.AnySlot))
+  ,("lua",                         ("dev-lang", "lua", Portage.AnySlot))
   ]
