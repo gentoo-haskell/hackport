@@ -323,6 +323,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("panelw", any_c_p "sys-libs" "ncurses")
       , ("ncursesw", any_c_p "sys-libs" "ncurses")
       , ("ftgl", any_c_p "media-libs" "ftgl")
+      , ("glpk", any_c_p "sci-mathematics" "glpk")
       ]
 
 ---------------------------------------------------------------
