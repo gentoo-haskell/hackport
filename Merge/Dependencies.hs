@@ -326,6 +326,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("ncursesw", any_c_p "sys-libs" "ncurses")
       , ("ftgl", any_c_p "media-libs" "ftgl")
       , ("glpk", any_c_p "sci-mathematics" "glpk")
+      , ("sndfile", any_c_p "media-libs" "libsndfile")
+      , ("portaudio", any_c_p "media-libs" "portaudio")
       ]
 
 ---------------------------------------------------------------
