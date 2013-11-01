@@ -469,4 +469,6 @@ pkgconfig_table =
   ,("QtGui",                       ("dev-qt", "qtgui", Portage.AnySlot))
   ,("QtOpenGL",                    ("dev-qt", "qtopengl", Portage.AnySlot))
   ,("QtScript",                    ("dev-qt", "qtscript", Portage.AnySlot))
+  ,("ImageMagick",                 ("media-gfx", "imagemagick", Portage.AnySlot))
+  ,("MagickWand",                  ("media-gfx", "imagemagick", Portage.AnySlot))
   ]
