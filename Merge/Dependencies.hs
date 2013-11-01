@@ -328,6 +328,9 @@ staticTranslateExtraLib lib = lookup lib m
       , ("glpk", any_c_p "sci-mathematics" "glpk")
       , ("sndfile", any_c_p "media-libs" "libsndfile")
       , ("portaudio", any_c_p "media-libs" "portaudio")
+      , ("icudata", any_c_p "dev-libs" "icu")
+      , ("icui18n", any_c_p "dev-libs" "icu")
+      , ("icuuc", any_c_p "dev-libs" "icu")
       ]
 
 ---------------------------------------------------------------
