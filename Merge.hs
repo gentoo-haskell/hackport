@@ -167,10 +167,19 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
 
-  let Just (compilerId, ghc_packages, pkgDesc0, _flags, pix) = GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc
+  (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
+              Just v  -> return v
+              Nothing -> let cpn = display merged_cabal_pkg_name
+                         in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ cpn
+                                            , "  You can try to merge the package manually:"
+                                            , "  $ cabal unpack " ++ cpn
+                                            , "  $ cd " ++ cpn ++ "*/"
+                                            , "  # fix " ++ cpn ++ ".cabal"
+                                            , "  $ hackport make-ebuild dev-haskell " ++ cpn ++ ".cabal"
+                                            ]
 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
-      (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
+  let (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       aflags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
       lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
