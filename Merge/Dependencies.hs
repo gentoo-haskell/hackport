@@ -363,6 +363,7 @@ buildToolsTable =
   , ("gtk2hsC2hs",          any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("cabal",               any_c_p "dev-haskell" "cabal-install")
   , ("llvm-config",         any_c_p "sys-devel" "llvm")
+  , ("cpphs",               any_c_p "dev-haskell" "cpphs")
   ]
 
 -- tools that are provided by ghc or some other existing program
