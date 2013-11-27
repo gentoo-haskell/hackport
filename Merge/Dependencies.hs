@@ -331,6 +331,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("icudata", any_c_p "dev-libs" "icu")
       , ("icui18n", any_c_p "dev-libs" "icu")
       , ("icuuc", any_c_p "dev-libs" "icu")
+      , ("chipmunk", any_c_p "sci-physics" "chipmunk")
       ]
 
 ---------------------------------------------------------------
