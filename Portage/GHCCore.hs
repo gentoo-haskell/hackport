@@ -155,7 +155,7 @@ ghc762_pkgs =
   , p "bytestring" [0,10,0,2]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
---  , p "deepseq" [1,3,0,1] -- package is upgradeable
+  , p "deepseq" [1,3,0,1] -- used by time, haskell98
   , p "directory" [1,2,0,1]
   , p "filepath" [1,3,0,1]
   , p "ghc-prim" [0,3,0,0]
@@ -181,7 +181,7 @@ ghc761_pkgs =
   , p "bytestring" [0,10,0,0]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
---  , p "deepseq" [1,3,0,1] -- package is upgradeable
+  , p "deepseq" [1,3,0,1] -- used by time, haskell98
   , p "directory" [1,2,0,0]
   , p "filepath" [1,3,0,1]
   , p "ghc-prim" [0,3,0,0]
@@ -207,7 +207,7 @@ ghc742_pkgs =
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
---  , p "deepseq" [1,3,0,0]  package is upgradeable
+  , p "deepseq" [1,3,0,0] -- used by time, haskell98
   , p "directory" [1,1,0,2]
 -- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,3,0,0]
@@ -234,7 +234,7 @@ ghc741_pkgs =
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
---  , p "deepseq" [1,3,0,0]  package is upgradeable
+  , p "deepseq" [1,3,0,0] -- used by time, haskell98
   , p "directory" [1,1,0,2]
 -- , p "extensible-exceptions" [0,1,1,4] -- package is upgradeable, stopped shipping in 7.6
   , p "filepath" [1,3,0,0]
@@ -419,7 +419,7 @@ coreLibs = map PackageName
   -- ,"syb"       -- was splitted off from ghc again
   ,"template-haskell"
   ,"time" -- ghc-6.12+. startig from ghc-7.6.1 it is very
-          -- unsafe to unpgrade as most others (like directory)
+          -- unsafe to upgrade as most others (like directory)
           -- depend on it
   ,"unix"         -- unsafe to upgrade
   ]
