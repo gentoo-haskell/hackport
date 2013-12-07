@@ -199,6 +199,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                                   pkgGenericDesc]
                -- drop circular deps and shipped deps
                , let (ad, _sd, _rd) = genSimple (Cabal.buildDepends pkgDesc1)
+               -- TODO: drop ghc libraries from tests depends as well
+               -- (see deepseq in hackport-0.3.5 as an example)
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
                ]
           where 
