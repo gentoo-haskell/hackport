@@ -333,6 +333,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("icuuc", any_c_p "dev-libs" "icu")
       , ("chipmunk", any_c_p "sci-physics" "chipmunk")
       , ("alut", any_c_p "media-libs" "freealut")
+      , ("openal", any_c_p "media-libs" "openal")
       ]
 
 ---------------------------------------------------------------
