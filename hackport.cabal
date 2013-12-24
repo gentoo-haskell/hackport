@@ -19,6 +19,7 @@ Flag split-base
 
 Executable    hackport
   ghc-options: -Wall
+  ghc-prof-options: -caf-all -auto-all -rtsopts
   Main-Is:    Main.hs
   Default-Language: Haskell98
   Hs-Source-Dirs: ., cabal, cabal/Cabal, cabal/cabal-install
