@@ -226,6 +226,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
       -- and finally prettify all deps:
+      tdeps :: Merge.EDep
       tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
             Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
           , Merge.rdep = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
