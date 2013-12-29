@@ -495,9 +495,7 @@ mergeEbuild verbosity target cat ebuild = do
                   notice verbosity $ "Default and current " ++ emeta ++ " differ."
 
 unFlagName :: Cabal.FlagName -> String
-unFlagName f =
-  let Cabal.FlagName y = f
-  in y
+unFlagName (Cabal.FlagName fname) = fname
 
 type FlagDep  = (Cabal.FlagAssignment,[Portage.Dependency])
 type FlagDepH = (FlagDep,[FlagDep])
