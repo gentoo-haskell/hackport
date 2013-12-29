@@ -12,7 +12,7 @@ import Data.Char (isSpace)
 import Data.Function (on)
 import Data.Maybe
 import Data.Monoid
-import Data.List as L
+import qualified Data.List as L
 import Data.Version
 
 -- cabal
@@ -97,7 +97,7 @@ readPackageString args = do
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
 resolveVersion :: [SourcePackage] -> Maybe Cabal.Version -> Maybe SourcePackage
-resolveVersion avails Nothing = Just $ maximumBy (comparing packageInfoId) avails
+resolveVersion avails Nothing = Just $ L.maximumBy (comparing packageInfoId) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (packageInfoId avail)
@@ -214,14 +214,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                   Nothing -> x:(updateFa xs y)
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
-      commonFlags = foldl1' intersect $ map fst deps1
+      commonFlags = L.foldl1' L.intersect $ map fst deps1
       all_flags' | null commonFlags  = all_flags
                  | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) all_flags
       all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') $ Cabal.genPackageFlags pkgGenericDesc
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
       -- and finaly prettify all deps:
-      tdeps = (foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
+      tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
             Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
           , Merge.rdep = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
           }
@@ -240,7 +240,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             go (y1:y2:ys) = y1 `merge1` y2 : go ys
 
             merge1 :: FlagDepH -> FlagDepH -> FlagDepH
-            merge1 ((f1, d1),x1) ((f2, d2),x2) = ((f1 `intersect` f2, Portage.simplify_deps $ d1 `intersect` d2)
+            merge1 ((f1, d1),x1) ((f2, d2),x2) = ((f1 `L.intersect` f2, Portage.simplify_deps $ d1 `L.intersect` d2)
                                                  , (f1, filter (`notElem` d2) d1)
                                                     : (f2, filter (`notElem` d1) d2)
                                                     : x1
@@ -263,17 +263,17 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
             mergeD x [] = [x]
             mergeD x@(f1,d1) (t@(f2,d2):ts) =
-              let is = f1 `intersect` f2
+              let is = f1 `L.intersect` f2
               in if d1 == d2
                       then if null is
                                 then ts
                                 else (is,d1):ts
                       else t:mergeD x ts
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
-            sd = foldl' (\o (f,d) -> case lookup f o of
+            sd = L.foldl' (\o (f,d) -> case lookup f o of
                                           Just ds -> (f,d:ds):filter ((f/=).fst) o
                                           Nothing -> (f,[d]):o
-                       ) [] $ foldl' (\o n -> n `mergeD` o)
+                       ) [] $ L.foldl' (\o n -> n `mergeD` o)
                                     []
                                     (concatMap (\(f,d) -> map ((,) f) d) zs)
             -- filter out splitted packages from common cgroup
@@ -286,8 +286,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             simplifyMore [] = []
             simplifyMore ws =
                 let us = getMultiFlags ws
-                    (u,_) = maximumBy (compare `on` snd) $ getMultiFlags ws
-                    (xs', ls) = (hasFlag u) `partition` ws
+                    (u,_) = L.maximumBy (compare `on` snd) $ getMultiFlags ws
+                    (xs', ls) = (hasFlag u) `L.partition` ws
                 in if null us
                       then concatMap (\(a, b) -> liftFlags a b) ws
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
@@ -313,7 +313,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
       partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
       partition_depends =
-          foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
+          L.foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
                   let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
                   in case () of
                         _ | pn `elem` ghc_packages      -> (    ad, dep:sd,     rd)
@@ -360,7 +360,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       = Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = selected_flags $ sort $ map unFlagName all_flags' } )
+               . (\e -> e { E.src_configure = selected_flags $ L.sort $ map unFlagName all_flags' } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse all_flags'' })
                $ C2E.cabal2ebuild pkgDesc
 
@@ -399,7 +399,7 @@ withWorkingDirectory newDir action = do
 -- It's a bit artificial limitation, but it's common for 'if / else' blocks
 extract_quoted_string :: FilePath -> String -> String -> Maybe String
 extract_quoted_string ebuild_path s_ebuild var_name =
-    case filter (isPrefixOf var_prefix . ltrim) $ lines s_ebuild of
+    case filter (L.isPrefixOf var_prefix . ltrim) $ lines s_ebuild of
         []        -> Nothing
         [kw_line] -> up_to_quote $ skip_prefix $ ltrim kw_line
         other     -> bail_out $ printf "strange '%s' assignmets:\n%s" var_name (unlines other)
@@ -430,7 +430,7 @@ data EMeta = EMeta { keywords :: Maybe [String]
 
 findExistingMeta :: FilePath -> IO EMeta
 findExistingMeta edir =
-    do ebuilds <- filter (isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
+    do ebuilds <- filter (L.isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
        -- TODO: version sort
        e_metas <- forM ebuilds $ \e ->
                       do let e_path = edir </> e
