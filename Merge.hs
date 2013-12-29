@@ -188,10 +188,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       lflags  (x:xs) = let tp = lflags xs
                        in (map ((Cabal.flagName x,False) :) tp)
                           ++ (map ((Cabal.flagName x,True):) tp)
+      all_possible_flag_assignments :: [Cabal.FlagAssignment]
+      all_possible_flag_assignments = lflags (Cabal.genPackageFlags pkgGenericDesc)
+
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
       deps1  = [ (f `updateFa` fr, cabal_to_emerge_dep pkgDesc_filtered_bdeps)
-               | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
+               | f <- all_possible_flag_assignments
                , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   (GHCCore.platform)
@@ -216,7 +219,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                  | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) all_flags
       all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') $ Cabal.genPackageFlags pkgGenericDesc
       -- flags that are failed to resolve
-      deadFlags = filter (\x -> all (x/=) $ map fst deps1) (lflags (Cabal.genPackageFlags pkgGenericDesc))
+      deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
       -- and finaly prettify all deps:
       tdeps = (foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
             Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
