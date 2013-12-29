@@ -182,7 +182,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
   let (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
-      aflags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
+      all_flags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
       lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
       lflags  [] = [[]]
       lflags  (x:xs) = let tp = lflags xs
@@ -212,9 +212,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
       commonFlags = foldl1' intersect $ map fst deps1
-      aflags' | null commonFlags  = aflags
-              | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) aflags
-      aflags'' = filter (\x -> Cabal.flagName x `elem` aflags') $ Cabal.genPackageFlags pkgGenericDesc
+      all_flags' | null commonFlags  = all_flags
+                 | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) all_flags
+      all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') $ Cabal.genPackageFlags pkgGenericDesc
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) (lflags (Cabal.genPackageFlags pkgGenericDesc))
       -- and finaly prettify all deps:
@@ -355,8 +355,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       = Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = selected_flags $ sort $ map unFlagName aflags' } )
-               . (\e -> e { E.iuse = E.iuse e ++ map to_iuse aflags'' })
+               . (\e -> e { E.src_configure = selected_flags $ sort $ map unFlagName all_flags' } )
+               . (\e -> e { E.iuse = E.iuse e ++ map to_iuse all_flags'' })
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
