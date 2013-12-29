@@ -191,6 +191,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       all_possible_flag_assignments :: [Cabal.FlagAssignment]
       all_possible_flag_assignments = lflags (Cabal.genPackageFlags pkgGenericDesc)
 
+      pp_fa :: Cabal.FlagAssignment -> String
+      pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
+                                    | (Cabal.FlagName f, b) <- fa
+                                    ]
+
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
       deps1  = [ (f `updateFa` fr, cabal_to_emerge_dep pkgDesc_filtered_bdeps)
@@ -331,7 +336,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
-  notice verbosity $ "Dead flags: " ++ show deadFlags
+  notice verbosity $ "Dead flags: " ++ show (map pp_fa deadFlags)
   notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) commonFlags)
   -- mapM_ print tdeps
 
