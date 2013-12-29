@@ -240,6 +240,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                          _   -> k (go m)
               in k n
           where
+            go :: [FlagDepH] -> [FlagDepH]
             go [] = []
             go [y] = [y]
             go (y1:y2:ys) = y1 `merge1` y2 : go ys
