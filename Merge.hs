@@ -211,14 +211,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                   Nothing -> x:(updateFa xs y)
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
-      commonFlags = foldl1 intersect $ map fst deps1
+      commonFlags = foldl1' intersect $ map fst deps1
       aflags' | null commonFlags  = aflags
               | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) aflags
       aflags'' = filter (\x -> Cabal.flagName x `elem` aflags') $ Cabal.genPackageFlags pkgGenericDesc
-      -- flags that are faild to build
+      -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) (lflags (Cabal.genPackageFlags pkgGenericDesc))
       -- and finaly prettify all deps:
-      tdeps = (foldl (\x y -> x `mappend` (snd y)) mempty deps1){
+      tdeps = (foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
             Merge.dep  = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.dep) deps1
           , Merge.rdep = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) $ map (second Merge.rdep) deps1
           }
@@ -267,10 +267,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                 else (is,d1):ts
                       else t:mergeD x ts
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
-            sd = foldl (\o (f,d) -> case lookup f o of
+            sd = foldl' (\o (f,d) -> case lookup f o of
                                           Just ds -> (f,d:ds):filter ((f/=).fst) o
                                           Nothing -> (f,[d]):o
-                       ) [] $ foldl (\o n -> n `mergeD` o)
+                       ) [] $ foldl' (\o n -> n `mergeD` o)
                                     []
                                     (concatMap (\(f,d) -> map ((,) f) d) zs)
             -- filter out splitted packages from common cgroup
@@ -309,7 +309,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
 
       genSimple =
-          foldl (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
+          foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
                   let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
                   in case () of
                         _ | pn `elem` ghc_packages      -> (    ad, dep:sd,     rd)
