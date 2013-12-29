@@ -203,7 +203,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                -- (see deepseq in hackport-0.3.5 as an example)
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
                ]
-          where 
+          where
             updateFa :: Cabal.FlagAssignment -> Cabal.FlagAssignment -> Cabal.FlagAssignment
             updateFa [] _ = []
             updateFa (x:xs) y = case lookup (fst x) y of
@@ -223,14 +223,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
           }
 
       common :: [FlagDepH] -> FlagDepH
-      common xs = 
+      common xs =
               let n = go xs
-                  k m = case m of 
+                  k m = case m of
                          []  -> error "impossible"
                          [x] -> x
                          _   -> k (go m)
-              in k n 
-          where 
+              in k n
+          where
             go [] = []
             go [y] = [y]
             go (y1:y2:ys) = y1 `merge1` y2 : go ys
@@ -244,10 +244,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                     )
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
-      simplify xs = 
+      simplify xs =
         let -- extract common part of the depends
             -- filtering out empty groups
-            ((fl,c), zs) = second (filter (not.null.snd)) $ common xs  
+            ((fl,c), zs) = second (filter (not.null.snd)) $ common xs
             -- Regroup flags according to packages, i.e.
             -- if 2 groups of flagged deps containg same package, then
             -- extract common flags, but if common flags will be empty
@@ -258,10 +258,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
             mergeD x [] = [x]
-            mergeD x@(f1,d1) (t@(f2,d2):ts) = 
+            mergeD x@(f1,d1) (t@(f2,d2):ts) =
               let is = f1 `intersect` f2
               in if d1 == d2
-                      then if null is 
+                      then if null is
                                 then ts
                                 else (is,d1):ts
                       else t:mergeD x ts
@@ -269,22 +269,22 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             sd = foldl (\o (f,d) -> case lookup f o of
                                           Just ds -> (f,d:ds):filter ((f/=).fst) o
                                           Nothing -> (f,[d]):o
-                       ) [] $ foldl (\o n -> n `mergeD` o) 
-                                    [] 
+                       ) [] $ foldl (\o n -> n `mergeD` o)
+                                    []
                                     (concatMap (\(f,d) -> map ((,) f) d) zs)
             -- filter out splitted packages from common cgroup
-            ys = filter (not.null.snd) $ map (second (filter (\d -> all (d/=) 
+            ys = filter (not.null.snd) $ map (second (filter (\d -> all (d/=)
                                                               (concatMap snd sd))
                                                      )) zs
-            -- Now we need to find noniteracting use flags if they are then we 
+            -- Now we need to find noniteracting use flags if they are then we
             -- don't need to simplify them more, and output as-is
             simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
             simplifyMore [] = []
-            simplifyMore ws = 
+            simplifyMore ws =
                 let us = getMultiFlags ws
                     (u,_) = maximumBy (compare `on` snd) $ getMultiFlags ws
                     (xs', ls) = (hasFlag u) `partition` ws
-                in if null us 
+                in if null us
                       then concatMap (\(a, b) -> liftFlags a b) ws
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
         in (liftFlags fl c) ++ simplifyMore (sd ++ ys)
@@ -295,7 +295,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             where go a [] = a
                   go a (x:xs) = case lookup x a of
                                   Nothing -> go ((x,1):a) xs
-                                  Just n  -> go ((x,n+1):filter ((x/=).fst) a) xs 
+                                  Just n  -> go ((x,n+1):filter ((x/=).fst) a) xs
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
       hasFlag :: (Cabal.FlagName,Bool) -> FlagDep -> Bool
