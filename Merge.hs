@@ -180,7 +180,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                             ]
 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
-  let (accepted_deps, skipped_deps, dropped_deps) = genSimple (Cabal.buildDepends pkgDesc0)
+  let (accepted_deps, skipped_deps, dropped_deps) = partition_depends (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       all_flags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
       lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
@@ -199,7 +199,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                                                   []
                                                                   pkgGenericDesc]
                -- drop circular deps and shipped deps
-               , let (ad, _sd, _rd) = genSimple (Cabal.buildDepends pkgDesc1)
+               , let (ad, _sd, _rd) = partition_depends (Cabal.buildDepends pkgDesc1)
                -- TODO: drop ghc libraries from tests depends as well
                -- (see deepseq in hackport-0.3.5 as an example)
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
@@ -308,7 +308,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
 
 
-      genSimple =
+      partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
+      partition_depends =
           foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
                   let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
                   in case () of
