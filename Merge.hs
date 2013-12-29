@@ -190,7 +190,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                           ++ (map ((Cabal.flagName x,True):) tp)
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
-      deps1  = [ (f `updateFa` fr, genDeps pkgDesc_filtered_bdeps)
+      deps1  = [ (f `updateFa` fr, cabal_to_emerge_dep pkgDesc_filtered_bdeps)
                | f <- lflags (Cabal.genPackageFlags pkgGenericDesc)
                , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
@@ -318,7 +318,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                         _                               -> (dep:ad,     sd,     rd)
                 )
                 ([],[],[])
-      genDeps pkg = Merge.resolveDependencies overlay pkg (Just compilerId)
+      cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
+      cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg (Just compilerId)
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
