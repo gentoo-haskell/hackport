@@ -334,6 +334,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("chipmunk", any_c_p "sci-physics" "chipmunk")
       , ("alut", any_c_p "media-libs" "freealut")
       , ("openal", any_c_p "media-libs" "openal")
+      , ("iw", any_c_p "net-wireless" "wireless-tools")
       ]
 
 ---------------------------------------------------------------
