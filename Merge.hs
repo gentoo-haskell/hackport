@@ -300,13 +300,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
         in (liftFlags fl c) ++ simplifyMore (sd ++ ys)
 
-      -- drop selected use flag from a list
       getMultiFlags :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
       getMultiFlags ys = go [] (concatMap fst ys)
             where go a [] = a
                   go a (x:xs) = case lookup x a of
                                   Nothing -> go ((x,1):a) xs
                                   Just n  -> go ((x,n+1):filter ((x/=).fst) a) xs
+      -- drop selected use flag from a list
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
       hasFlag :: (Cabal.FlagName,Bool) -> FlagDep -> Bool
