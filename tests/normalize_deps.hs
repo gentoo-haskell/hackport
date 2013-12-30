@@ -116,13 +116,30 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "!a? ( c/na )"
                     ]
                   )
-                , -- push stricter context into less trict
+                , -- push stricter context into less strict
                   ( d_all [ d_ge pnm [2,0]
                           , d_use "a" $ d_ge pnm [1,0]
                           ]
                   ,
                     [ ">=dev-haskell/mtl-2.0" ]
                   )
+                {- TODO: this one is hardest to implement,
+                         but also most interesting simplification
+                         due to our dependency expansion when resolving.
+                , -- lift nested use context for complementary depends
+                  --   a? b? ( x y ) !a? b? ( x )
+                  -- leads to
+                  --   a? ( y ) b? ( x )
+                  ( d_all [ d_use  "a" $ d_use "b" $ d_all $ map d_p [ "x", "y" ]
+                          , d_nuse "a" $ d_use "b" $ d_p "x"
+                          ]
+                  , [ "c/x"
+                    , "c/y"
+                    , "a? ( c/y )"
+                    , "b? ( c/x )"
+                    ]
+                  )
+                  -}
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
