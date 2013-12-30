@@ -234,7 +234,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
       optimize_fa_depends deps = Portage.sortDeps
-                               . simplify $ map (\x -> (x,[])) $
+                               . simplify $ map (\fdep -> (fdep,[])) $
                                    map (first leave_only_dynamic_fas) deps
 
       tdeps :: Merge.EDep
