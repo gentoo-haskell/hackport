@@ -218,6 +218,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             updateFa :: Cabal.FlagAssignment -> Cabal.FlagAssignment -> Cabal.FlagAssignment
             updateFa [] _ = []
             updateFa (x:xs) y = case lookup (fst x) y of
+                                  -- TODO: when does this code get triggered?
                                   Nothing -> x:(updateFa xs y)
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
