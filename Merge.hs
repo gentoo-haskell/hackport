@@ -222,9 +222,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                   Nothing -> x:(updateFa xs y)
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
-      commonFlags = L.foldl1' L.intersect $ map fst deps1
-      all_flags' | null commonFlags  = all_flags
-                 | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) all_flags
+      common_fas = L.foldl1' L.intersect $ map fst deps1
+      all_flags' | null common_fas   = all_flags
+                 | otherwise         = filter (\a -> all (a/=) $ map fst common_fas) all_flags
       all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') cabal_flag_descs
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
@@ -232,7 +232,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
       optimize_fa_depends deps = Portage.sortDeps
                                . simplify $ map (\x -> (x,[])) $
-                                   map (first (filter (\x -> all (x/=) commonFlags))) deps
+                                   map (first (filter (\x -> all (x/=) common_fas))) deps
 
       tdeps :: Merge.EDep
       tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
@@ -347,7 +347,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa deadFlags)
-  notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) commonFlags)
+  notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fas)
   -- mapM_ print tdeps
 
   forM_ ghc_packages $
