@@ -222,20 +222,21 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                   Nothing -> x:(updateFa xs y)
                                   Just y' -> (fst x,y'):(updateFa xs y)
       -- then remove all flags that can't be changed
-      common_fas = L.foldl1' L.intersect $ map fst deps1
-      common_flags = map fst common_fas
+      successfully_resolved_flag_assignments = map fst deps1
+      common_fa = L.foldl1' L.intersect successfully_resolved_flag_assignments
+      common_flags = map fst common_fa
       active_flags = all_flags L.\\ common_flags
       active_flag_descs = filter (\x -> Cabal.flagName x `elem` active_flags) cabal_flag_descs
       -- flags that are failed to resolve
-      deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
+      deadFlags = filter (\fa -> all (fa /=) successfully_resolved_flag_assignments) all_possible_flag_assignments
       -- and finally prettify all deps:
-      leave_only_dynamic_fas :: Cabal.FlagAssignment -> Cabal.FlagAssignment
-      leave_only_dynamic_fas = filter (\fa -> all (fa /=) common_fas)
+      leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
+      leave_only_dynamic_fa fa = fa L.\\ common_fa
 
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
       optimize_fa_depends deps = Portage.sortDeps
                                . simplify $ map (\fdep -> (fdep,[])) $
-                                   map (first leave_only_dynamic_fas) deps
+                                   map (first leave_only_dynamic_fa) deps
 
       tdeps :: Merge.EDep
       tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
@@ -348,7 +349,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa deadFlags)
-  notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fas)
+  notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fa)
   -- mapM_ print tdeps
 
   forM_ ghc_packages $
