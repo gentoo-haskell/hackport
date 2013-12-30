@@ -182,14 +182,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
   let (accepted_deps, skipped_deps, dropped_deps) = partition_depends (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
-      all_flags = map Cabal.flagName (Cabal.genPackageFlags pkgGenericDesc)
-      lflags  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
-      lflags  [] = [[]]
-      lflags  (x:xs) = let tp = lflags xs
-                       in (map ((Cabal.flagName x,False) :) tp)
-                          ++ (map ((Cabal.flagName x,True):) tp)
+      cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
+      all_flags = map Cabal.flagName cabal_flag_descs
+      make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
+      make_fas  [] = [[]]
+      make_fas  (f:rest) = [ (Cabal.flagName f, is_enabled) : fas
+                           | fas <- make_fas rest
+                           , is_enabled <- [False, True]
+                           ]
       all_possible_flag_assignments :: [Cabal.FlagAssignment]
-      all_possible_flag_assignments = lflags (Cabal.genPackageFlags pkgGenericDesc)
+      all_possible_flag_assignments = make_fas cabal_flag_descs
 
       pp_fa :: Cabal.FlagAssignment -> String
       pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
@@ -222,12 +224,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       commonFlags = L.foldl1' L.intersect $ map fst deps1
       all_flags' | null commonFlags  = all_flags
                  | otherwise         = filter (\a -> all (a/=) $ map fst commonFlags) all_flags
-      all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') $ Cabal.genPackageFlags pkgGenericDesc
+      all_flags'' = filter (\x -> Cabal.flagName x `elem` all_flags') cabal_flag_descs
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
       -- and finally prettify all deps:
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
-      optimize_fa_depends deps = Portage.sortDeps . simplify $ map (\x -> (x,[])) $ map (first (filter (\x -> all (x/=) commonFlags))) deps
+      optimize_fa_depends deps = Portage.sortDeps
+                               . simplify $ map (\x -> (x,[])) $
+                                   map (first (filter (\x -> all (x/=) commonFlags))) deps
 
       tdeps :: Merge.EDep
       tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
