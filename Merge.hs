@@ -229,10 +229,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       -- flags that are failed to resolve
       deadFlags = filter (\x -> all (x/=) $ map fst deps1) all_possible_flag_assignments
       -- and finally prettify all deps:
+      leave_only_dynamic_fas :: Cabal.FlagAssignment -> Cabal.FlagAssignment
+      leave_only_dynamic_fas = filter (\fa -> all (fa /=) common_fas)
+
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
       optimize_fa_depends deps = Portage.sortDeps
                                . simplify $ map (\x -> (x,[])) $
-                                   map (first (filter (\x -> all (x/=) common_fas))) deps
+                                   map (first leave_only_dynamic_fas) deps
 
       tdeps :: Merge.EDep
       tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
