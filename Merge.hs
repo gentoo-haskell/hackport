@@ -1,4 +1,3 @@
-{-# LANGUAGE PatternGuards, BangPatterns #-}
 module Merge
   ( merge
   , mergeGenericPackageDescription
@@ -167,7 +166,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
 
-  debug verbosity $ "searching for minimal suitable ghc version"
+  debug verbosity "searching for minimal suitable ghc version"
   (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
               Just v  -> return v
               Nothing -> let cpn = display merged_cabal_pkg_name
@@ -204,7 +203,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                | f <- all_possible_flag_assignments
                , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
-                                                                  (GHCCore.platform)
+                                                                  GHCCore.platform
                                                                   compilerId
                                                                   []
                                                                   pkgGenericDesc]
@@ -219,8 +218,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             updateFa [] _ = []
             updateFa (x:xs) y = case lookup (fst x) y of
                                   -- TODO: when does this code get triggered?
-                                  Nothing -> x:(updateFa xs y)
-                                  Just y' -> (fst x,y'):(updateFa xs y)
+                                  Nothing ->          x : updateFa xs y
+                                  Just y' -> (fst x,y') : updateFa xs y
       -- then remove all flags that can't be changed
       successfully_resolved_flag_assignments = map fst deps1
       common_fa = L.foldl1' L.intersect successfully_resolved_flag_assignments
@@ -228,18 +227,19 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       active_flags = all_flags L.\\ common_flags
       active_flag_descs = filter (\x -> Cabal.flagName x `elem` active_flags) cabal_flag_descs
       -- flags that are failed to resolve
-      deadFlags = filter (\fa -> all (fa /=) successfully_resolved_flag_assignments) all_possible_flag_assignments
+      deadFlags = filter (\fa -> fa `notElem` successfully_resolved_flag_assignments) all_possible_flag_assignments
       -- and finally prettify all deps:
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
       leave_only_dynamic_fa fa = fa L.\\ common_fa
 
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
       optimize_fa_depends deps = Portage.sortDeps
-                               . simplify $ map (\fdep -> (fdep,[])) $
-                                   map (first leave_only_dynamic_fa) deps
+                               . simplify
+                               . map ( (\fdep -> (fdep, []))
+                                     . first leave_only_dynamic_fa) $ deps
 
       tdeps :: Merge.EDep
-      tdeps = (L.foldl' (\x y -> x `mappend` (snd y)) mempty deps1){
+      tdeps = (L.foldl' (\x y -> x `mappend` snd y) mempty deps1){
             Merge.dep  = optimize_fa_depends $ map (second Merge.dep) deps1
           , Merge.rdep = optimize_fa_depends $ map (second Merge.rdep) deps1
           }
@@ -294,8 +294,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                     []
                                     (concatMap (\(f,d) -> map ((,) f) d) zs)
             -- filter out splitted packages from common cgroup
-            ys = filter (not.null.snd) $ map (second (filter (\d -> all (d/=)
-                                                              (concatMap snd sd))
+            ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
                                                      )) zs
             -- Now we need to find noniteracting use flags if they are then we
             -- don't need to simplify them more, and output as-is
@@ -304,11 +303,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             simplifyMore ws =
                 let us = getMultiFlags ws
                     (u,_) = L.maximumBy (compare `on` snd) $ getMultiFlags ws
-                    (xs', ls) = (hasFlag u) `L.partition` ws
+                    (xs', ls) = hasFlag u `L.partition` ws
                 in if null us
                       then concatMap (\(a, b) -> liftFlags a b) ws
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
-        in (liftFlags fl c) ++ simplifyMore (sd ++ ys)
+        in liftFlags fl c ++ simplifyMore (sd ++ ys)
 
       getMultiFlags :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
       getMultiFlags ys = go [] (concatMap fst ys)
@@ -320,7 +319,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
       hasFlag :: (Cabal.FlagName,Bool) -> FlagDep -> Bool
-      hasFlag u = any ((u ==)) . fst
+      hasFlag u = elem u . fst
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, unFlagName y)) . x)
@@ -331,7 +330,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
       partition_depends =
           L.foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
-                  let dep = (Cabal.Dependency pn (Cabal.simplifyVersionRange vr))
+                  let dep = Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
                   in case () of
                         _ | pn `elem` ghc_packages      -> (    ad, dep:sd,     rd)
                         _ | pn == merged_cabal_pkg_name -> (    ad,     sd, dep:rd)
@@ -447,7 +446,7 @@ data EMeta = EMeta { keywords :: Maybe [String]
 
 findExistingMeta :: FilePath -> IO EMeta
 findExistingMeta edir =
-    do ebuilds <- filter (L.isPrefixOf (reverse ".ebuild") . reverse) `fmap` getDirectoryContents edir
+    do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` getDirectoryContents edir
        -- TODO: version sort
        e_metas <- forM ebuilds $ \e ->
                       do let e_path = edir </> e
@@ -459,7 +458,7 @@ findExistingMeta edir =
            aggregated_meta = EMeta { keywords = get_latest $ map keywords e_metas
                                    , license  = get_latest $ map license e_metas
                                    }
-       return $ aggregated_meta
+       return aggregated_meta
 
 -- "amd64" -> "~amd64"
 to_unstable :: String -> String
@@ -496,10 +495,10 @@ mergeEbuild verbosity target cat ebuild = do
   notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice verbosity $ "Writing " ++ elocal
-  (length s_ebuild') `seq` BL.writeFile epath (BL.pack s_ebuild')
+  length s_ebuild' `seq` BL.writeFile epath (BL.pack s_ebuild')
 
   yet_meta <- doesFileExist mpath
-  if (not yet_meta) -- TODO: add --force-meta-rewrite to opts
+  if not yet_meta -- TODO: add --force-meta-rewrite to opts
       then do notice verbosity $ "Writing " ++ emeta
               BL.writeFile mpath default_meta
       else do current_meta <- BL.readFile mpath
