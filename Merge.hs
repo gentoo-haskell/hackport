@@ -259,8 +259,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             pop_from_pair ((lfa, ld), lx) ((rfa, rd), rx) = ((fa, d), x)
                 where fa = lfa `L.intersect` rfa
                       d  = Portage.simplify_deps $ ld `L.intersect` rd
-                      x  = (lfa, filter (`notElem` rd) ld)
-                         : (rfa, filter (`notElem` ld) rd)
+                      x  = (lfa, ld L.\\ rd)
+                         : (rfa, rd L.\\ ld)
                          : lx ++ rx
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
