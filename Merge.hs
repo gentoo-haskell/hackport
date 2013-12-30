@@ -226,8 +226,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       common_flags = map fst common_fa
       active_flags = all_flags L.\\ common_flags
       active_flag_descs = filter (\x -> Cabal.flagName x `elem` active_flags) cabal_flag_descs
-      -- flags that are failed to resolve
-      deadFlags = filter (\fa -> fa `notElem` successfully_resolved_flag_assignments) all_possible_flag_assignments
+      irresolvable_flag_assignments = all_possible_flag_assignments L.\\ successfully_resolved_flag_assignments
       -- and finally prettify all deps:
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
       leave_only_dynamic_fa fa = fa L.\\ common_fa
@@ -347,7 +346,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
-  notice verbosity $ "Dead flags: " ++ show (map pp_fa deadFlags)
+  notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
   notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fa)
   -- mapM_ print tdeps
 
