@@ -243,33 +243,31 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
           , Merge.rdep = optimize_fa_depends $ map (second Merge.rdep) deps1
           }
 
-      common :: [FlagDepH] -> FlagDepH
-      common xs =
-              let n = go xs
-                  k m = case m of
-                         []  -> error "impossible"
-                         [x] -> x
-                         _   -> k (go m)
-              in k n
+      pop_common_deps :: [FlagDepH] -> FlagDepH
+      pop_common_deps xs =
+           case pop_from_pairs xs of
+                 []  -> error "impossible"
+                 [x] -> x
+                 r   -> pop_common_deps r
           where
-            go :: [FlagDepH] -> [FlagDepH]
-            go [] = []
-            go [y] = [y]
-            go (y1:y2:ys) = y1 `merge1` y2 : go ys
+            pop_from_pairs :: [FlagDepH] -> [FlagDepH]
+            pop_from_pairs [] = []
+            pop_from_pairs [y] = [y]
+            pop_from_pairs (y1:y2:rest) = y1 `pop_from_pair` y2 : pop_from_pairs rest
 
-            merge1 :: FlagDepH -> FlagDepH -> FlagDepH
-            merge1 ((f1, d1),x1) ((f2, d2),x2) = ((f1 `L.intersect` f2, Portage.simplify_deps $ d1 `L.intersect` d2)
-                                                 , (f1, filter (`notElem` d2) d1)
-                                                    : (f2, filter (`notElem` d1) d2)
-                                                    : x1
-                                                    ++ x2
-                                                    )
+            pop_from_pair :: FlagDepH -> FlagDepH -> FlagDepH
+            pop_from_pair ((lfa, ld), lx) ((rfa, rd), rx) = ((fa, d), x)
+                where fa = lfa `L.intersect` rfa
+                      d  = Portage.simplify_deps $ ld `L.intersect` rd
+                      x  = (lfa, filter (`notElem` rd) ld)
+                         : (rfa, filter (`notElem` ld) rd)
+                         : lx ++ rx
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
       simplify xs =
         let -- extract common part of the depends
             -- filtering out empty groups
-            ((fl,c), zs) = second (filter (not.null.snd)) $ common xs
+            ((fl,c), zs) = second (filter (not.null.snd)) $ pop_common_deps xs
             -- Regroup flags according to packages, i.e.
             -- if 2 groups of flagged deps containg same package, then
             -- extract common flags, but if common flags will be empty
