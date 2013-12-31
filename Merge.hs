@@ -264,10 +264,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                          : lx ++ rx
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
-      simplify xs =
+      simplify fdephs =
         let -- extract common part of the depends
             -- filtering out empty groups
-            ((fl,c), zs) = second (filter (not.null.snd)) $ pop_common_deps xs
+            ((common_fas, common_fdeps), all_fdeps) = second (filter (not . null . snd)) $ pop_common_deps fdephs
             -- Regroup flags according to packages, i.e.
             -- if 2 groups of flagged deps containg same package, then
             -- extract common flags, but if common flags will be empty
@@ -291,10 +291,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                           Nothing -> (f,[d]):o
                        ) [] $ L.foldl' (\o n -> n `mergeD` o)
                                     []
-                                    (concatMap (\(f,d) -> map ((,) f) d) zs)
+                                    (concatMap (\(f,d) -> map ((,) f) d) all_fdeps)
             -- filter out splitted packages from common cgroup
             ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
-                                                     )) zs
+                                                     )) all_fdeps
             -- Now we need to find noniteracting use flags if they are then we
             -- don't need to simplify them more, and output as-is
             simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
@@ -306,8 +306,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                 in if null us
                       then concatMap (\(a, b) -> liftFlags a b) ws
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
-        in liftFlags fl c ++ simplifyMore (sd ++ ys)
+        in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
 
+      -- get flag assignment histogram
       getMultiFlags :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
       getMultiFlags ys = go [] (concatMap fst ys)
             where go a [] = a
