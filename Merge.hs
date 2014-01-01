@@ -292,7 +292,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                        ) [] $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
                                     []
                                     (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep)) deps) all_fdeps)
-            -- filter out splitted packages from common cgroup
+            -- filter out splitted packages from common group
             ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
                                                      )) all_fdeps
             -- Now we need to find noniteracting use flags if they are then we
