@@ -185,7 +185,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
-      user_specified_fas   = read_fas users_cabal_flags
+      (user_specified_fas, cf_to_iuse_rename)  = read_fas users_cabal_flags
       make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
       make_fas  [] = [[]]
       make_fas  (f:rest) = [ (fn, is_enabled) : fas
@@ -204,15 +204,35 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                     | (Cabal.FlagName f, b) <- fa
                                     ]
 
-      read_fas :: String -> Cabal.FlagAssignment
-      read_fas = map read_fa . U.split (== ',')
-          where read_fa :: String -> (Cabal.FlagName, Bool)
+      -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
+      read_fas :: String -> (Cabal.FlagAssignment, [(String, String)])
+      read_fas user_fas_s = (user_fas, user_renames)
+          where user_fas = [ (cf, b)
+                           | ((cf, _), Just b) <- cn_in_mb
+                           ]
+                user_renames = [ (cfn, ein)
+                               | ((Cabal.FlagName cfn, ein), Nothing) <- cn_in_mb
+                               ]
+                cn_in_mb = map read_fa $ U.split (== ',') user_fas_s
+                read_fa :: String -> ((Cabal.FlagName, String), Maybe Bool)
                 read_fa [] = error $ "read_fas: empty flag?"
                 read_fa (op:flag) =
                     case op of
-                        '+' -> (Cabal.FlagName flag, True)
-                        '-' -> (Cabal.FlagName flag, False)
-                        _   -> error $ "read_fas: unknown flag prefix " ++ show op ++ ", '+'/'-' expected."
+                        '+'   -> (get_rename flag, Just True)
+                        '-'   -> (get_rename flag, Just False)
+                        _     -> (get_rename (op:flag), Nothing)
+                  where get_rename :: String -> (Cabal.FlagName, String)
+                        get_rename s =
+                            case U.split (== ':') s of
+                                [cabal_flag_name] -> (Cabal.FlagName cabal_flag_name, cabal_flag_name)
+                                [cabal_flag_name, iuse_name] -> (Cabal.FlagName cabal_flag_name, iuse_name)
+                                _                 -> error $ "get_rename: too many components" ++ show (s)
+
+      cfn_to_iuse :: String -> String
+      cfn_to_iuse cfn =
+          case lookup cfn cf_to_iuse_rename of
+              Nothing  -> cfn
+              Just ein -> ein
 
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
@@ -339,7 +359,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       hasFlag u = elem u . fst
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
-      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, unFlagName y)) . x)
+      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, cfn_to_iuse $ unFlagName y)) . x)
                                       (id::Portage.Dependency->Portage.Dependency) fs
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
 
@@ -384,11 +404,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       selected_flags (active_fns, users_fas) = icalate " \\" $ "haskell-cabal_src_configure" : map snd (L.sortBy (compare `on` fst) flag_pairs)
           where flag_pairs :: [(String, String)]
                 flag_pairs = active_pairs ++ users_pairs
-                active_pairs = map (\fn -> (fn,                    "\t$(cabal_flag " ++ fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
+                active_pairs = map (\fn -> (fn,                    "\t$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
                 users_pairs  = map (\fa -> ((unFlagName . fst) fa, "\t--flag=" ++ pp_fn fa)) users_fas
       to_iuse x = let fn = unFlagName $ Cabal.flagName x
                       p  = if Cabal.flagDefault x then "+" else ""
-                  in p ++ fn
+                  in p ++ cfn_to_iuse fn
 
       ebuild =   (\e -> e { E.depend        = Merge.dep tdeps} )
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
