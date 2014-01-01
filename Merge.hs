@@ -300,21 +300,21 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
             simplifyMore [] = []
             simplifyMore ws =
-                let us = getMultiFlags ws
-                    (u,_) = L.maximumBy (compare `on` snd) $ getMultiFlags ws
+                let us = get_fa_hist ws
+                    (u,_) = L.maximumBy (compare `on` snd) us
                     (xs', ls) = hasFlag u `L.partition` ws
                 in if null us
                       then concatMap (\(a, b) -> liftFlags a b) ws
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
         in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
 
-      -- get flag assignment histogram
-      getMultiFlags :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
-      getMultiFlags ys = go [] (concatMap fst ys)
-            where go a [] = a
-                  go a (x:xs) = case lookup x a of
-                                  Nothing -> go ((x,1):a) xs
-                                  Just n  -> go ((x,n+1):filter ((x/=).fst) a) xs
+      get_fa_hist :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
+      get_fa_hist fdeps = go [] (concatMap fst fdeps)
+            where go hist [] = hist
+                  go hist (fd:fds) =
+                      case lookup fd hist of
+                          Nothing -> go ((fd,     1):                       hist) fds
+                          Just v  -> go ((fd, v + 1):filter ((fd /=) . fst) hist) fds
       -- drop selected use flag from a list
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
@@ -325,7 +325,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, unFlagName y)) . x)
                                       (id::Portage.Dependency->Portage.Dependency) fs
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
-
 
       partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
       partition_depends =
