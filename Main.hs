@@ -125,20 +125,24 @@ listAction flags extraArgs globalFlags = do
 
 data MakeEbuildFlags = MakeEbuildFlags {
     makeEbuildVerbosity :: Flag Verbosity
+  , makeEbuildCabalFlags :: Flag String
   }
 
 instance Monoid MakeEbuildFlags where
   mempty = MakeEbuildFlags {
     makeEbuildVerbosity = mempty
+  , makeEbuildCabalFlags = mempty
   }
   mappend a b = MakeEbuildFlags {
     makeEbuildVerbosity = combine makeEbuildVerbosity
+  , makeEbuildCabalFlags = makeEbuildCabalFlags b
   }
     where combine field = field a `mappend` field b
 
 defaultMakeEbuildFlags :: MakeEbuildFlags
 defaultMakeEbuildFlags = MakeEbuildFlags {
     makeEbuildVerbosity = Flag normal
+  , makeEbuildCabalFlags = Flag ""
   }
 
 makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
@@ -153,7 +157,7 @@ makeEbuildAction flags args globalFlags = do
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   forM_ cabals $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
-    mergeGenericPackageDescription verbosity overlayPath cat pkg False
+    mergeGenericPackageDescription verbosity overlayPath cat pkg False (fromFlag $ makeEbuildCabalFlags flags)
 
 makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
@@ -165,6 +169,14 @@ makeEbuildCommand = CommandUI {
     commandDefaultFlags = defaultMakeEbuildFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity makeEbuildVerbosity (\v flags -> flags { makeEbuildVerbosity = v })
+
+      , option "f" ["flags"]
+        (unlines [ "Set cabal flags to certain state."
+                 , "Example: --flags=-all_extensions"
+                 ])
+        makeEbuildCabalFlags
+        (\cabal_flags v -> v{ makeEbuildCabalFlags = cabal_flags})
+        (reqArg' "cabal_flags" Flag (\(Flag ms) -> [ms]))
       ]
   }
 
@@ -341,24 +353,24 @@ statusAction flags args globalFlags = do
 
 data MergeFlags = MergeFlags {
     mergeVerbosity :: Flag Verbosity
-    -- , mergeServerURI :: Flag String
+  , mergeCabalFlags :: Flag String
   }
 
 instance Monoid MergeFlags where
   mempty = MergeFlags {
     mergeVerbosity = mempty
-    -- , mergeServerURI = mempty
+  , mergeCabalFlags = mempty
   }
   mappend a b = MergeFlags {
     mergeVerbosity = combine mergeVerbosity
-    -- , mergeServerURI = combine mergeServerURI
+  , mergeCabalFlags = mergeCabalFlags b
   }
     where combine field = field a `mappend` field b
 
 defaultMergeFlags :: MergeFlags
 defaultMergeFlags = MergeFlags {
     mergeVerbosity = Flag normal
-    -- , mergeServerURI = Flag defaultHackageServerURI
+  , mergeCabalFlags = Flag ""
   }
 
 mergeCommand :: CommandUI MergeFlags
@@ -372,12 +384,13 @@ mergeCommand = CommandUI {
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity mergeVerbosity (\v flags -> flags { mergeVerbosity = v })
 
-      {-
-      , option [] ["server"]
-          "Set the server you'd like to update the cache from"
-          mergeServerURI (\v flags -> flags { mergeServerURI = v} )
-          (reqArgFlag "SERVER")
-      -}
+      , option "f" ["flags"]
+        (unlines [ "Set cabal flags to certain state."
+                 , "Example: --flags=-all_extensions"
+                 ])
+        mergeCabalFlags
+        (\cabal_flags v -> v{ mergeCabalFlags = cabal_flags})
+        (reqArg' "cabal_flags" Flag (\(Flag ms) -> [ms]))
       ]
   }
 
@@ -386,7 +399,7 @@ mergeAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
   let repo = defaultRepo overlayPath
-  merge verbosity repo (defaultRepoURI overlayPath) extraArgs overlayPath
+  merge verbosity repo (defaultRepoURI overlayPath) extraArgs overlayPath (fromFlag $ mergeCabalFlags flags)
 
 -----------------------------------------------------------------------
 -- DistroMap

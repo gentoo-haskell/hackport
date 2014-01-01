@@ -8,6 +8,7 @@
 
 module Util
     ( run_cmd -- :: String -> IO (Maybe String)
+    , split -- :: (a -> Bool) -> [a] -> [[a]]
     ) where
 
 import System.IO
@@ -29,3 +30,10 @@ run_cmd cmd = do (hI, hO, hE, hProcess) <- runInteractiveCommand cmd
                  return $ if (output == "" || exitCode /= ExitSuccess)
                           then Nothing
                           else Just output
+
+split :: Eq a => (a -> Bool) -> [a] -> [[a]]
+split _ [] = []
+split p xs =
+    case break p xs of
+        (l, [])  -> [l]
+        (l, _:r) -> l: split p r

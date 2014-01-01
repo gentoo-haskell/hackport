@@ -64,6 +64,8 @@ import qualified Portage.GHCCore as GHCCore
 
 import qualified Merge.Dependencies as Merge
 
+import qualified Util as U
+
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
 
@@ -101,8 +103,8 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (packageInfoId avail)
 
-merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> IO ()
-merge verbosity repo _serverURI args overlayPath = do
+merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> String -> IO ()
+merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
     case readPackageString args of
       Left err -> throwEx err
@@ -159,10 +161,10 @@ merge verbosity repo _serverURI args overlayPath = do
   let cabal_pkgId = packageInfoId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
-  mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True
+  mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True users_cabal_flags
 
-mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> IO ()
-mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = do
+mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> String -> IO ()
+mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
 
@@ -183,11 +185,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
+      user_specified_fas   = read_fas users_cabal_flags
       make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
       make_fas  [] = [[]]
-      make_fas  (f:rest) = [ (Cabal.flagName f, is_enabled) : fas
+      make_fas  (f:rest) = [ (fn, is_enabled) : fas
                            | fas <- make_fas rest
-                           , is_enabled <- [False, True]
+                           , let fn = Cabal.flagName f
+                                 users_choice = lookup fn user_specified_fas
+                           , is_enabled <- maybe [False, True]
+                                                 (\b -> [b])
+                                                 users_choice
                            ]
       all_possible_flag_assignments :: [Cabal.FlagAssignment]
       all_possible_flag_assignments = make_fas cabal_flag_descs
@@ -196,6 +203,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
                                     | (Cabal.FlagName f, b) <- fa
                                     ]
+
+      read_fas :: String -> Cabal.FlagAssignment
+      read_fas = map read_fa . U.split (== ',')
+          where read_fa :: String -> (Cabal.FlagName, Bool)
+                read_fa [] = error $ "read_fas: empty flag?"
+                read_fa (op:flag) =
+                    case op of
+                        '+' -> (Cabal.FlagName flag, True)
+                        '-' -> (Cabal.FlagName flag, False)
+                        _   -> error $ "read_fas: unknown flag prefix " ++ show op ++ ", '+'/'-' expected."
 
       -- key idea is to generate all possible list of flags
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
@@ -353,9 +370,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
   forM_ ghc_packages $
       \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
 
-  let -- p_flag (Cabal.FlagName fn, True)  =     fn
-      -- p_flag (Cabal.FlagName fn, False) = '-':fn
-
+  let pp_fn (Cabal.FlagName fn, True)  =     fn
+      pp_fn (Cabal.FlagName fn, False) = '-':fn
 
       -- appends 's' to each line except the last one
       --  handy to build multiline shell expressions
@@ -363,19 +379,22 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
       icalate _s [x]    = [x]
       icalate  s (x:xs) = (x ++ s) : icalate s xs
 
-      selected_flags :: [String] -> [String]
-      selected_flags [] = []
-      selected_flags fs = icalate " \\" $ "haskell-cabal_src_configure"
-                                        : map (\p -> "\t$(cabal_flag "++ p ++" "++ p ++")") fs
+      selected_flags :: ([Cabal.FlagName], Cabal.FlagAssignment) -> [String]
+      selected_flags ([], []) = []
+      selected_flags (active_fns, users_fas) = icalate " \\" $ "haskell-cabal_src_configure" : map snd (L.sortBy (compare `on` fst) flag_pairs)
+          where flag_pairs :: [(String, String)]
+                flag_pairs = active_pairs ++ users_pairs
+                active_pairs = map (\fn -> (fn,                    "\t$(cabal_flag " ++ fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
+                users_pairs  = map (\fa -> ((unFlagName . fst) fa, "\t--flag=" ++ pp_fn fa)) users_fas
       to_iuse x = let fn = unFlagName $ Cabal.flagName x
                       p  = if Cabal.flagDefault x then "+" else ""
-                  in p++fn
+                  in p ++ fn
 
       ebuild =   (\e -> e { E.depend        = Merge.dep tdeps} )
                . (\e -> e { E.depend_extra  = Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       = Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = selected_flags $ L.sort $ map unFlagName active_flags } )
+               . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                $ C2E.cabal2ebuild pkgDesc
 
