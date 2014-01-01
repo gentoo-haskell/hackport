@@ -285,10 +285,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                     (False, _)    -> rfdep:mergeD lfdep rest
 
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
-            sd = L.foldl' (\o (f,d) -> case lookup f o of
-                                          Just ds -> (f,d:ds):filter ((f/=).fst) o
-                                          Nothing -> (f,[d]):o
-                       ) [] $ L.foldl' (\o n -> n `mergeD` o)
+            sd = L.foldl' (\fadeps (fa, new_deps) -> case lookup fa fadeps of
+                                                         Just ds -> (fa, new_deps:ds):filter ((fa /= ) . fst) fadeps
+                                                         Nothing -> (fa, new_deps:[]):fadeps
+                       ) [] $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
                                     []
                                     (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep)) deps) all_fdeps)
             -- filter out splitted packages from common cgroup
