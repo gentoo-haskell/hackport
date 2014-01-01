@@ -278,13 +278,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
             mergeD fdep [] = [fdep]
-            mergeD lfdep@(lfa, ld) (rfdep@(rfa,rd):rest) =
-              let c_fa = lfa `L.intersect` rfa
-              in if ld == rd -- is order guaranteed?
-                      then if null c_fa
-                                then rest
-                                else (c_fa, ld):rest
-                      else rfdep:mergeD lfdep rest
+            mergeD lfdep@(lfa, ld) (rfdep@(rfa, rd):rest) =
+                case (ld == rd, lfa `L.intersect` rfa) of
+                    (True,  [])   -> rest
+                    (True,  c_fa) -> (c_fa, ld):rest
+                    (False, _)    -> rfdep:mergeD lfdep rest
+
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
             sd = L.foldl' (\o (f,d) -> case lookup f o of
                                           Just ds -> (f,d:ds):filter ((f/=).fst) o
