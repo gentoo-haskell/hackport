@@ -291,7 +291,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
                                           Nothing -> (f,[d]):o
                        ) [] $ L.foldl' (\o n -> n `mergeD` o)
                                     []
-                                    (concatMap (\(f,d) -> map ((,) f) d) all_fdeps)
+                                    (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep)) deps) all_fdeps)
             -- filter out splitted packages from common cgroup
             ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
                                                      )) all_fdeps
