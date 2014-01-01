@@ -396,6 +396,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
+               . ( if null users_cabal_flags
+                       then id
+                       else (\e -> e { E.used_options  = E.used_options e ++ [("flags", users_cabal_flags)] }))
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
