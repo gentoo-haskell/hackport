@@ -286,6 +286,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
 
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
             sd = L.foldl' (\fadeps (fa, new_deps) -> case lookup fa fadeps of
+                                                         -- fancy way to regroup depends around flag assignment
                                                          Just ds -> (fa, new_deps:ds):filter ((fa /= ) . fst) fadeps
                                                          Nothing -> (fa, new_deps:[]):fadeps
                        ) [] $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
