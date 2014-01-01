@@ -299,13 +299,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch = 
             -- don't need to simplify them more, and output as-is
             simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
             simplifyMore [] = []
-            simplifyMore ws =
-                let us = get_fa_hist ws
-                    (u,_) = L.maximumBy (compare `on` snd) us
-                    (xs', ls) = hasFlag u `L.partition` ws
-                in if null us
-                      then concatMap (\(a, b) -> liftFlags a b) ws
-                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u xs')++simplifyMore ls
+            simplifyMore fdeps =
+                let fa_hist = get_fa_hist fdeps
+                    (u,_) = L.maximumBy (compare `on` snd) fa_hist
+                    (fdeps_u, fdeps_nu) = hasFlag u `L.partition` fdeps
+                in if null fa_hist
+                      then concatMap (\(a, b) -> liftFlags a b) fdeps
+                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u fdeps_u) ++ simplifyMore fdeps_nu
         in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
 
       get_fa_hist :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
