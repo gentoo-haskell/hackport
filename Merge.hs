@@ -171,13 +171,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   debug verbosity "searching for minimal suitable ghc version"
   (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
               Just v  -> return v
-              Nothing -> let cpn = display merged_cabal_pkg_name
-                         in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ cpn
+              Nothing -> let pn = display merged_cabal_pkg_name
+                             cn = display cat
+                         in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ pn
                                             , "  You can try to merge the package manually:"
-                                            , "  $ cabal unpack " ++ cpn
-                                            , "  $ cd " ++ cpn ++ "*/"
-                                            , "  # fix " ++ cpn ++ ".cabal"
-                                            , "  $ hackport make-ebuild dev-haskell " ++ cpn ++ ".cabal"
+                                            , "  $ cabal unpack " ++ pn
+                                            , "  $ cd " ++ pn ++ "*/"
+                                            , "  # fix " ++ pn ++ ".cabal"
+                                            , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
                                             ]
 
       -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
