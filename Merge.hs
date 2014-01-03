@@ -103,7 +103,7 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (packageInfoId avail)
 
-merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> String -> IO ()
+merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> Maybe String -> IO ()
 merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
     case readPackageString args of
@@ -163,7 +163,7 @@ merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
   mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True users_cabal_flags
 
-mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> String -> IO ()
+mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
@@ -205,8 +205,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                     ]
 
       -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
-      read_fas :: String -> (Cabal.FlagAssignment, [(String, String)])
-      read_fas user_fas_s = (user_fas, user_renames)
+      read_fas :: Maybe String -> (Cabal.FlagAssignment, [(String, String)])
+      read_fas Nothing = ([], [])
+      read_fas (Just user_fas_s) = (user_fas, user_renames)
           where user_fas = [ (cf, b)
                            | ((cf, _), Just b) <- cn_in_mb
                            ]
@@ -416,9 +417,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
-               . ( if null users_cabal_flags
-                       then id
-                       else (\e -> e { E.used_options  = E.used_options e ++ [("flags", users_cabal_flags)] }))
+               . ( case users_cabal_flags of
+                       Nothing  -> id
+                       Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild pkgDesc
 
   mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild

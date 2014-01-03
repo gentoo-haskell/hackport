@@ -125,7 +125,7 @@ listAction flags extraArgs globalFlags = do
 
 data MakeEbuildFlags = MakeEbuildFlags {
     makeEbuildVerbosity :: Flag Verbosity
-  , makeEbuildCabalFlags :: Flag String
+  , makeEbuildCabalFlags :: Flag (Maybe String)
   }
 
 instance Monoid MakeEbuildFlags where
@@ -142,7 +142,7 @@ instance Monoid MakeEbuildFlags where
 defaultMakeEbuildFlags :: MakeEbuildFlags
 defaultMakeEbuildFlags = MakeEbuildFlags {
     makeEbuildVerbosity = Flag normal
-  , makeEbuildCabalFlags = Flag ""
+  , makeEbuildCabalFlags = Flag Nothing
   }
 
 makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
@@ -175,8 +175,8 @@ makeEbuildCommand = CommandUI {
                  , "Example: --flags=-all_extensions"
                  ])
         makeEbuildCabalFlags
-        (\cabal_flags v -> v{ makeEbuildCabalFlags = cabal_flags})
-        (reqArg' "cabal_flags" Flag (\(Flag ms) -> [ms]))
+        (\cabal_flags v -> v{ makeEbuildCabalFlags = cabal_flags })
+        (reqArg' "cabal_flags" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
       ]
   }
 
@@ -353,7 +353,7 @@ statusAction flags args globalFlags = do
 
 data MergeFlags = MergeFlags {
     mergeVerbosity :: Flag Verbosity
-  , mergeCabalFlags :: Flag String
+  , mergeCabalFlags :: Flag (Maybe String)
   }
 
 instance Monoid MergeFlags where
@@ -370,7 +370,7 @@ instance Monoid MergeFlags where
 defaultMergeFlags :: MergeFlags
 defaultMergeFlags = MergeFlags {
     mergeVerbosity = Flag normal
-  , mergeCabalFlags = Flag ""
+  , mergeCabalFlags = Flag Nothing
   }
 
 mergeCommand :: CommandUI MergeFlags
@@ -390,7 +390,7 @@ mergeCommand = CommandUI {
                  ])
         mergeCabalFlags
         (\cabal_flags v -> v{ mergeCabalFlags = cabal_flags})
-        (reqArg' "cabal_flags" Flag (\(Flag ms) -> [ms]))
+        (reqArg' "cabal_flags" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
       ]
   }
 
