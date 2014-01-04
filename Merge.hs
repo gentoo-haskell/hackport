@@ -300,7 +300,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                       d  = Portage.simplify_deps $ ld `L.intersect` rd
                       x  = (lfa, ld L.\\ rd)
                          : (rfa, rd L.\\ ld)
-                         : L.nub (lx ++ rx)
+                         : lx ++ rx
 
       simplify :: [FlagDepH] -> [Portage.Dependency]
       simplify fdephs =
