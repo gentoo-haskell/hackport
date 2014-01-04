@@ -362,7 +362,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.DependIfUse (Portage.DUse (b, cfn_to_iuse $ unFlagName y)) . x)
-                                      (id::Portage.Dependency->Portage.Dependency) fs
+                                      id fs
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
 
       partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
