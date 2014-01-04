@@ -7,6 +7,7 @@ import Control.Arrow (first, second)
 import Control.Monad.Error
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Map.Strict as M
 import Data.Char (isSpace)
 import Data.Function (on)
 import Data.Maybe
@@ -51,7 +52,6 @@ import qualified Portage.EBuild as E
 import Error as E
 
 import Network.URI
-
 
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
@@ -324,11 +324,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                     (False, _)    -> rfdep:mergeD lfdep rest
 
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
-            sd = L.foldl' (\fadeps (fa, new_deps) -> case lookup fa fadeps of
-                                                         -- fancy way to regroup depends around flag assignment
-                                                         Just ds -> (fa, new_deps:ds):filter ((fa /= ) . fst) fadeps
-                                                         Nothing -> (fa, new_deps:[]):fadeps
-                       ) [] $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
+            sd = M.toList $!
+                 L.foldl' (\fadeps (fa, new_deps) -> let push_front old_val = Just $!
+                                                             case old_val of
+                                                                 Nothing -> new_deps:[]
+                                                                 Just ds -> new_deps:ds
+                                                     in M.alter push_front fa fadeps
+                       ) M.empty $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
                                     []
                                     (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep)) deps) all_fdeps)
             -- filter out splitted packages from common group
@@ -348,12 +350,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
         in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
 
       get_fa_hist :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
-      get_fa_hist fdeps = go [] (concatMap fst fdeps)
+      get_fa_hist fdeps = reverse $! L.sortBy (compare `on` snd) $!
+                                     M.toList $!
+                                     go M.empty (concatMap fst fdeps)
             where go hist [] = hist
-                  go hist (fd:fds) =
-                      case lookup fd hist of
-                          Nothing -> go ((fd,     1):                       hist) fds
-                          Just v  -> go ((fd, v + 1):filter ((fd /=) . fst) hist) fds
+                  go hist (fd:fds) = go (M.insertWith (+) fd 1 hist) fds
       -- drop selected use flag from a list
       dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
       dropFlag f = map (first (filter (f /=)))
