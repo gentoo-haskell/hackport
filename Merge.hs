@@ -162,6 +162,13 @@ merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
   mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True users_cabal_flags
 
+first_just_of :: [Maybe a] -> Maybe a
+first_just_of [] = Nothing
+first_just_of (m:ms) =
+    case m of
+        Nothing -> first_just_of ms
+        Just _  -> m
+
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
@@ -169,6 +176,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       merged_PN = Portage.cabal_pn_to_PN merged_cabal_pkg_name
       pkgdir    = overlayPath </> Portage.unCategory cat </> merged_PN
   existing_meta <- EM.findExistingMeta pkgdir
+  let requested_cabal_flags = first_just_of [users_cabal_flags, EM.cabal_flags existing_meta]
 
   debug verbosity "searching for minimal suitable ghc version"
   (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
@@ -188,7 +196,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
-      (user_specified_fas, cf_to_iuse_rename)  = read_fas users_cabal_flags
+      (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
       make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
       make_fas  [] = [[]]
       make_fas  (f:rest) = [ (fn, is_enabled) : fas
@@ -421,7 +429,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.rdepend_extra = Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
-               . ( case users_cabal_flags of
+               . ( case requested_cabal_flags of
                        Nothing  -> id
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild pkgDesc
