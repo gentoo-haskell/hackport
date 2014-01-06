@@ -7,7 +7,7 @@ import Control.Monad.Error
 import Data.Char (isSpace)
 import qualified Data.List as L
 
-import System.Directory (getDirectoryContents)
+import System.Directory (doesDirectoryExist, getDirectoryContents)
 import System.FilePath ((</>))
 import Text.Printf
 
@@ -46,11 +46,13 @@ data EMeta = EMeta { keywords :: Maybe [String]
                    }
 
 findExistingMeta :: FilePath -> IO EMeta
-findExistingMeta edir =
-    do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` getDirectoryContents edir
+findExistingMeta pkgdir =
+    do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` do b <- doesDirectoryExist pkgdir
+                                                            if b then getDirectoryContents pkgdir
+                                                                 else return []
        -- TODO: version sort
        e_metas <- forM ebuilds $ \e ->
-                      do let e_path = edir </> e
+                      do let e_path = pkgdir </> e
                          e_conts <- readFile e_path
                          return EMeta { keywords = extractKeywords e e_conts
                                       , license  = extractLicense  e e_conts

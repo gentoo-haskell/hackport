@@ -11,8 +11,11 @@ module Portage.PackageId (
     parseFriendlyPackage,
     normalizeCabalPackageName,
     normalizeCabalPackageId,
-    packageIdToFilePath
+    packageIdToFilePath,
+    cabal_pn_to_PN
   ) where
+
+import Data.Char
 
 import qualified Distribution.Package as Cabal
 import Distribution.Text (Text(..))
@@ -124,3 +127,5 @@ parseFriendlyPackage str =
       return (Just v)
     return (mc, p, mv)
 
+cabal_pn_to_PN :: Cabal.PackageName -> String
+cabal_pn_to_PN = map toLower . display

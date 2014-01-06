@@ -34,7 +34,7 @@ import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')
 import Distribution.Text (display)
 
-import Data.Char          (toLower,isUpper)
+import Data.Char          (isUpper)
 
 import Portage.Dependency
 import qualified Portage.Cabal as Portage
@@ -48,7 +48,7 @@ import Portage.Version
 
 cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild pkg = Portage.ebuildTemplate {
-    E.name        = map toLower cabalPkgName,
+    E.name        = Portage.cabal_pn_to_PN cabal_pn,
     E.hackage_name= cabalPkgName,
     E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
@@ -66,7 +66,8 @@ cabal2ebuild pkg = Portage.ebuildTemplate {
                         ) (Cabal.library pkg) -- hscolour can't colour its own sources
                    ++ (if hasTests then ["test-suite"] else [])
   } where
-        cabalPkgName = display $ Cabal.pkgName (Cabal.package pkg)
+        cabal_pn = Cabal.pkgName $ Cabal.package pkg
+        cabalPkgName = display cabal_pn
         hasExe = (not . null) (Cabal.executables pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)

@@ -166,6 +166,9 @@ mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> C
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
+      merged_PN = Portage.cabal_pn_to_PN merged_cabal_pkg_name
+      pkgdir    = overlayPath </> Portage.unCategory cat </> merged_PN
+  existing_meta <- EM.findExistingMeta pkgdir
 
   debug verbosity "searching for minimal suitable ghc version"
   (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
@@ -423,7 +426,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild pkgDesc
 
-  mergeEbuild verbosity overlayPath (Portage.unCategory cat) ebuild
+  mergeEbuild verbosity existing_meta pkgdir ebuild
   when fetch $ do
     let cabal_pkgId = Cabal.packageId pkgDesc
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
@@ -461,16 +464,15 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
-mergeEbuild :: Verbosity -> FilePath -> String -> E.EBuild -> IO ()
-mergeEbuild verbosity target cat ebuild = do
-  let edir = target </> cat </> E.name ebuild
+mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> IO ()
+mergeEbuild verbosity existing_meta pkgdir ebuild = do
+  let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
       default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
-  existing_meta <- EM.findExistingMeta edir
   now <- TC.getCurrentTime
 
   let (existing_keywords, existing_license)  = (EM.keywords existing_meta, EM.license existing_meta)
