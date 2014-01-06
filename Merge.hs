@@ -13,6 +13,7 @@ import Data.Function (on)
 import Data.Maybe
 import Data.Monoid
 import qualified Data.List as L
+import qualified Data.Time.Clock as TC
 import Data.Version
 
 -- cabal
@@ -522,6 +523,7 @@ mergeEbuild verbosity target cat ebuild = do
       default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
   existing_meta <- findExistingMeta edir
+  now <- TC.getCurrentTime
 
   let (existing_keywords, existing_license)  = (keywords existing_meta, license existing_meta)
       new_keywords = maybe (E.keywords ebuild) (map to_unstable) existing_keywords
@@ -533,7 +535,7 @@ mergeEbuild verbosity target cat ebuild = do
       ebuild'      = ebuild { E.keywords = new_keywords
                             , E.license = new_license
                             }
-      s_ebuild'    = display ebuild'
+      s_ebuild'    = E.showEBuild now ebuild'
 
   notice verbosity $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
   notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license

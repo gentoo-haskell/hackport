@@ -33,6 +33,7 @@ Executable    hackport
     pretty,
     regex-compat,
     MissingH,
+    old-locale,
     HTTP >= 4000.0.3,
     zlib,
     tar,

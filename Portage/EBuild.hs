@@ -1,19 +1,21 @@
 module Portage.EBuild
         ( EBuild(..)
         , ebuildTemplate
+        , showEBuild
         , src_uri
         ) where
-
-import Distribution.Text ( Text(..) )
-import qualified Text.PrettyPrint as Disp
 
 import Portage.Dependency
 
 import Data.String.Utils
+import qualified Data.Time.Clock as TC
+import qualified Data.Time.Format as TC
 import qualified Data.Function as F
 import qualified Data.List as L
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
+
+import qualified System.Locale as TC
 
 data EBuild = EBuild {
     name :: String,
@@ -67,9 +69,6 @@ ebuildTemplate = EBuild {
     , used_options = []
   }
 
-instance Text EBuild where
-  disp = Disp.text . showEBuild
-
 -- | Given an EBuild, give the URI to the tarball of the source code.
 -- Assumes that the server is always hackage.haskell.org.
 src_uri :: EBuild -> String
@@ -82,9 +81,9 @@ src_uri e =
     -- package
     Just _  -> "http://hackage.haskell.org/packages/archive/${MY_PN}/${PV}/${MY_P}.tar.gz"
 
-showEBuild :: EBuild -> String
-showEBuild ebuild =
-  ss "# Copyright 1999-2014 Gentoo Foundation". nl.
+showEBuild :: TC.UTCTime -> EBuild -> String
+showEBuild now ebuild =
+  ss ("# Copyright 1999-" ++ this_year ++ " Gentoo Foundation"). nl.
   ss "# Distributed under the terms of the GNU General Public License v2". nl.
   ss "# $Header: $". nl.
   nl.
@@ -128,6 +127,8 @@ showEBuild ebuild =
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
         toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
+        this_year :: String
+        this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
 
 -- "+a" -> "a"
 -- "b"  -> "b"
