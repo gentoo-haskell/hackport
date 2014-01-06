@@ -8,7 +8,6 @@ import Control.Monad.Error
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Map.Strict as M
-import Data.Char (isSpace)
 import Data.Function (on)
 import Data.Maybe
 import Data.Monoid
@@ -38,7 +37,6 @@ import Distribution.Client.Types
 
 -- others
 import System.Directory ( getCurrentDirectory
-                        , getDirectoryContents
                         , setCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
@@ -46,10 +44,10 @@ import System.Directory ( getCurrentDirectory
 import System.Cmd (system)
 import System.FilePath ((</>))
 import System.Exit
-import Text.Printf
 
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
+import qualified Portage.EMeta as EM
 import Error as E
 
 import Network.URI
@@ -455,56 +453,6 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
--- tries to extract value of variable in var="val" format
--- There should be exactly one variable assignment in ebuild
--- It's a bit artificial limitation, but it's common for 'if / else' blocks
-extract_quoted_string :: FilePath -> String -> String -> Maybe String
-extract_quoted_string ebuild_path s_ebuild var_name =
-    case filter (L.isPrefixOf var_prefix . ltrim) $ lines s_ebuild of
-        []        -> Nothing
-        [kw_line] -> up_to_quote $ skip_prefix $ ltrim kw_line
-        other     -> bail_out $ printf "strange '%s' assignmets:\n%s" var_name (unlines other)
-
-    where ltrim :: String -> String
-          ltrim = dropWhile isSpace
-          var_prefix = var_name ++ "=\""
-          skip_prefix = drop (length var_prefix)
-          up_to_quote l = case break (== '"') l of
-                              ("", _)  -> Nothing -- empty line
-                              (_, "")  -> bail_out $ printf "failed to find closing quote for '%s'" l
-                              (val, _) -> Just val
-          bail_out :: String -> e
-          bail_out msg = error $ printf "%s:extract_quoted_string %s" ebuild_path msg
-
-extractKeywords :: FilePath -> String -> Maybe [String]
-extractKeywords ebuild_path s_ebuild =
-    words `fmap ` extract_quoted_string ebuild_path s_ebuild "KEYWORDS"
-
-extractLicense :: FilePath -> String -> Maybe String
-extractLicense ebuild_path s_ebuild =
-    extract_quoted_string ebuild_path s_ebuild "LICENSE"
-
--- aggregated (best inferred) metadata for a new ebuild of package
-data EMeta = EMeta { keywords :: Maybe [String]
-                   , license  :: Maybe String
-                   }
-
-findExistingMeta :: FilePath -> IO EMeta
-findExistingMeta edir =
-    do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` getDirectoryContents edir
-       -- TODO: version sort
-       e_metas <- forM ebuilds $ \e ->
-                      do let e_path = edir </> e
-                         e_conts <- readFile e_path
-                         return EMeta { keywords = extractKeywords e e_conts
-                                      , license  = extractLicense  e e_conts
-                                      }
-       let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
-           aggregated_meta = EMeta { keywords = get_latest $ map keywords e_metas
-                                   , license  = get_latest $ map license e_metas
-                                   }
-       return aggregated_meta
-
 -- "amd64" -> "~amd64"
 to_unstable :: String -> String
 to_unstable kw =
@@ -522,10 +470,10 @@ mergeEbuild verbosity target cat ebuild = do
       mpath = edir </> emeta
       default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
   createDirectoryIfMissing True edir
-  existing_meta <- findExistingMeta edir
+  existing_meta <- EM.findExistingMeta edir
   now <- TC.getCurrentTime
 
-  let (existing_keywords, existing_license)  = (keywords existing_meta, license existing_meta)
+  let (existing_keywords, existing_license)  = (EM.keywords existing_meta, EM.license existing_meta)
       new_keywords = maybe (E.keywords ebuild) (map to_unstable) existing_keywords
       new_license  = either (\err -> maybe (Left err)
                                            Right
