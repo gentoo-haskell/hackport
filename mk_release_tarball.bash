@@ -19,9 +19,9 @@ tarball_name="${srcdir}/${P}.tar.gz"
         git submodule update --init
 
         # drop redundant bits
-        rm -r -- .git cabal/.git
+        rm -rf -- .git cabal/.git
         # cabal is not able to unpack long tar names
-        rm -r -- cabal/Cabal/tests
+        rm -rf -- cabal/Cabal/tests
     )
     tar -czf "${tarball_name}" "${P}"/
 )
