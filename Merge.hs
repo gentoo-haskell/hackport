@@ -163,11 +163,7 @@ merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True users_cabal_flags
 
 first_just_of :: [Maybe a] -> Maybe a
-first_just_of [] = Nothing
-first_just_of (m:ms) =
-    case m of
-        Nothing -> first_just_of ms
-        Just _  -> m
+first_just_of = listToMaybe . catMaybes
 
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
