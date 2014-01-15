@@ -77,10 +77,11 @@ dependencySatisfiable pindex dep@(Dependency pn _rang)
 
 packageBuildableWithGHCVersion
   :: GenericPackageDescription
+  -> FlagAssignment
   -> (CompilerId, PackageIndex)
   -> Either [Dependency] (PackageDescription, FlagAssignment)
-packageBuildableWithGHCVersion pkg (compiler, pkgIndex) = trace_failure $
-  finalizePackageDescription [] (dependencySatisfiable pkgIndex) platform compiler [] pkg
+packageBuildableWithGHCVersion pkg user_specified_fas (compiler, pkgIndex) = trace_failure $
+  finalizePackageDescription user_specified_fas (dependencySatisfiable pkgIndex) platform compiler [] pkg
     where trace_failure v = case v of
               (Left deps) -> trace (unwords ["rejecting dep:" , show_compiler compiler
                                             , "as", show_deps deps
@@ -96,11 +97,11 @@ packageBuildableWithGHCVersion pkg (compiler, pkgIndex) = trace_failure $
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment, PackageIndex)
-minimumGHCVersionToBuildPackage gpd =
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> FlagAssignment -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment, PackageIndex)
+minimumGHCVersionToBuildPackage gpd user_specified_fas =
   listToMaybe [ (cid, packageNamesFromPackageIndex pix, pkg_desc, picked_flags, pix)
               | g@(cid, pix) <- ghcs
-              , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
+              , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd user_specified_fas g)]
 
 mkIndex :: [PackageIdentifier] -> PackageIndex
 mkIndex pids = fromList

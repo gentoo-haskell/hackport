@@ -174,43 +174,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   existing_meta <- EM.findExistingMeta pkgdir
   let requested_cabal_flags = first_just_of [users_cabal_flags, EM.cabal_flags existing_meta]
 
-  debug verbosity "searching for minimal suitable ghc version"
-  (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc of
-              Just v  -> return v
-              Nothing -> let pn = display merged_cabal_pkg_name
-                             cn = display cat
-                         in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ pn
-                                            , "  You can try to merge the package manually:"
-                                            , "  $ cabal unpack " ++ pn
-                                            , "  $ cd " ++ pn ++ "*/"
-                                            , "  # fix " ++ pn ++ ".cabal"
-                                            , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
-                                            ]
-
-      -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
-  let (accepted_deps, skipped_deps, dropped_deps) = partition_depends (Cabal.buildDepends pkgDesc0)
-      pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
-      cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
-      all_flags = map Cabal.flagName cabal_flag_descs
-      (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
-      make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
-      make_fas  [] = [[]]
-      make_fas  (f:rest) = [ (fn, is_enabled) : fas
-                           | fas <- make_fas rest
-                           , let fn = Cabal.flagName f
-                                 users_choice = lookup fn user_specified_fas
-                           , is_enabled <- maybe [False, True]
-                                                 (\b -> [b])
-                                                 users_choice
-                           ]
-      all_possible_flag_assignments :: [Cabal.FlagAssignment]
-      all_possible_flag_assignments = make_fas cabal_flag_descs
-
-      pp_fa :: Cabal.FlagAssignment -> String
-      pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
-                                    | (Cabal.FlagName f, b) <- fa
-                                    ]
-
       -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
       read_fas :: Maybe String -> (Cabal.FlagAssignment, [(String, String)])
       read_fas Nothing = ([], [])
@@ -235,6 +198,45 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                 [cabal_flag_name] -> (Cabal.FlagName cabal_flag_name, cabal_flag_name)
                                 [cabal_flag_name, iuse_name] -> (Cabal.FlagName cabal_flag_name, iuse_name)
                                 _                 -> error $ "get_rename: too many components" ++ show (s)
+
+      (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
+
+  debug verbosity "searching for minimal suitable ghc version"
+  (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc user_specified_fas of
+              Just v  -> return v
+              Nothing -> let pn = display merged_cabal_pkg_name
+                             cn = display cat
+                         in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ pn
+                                            , "  You can try to merge the package manually:"
+                                            , "  $ cabal unpack " ++ pn
+                                            , "  $ cd " ++ pn ++ "*/"
+                                            , "  # fix " ++ pn ++ ".cabal"
+                                            , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
+                                            ]
+
+      -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
+  let (accepted_deps, skipped_deps, dropped_deps) = partition_depends (Cabal.buildDepends pkgDesc0)
+      pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
+      cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
+      all_flags = map Cabal.flagName cabal_flag_descs
+      make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
+      make_fas  [] = [[]]
+      make_fas  (f:rest) = [ (fn, is_enabled) : fas
+                           | fas <- make_fas rest
+                           , let fn = Cabal.flagName f
+                                 users_choice = lookup fn user_specified_fas
+                           , is_enabled <- maybe [False, True]
+                                                 (\b -> [b])
+                                                 users_choice
+                           ]
+      all_possible_flag_assignments :: [Cabal.FlagAssignment]
+      all_possible_flag_assignments = make_fas cabal_flag_descs
+
+      pp_fa :: Cabal.FlagAssignment -> String
+      pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
+                                    | (Cabal.FlagName f, b) <- fa
+                                    ]
+
 
       cfn_to_iuse :: String -> String
       cfn_to_iuse cfn =
