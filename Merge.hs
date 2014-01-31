@@ -290,19 +290,19 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
           , Merge.rdep = optimize_fa_depends $ map (second Merge.rdep) deps1
           }
 
-      pop_common_deps :: [FlagDepH] -> FlagDepH
+      pop_common_deps :: [(FaDep,[FaDep])] -> (FaDep,[FaDep])
       pop_common_deps xs =
            case pop_from_pairs xs of
                  []  -> error "impossible"
                  [x] -> x
                  r   -> pop_common_deps r
           where
-            pop_from_pairs :: [FlagDepH] -> [FlagDepH]
+            pop_from_pairs :: [(FaDep,[FaDep])] -> [(FaDep,[FaDep])]
             pop_from_pairs [] = []
             pop_from_pairs [y] = [y]
             pop_from_pairs (y1:y2:rest) = y1 `pop_from_pair` y2 : pop_from_pairs rest
 
-            pop_from_pair :: FlagDepH -> FlagDepH -> FlagDepH
+            pop_from_pair :: (FaDep,[FaDep]) -> (FaDep,[FaDep]) -> (FaDep,[FaDep])
             pop_from_pair ((lfa, ld), lx) ((rfa, rd), rx) = ((fa, d), x)
                 where fa = lfa `L.intersect` rfa
                       d  = Portage.simplify_deps $ ld `L.intersect` rd
@@ -310,7 +310,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                          : (rfa, rd L.\\ ld)
                          : lx ++ rx
 
-      simplify :: [FlagDepH] -> [Portage.Dependency]
+      simplify :: [(FaDep,[FaDep])] -> [Portage.Dependency]
       simplify fdephs =
         let -- extract common part of the depends
             -- filtering out empty groups
@@ -357,16 +357,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                       else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u fdeps_u) ++ simplifyMore fdeps_nu
         in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
 
-      get_fa_hist :: [FlagDep] -> [((Cabal.FlagName,Bool),Int)]
+      get_fa_hist :: [FaDep] -> [((Cabal.FlagName,Bool),Int)]
       get_fa_hist fdeps = reverse $! L.sortBy (compare `on` snd) $!
                                      M.toList $!
                                      go M.empty (concatMap fst fdeps)
             where go hist [] = hist
                   go hist (fd:fds) = go (M.insertWith (+) fd 1 hist) fds
       -- drop selected use flag from a list
-      dropFlag :: (Cabal.FlagName,Bool) -> [FlagDep] -> [FlagDep]
+      dropFlag :: (Cabal.FlagName,Bool) -> [FaDep] -> [FaDep]
       dropFlag f = map (first (filter (f /=)))
-      hasFlag :: (Cabal.FlagName,Bool) -> FlagDep -> Bool
+      hasFlag :: (Cabal.FlagName,Bool) -> FaDep -> Bool
       hasFlag u = elem u . fst
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
@@ -510,5 +510,4 @@ mergeEbuild verbosity existing_meta pkgdir ebuild = do
 unFlagName :: Cabal.FlagName -> String
 unFlagName (Cabal.FlagName fname) = fname
 
-type FlagDep  = (Cabal.FlagAssignment,[Portage.Dependency])
-type FlagDepH = (FlagDep,[FlagDep])
+type FaDep = (Cabal.FlagAssignment, [Portage.Dependency])
