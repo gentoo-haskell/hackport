@@ -12,6 +12,7 @@ import Data.Function (on)
 import Data.Maybe
 import Data.Monoid
 import qualified Data.List as L
+import qualified Data.Set as S
 import qualified Data.Time.Clock as TC
 import Data.Version
 
@@ -315,21 +316,32 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
         let -- extract common part of the depends
             -- filtering out empty groups
             ((common_fas, common_fdeps), all_fdeps) = second (filter (not . null . snd)) $ pop_common_deps fdephs
-            -- Regroup flags according to packages, i.e.
-            -- if 2 groups of flagged deps containg same package, then
-            -- extract common flags, but if common flags will be empty
-            -- then remove repacked package from the result list.
-            -- This is simplify packages but will not break if depend
-            -- is required but non intersecting groups.
+            -- apply assumption of 'fdep' on other depends
+            -- Handle at least:
+            --  1. redundant-USE cancelation
+            --    a? b? c? ( x ) a? ( x ) => a? ( x )
+            --  2. one-USE irrelevance
+            --    a? b? c? d? ( x ) a? b? !c? d? ( x ) => a? b? d? ( x )
+            -- Ideally this thing should be multipass
             mergeD :: (Cabal.FlagAssignment, Portage.Dependency)
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
                    -> [(Cabal.FlagAssignment, Portage.Dependency)]
             mergeD fdep [] = [fdep]
             mergeD lfdep@(lfa, ld) (rfdep@(rfa, rd):rest) =
-                case (ld == rd, lfa `L.intersect` rfa) of
-                    (True,  [])   -> rest
-                    (True,  c_fa) -> (c_fa, ld):rest
-                    (False, _)    -> rfdep:mergeD lfdep rest
+                case (ld == rd, slfa `S.intersection` srfa) of
+                    -- [1]
+                    (True, ifa) | ifa == slfa || ifa == srfa
+                              -> mergeD (S.toList ifa, ld) rest
+                    -- [2]
+                    (True, ifa) | case (S.toList (slfa S.\\ ifa), S.toList (srfa S.\\ ifa)) of
+                                      ([(lfn, lfv)], [(rfn, rfv)])
+                                          -> lfn == rfn && lfv == not rfv
+                                      _   -> False
+                              -> mergeD (S.toList ifa, ld) rest
+                    -- otherwise
+                    _         -> rfdep:mergeD lfdep rest
+              where slfa = S.fromList lfa
+                    srfa = S.fromList rfa
 
             sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
             sd = M.toList $!
