@@ -305,9 +305,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
             pop_from_pair :: (FaDep,[FaDep]) -> (FaDep,[FaDep]) -> (FaDep,[FaDep])
             pop_from_pair ((lfa, ld), lx) ((rfa, rd), rx) = ((fa, d), x)
                 where fa = lfa `L.intersect` rfa
-                      d  = Portage.simplify_deps $ ld `L.intersect` rd
-                      x  = (lfa, ld L.\\ rd)
-                         : (rfa, rd L.\\ ld)
+                      d  = ld `L.intersect` rd
+                      x  = (lfa, ld L.\\ d)
+                         : (rfa, rd L.\\ d)
                          : lx ++ rx
 
       simplify :: [(FaDep,[FaDep])] -> [Portage.Dependency]
@@ -340,7 +340,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                                      in M.alter push_front fa fadeps
                        ) M.empty $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
                                     []
-                                    (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep)) deps) all_fdeps)
+                                    (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep))
+                                                                   deps)
+                                               all_fdeps)
             -- filter out splitted packages from common group
             ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
                                                      )) all_fdeps
