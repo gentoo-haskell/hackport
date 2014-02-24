@@ -335,6 +335,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("alut", any_c_p "media-libs" "freealut")
       , ("openal", any_c_p "media-libs" "openal")
       , ("iw", any_c_p "net-wireless" "wireless-tools")
+      , ("attr", any_c_p "sys-apps" "attr")
       ]
 
 ---------------------------------------------------------------
