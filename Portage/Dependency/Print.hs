@@ -9,7 +9,7 @@ import Portage.Use
 
 import Portage.PackageId
 
-import Distribution.Text ( Text(..) )
+import qualified Distribution.Text as DT
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( (<>), vcat, nest, render )
 
@@ -22,22 +22,17 @@ dispSlot AnyBuildTimeSlot = Disp.text ":="
 dispSlot (GivenSlot slot) = Disp.text (':' : slot)
 
 dispLBound :: PackageName -> LBound -> Disp.Doc
-dispLBound pn (StrictLB    v) = Disp.char '>' <> disp pn <-> disp v
-dispLBound pn (NonstrictLB v) = Disp.text ">=" <> disp pn <-> disp v
+dispLBound pn (StrictLB    v) = Disp.char '>' <> DT.disp pn <-> DT.disp v
+dispLBound pn (NonstrictLB v) = Disp.text ">=" <> DT.disp pn <-> DT.disp v
 dispLBound _pn ZeroB = error "unhandled 'dispLBound ZeroB'"
 
 dispUBound :: PackageName -> UBound -> Disp.Doc
-dispUBound pn (StrictUB    v) = Disp.char '<' <> disp pn <-> disp v
-dispUBound pn (NonstrictUB v) = Disp.text "<=" <> disp pn <-> disp v
+dispUBound pn (StrictUB    v) = Disp.char '<' <> DT.disp pn <-> DT.disp v
+dispUBound pn (NonstrictUB v) = Disp.text "<=" <> DT.disp pn <-> DT.disp v
 dispUBound _pn InfinityB = error "unhandled 'dispUBound Infinity'"
 
 dispDAttr :: DAttr -> Disp.Doc
 dispDAttr (DAttr s u) = dispSlot s <> dispUses u
-
-dispDUse :: DUse -> Disp.Doc
-dispDUse (DUse (is_enabled, name)) = prefix is_enabled <> Disp.text name <> Disp.char '?'
-    where prefix True  = Disp.empty
-          prefix False = Disp.char '!'
 
 dep2str :: Int -> Dependency -> String
 dep2str start_indent = render . nest start_indent . showDepend . normalize_depend
@@ -61,7 +56,7 @@ showDepend :: Dependency -> Disp.Doc
 showDepend (Atom pn range dattr)
     = case range of
         -- any version
-        DRange ZeroB InfinityB -> disp pn          <> dispDAttr dattr
+        DRange ZeroB InfinityB -> DT.disp pn       <> dispDAttr dattr
         DRange ZeroB ub        -> dispUBound pn ub <> dispDAttr dattr
         DRange lb InfinityB    -> dispLBound pn lb <> dispDAttr dattr
         -- TODO: handle >=foo-0    special case
@@ -69,9 +64,15 @@ showDepend (Atom pn range dattr)
         DRange lb ub          ->    showDepend (Atom pn (DRange lb InfinityB) dattr)
                                  <> Disp.char ' '
                                  <> showDepend (Atom pn (DRange ZeroB ub)    dattr)
-        DExact v              -> Disp.char '~' <> disp pn <-> disp v { versionRevision = 0 } <> dispDAttr dattr
+        DExact v              -> Disp.char '~' <> DT.disp pn <-> DT.disp v { versionRevision = 0 } <> dispDAttr dattr
 
-showDepend (DependIfUse u dep)  = dispDUse u     <> sp <> sparens (showDepend dep)
+showDepend (DependIfUse u td fd)  = valign $ vcat [td_doc, fd_doc]
+    where td_doc
+              | is_empty_dependency td = Disp.empty
+              | otherwise =                  DT.disp u <> Disp.char '?' <> sp <> sparens (showDepend td)
+          fd_doc
+              | is_empty_dependency fd = Disp.empty
+              | otherwise = Disp.char '!' <> DT.disp u <> Disp.char '?' <> sp <> sparens (showDepend fd)
 showDepend (DependAnyOf deps)   = Disp.text "||" <> sp <> sparens (vcat $ map showDependInAnyOf deps)
 showDepend (DependAllOf deps)   = valign $ vcat $ map showDepend deps
 

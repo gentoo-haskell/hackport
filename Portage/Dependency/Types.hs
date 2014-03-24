@@ -5,7 +5,6 @@ module Portage.Dependency.Types
   , UBound(..)
   , DRange(..)
   , DAttr(..)
-  , DUse(..)
   , Dependency(..)
   , dep_is_case_of
   ) where
@@ -61,27 +60,8 @@ range_is_case_of _ _ = False
 data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show)
 
--- Simplified version of 'UseFlag'
---   used as a guarding depend:
---     foo? ( ... )
---    !foo? ( ... )
-data DUse = DUse (Bool, Use)
-    deriving (Eq, Show)
-
--- sort order:
---   a? < b?
---   a? < !a?
--- but 'test?' is special
-instance Ord DUse where
-    compare (DUse (lb, lname)) (DUse (rb, rname)) =
-        case (lname, rname, compare lname rname) of
-            (_, _, EQ)     -> compare rb lb
-            ("test", _, _) -> LT
-            (_, "test", _) -> GT
-            (_, _,      v) -> v
-
 data Dependency = Atom PackageName DRange DAttr
-                | DependIfUse DUse     Dependency
+                | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
     deriving (Eq, Show)

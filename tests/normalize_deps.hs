@@ -44,11 +44,11 @@ d_p pn = P.Atom (P.mkPackageName "c" pn)
                 (P.DRange P.ZeroB P.InfinityB)
                 def_attr
 
-d_use :: P.Use -> P.Dependency -> P.Dependency
-d_use u d = P.DependIfUse (P.DUse (True, u)) d
+d_use :: String -> P.Dependency -> P.Dependency
+d_use u d = P.mkUseDependency (True, P.Use u) d
 
-d_nuse :: P.Use -> P.Dependency -> P.Dependency
-d_nuse u d = P.DependIfUse (P.DUse (False, u)) d
+d_nuse :: String -> P.Dependency -> P.Dependency
+d_nuse u d = P.mkUseDependency (False, P.Use u) d
 
 test_normalize_in_use_and_top :: Test
 test_normalize_in_use_and_top = TestCase $ do

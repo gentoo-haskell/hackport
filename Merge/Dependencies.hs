@@ -178,7 +178,7 @@ resolveDependencies overlay pkg mcompiler =
                     dep_e = [ "${RDEPEND}" ],
                     rdep = extra_libs ++ pkg_config_libs
                   }
-    add_profile    = Portage.addDepUseFlag (Portage.mkQUse "profile")
+    add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
     set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
 ---------------------------------------------------------------
@@ -187,7 +187,7 @@ resolveDependencies overlay pkg mcompiler =
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
 testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
-    [Portage.DependIfUse (Portage.DUse (True, "test")) (Portage.DependAllOf $ Portage.simplify_deps deps)]
+    [Portage.mkUseDependency (True, Portage.Use "test") (Portage.DependAllOf $ Portage.simplify_deps deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
@@ -292,7 +292,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("m", any_c_p "virtual" "libc")
       , ("asound", any_c_p "media-libs" "alsa-lib")
       , ("sqlite3", at_least_c_p_v "dev-db" "sqlite" [3,0])
-      , ("stdc++", any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse "cxx"])
+      , ("stdc++", any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse (Portage.Use "cxx")])
       , ("crack", any_c_p "sys-libs" "cracklib")
       , ("exif", any_c_p "media-libs" "libexif")
       , ("IL", any_c_p "media-libs" "devil")

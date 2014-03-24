@@ -1,11 +1,13 @@
 module Portage.Dependency.Normalize
   (
-    normalize_depend
+    is_empty_dependency
+  , normalize_depend
   ) where
 
 import qualified Data.List as L
 
 import Portage.Dependency.Types
+import Portage.Dependency.Builder
 
 mergeDRanges :: DRange -> DRange -> DRange
 mergeDRanges _ r@(DExact _) = r
@@ -13,15 +15,19 @@ mergeDRanges l@(DExact _) _ = l
 mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
 
 -- TODO: remove it and switch to 'SatisfiedDepend' instead
-empty_dependency :: Dependency
-empty_dependency = DependAllOf []
-
 is_empty_dependency :: Dependency -> Bool
-is_empty_dependency (DependIfUse _use dep)  =     is_empty_dependency dep
-is_empty_dependency (DependAnyOf [])        = True -- because any (const True) == False
-is_empty_dependency (DependAnyOf deps)      = any is_empty_dependency deps
-is_empty_dependency (DependAllOf deps)      = all is_empty_dependency deps
-is_empty_dependency (Atom _pn _dr _dattr)   = False
+is_empty_dependency d =
+    case d of
+        DependIfUse _use td fd
+            -> is_empty_dependency td && is_empty_dependency fd
+        DependAnyOf []
+            -> True -- 'any (const True) [] == False' and we don't want it
+        DependAnyOf deps
+            -> any is_empty_dependency deps
+        DependAllOf deps
+            -> all is_empty_dependency deps
+        Atom _pn _dr _dattr
+            -> False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
@@ -41,20 +47,20 @@ remove_empty d =
         -- drop full empty nodes
         _ | is_empty_dependency d -> empty_dependency
         -- drop partial empty nodes
-        (DependIfUse use dep)     -> DependIfUse use $                                      remove_empty dep
-        (DependAllOf deps)        -> DependAllOf $ filter (not . is_empty_dependency) $ map remove_empty deps
-        (DependAnyOf deps)        -> DependAnyOf $                                      map remove_empty deps
+        DependIfUse use td fd   -> DependIfUse use (remove_empty td) (remove_empty fd)
+        DependAllOf deps        -> DependAllOf $ filter (not . is_empty_dependency) $ map remove_empty deps
+        DependAnyOf deps        -> DependAnyOf $                                      map remove_empty deps
         -- no change
-        (Atom _pn _dr _dattr)     -> d
+        Atom _pn _dr _dattr     -> d
 
 -- Ideally 'combine_atoms' should handle those as well
 remove_duplicates :: Dependency -> Dependency
 remove_duplicates d =
     case d of
-        (DependIfUse use dep)     -> (DependIfUse use $ remove_duplicates dep)
-        (DependAnyOf deps)        -> DependAnyOf $ L.nub $ map remove_duplicates deps
-        (DependAllOf deps)        -> DependAllOf $ L.nub $ map remove_duplicates deps
-        (Atom _pn _dr _dattr)     -> d
+        DependIfUse use td fd   -> DependIfUse use (remove_duplicates td) (remove_duplicates fd)
+        DependAnyOf deps        -> DependAnyOf $ L.nub $ map remove_duplicates deps
+        DependAllOf deps        -> DependAllOf $ L.nub $ map remove_duplicates deps
+        Atom _pn _dr _dattr     -> d
 
 -- TODO: implement flattening (if not done yet in other phases)
 --   DependAnyOf [DependAnyOf [something], rest] -> DependAnyOf $ something ++ rest
@@ -62,25 +68,25 @@ remove_duplicates d =
 flatten :: Dependency -> Dependency
 flatten d =
     case d of
-        (DependIfUse use dep)     -> DependIfUse use (flatten dep)
-        (DependAnyOf [dep])       -> flatten dep
-        (DependAllOf [dep])       -> flatten dep
-        (DependAnyOf deps)        -> DependAnyOf $ map flatten deps
-        (DependAllOf deps)        -> DependAllOf $ map flatten deps
-        (Atom _pn _dr _dattr)     -> d
+        DependIfUse use td fd   -> DependIfUse use (flatten td) (flatten fd)
+        DependAnyOf [dep]       -> flatten dep
+        DependAllOf [dep]       -> flatten dep
+        DependAnyOf deps        -> DependAnyOf $ map flatten deps
+        DependAllOf deps        -> DependAllOf $ map flatten deps
+        Atom _pn _dr _dattr     -> d
 
--- TODO: join atoms with different version constraints
+-- TODO: join atoms with different version boundaries
 -- DependAllOf [ DRange ">=foo-1" Inf, Drange Zero "<foo-2" ] -> DRange ">=foo-1" "<foo-2"
 combine_atoms :: Dependency -> Dependency
 combine_atoms d =
     case d of
-        (DependIfUse use dep) -> DependIfUse use (combine_atoms dep)
-        (DependAllOf deps)    -> DependAllOf $ map combine_atoms $ find_intersections  deps
-        (DependAnyOf deps)    -> DependAnyOf $ map combine_atoms $ find_concatenations deps
-        (Atom _pn _dr _dattr) -> d
+        DependIfUse use td fd -> DependIfUse use (combine_atoms td) (combine_atoms fd)
+        DependAllOf deps      -> DependAllOf $ map combine_atoms $ find_atom_intersections  deps
+        DependAnyOf deps      -> DependAnyOf $ map combine_atoms $ find_atom_concatenations deps
+        Atom _pn _dr _dattr   -> d
 
-find_intersections :: [Dependency] -> [Dependency]
-find_intersections = map merge_depends . L.groupBy is_mergeable
+find_atom_intersections :: [Dependency] -> [Dependency]
+find_atom_intersections = map merge_depends . L.groupBy is_mergeable
     where is_mergeable :: Dependency -> Dependency -> Bool
           is_mergeable (Atom lpn _ldrange lattr) (Atom rpn _rdrange rattr) = (lpn, lattr) == (rpn, rattr)
           is_mergeable _                         _                         = False
@@ -97,8 +103,8 @@ find_intersections = map merge_depends . L.groupBy is_mergeable
           merge_pair l r = error $ unwords ["merge_pair can't merge non-atoms:", show l, show r]
 
 -- TODO
-find_concatenations :: [Dependency] -> [Dependency]
-find_concatenations = id
+find_atom_concatenations :: [Dependency] -> [Dependency]
+find_atom_concatenations = id
 
 -- Eliminate use guarded redundancy:
 --   a? ( foo )
@@ -108,23 +114,29 @@ find_concatenations = id
 combine_use_guards :: Dependency -> Dependency
 combine_use_guards d =
     case d of
-        (DependIfUse use dep) -> DependIfUse use (combine_use_guards dep)
-        (DependAllOf deps)    -> DependAllOf $ map combine_use_guards $ find_use_intersections  deps
-        (DependAnyOf deps)    -> DependAnyOf $ map combine_use_guards $ find_use_concatenations deps
-        (Atom _pn _dr _dattr) -> d
-    where -- TODO
-          find_use_concatenations :: [Dependency] -> [Dependency]
-          find_use_concatenations = id
-          find_use_intersections :: [Dependency] -> [Dependency]
-          find_use_intersections = map merge_use_intersections . L.groupBy is_use_mergeable
-              where
-                    is_use_mergeable :: Dependency -> Dependency -> Bool
-                    is_use_mergeable (DependIfUse lu _ld) (DependIfUse ru _rd)
-                        | lu == ru       = True
-                    is_use_mergeable _ _ = False
-                    merge_use_intersections :: [Dependency] -> Dependency
-                    merge_use_intersections [x] = x
-                    merge_use_intersections ~(DependIfUse u dep : ds) = DependIfUse u $ DependAllOf (dep : [d' | (DependIfUse _u d') <- ds])
+        DependIfUse use td fd -> DependIfUse use (combine_use_guards td) (combine_use_guards fd)
+        DependAllOf deps      -> DependAllOf $ map combine_use_guards $ find_use_intersections  deps
+        DependAnyOf deps      -> DependAnyOf $ map combine_use_guards $ find_use_concatenations deps
+        Atom _pn _dr _dattr   -> d
+
+find_use_intersections :: [Dependency] -> [Dependency]
+find_use_intersections = map merge_use_intersections . L.groupBy is_use_mergeable
+    where
+        is_use_mergeable :: Dependency -> Dependency -> Bool
+        is_use_mergeable (DependIfUse lu _ltd _lfd) (DependIfUse ru _rtd _rfd)
+            | lu == ru       = True
+        is_use_mergeable _ _ = False
+
+        merge_use_intersections :: [Dependency] -> Dependency
+        merge_use_intersections [x] = x
+        merge_use_intersections ds = DependIfUse u (DependAllOf tds) (DependAllOf fds)
+            where DependIfUse u _tf _fd = head ds
+                  tfdeps ~(DependIfUse _u td fd) = (td, fd)
+                  (tds, fds) = unzip $ map tfdeps ds
+
+-- TODO
+find_use_concatenations :: [Dependency] -> [Dependency]
+find_use_concatenations = id
 
 -- Eliminate use guarded redundancy:
 --   a? ( foo bar )
@@ -136,34 +148,25 @@ combine_use_guards d =
 combine_use_counterguards :: Dependency -> Dependency
 combine_use_counterguards d =
     case d of
-        (DependIfUse use dep) -> DependIfUse use (combine_use_counterguards dep)
-        (DependAllOf deps)    -> DependAllOf $ map combine_use_counterguards $ find_use_intersections  deps
-        (DependAnyOf deps)    -> DependAnyOf $ map combine_use_counterguards $ find_use_concatenations deps
-        (Atom _pn _dr _dattr) -> d
-    where -- TODO
-          find_use_concatenations :: [Dependency] -> [Dependency]
-          find_use_concatenations = id
-          find_use_intersections :: [Dependency] -> [Dependency]
-          find_use_intersections = concatMap merge_use_intersections . L.groupBy is_counteruse_mergeable
-              where
-                    is_counteruse_mergeable :: Dependency -> Dependency -> Bool
-                    is_counteruse_mergeable (DependIfUse (DUse (lb,lu)) _ld) (DependIfUse (DUse (rb, ru)) _rd)
-                        -- lookup 'a?' and '!a?'
-                        | lu == ru && lb == not rb = True
-                    is_counteruse_mergeable _ _ = False
-                    merge_use_intersections :: [Dependency] -> [Dependency]
-                    merge_use_intersections [(DependIfUse _lu ld), (DependIfUse _ru rd)]
-                        -- very simple special case,
-                        -- as we can't look through nested use guards
-                        | ld == rd = [ld]
-                    merge_use_intersections deps@[(DependIfUse _lu ld), (DependIfUse _ru rd)] =
-                       case common_ctx of
-                           [] -> deps
-                           _  -> [propagate_context $ DependAllOf $ common_ctx ++ deps ]
-                        where ld_ctx = lift_context' ld
-                              rd_ctx = lift_context' rd
-                              common_ctx = ld_ctx `L.intersect` rd_ctx
-                    merge_use_intersections x = x
+        DependIfUse use td fd -> pop_common $ DependIfUse use (combine_use_counterguards td) (combine_use_counterguards fd)
+        DependAllOf deps      -> DependAllOf $ map combine_use_counterguards deps
+        DependAnyOf deps      -> DependAnyOf $ map combine_use_counterguards deps
+        Atom _pn _dr _dattr   -> d
+    where pop_common :: Dependency -> Dependency
+          -- depend
+          --   a? ( x ) !a? ( x )
+          -- gets translated to
+          --   x
+          pop_common (DependIfUse _u td fd)
+              | td == fd = fd
+          pop_common d'@(DependIfUse _u td fd) =
+              case td_ctx `L.intersect` fd_ctx of
+                  [] -> d'
+                  -- TODO: force simplification right there
+                  common_ctx -> propagate_context $ DependAllOf $ common_ctx ++ [d']
+              where td_ctx = lift_context' td
+                    fd_ctx = lift_context' fd
+          pop_common x = x
 
 -- Eliminate top-down redundancy:
 --   foo/bar
@@ -187,17 +190,17 @@ propagate_context = propagate_context' []
 propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
-        (DependIfUse use dep) -> DependIfUse use (go ctx dep)
-        (DependAllOf deps)    -> DependAllOf $ [ go ctx' dep
+        DependIfUse use td fd -> DependIfUse use (go ctx td) (go ctx fd)
+        DependAllOf deps      -> DependAllOf $ [ go ctx' dep
                                                | dep <- deps
                                                , let atom_deps = [ a
                                                                  | a@(Atom _pn _dp _dattr) <- deps
                                                                  , a /= dep ]
                                                , let ctx' = ctx ++ atom_deps
                                                ]
-        (DependAnyOf deps)    -> DependAnyOf $ map (go ctx) deps
+        DependAnyOf deps      -> DependAnyOf $ map (go ctx) deps
                                  -- 'd' is already satisfied by 'ctx' constraint
-        (Atom _pn _dr _dattr) -> case any (\ctx_e ->  ctx_e `dep_is_case_of` d) ctx of
+        Atom _pn _dr _dattr   -> case any (\ctx_e ->  ctx_e `dep_is_case_of` d) ctx of
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
@@ -219,13 +222,13 @@ propagate_context' ctx d =
 lift_context :: Dependency -> Dependency
 lift_context d =
     case d of
-        (DependIfUse _use _dep) -> d
-        (DependAllOf deps)      -> DependAllOf $ deps ++ (new_ctx L.\\ deps)
+        DependIfUse _use _td _fd -> d
+        DependAllOf deps         -> DependAllOf $ deps ++ (new_ctx L.\\ deps)
         -- the lift itself
-        (DependAnyOf _deps)     -> case L.null new_ctx of
-                                       True  -> d -- nothing is shared downwards
-                                       False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
-        (Atom _pn _dr _dattr)   -> d
+        DependAnyOf _deps        -> case L.null new_ctx of
+                                         True  -> d -- nothing is shared downwards
+                                         False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
+        Atom _pn _dr _dattr      -> d
   where new_ctx = lift_context' d
 
 -- very simple model: pick all sibling-atom deps and add them to context
@@ -233,12 +236,12 @@ lift_context d =
 lift_context' :: Dependency -> [Dependency]
 lift_context' d =
     case d of
-        (DependIfUse _use _dep) -> []
-        (DependAllOf deps)      -> [dep | dep@(Atom _pn _dr _dattr) <- deps]
-        (DependAnyOf deps)      -> case map lift_context' deps of
-                                       []    -> []
-                                       ctxes -> foldl1 L.intersect ctxes
-        (Atom _pn _dr _dattr)   -> [d]
+        DependIfUse _use _td _fd -> []
+        DependAllOf deps         -> [dep | dep@(Atom _pn _dr _dattr) <- deps]
+        DependAnyOf deps         -> case map lift_context' deps of
+                                        []    -> []
+                                        ctxes -> foldl1 L.intersect ctxes
+        Atom _pn _dr _dattr      -> [d]
 
 -- reorders depends to make them more attractive
 -- for other normalization algorithms
@@ -246,12 +249,27 @@ lift_context' d =
 sort_deps :: Dependency -> Dependency
 sort_deps d =
     case d of
-        (DependIfUse lhs (DependIfUse rhs dep))
-            | rhs < lhs           -> DependIfUse rhs $ sort_deps $ DependIfUse lhs dep
-        (DependIfUse use dep)     -> DependIfUse use $ sort_deps dep
-        (DependAnyOf deps)        -> DependAnyOf $ map sort_deps deps
-        (DependAllOf deps)        -> DependAllOf $ map sort_deps deps
-        (Atom _pn _dr _dattr)     -> d
+        DependIfUse lu lt lf
+            | is_empty_dependency lf ->
+                case lt of
+                    DependIfUse ru rt rf
+                        -- b? ( a? ( d ) )
+                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (True, lu) rt
+                        -- b? ( !a? ( d ) )
+                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (True, lu) rf
+                    _ -> DependIfUse lu (sort_deps lt) (sort_deps lf)
+            | is_empty_dependency lt ->
+                case lf of
+                    DependIfUse ru rt rf
+                        -- !b? ( a? ( d ) )
+                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (False, lu) rt
+                        -- !b? ( !a? ( d ) )
+                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (False, lu) rf
+                    _ -> DependIfUse lu (sort_deps lt) (sort_deps lf)
+        DependIfUse use td fd   -> DependIfUse use (sort_deps td) (sort_deps fd)
+        DependAnyOf deps        -> DependAnyOf $ map sort_deps deps
+        DependAllOf deps        -> DependAllOf $ map sort_deps deps
+        Atom _pn _dr _dattr     -> d
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency

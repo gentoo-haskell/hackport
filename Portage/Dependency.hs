@@ -62,7 +62,7 @@ getPackage :: Dependency -> Maybe PackageName
 getPackage (DependAllOf _dependency) = Nothing
 getPackage (Atom pn _dr _attrs) = Just pn
 getPackage (DependAnyOf _dependency           ) = Nothing
-getPackage (DependIfUse  _useFlag    _Dependency) = Nothing
+getPackage (DependIfUse  _useFlag _td _fd) = Nothing
 
 getPackagePart :: Dependency -> PackageName
 getPackagePart dep = fromJust (getPackage dep)
@@ -77,7 +77,7 @@ simplifyUseDeps ds cs =
     in (mapMaybe (intersectD c) u)++o
 
 intersectD :: [PackageName] -> Dependency -> Maybe Dependency
-intersectD fs (DependIfUse u d) = intersectD fs d >>= Just . DependIfUse u
+intersectD _fs (DependIfUse _u _td _fd) = Nothing
 intersectD fs (DependAnyOf ds) =
     let ds' = mapMaybe (intersectD fs) ds
     in if null ds' then Nothing else Just (DependAnyOf ds')
@@ -89,7 +89,7 @@ intersectD fs x =
     in if any (==pkg) fs then Nothing else Just x
 
 isUseDep :: Dependency -> Bool
-isUseDep (DependIfUse _ _) = True
+isUseDep (DependIfUse _ _ _) = True
 isUseDep _ = False
 
 
@@ -97,23 +97,23 @@ sortDeps :: [Dependency] -> [Dependency]
 sortDeps = sortBy dsort . map deeper
   where
     deeper :: Dependency -> Dependency
-    deeper (DependIfUse u1 d) = DependIfUse u1 $ deeper d
+    deeper (DependIfUse u1 td fd) = DependIfUse u1 (deeper td) (deeper fd)
     deeper (DependAllOf ds)   = DependAllOf $ sortDeps ds
     deeper (DependAnyOf ds)  = DependAnyOf $ sortDeps ds
     deeper x = x
     dsort :: Dependency -> Dependency -> Ordering
-    dsort (DependIfUse u1 _) (DependIfUse u2 _) = u1 `compare` u2
-    dsort (DependIfUse _ _)  (DependAnyOf _)   = LT
-    dsort (DependIfUse _ _)  (DependAllOf  _)   = LT
-    dsort (DependIfUse _ _)  _                  = GT
+    dsort (DependIfUse u1 _ _) (DependIfUse u2 _ _) = u1 `compare` u2
+    dsort (DependIfUse _ _ _)  (DependAnyOf _)   = LT
+    dsort (DependIfUse _ _ _)  (DependAllOf  _)   = LT
+    dsort (DependIfUse _ _ _)  _                  = GT
     dsort (DependAnyOf _)   (DependAnyOf _)   = EQ
-    dsort (DependAnyOf _)  (DependIfUse _ _)   = GT
+    dsort (DependAnyOf _)  (DependIfUse _ _ _)   = GT
     dsort (DependAnyOf _)   (DependAllOf _)    = LT
     dsort (DependAnyOf _)   _                  = GT
     dsort (DependAllOf _)    (DependAllOf _)    = EQ
-    dsort (DependAllOf _)    (DependIfUse  _ _) = LT
+    dsort (DependAllOf _)    (DependIfUse  _ _ _) = LT
     dsort (DependAllOf _)    (DependAnyOf _)   = GT
-    dsort _ (DependIfUse _ _)                   = LT
+    dsort _ (DependIfUse _ _ _)                   = LT
     dsort _ (DependAllOf _)                     = LT
     dsort _ (DependAnyOf _)                    = LT
     dsort a b = (compare `on` getPackage) a b
