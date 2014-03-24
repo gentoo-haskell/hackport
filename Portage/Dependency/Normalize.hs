@@ -163,7 +163,7 @@ combine_use_counterguards d =
               case td_ctx `L.intersect` fd_ctx of
                   [] -> d'
                   -- TODO: force simplification right there
-                  common_ctx -> propagate_context $ DependAllOf $ common_ctx ++ [d']
+                  common_ctx -> DependAllOf $ propagate_context' common_ctx d' : common_ctx
               where td_ctx = lift_context' td
                     fd_ctx = lift_context' fd
           pop_common x = x
@@ -222,7 +222,9 @@ propagate_context' ctx d =
 lift_context :: Dependency -> Dependency
 lift_context d =
     case d of
-        DependIfUse _use _td _fd -> d
+        DependIfUse _use _td _fd -> case L.null new_ctx of
+                                        True -> d
+                                        False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
         DependAllOf deps         -> DependAllOf $ deps ++ (new_ctx L.\\ deps)
         -- the lift itself
         DependAnyOf _deps        -> case L.null new_ctx of
@@ -236,7 +238,7 @@ lift_context d =
 lift_context' :: Dependency -> [Dependency]
 lift_context' d =
     case d of
-        DependIfUse _use _td _fd -> []
+        DependIfUse _use td fd   -> lift_context' td `L.intersect` lift_context' fd
         DependAllOf deps         -> [dep | dep@(Atom _pn _dr _dattr) <- deps]
         DependAnyOf deps         -> case map lift_context' deps of
                                         []    -> []
@@ -267,8 +269,8 @@ sort_deps d =
                         | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (False, lu) rf
                     _ -> DependIfUse lu (sort_deps lt) (sort_deps lf)
         DependIfUse use td fd   -> DependIfUse use (sort_deps td) (sort_deps fd)
-        DependAnyOf deps        -> DependAnyOf $ map sort_deps deps
-        DependAllOf deps        -> DependAllOf $ map sort_deps deps
+        DependAnyOf deps        -> DependAnyOf $ L.sort $ map sort_deps deps
+        DependAllOf deps        -> DependAllOf $ L.sort $ map sort_deps deps
         Atom _pn _dr _dattr     -> d
 
 -- remove various types of redundancy

@@ -15,7 +15,7 @@ import Portage.Use
 data SlotDepend = AnySlot          -- nothing special
                 | AnyBuildTimeSlot -- ':='
                 | GivenSlot String -- ':slotno'
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 data LBound = StrictLB    Version
             | NonstrictLB Version
@@ -49,7 +49,7 @@ instance Ord UBound where
 
 data DRange = DRange LBound UBound
             | DExact Version
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 -- True if 'left' "interval" is a nonstrict subset of 'right' "interval"
 range_is_case_of :: DRange -> DRange -> Bool
@@ -58,13 +58,13 @@ range_is_case_of (DRange llow lup) (DRange rlow rup)
 range_is_case_of _ _ = False
 
 data DAttr = DAttr SlotDepend [UseFlag]
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 data Dependency = Atom PackageName DRange DAttr
                 | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 dep_is_case_of :: Dependency -> Dependency -> Bool
 dep_is_case_of l r

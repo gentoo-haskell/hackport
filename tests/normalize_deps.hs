@@ -76,8 +76,8 @@ test_normalize_in_use_and_top = TestCase $ do
                                   ]
                           ]
                   , [ ">=dev-haskell/mtl-1.0"
-                    , "|| ( >=dev-haskell/quickcheck-1.2"
-                    , "     >=dev-haskell/parsec-3.1 )"
+                    , "|| ( >=dev-haskell/parsec-3.1"
+                    , "     >=dev-haskell/quickcheck-1.2 )"
                     ]
                   )
                 , ( d_all [ d_use "foo" $ d_use "bar" $ d_ge pnm [1,0]
