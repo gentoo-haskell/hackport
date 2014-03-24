@@ -77,7 +77,12 @@ simplifyUseDeps ds cs =
     in (mapMaybe (intersectD c) u)++o
 
 intersectD :: [PackageName] -> Dependency -> Maybe Dependency
-intersectD _fs (DependIfUse _u _td _fd) = Nothing
+intersectD fs (DependIfUse u td fd) =
+    case (intersectD fs td, intersectD fs fd) of
+        (Nothing,  Nothing)  -> Nothing
+        (Just td', Nothing)  -> Just $ DependIfUse u td' empty_dependency
+        (Nothing,  Just fd') -> Just $ DependIfUse u empty_dependency fd'
+        (Just td', Just fd') -> Just $ DependIfUse u td' fd'
 intersectD fs (DependAnyOf ds) =
     let ds' = mapMaybe (intersectD fs) ds
     in if null ds' then Nothing else Just (DependAnyOf ds')
