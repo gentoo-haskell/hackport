@@ -256,17 +256,17 @@ sort_deps d =
                 case lt of
                     DependIfUse ru rt rf
                         -- b? ( a? ( d ) )
-                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (True, lu) rt
+                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (True, lu) (sort_deps rt)
                         -- b? ( !a? ( d ) )
-                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (True, lu) rf
+                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (True, lu) (sort_deps rf)
                     _ -> DependIfUse lu (sort_deps lt) (sort_deps lf)
             | is_empty_dependency lt ->
                 case lf of
                     DependIfUse ru rt rf
                         -- !b? ( a? ( d ) )
-                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (False, lu) rt
+                        | ru < lu && is_empty_dependency rf -> mkUseDependency (True,  ru) $ mkUseDependency (False, lu) (sort_deps rt)
                         -- !b? ( !a? ( d ) )
-                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (False, lu) rf
+                        | ru < lu && is_empty_dependency rt -> mkUseDependency (False, ru) $ mkUseDependency (False, lu) (sort_deps rf)
                     _ -> DependIfUse lu (sort_deps lt) (sort_deps lf)
         DependIfUse use td fd   -> DependIfUse use (sort_deps td) (sort_deps fd)
         DependAnyOf deps        -> DependAnyOf $ L.sort $ map sort_deps deps
