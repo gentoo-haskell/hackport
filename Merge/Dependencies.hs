@@ -72,6 +72,7 @@ import qualified Distribution.Version as Cabal
 
 import Distribution.Compiler
 
+import qualified Portage.Cabal as Portage
 import qualified Portage.Dependency as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
@@ -124,8 +125,10 @@ difference (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (f a1 b1)
 null :: EDep -> Bool
 null e = e == mempty
 
-resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId -> EDep
-resolveDependencies overlay pkg mcompiler =
+resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId
+                    -> [Cabal.PackageName] -> Cabal.PackageName
+                    -> EDep
+resolveDependencies overlay pkg mcompiler ghc_package_names merged_cabal_pkg_name =
     edeps
       {
         dep  = dep2,
@@ -146,7 +149,7 @@ resolveDependencies overlay pkg mcompiler =
         | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
         | otherwise      = haskellDependencies overlay (buildDepends pkg)
     test_deps
-        | (not . L.null) (testSuites pkg) = testDependencies overlay pkg
+        | (not . L.null) (testSuites pkg) = testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
         | otherwise = [] -- tests not enabled
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep = compilerIdToDependency compiler
@@ -185,11 +188,11 @@ resolveDependencies overlay pkg mcompiler =
 -- Test-suite dependencies
 ---------------------------------------------------------------
 
-testDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
-testDependencies overlay pkg@(PackageDescription { package = Cabal.PackageIdentifier { Cabal.pkgName = Cabal.PackageName name}}) =
+testDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
+testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name =
     [Portage.mkUseDependency (True, Portage.Use "test") (Portage.DependAllOf $ Portage.simplify_deps deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
-          cabalDeps' = filter (\(Cabal.Dependency (Cabal.PackageName pname) _) -> pname /= name) cabalDeps
+          cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
 
 ---------------------------------------------------------------
