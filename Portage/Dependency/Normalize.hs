@@ -239,7 +239,7 @@ lift_context' :: Dependency -> [Dependency]
 lift_context' d =
     case d of
         DependIfUse _use td fd   -> lift_context' td `L.intersect` lift_context' fd
-        DependAllOf deps         -> [dep | dep@(Atom _pn _dr _dattr) <- deps]
+        DependAllOf deps         -> concatMap lift_context' deps
         DependAnyOf deps         -> case map lift_context' deps of
                                         []    -> []
                                         ctxes -> foldl1 L.intersect ctxes
