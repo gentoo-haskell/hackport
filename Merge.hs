@@ -53,6 +53,7 @@ import Error as E
 
 import Network.URI
 
+import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
@@ -216,8 +217,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                             , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
                                             ]
 
-      -- , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd g)]
-  let (accepted_deps, skipped_deps, dropped_deps) = partition_depends (Cabal.buildDepends pkgDesc0)
+  let (accepted_deps, skipped_deps) = Portage.partition_depends ghc_packages merged_cabal_pkg_name (Cabal.buildDepends pkgDesc0)
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
@@ -257,7 +257,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                                                   []
                                                                   pkgGenericDesc]
                -- drop circular deps and shipped deps
-               , let (ad, _sd, _rd) = partition_depends (Cabal.buildDepends pkgDesc1)
+               , let (ad, _sd) = Portage.partition_depends ghc_packages merged_cabal_pkg_name (Cabal.buildDepends pkgDesc1)
                -- TODO: drop ghc libraries from tests depends as well
                -- (see deepseq in hackport-0.3.5 as an example)
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
@@ -389,16 +389,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                       id fs
                        in Portage.simplify_deps [k $! Portage.DependAllOf e]
 
-      partition_depends :: [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency], [Cabal.Dependency])
-      partition_depends =
-          L.foldl' (\(ad, sd, rd) (Cabal.Dependency pn vr) ->
-                  let dep = Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
-                  in case () of
-                        _ | pn `elem` ghc_packages      -> (    ad, dep:sd,     rd)
-                        _ | pn == merged_cabal_pkg_name -> (    ad,     sd, dep:rd)
-                        _                               -> (dep:ad,     sd,     rd)
-                )
-                ([],[],[])
       cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg (Just compilerId)
 
@@ -408,7 +398,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
-  notice verbosity $ "Dropped  depends: " ++ show (map display dropped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
   notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fa)
   -- mapM_ print tdeps

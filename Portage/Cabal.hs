@@ -1,12 +1,16 @@
 module Portage.Cabal
   ( fromOverlay
   , convertLicense
+  , partition_depends
   ) where
 
+import qualified Data.List as L
 import qualified Data.Map as Map
 
 import qualified Distribution.Client.PackageIndex as Cabal
 import qualified Distribution.License             as Cabal
+import qualified Distribution.Package             as Cabal
+import qualified Distribution.Version             as Cabal
 import qualified Distribution.Text                as Cabal
 
 import qualified Portage.Overlay as Portage
@@ -35,3 +39,10 @@ convertLicense l =
         Cabal.AllRightsReserved -> Left "EULA-style licence. Please pick it manually."
         Cabal.UnknownLicense _  -> Left "license unknown to cabal. Please pick it manually."
         Cabal.OtherLicense      -> Left "Please look at license file of package and pick it manually."
+
+partition_depends :: [Cabal.PackageName] -> Cabal.PackageName -> [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency])
+partition_depends ghc_package_names merged_cabal_pkg_name = L.partition (not . is_internal_depend)
+    where is_internal_depend (Cabal.Dependency pn vr) = is_itself || is_ghc_package
+              where dep = Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
+                    is_itself = pn == merged_cabal_pkg_name
+                    is_ghc_package = pn `elem` ghc_package_names
