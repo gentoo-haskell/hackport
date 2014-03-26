@@ -68,7 +68,6 @@ Executable    hackport
 
   other-modules:
     AnsiColor
-    BlingBling
     Cabal2Ebuild
     CacheFile
     Diff
