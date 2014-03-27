@@ -127,15 +127,11 @@ test_normalize_in_use_and_top = TestCase $ do
                          but also most interesting simplification
                          due to our dependency expansion when resolving.
                 , -- lift nested use context for complementary depends
-                  --   a? b? ( x y ) !a? b? ( x )
-                  -- leads to
-                  --   a? ( y ) b? ( x )
+                  --   a? ( b? ( y ) ) b? ( x )
                   ( d_all [ d_use  "a" $ d_use "b" $ d_all $ map d_p [ "x", "y" ]
                           , d_nuse "a" $ d_use "b" $ d_p "x"
                           ]
-                  , [ "c/x"
-                    , "c/y"
-                    , "a? ( c/y )"
+                  , [ "a? ( b? ( c/y ) )"
                     , "b? ( c/x )"
                     ]
                   )
@@ -143,7 +139,7 @@ test_normalize_in_use_and_top = TestCase $ do
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
-        in assertEqual ("expecting empty result for " ++ show d)
+        in assertEqual ("expecting matching result for " ++ show d)
                        (intercalate "\n" expected)
                        actual
 
