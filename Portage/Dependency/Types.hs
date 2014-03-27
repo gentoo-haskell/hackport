@@ -28,9 +28,12 @@ instance Ord LBound where
     compare _     ZeroB = GT
     compare (StrictLB lv)    (StrictLB rv)    = compare lv rv
     compare (NonstrictLB lv) (NonstrictLB rv) = compare lv rv
-    compare l r = error $ unlines ["i am too lazy to implement LBound: compare"
-                                  , show l
-                                  , show r]
+    compare (StrictLB lv)    (NonstrictLB rv) = case compare lv rv of
+                                                    EQ -> GT
+                                                    r  -> r
+    compare (NonstrictLB lv) (StrictLB rv)    = case compare lv rv of
+                                                    EQ -> LT
+                                                    r  -> r
 
 data UBound = StrictUB Version   -- <
             | NonstrictUB Version -- <=
@@ -41,11 +44,14 @@ instance Ord UBound where
     compare InfinityB InfinityB = EQ
     compare InfinityB _     = GT
     compare _         InfinityB = LT
-    compare (NonstrictUB lv) (NonstrictUB rv) = compare lv rv
     compare (StrictUB lv)    (StrictUB rv)    = compare lv rv
-    compare l r = error $ unlines ["i am too lazy to implement UBound: compare"
-                                  , show l
-                                  , show r]
+    compare (NonstrictUB lv) (NonstrictUB rv) = compare lv rv
+    compare (StrictUB lv)    (NonstrictUB rv) = case compare lv rv of
+                                                    EQ -> LT
+                                                    r  -> r
+    compare (NonstrictUB lv) (StrictUB rv)    = case compare lv rv of
+                                                    EQ -> GT
+                                                    r  -> r
 
 data DRange = DRange LBound UBound
             | DExact Version
