@@ -123,9 +123,14 @@ test_normalize_in_use_and_top = TestCase $ do
                   ,
                     [ ">=dev-haskell/mtl-2.0" ]
                   )
-                {- TODO: this one is hardest to implement,
-                         but also most interesting simplification
-                         due to our dependency expansion when resolving.
+                , -- propagate use guarded depend into deeply nested one
+                  ( d_all [ d_use  "a"    $             d_all $ map d_p [ "x" ]
+                          , d_use  "test" $ d_use "a" $ d_all $ map d_p [ "x", "t" ]
+                          ]
+                  , [ "test? ( a? ( c/t ) )"
+                    , "a? ( c/x )"
+                    ]
+                  )
                 , -- lift nested use context for complementary depends
                   --   a? ( b? ( y ) ) b? ( x )
                   ( d_all [ d_use  "a" $ d_use "b" $ d_all $ map d_p [ "x", "y" ]
@@ -135,7 +140,17 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "b? ( c/x )"
                     ]
                   )
-                  -}
+                , -- more advanced lift of complementary deps
+                  -- a? ( b? ( x y ) )
+                  -- !a? ( b? ( y z ) )
+                  ( d_all [ d_use   "a" $ d_use "b" $ d_all $ map d_p [ "x", "y" ]
+                          , d_nuse  "a" $ d_use "b" $ d_all $ map d_p [ "y", "z" ]
+                          ]
+                  , [ "a? ( b? ( c/x ) )"
+                    , "!a? ( b? ( c/z ) )"
+                    , "b? ( c/y )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d

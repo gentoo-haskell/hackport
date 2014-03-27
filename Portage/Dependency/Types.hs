@@ -6,7 +6,7 @@ module Portage.Dependency.Types
   , DRange(..)
   , DAttr(..)
   , Dependency(..)
-  , dep_is_case_of
+  , dep_as_broad_as
   ) where
 
 import Portage.PackageId
@@ -57,11 +57,11 @@ data DRange = DRange LBound UBound
             | DExact Version
     deriving (Eq, Show, Ord)
 
--- True if 'left' "interval" is a nonstrict subset of 'right' "interval"
-range_is_case_of :: DRange -> DRange -> Bool
-range_is_case_of (DRange llow lup) (DRange rlow rup)
-    | llow >= rlow && lup <= rup = True
-range_is_case_of _ _ = False
+-- True if 'left' "interval" covers at least as much as the 'right' "interval"
+range_as_broad_as :: DRange -> DRange -> Bool
+range_as_broad_as (DRange llow lup) (DRange rlow rup)
+    | llow <= rlow && lup >= rup = True
+range_as_broad_as _ _ = False
 
 data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show, Ord)
@@ -72,11 +72,15 @@ data Dependency = Atom PackageName DRange DAttr
                 | DependAllOf         [Dependency]
     deriving (Eq, Show, Ord)
 
-dep_is_case_of :: Dependency -> Dependency -> Bool
-dep_is_case_of l r
+-- returns 'True' if left constraint is the same (or looser) than right
+dep_as_broad_as :: Dependency -> Dependency -> Bool
+dep_as_broad_as l r
     -- very broad (not only on atoms) special case
     | l == r = True
--- only on atoms
-dep_is_case_of (Atom lpn lr lda) (Atom rpn rr rda)
-    | lpn == rpn && lda == rda = lr `range_is_case_of` rr
-dep_is_case_of _ _ = False
+-- atoms
+dep_as_broad_as (Atom lpn lr lda) (Atom rpn rr rda)
+    | lpn == rpn && lda == rda = lr `range_as_broad_as` rr
+-- AllOf (very common case in context propagation)
+dep_as_broad_as d (DependAllOf deps)
+    | any (dep_as_broad_as d) deps = True
+dep_as_broad_as _ _ = False

@@ -4,10 +4,15 @@ module Portage.Dependency.Normalize
   , normalize_depend
   ) where
 
+import           Control.Monad
 import qualified Data.List as L
+import           Data.Maybe
 
 import Portage.Dependency.Types
 import Portage.Dependency.Builder
+import Portage.Use
+
+import Debug.Trace
 
 mergeDRanges :: DRange -> DRange -> DRange
 mergeDRanges _ r@(DExact _) = r
@@ -62,20 +67,33 @@ remove_duplicates d =
         DependAllOf deps        -> DependAllOf $ L.nub $ map remove_duplicates deps
         Atom _pn _dr _dattr     -> d
 
--- TODO: implement flattening (if not done yet in other phases)
+-- TODO: implement flattening AnyOf the same way it's done for AllOf
 --   DependAnyOf [DependAnyOf [something], rest] -> DependAnyOf $ something ++ rest
---   DependAllOf [DependAllOf [something], rest] -> DependAllOf $ something ++ rest
 flatten :: Dependency -> Dependency
 flatten d =
     case d of
-        DependIfUse use td fd   -> DependIfUse use (flatten td) (flatten fd)
-        DependAnyOf [dep]       -> flatten dep
-        DependAllOf [dep]       -> flatten dep
-        DependAnyOf deps        -> DependAnyOf $ map flatten deps
-        DependAllOf deps        -> DependAllOf $ map flatten deps
-        Atom _pn _dr _dattr     -> d
+        DependIfUse use td fd   -> DependIfUse use (go td) (go fd)
+        DependAnyOf [dep]       -> go dep
+        DependAnyOf deps        -> DependAnyOf $ map go deps
 
--- TODO: join atoms with different version boundaries
+        DependAllOf deps        -> case L.partition is_dall_of (map go deps) of
+                                       ([], [])      -> empty_dependency
+                                       ([], [dep])   -> dep
+                                       ([], ndall)   -> DependAllOf ndall
+                                       (dall, ndall) -> go $ DependAllOf $ (concatMap undall dall) ++ ndall
+        Atom _pn _dr _dattr     -> d
+  where go :: Dependency -> Dependency
+        go = flatten
+
+        is_dall_of :: Dependency -> Bool
+        is_dall_of d' =
+            case d' of
+                DependAllOf _deps -> True
+                _                 -> False
+        undall :: Dependency -> [Dependency]
+        undall ~(DependAllOf ds) = ds
+
+-- joins atoms with different version boundaries
 -- DependAllOf [ DRange ">=foo-1" Inf, Drange Zero "<foo-2" ] -> DRange ">=foo-1" "<foo-2"
 combine_atoms :: Dependency -> Dependency
 combine_atoms d =
@@ -93,7 +111,7 @@ find_atom_intersections = map merge_depends . L.groupBy is_mergeable
 
           merge_depends :: [Dependency] -> Dependency
           merge_depends [x] = x
-          merge_depends xs = foldl1 merge_pair xs
+          merge_depends xs = L.foldl1' merge_pair xs
 
           merge_pair :: Dependency -> Dependency -> Dependency
           merge_pair (Atom lp ld la) (Atom rp rd ra)
@@ -181,29 +199,49 @@ propagate_context = propagate_context' []
 -- very simple model: pick all sibling-atom deps and add them to context
 --                    for downward proparation and remove from 'all_of' part
 -- TODO: any-of part can benefit from it by removing unsatisfiable or satisfied alternative
--- TODO: remove use-guarded redundancy
---         a? ( x y z )
---         test? ( a? ( y z t ) )
---       can be reduced to
---         a? ( x y z )
---         test? ( a? ( t ) )
 propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
-        DependIfUse use td fd -> DependIfUse use (go ctx td) (go ctx fd)
-        DependAllOf deps      -> DependAllOf $ [ go ctx' dep
-                                               | dep <- deps
-                                               , let atom_deps = [ a
-                                                                 | a@(Atom _pn _dp _dattr) <- deps
-                                                                 , a /= dep ]
-                                               , let ctx' = ctx ++ atom_deps
-                                               ]
+        DependIfUse use td fd -> DependIfUse use (go (refine_context (True,  use) ctx) td)
+                                                 (go (refine_context (False, use) ctx) fd)
+        DependAllOf deps      -> DependAllOf $ fromJust $ msum $
+                                                   [ v
+                                                   | (optimized_d, other_deps) <- slice_list deps
+                                                   , let ctx' = ctx ++ other_deps
+                                                         d'   = propagate_context' ctx' optimized_d
+                                                         v    = case d' /= optimized_d of
+                                                                    True  -> Just (d':other_deps)
+                                                                    False -> Nothing -- haven't managed to optimize anything
+                                                   ] ++ [Just deps] -- unmodified
         DependAnyOf deps      -> DependAnyOf $ map (go ctx) deps
-                                 -- 'd' is already satisfied by 'ctx' constraint
-        Atom _pn _dr _dattr   -> case any (\ctx_e ->  ctx_e `dep_is_case_of` d) ctx of
+        Atom _pn _dr _dattr   -> case any (dep_as_broad_as d) ctx of
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
+
+refine_context :: (Bool, Use) -> [Dependency] -> [Dependency]
+refine_context use_cond = map (flatten . refine_ctx_unit use_cond)
+    where refine_ctx_unit :: (Bool, Use) -> Dependency -> Dependency
+          refine_ctx_unit uc@(bu, u) d =
+              case d of
+                DependIfUse u' td fd
+                  -> case u == u' of
+                         False -> DependIfUse u' (refine_ctx_unit uc td)
+                                                 (refine_ctx_unit uc fd)
+                         True  -> refine_ctx_unit uc $ if bu
+                                                           then td
+                                                           else fd
+                _ -> d
+
+-- generates all pairs of:
+-- (list_element, list_without_element)
+-- example:
+--   [1,2,3]
+-- yields
+--   [(1, [2,3]), (2,[1,3]), (3,[1,2])]
+slice_list :: [e] -> [(e, [e])]
+slice_list [] = []
+slice_list (e:es) = (e, es) : map (\(v, vs) -> (v, e : vs)) (slice_list es)
 
 -- Eliminate bottom-up redundancy:
 --   || ( ( foo/bar bar/baz )
@@ -218,36 +256,71 @@ propagate_context' ctx d =
 --   foo/bar
 --   || ( bar/baz
 --        bar/quux )
-
+-- TODO: better add propagation in this exact plase to keep tree shrinking only
 lift_context :: Dependency -> Dependency
 lift_context d =
     case d of
-        DependIfUse _use _td _fd -> case L.null new_ctx of
-                                        True -> d
-                                        False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
-        DependAllOf deps         -> DependAllOf $ deps ++ (new_ctx L.\\ deps)
+        DependIfUse _use _td _fd -> case L.delete d new_ctx of
+                                        []       -> d
+                                        new_ctx' -> propagate_context $ DependAllOf $ d : new_ctx'
+        DependAllOf deps         -> case new_ctx L.\\ deps of
+                                        []       -> d
+                                        new_ctx' -> DependAllOf $ deps ++ new_ctx'
         -- the lift itself
-        DependAnyOf _deps        -> case L.null new_ctx of
-                                         True  -> d -- nothing is shared downwards
-                                         False -> propagate_context $ DependAllOf $ new_ctx ++ [d]
+        DependAnyOf _deps        -> case L.delete d new_ctx of
+                                         []       -> d
+                                         new_ctx' -> propagate_context $ DependAllOf $ d : new_ctx'
         Atom _pn _dr _dattr      -> d
   where new_ctx = lift_context' d
 
--- very simple model: pick all sibling-atom deps and add them to context
---                    for upward proparation and intersect with 'all_of' parts
+-- lift everything that can be shared somewhere else
+-- propagate_context will then pick some bits from here
+-- and remove them deep inside.
+-- It's the most fragile and powerfull pass
 lift_context' :: Dependency -> [Dependency]
 lift_context' d =
     case d of
-        DependIfUse _use td fd   -> lift_context' td `L.intersect` lift_context' fd
-        DependAllOf deps         -> concatMap lift_context' deps
-        DependAnyOf deps         -> case map lift_context' deps of
-                                        []    -> []
-                                        ctxes -> foldl1 L.intersect ctxes
+        DependIfUse _use td fd   -> d : extract_common_constraints (map lift_context' [td, fd])
+        DependAllOf deps         -> L.nub $ concatMap lift_context' deps
+        DependAnyOf deps         -> extract_common_constraints $ map lift_context' deps
         Atom _pn _dr _dattr      -> [d]
+
+-- it extracts common part of dependency comstraints.
+-- Some examples:
+--  'a b c' and 'b c d' have common 'b c'
+--  'u? ( a  b )' and 'u? ( b c )' have common 'u? ( b )' part
+--  'a? ( b? ( x y ) )' and !a? ( b? ( y z ) )' have common 'b? ( y )'
+extract_common_constraints :: [[Dependency]] -> [Dependency]
+extract_common_constraints [] = []
+extract_common_constraints dss@(ds:dst) = common_atoms ++ common_use_guards
+    where common_atoms :: [Dependency]
+          common_atoms = L.foldl1' L.intersect dss
+          common_use_guards :: [Dependency]
+          common_use_guards = [ DependIfUse u (DependAllOf tdi) (DependAllOf fdi)
+                              | DependIfUse u td fd <- ds
+                              , Just (tds, fds) <- [find_matching_use_deps dst u ([lift_context' td], [lift_context' fd])]
+                              , let tdi = extract_common_constraints tds
+                                    fdi = extract_common_constraints fds
+                              , not (null tdi && null fdi)
+                              ]
+
+find_matching_use_deps :: [[Dependency]] -> Use -> ([[Dependency]], [[Dependency]]) -> Maybe ([[Dependency]], [[Dependency]])
+find_matching_use_deps dss u (tds, fds) =
+    case dss of
+        []       -> Just (tds, fds)
+        (ds:dst) -> case [ (tc, fc)
+                         | DependIfUse u' td fd <- ds
+                         , u' == u
+                         , let tc = lift_context' td
+                               fc = lift_context' fd
+                         , not (null tc && null fc)
+                         ] of
+                        []    -> Nothing
+                        pairs -> find_matching_use_deps dst u (map fst pairs ++ tds, map snd pairs ++ fds)
 
 -- reorders depends to make them more attractive
 -- for other normalization algorithms
--- TODO: add all logic from 'sortDeps' here
+-- and for final pretty-printer
 sort_deps :: Dependency -> Dependency
 sort_deps d =
     case d of
@@ -275,7 +348,11 @@ sort_deps d =
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency
-normalize_depend d = next_step next_d
+normalize_depend = normalize_depend' 50 -- arbitrary limit
+
+normalize_depend' :: Int -> Dependency -> Dependency
+normalize_depend' 0     d = trace "Normalize_depend hung up. Optimization is incomplete." d
+normalize_depend' level d = next_step next_d
     where next_d = normalization_step d
           next_step | d == next_d = id
-                    | otherwise   = normalize_depend
+                    | otherwise   = normalize_depend' (level - 1)
