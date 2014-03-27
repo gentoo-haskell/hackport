@@ -211,7 +211,7 @@ haskellDependencies overlay deps =
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
 cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
-cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
+cabalDependency overlay pkg ~(CompilerId GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
@@ -230,7 +230,7 @@ cabalDependency overlay pkg (CompilerId GHC _ghcVersion@(Cabal.Version versionNu
 ---------------------------------------------------------------
 
 compilerIdToDependency :: CompilerId -> Portage.Dependency
-compilerIdToDependency (CompilerId GHC versionNumbers) =
+compilerIdToDependency ~(CompilerId GHC versionNumbers) =
   at_least_c_p_v "dev-lang" "ghc" (Cabal.versionBranch versionNumbers)
 
 ---------------------------------------------------------------
