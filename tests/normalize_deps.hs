@@ -151,6 +151,30 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "b? ( c/y )"
                     ]
                   )
+                , -- completely expanded set of USEs
+                  -- a? ( b? ( c? ( x y z ) )
+                  -- a? ( b? ( !c? ( x y ) )
+                  -- a? ( !b? ( c? ( x z ) )
+                  -- a? ( !b? ( !c? ( x ) )
+                  --
+                  -- !a? ( b? ( c? ( y z ) )
+                  -- !a? ( b? ( !c? ( y ) )
+                  -- !a? ( !b? ( c? ( z ) )
+                  -- !a? ( !b? ( !c? ( ) )
+                  ( d_all [ d_use   "a" $ d_use  "b" $ d_use  "c" $ d_all $ map d_p [ "x", "y", "z" ]
+                          , d_use   "a" $ d_use  "b" $ d_nuse "c" $ d_all $ map d_p [ "x", "y" ]
+                          , d_use   "a" $ d_nuse "b" $ d_use  "c" $ d_all $ map d_p [ "x", "z" ]
+                          , d_use   "a" $ d_nuse "b" $ d_nuse "c" $ d_all $ map d_p [ "x" ]
+                          , d_nuse  "a" $ d_use  "b" $ d_use  "c" $ d_all $ map d_p [ "y", "z" ]
+                          , d_nuse  "a" $ d_use  "b" $ d_nuse "c" $ d_all $ map d_p [ "y" ]
+                          , d_nuse  "a" $ d_nuse "b" $ d_use  "c" $ d_all $ map d_p [ "z" ]
+                          , d_nuse  "a" $ d_nuse "b" $ d_nuse "c" $ d_all $ map d_p [ ]
+                          ]
+                  , [ "a? ( c/x )"
+                    , "b? ( c/y )"
+                    , "c? ( c/z )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 d
