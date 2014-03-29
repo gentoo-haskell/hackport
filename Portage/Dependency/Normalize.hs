@@ -351,7 +351,7 @@ normalize_depend :: Dependency -> Dependency
 normalize_depend = normalize_depend' 50 -- arbitrary limit
 
 normalize_depend' :: Int -> Dependency -> Dependency
-normalize_depend' 0     d = trace "Normalize_depend hung up. Optimization is incomplete." d
+normalize_depend' 0     d = trace "WARNING: Normalize_depend hung up. Optimization is incomplete." d
 normalize_depend' level d = next_step next_d
     where next_d = normalization_step d
           next_step | d == next_d = id
