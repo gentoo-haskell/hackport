@@ -1,7 +1,6 @@
 module Portage.Dependency.Normalize
   (
-    is_empty_dependency
-  , normalize_depend
+    normalize_depend
   ) where
 
 import           Control.Monad
@@ -18,21 +17,6 @@ mergeDRanges :: DRange -> DRange -> DRange
 mergeDRanges _ r@(DExact _) = r
 mergeDRanges l@(DExact _) _ = l
 mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
-
--- TODO: remove it and switch to 'SatisfiedDepend' instead
-is_empty_dependency :: Dependency -> Bool
-is_empty_dependency d =
-    case d of
-        DependIfUse _use td fd
-            -> is_empty_dependency td && is_empty_dependency fd
-        DependAnyOf []
-            -> True -- 'any (const True) [] == False' and we don't want it
-        DependAnyOf deps
-            -> any is_empty_dependency deps
-        DependAllOf deps
-            -> all is_empty_dependency deps
-        Atom _pn _dr _dattr
-            -> False
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency

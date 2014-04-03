@@ -4,6 +4,7 @@ import Data.List
 import Test.HUnit
 
 import qualified Portage.Dependency as P
+import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.PackageId  as P
 import qualified Portage.Use  as P
 import qualified RunTests as RT
@@ -40,7 +41,7 @@ test_print_empty = TestCase $ do
                                  ]
                    ]
     forM_ deps $ \d ->
-        let actual_result = P.dep2str 0 d
+        let actual_result = P.dep2str 0 $ PN.normalize_depend d
         in assertEqual ("expecting empty result for " ++ show d)
                        expect_empty
                        actual_result
@@ -82,7 +83,7 @@ test_print_mixed = TestCase $ do
                   )
                 ]
     forM_ deps $ \(d, expected) ->
-        let actual = P.dep2str 0 d
+        let actual = P.dep2str 0 $ PN.normalize_depend d
         in assertEqual ("expecting empty result for " ++ show d)
                        (intercalate "\n" expected)
                        actual
@@ -130,7 +131,7 @@ test_print_denorm = TestCase $ do
                   )
                 ]
     forM_ deps $ \(d, expected) ->
-        let actual = P.dep2str_denorm d
+        let actual = P.dep2str_noindent d
         in assertEqual ("expecting empty result for " ++ show d)
                        (intercalate "\n" expected)
                        actual

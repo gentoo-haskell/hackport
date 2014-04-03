@@ -1,7 +1,7 @@
 module Portage.Dependency.Print
   (
     dep2str
-  , dep2str_denorm -- for debugging
+  , dep2str_noindent
   ) where
 
 import Portage.Version
@@ -13,7 +13,6 @@ import qualified Distribution.Text as DT
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( (<>), vcat, nest, render )
 
-import Portage.Dependency.Normalize
 import Portage.Dependency.Types
 
 dispSlot :: SlotDepend -> Disp.Doc
@@ -35,10 +34,10 @@ dispDAttr :: DAttr -> Disp.Doc
 dispDAttr (DAttr s u) = dispSlot s <> dispUses u
 
 dep2str :: Int -> Dependency -> String
-dep2str start_indent = render . nest start_indent . showDepend . normalize_depend
+dep2str start_indent = render . nest start_indent . showDepend
 
-dep2str_denorm :: Dependency -> String
-dep2str_denorm = render . showDepend
+dep2str_noindent :: Dependency -> String
+dep2str_noindent = render . showDepend
 
 (<->) :: Disp.Doc -> Disp.Doc -> Disp.Doc
 a <-> b = a <> Disp.char '-' <> b

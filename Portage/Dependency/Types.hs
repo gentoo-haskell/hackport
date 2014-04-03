@@ -7,6 +7,7 @@ module Portage.Dependency.Types
   , DAttr(..)
   , Dependency(..)
   , dep_as_broad_as
+  , is_empty_dependency
   ) where
 
 import Portage.PackageId
@@ -84,3 +85,18 @@ dep_as_broad_as (Atom lpn lr lda) (Atom rpn rr rda)
 dep_as_broad_as d (DependAllOf deps)
     | any (dep_as_broad_as d) deps = True
 dep_as_broad_as _ _ = False
+
+-- TODO: remove it and switch to 'SatisfiedDepend' instead
+is_empty_dependency :: Dependency -> Bool
+is_empty_dependency d =
+    case d of
+        DependIfUse _use td fd
+            -> is_empty_dependency td && is_empty_dependency fd
+        DependAnyOf []
+            -> True -- 'any (const True) [] == False' and we don't want it
+        DependAnyOf deps
+            -> any is_empty_dependency deps
+        DependAllOf deps
+            -> all is_empty_dependency deps
+        Atom _pn _dr _dattr
+            -> False

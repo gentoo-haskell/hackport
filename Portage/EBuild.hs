@@ -6,6 +6,7 @@ module Portage.EBuild
         ) where
 
 import Portage.Dependency
+import qualified Portage.Dependency.Normalize as PN
 
 import Data.String.Utils
 import qualified Data.Time.Clock as TC
@@ -176,7 +177,7 @@ tabify = unlines . map tabify_line . lines
 dep_str :: String -> [String] -> [Dependency] -> DString
 dep_str var extra deps = ss var. sc '='. quote' (ss $ drop_leadings $ unlines extra ++ deps_s). nl
     where indent = 1 * tab_size
-          deps_s = tabify (dep2str indent (DependAllOf deps))
+          deps_s = tabify (dep2str indent $ PN.normalize_depend $ DependAllOf deps)
           drop_leadings = dropWhile (== '\t')
 
 quote :: String -> DString

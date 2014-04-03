@@ -4,6 +4,7 @@ import Data.List
 import Test.HUnit
 
 import qualified Portage.Dependency as P
+import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.PackageId  as P
 import qualified Portage.Use        as P
 import qualified RunTests as RT
@@ -177,7 +178,7 @@ test_normalize_in_use_and_top = TestCase $ do
                   )
                 ]
     forM_ deps $ \(d, expected) ->
-        let actual = P.dep2str 0 d
+        let actual = P.dep2str 0 $ PN.normalize_depend d
         in assertEqual ("expecting matching result for " ++ show d)
                        (intercalate "\n" expected)
                        actual
