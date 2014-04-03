@@ -21,16 +21,6 @@ data UseFlag = UseFlag Use           -- ^ no modificator
              | N UseFlag             -- ^ - modificator 
              deriving (Eq,Show,Ord,Read)
 
-
-{-
-instance IsString UseFlag where
-  fromString ('!':str) = X (fromString str)
-  fromString ('-':str) = N (fromString str)
-  fromString str       = case last str of
-                            '?' -> Q (fromString (init str))
-                            '=' -> E (fromString (init str))
-                            s   -> UseFlag s
--}
 mkUse :: Use -> UseFlag
 mkUse  = UseFlag 
 
@@ -42,6 +32,7 @@ mkQUse = Q . UseFlag
 
 instance DT.Text UseFlag where
   disp = showModificator
+  parse = error "instance DT.Text UseFlag: not implemented"
 
 showModificator :: UseFlag -> Disp.Doc
 showModificator (UseFlag u) = DT.disp u
