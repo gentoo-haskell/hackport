@@ -133,7 +133,7 @@ find_atom_concatenations = id
 combine_use_guards :: Dependency -> Dependency
 combine_use_guards d =
     case d of
-        DependIfUse use td fd -> DependIfUse use (go td) (go fd)
+        DependIfUse use td fd -> pop_common $ DependIfUse use (go td) (go fd)
         DependAllOf deps      -> DependAllOf $ map go $ find_use_intersections  deps
         DependAnyOf deps      -> DependAnyOf $ map go $ find_use_concatenations deps
         Atom _pn _dr _dattr   -> d
@@ -154,21 +154,21 @@ find_use_intersections = map merge_use_intersections . L.groupBy is_use_mergeabl
                   tfdeps ~(DependIfUse _u td fd) = (td, fd)
                   (tds, fds) = unzip $ map tfdeps ds
 
-                  pop_common :: Dependency -> Dependency
-                  -- depend
-                  --   a? ( x ) !a? ( x )
-                  -- gets translated to
-                  --   x
-                  pop_common (DependIfUse _u td fd)
-                      | td == fd = fd
-                  pop_common d'@(DependIfUse _u td fd) =
-                      case td_ctx `L.intersect` fd_ctx of
-                          [] -> d'
-                          -- TODO: force simplification right there
-                          common_ctx -> DependAllOf $ propagate_context' common_ctx d' : common_ctx
-                      where td_ctx = lift_context' td
-                            fd_ctx = lift_context' fd
-                  pop_common x = x
+pop_common :: Dependency -> Dependency
+-- depend
+--   a? ( x ) !a? ( x )
+-- gets translated to
+--   x
+pop_common (DependIfUse _u td fd)
+    | td == fd = fd
+pop_common d'@(DependIfUse _u td fd) =
+    case td_ctx `L.intersect` fd_ctx of
+        [] -> d'
+        -- TODO: force simplification right there
+        common_ctx -> DependAllOf $ propagate_context' common_ctx d' : common_ctx
+    where td_ctx = lift_context' td
+          fd_ctx = lift_context' fd
+pop_common x = x
 
 -- TODO
 find_use_concatenations :: [Dependency] -> [Dependency]

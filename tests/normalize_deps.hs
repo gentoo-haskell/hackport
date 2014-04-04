@@ -176,6 +176,15 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "c? ( c/z )"
                     ]
                   )
+                , -- pop simple common subdepend
+                  -- a?  ( b? ( d ) )
+                  -- !a? ( b? ( d ) )
+                  ( d_all [ d_use   "a" $ d_use  "b" $ d_p "d"
+                          , d_use   "a" $ d_nuse "b" $ d_p "d"
+                          ]
+                  , [ "b? ( c/d )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 $ PN.normalize_depend d
