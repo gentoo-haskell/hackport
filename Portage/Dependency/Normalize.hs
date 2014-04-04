@@ -208,7 +208,7 @@ propagate_context' ctx d =
   where go c = propagate_context' c
 
 refine_context :: (Bool, Use) -> [Dependency] -> [Dependency]
-refine_context use_cond = map (flatten . refine_ctx_unit use_cond)
+refine_context use_cond = map (stabilize_pass flatten . refine_ctx_unit use_cond)
     where refine_ctx_unit :: (Bool, Use) -> Dependency -> Dependency
           refine_ctx_unit uc@(bu, u) d =
               case d of
