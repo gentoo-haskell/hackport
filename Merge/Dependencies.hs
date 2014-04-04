@@ -102,9 +102,9 @@ instance Monoid EDep where
         dep_e = []
       }
   (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
-    { rdep = Portage.simplify_deps $ rdepA ++ rdepB
+    { rdep = rdepA ++ rdepB
     , rdep_e = S.toList $ (S.fromList rdep_eA) `S.union` (S.fromList rdep_eB)
-    , dep  = Portage.simplify_deps $ depA ++ depB
+    , dep  = depA ++ depB
     , dep_e = S.toList $ (S.fromList dep_eA) `S.union` (S.fromList dep_eB)
     }
 
@@ -137,9 +137,9 @@ resolveDependencies overlay pkg mcompiler ghc_package_names merged_cabal_pkg_nam
         -- version as in dep
       }
   where
-    dep1  = Portage.simplify_deps ( dep edeps)
-    dep2  = Portage.simplifyUseDeps dep1 (dep1++rdep2)
-    rdep1  = Portage.simplify_deps (rdep edeps)
+    dep1  = dep edeps
+    dep2  = Portage.simplifyUseDeps dep1 (dep1 ++ rdep2)
+    rdep1  = rdep edeps
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
     compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
@@ -190,7 +190,7 @@ resolveDependencies overlay pkg mcompiler ghc_package_names merged_cabal_pkg_nam
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
 testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name =
-    [Portage.mkUseDependency (True, Portage.Use "test") (Portage.DependAllOf $ Portage.simplify_deps deps)]
+    [Portage.mkUseDependency (True, Portage.Use "test") (Portage.DependAllOf deps)]
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
@@ -201,8 +201,7 @@ testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name =
 
 haskellDependencies :: Portage.Overlay -> [Cabal.Dependency] {- PackageDescription -} -> [Portage.Dependency]
 haskellDependencies overlay deps =
-    Portage.simplify_deps
-      $ C2E.convertDependencies overlay (Portage.Category "dev-haskell") deps
+    C2E.convertDependencies overlay (Portage.Category "dev-haskell") deps
 
 ---------------------------------------------------------------
 -- Cabal Dependency

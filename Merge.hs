@@ -387,7 +387,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)
                                       id fs
-                       in Portage.simplify_deps [k $! Portage.DependAllOf e]
+                       in [k $! Portage.DependAllOf e]
 
       cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg (Just compilerId) ghc_packages merged_cabal_pkg_name

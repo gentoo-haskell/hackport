@@ -1,7 +1,6 @@
 module Portage.Dependency
   (
-    simplify_deps
-  , simplifyUseDeps
+    simplifyUseDeps
   , sortDeps
 
   -- reexports
@@ -11,9 +10,8 @@ module Portage.Dependency
   ) where
 
 import Data.Function ( on )
-import Data.List ( nub, groupBy, partition, sortBy )
+import Data.List ( partition, sortBy )
 import Data.Maybe ( fromJust, mapMaybe )
-import Data.Ord           ( comparing )
 
 import Portage.PackageId
 
@@ -21,51 +19,11 @@ import Portage.Dependency.Builder
 import Portage.Dependency.Print
 import Portage.Dependency.Types
 
-mergeDRanges :: DRange -> DRange -> DRange
-mergeDRanges _ r@(DExact _) = r
-mergeDRanges l@(DExact _) _ = l
-mergeDRanges (DRange ll lu) (DRange rl ru) = DRange (max ll rl) (min lu ru)
-
-merge_pair :: Dependency -> Dependency -> Dependency
-merge_pair (Atom lp ld la) (Atom rp rd ra)
-    | lp /= rp = error "merge_pair got different 'PackageName's"
-    | la /= ra = error "merge_pair got different 'DAttr's"
-    | otherwise = Atom lp (mergeDRanges ld rd) la
-merge_pair l r = error $ unwords ["merge_pair can't merge non-atoms:", show l, show r]
-
--- TODO: remove it in favour of more robust 'normalize_depend'
-simplify_group :: [Dependency] -> Dependency
-simplify_group [x] = x
-simplify_group xs = foldl1 merge_pair xs
-
--- TODO: remove it in favour of more robust 'normalize_depend'
--- divide packages to groups (by package name), simplify groups, merge again
-simplify_deps :: [Dependency] -> [Dependency]
-simplify_deps deps = flattenDep $ 
-                        (map (simplify_group.nub) $
-                            groupBy cmpPkgName $
-                                sortBy (comparing getPackagePart) groupable)
-                        ++ ungroupable
-    where (ungroupable, groupable) = partition ((==Nothing).getPackage) deps
-          --
-          cmpPkgName p1 p2 = cmpMaybe (getPackage p1) (getPackage p2)
-          cmpMaybe (Just p1) (Just p2) = p1 == p2
-          cmpMaybe _         _         = False
-          --
-          flattenDep :: [Dependency] -> [Dependency]
-          flattenDep [] = []
-          flattenDep (DependAllOf ds:xs) = (concatMap (\x -> flattenDep [x]) ds) ++ flattenDep xs
-          flattenDep (x:xs) = x:flattenDep xs
-          -- TODO concat 2 dep either in the same group
-
 getPackage :: Dependency -> Maybe PackageName
 getPackage (DependAllOf _dependency) = Nothing
 getPackage (Atom pn _dr _attrs) = Just pn
 getPackage (DependAnyOf _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag _td _fd) = Nothing
-
-getPackagePart :: Dependency -> PackageName
-getPackagePart dep = fromJust (getPackage dep)
 
 -- | remove all Use dependencies that overlap with normal dependencies
 simplifyUseDeps :: [Dependency]         -- list where use deps is taken
