@@ -29,8 +29,7 @@ module Cabal2Ebuild
 import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..))
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
-                                                , Dependency(..)
-                                                , PackageName(..))
+                                                , Dependency(..))
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')
 import Distribution.Text (display)
 
@@ -40,7 +39,6 @@ import Portage.Dependency
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
-import qualified Portage.GHCCore as Portage
 import qualified Portage.Resolve as Portage
 import qualified Portage.EBuild as E
 import qualified Portage.Overlay as O
@@ -78,11 +76,6 @@ convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [D
 convertDependencies overlay category = map (convertDependency overlay category)
 
 convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> Dependency
-convertDependency _overlay _category (Cabal.Dependency pname@(Cabal.PackageName _name) _)
-  -- no explicit dep on core libs.
-  -- TODO: the same is done when filtering in
-  -- merge phase in a more robust way. Do we need it?
-  | pname `elem` Portage.coreLibs = empty_dependency
 convertDependency overlay category (Cabal.Dependency pname versionRange)
   = convert versionRange
   where

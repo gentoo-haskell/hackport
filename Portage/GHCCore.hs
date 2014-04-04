@@ -1,8 +1,7 @@
 
 -- Guess GHC version from packages depended upon.
 module Portage.GHCCore
-        ( coreLibs
-        , minimumGHCVersionToBuildPackage
+        ( minimumGHCVersionToBuildPackage
         , cabalFromGHC
         , defaultGHC
         , finalizePackageDescription
@@ -393,34 +392,3 @@ ghc6104_pkgs =
 
 p :: String -> [Int] -> PackageIdentifier
 p pn vs = PackageIdentifier (PackageName pn) (Version vs [])
-
-coreLibs :: [PackageName]
-coreLibs = map PackageName
-  ["array"
-  ,"base"
-  ,"bytestring"   -- intentionally no ebuild. use ghc's version
-                  -- to avoid dreaded 'diamond dependency' problem
-  ,"containers"
-  ,"directory"
-  --,"editline"
-  ,"filepath"     -- intentionally no ebuild. use ghc's version
-  ,"ghc"
-  ,"ghc-prim"
-  ,"haskell98"
-  ,"hpc"          --has ebuild, but only in the overlay
-  ,"integer"      -- up to ghc-6.10
-  ,"integer-gmp"  -- ghc-6.12+
-  ,"old-locale"
-  ,"old-time"
-  ,"packedstring"
-  ,"pretty"
-  ,"process"
-  -- ,"random"    -- not a core package since ghc-7.2
-  ,"rts"
-  -- ,"syb"       -- was splitted off from ghc again
-  ,"template-haskell"
-  ,"time" -- ghc-6.12+. startig from ghc-7.6.1 it is very
-          -- unsafe to upgrade as most others (like directory)
-          -- depend on it
-  ,"unix"         -- unsafe to upgrade
-  ]
