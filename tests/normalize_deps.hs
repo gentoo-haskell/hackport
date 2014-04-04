@@ -180,7 +180,7 @@ test_normalize_in_use_and_top = TestCase $ do
                   -- a?  ( b? ( d ) )
                   -- !a? ( b? ( d ) )
                   ( d_all [ d_use   "a" $ d_use  "b" $ d_p "d"
-                          , d_use   "a" $ d_nuse "b" $ d_p "d"
+                          , d_nuse  "a" $ d_use  "b" $ d_p "d"
                           ]
                   , [ "b? ( c/d )"
                     ]
