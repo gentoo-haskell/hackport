@@ -26,8 +26,12 @@ import Data.Version
 
 import Debug.Trace
 
+-- ghcs tried in specified order.
+-- It means that first ghc in this list is a minmum default.
 ghcs :: [(CompilerId, PackageIndex)]
-ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704, ghc741, ghc742, ghc761, ghc762]
+ghcs = modern_ghcs ++ ancient_ghcs
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762]
+          ancient_ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
