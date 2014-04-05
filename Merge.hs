@@ -390,7 +390,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        in [k $! Portage.DependAllOf e]
 
       cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
-      cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg (Just compilerId) ghc_packages merged_cabal_pkg_name
+      cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compilerId ghc_packages merged_cabal_pkg_name
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))

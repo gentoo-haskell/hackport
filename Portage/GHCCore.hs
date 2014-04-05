@@ -3,7 +3,6 @@
 module Portage.GHCCore
         ( minimumGHCVersionToBuildPackage
         , cabalFromGHC
-        , defaultGHC
         , finalizePackageDescription
         , platform
         , dependencySatisfiable
@@ -26,9 +25,6 @@ import Data.List ( nub )
 import Data.Version
 
 import Debug.Trace
-
-defaultGHC :: (CompilerId, [PackageName])
-defaultGHC = let (g,pix) = ghc6123 in (g, packageNamesFromPackageIndex pix)
 
 ghcs :: [(CompilerId, PackageIndex)]
 ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704, ghc741, ghc742, ghc761, ghc762]

@@ -125,10 +125,10 @@ difference (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (f a1 b1)
 null :: EDep -> Bool
 null e = e == mempty
 
-resolveDependencies :: Portage.Overlay -> PackageDescription -> Maybe CompilerId
+resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
-resolveDependencies overlay pkg mcompiler ghc_package_names merged_cabal_pkg_name =
+resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name =
     edeps
       {
         dep  = dep2,
@@ -141,7 +141,6 @@ resolveDependencies overlay pkg mcompiler ghc_package_names merged_cabal_pkg_nam
     dep2  = Portage.simplifyUseDeps dep1 (dep1 ++ rdep2)
     rdep1  = rdep edeps
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
-    compiler = maybe (fst GHCCore.defaultGHC) id mcompiler
 
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
