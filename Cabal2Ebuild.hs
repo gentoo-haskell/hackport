@@ -83,7 +83,7 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             Just r  -> r
             Nothing -> Portage.PackageName category (Portage.normalizeCabalPackageName pname)
     mk_p :: DRange -> Dependency
-    mk_p dr = Atom pn dr (DAttr AnySlot [])
+    mk_p dr = DependAtom (Atom pn dr (DAttr AnySlot []))
     p_v v   = fromCabalVersion v
 
     convert :: Cabal.VersionRange -> Dependency

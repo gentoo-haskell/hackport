@@ -5,6 +5,7 @@ module Portage.Dependency.Builder
   , addDepUseFlag
   , setSlotDep
   , mkUseDependency
+  , overAtom
   ) where
 
 import Portage.Dependency.Types
@@ -15,19 +16,19 @@ empty_dependency :: Dependency
 empty_dependency = DependAllOf []
 
 addDepUseFlag :: UseFlag -> Dependency -> Dependency
-addDepUseFlag n (DependAllOf d) = DependAllOf $ map (addDepUseFlag n) d
-addDepUseFlag n (Atom pn dr (DAttr s u)) = Atom pn dr (DAttr s (n:u))
-addDepUseFlag n (DependAnyOf d) = DependAnyOf $ map (addDepUseFlag n) d
-addDepUseFlag n (DependIfUse u td fd) = DependIfUse u (addDepUseFlag n td) (addDepUseFlag n fd)
+addDepUseFlag n = overAtom (\(Atom pn dr (DAttr s u)) -> Atom pn dr (DAttr s (n:u)))
 
 setSlotDep :: SlotDepend -> Dependency -> Dependency
-setSlotDep n (DependAllOf d) = DependAllOf $ map (setSlotDep n) d
-setSlotDep n (Atom pn dr (DAttr _s u)) = Atom pn dr (DAttr n u)
-setSlotDep n (DependAnyOf d) = DependAnyOf $ map (setSlotDep n) d
-setSlotDep n (DependIfUse u td fd) = DependIfUse u (setSlotDep n td) (setSlotDep n fd)
+setSlotDep n = overAtom (\(Atom pn dr (DAttr _s u)) -> Atom pn dr (DAttr n u))
 
 mkUseDependency :: (Bool, Use) -> Dependency -> Dependency
 mkUseDependency (b, u) d =
     case b of
         True  -> DependIfUse u d empty_dependency
         False -> DependIfUse u empty_dependency d
+
+overAtom :: (Atom -> Atom) -> Dependency -> Dependency
+overAtom f (DependAllOf d) = DependAllOf $ map (overAtom f) d
+overAtom f (DependAnyOf d) = DependAnyOf $ map (overAtom f) d
+overAtom f (DependIfUse u d1 d2) = DependIfUse u (f `overAtom` d1) (f `overAtom` d2)
+overAtom f (DependAtom a) = DependAtom (f a)

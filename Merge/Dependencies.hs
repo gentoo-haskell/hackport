@@ -251,17 +251,19 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
   found =    [ p | Just p <- map staticTranslateExtraLib allE ]
 
 any_c_p_s_u :: String -> String -> Portage.SlotDepend -> [Portage.UseFlag] -> Portage.Dependency
-any_c_p_s_u cat pn slot uses = Portage.Atom (Portage.mkPackageName cat pn)
-                                            (Portage.DRange Portage.ZeroB Portage.InfinityB)
-                                            (Portage.DAttr slot uses)
+any_c_p_s_u cat pn slot uses = Portage.DependAtom $
+    Portage.Atom (Portage.mkPackageName cat pn)
+                 (Portage.DRange Portage.ZeroB Portage.InfinityB)
+                 (Portage.DAttr slot uses)
 
 any_c_p :: String -> String -> Portage.Dependency
 any_c_p cat pn = any_c_p_s_u cat pn Portage.AnySlot []
 
 at_least_c_p_v :: String -> String -> [Int] -> Portage.Dependency
-at_least_c_p_v cat pn v = Portage.Atom (Portage.mkPackageName cat pn)
-                                       (Portage.DRange (Portage.NonstrictLB (Portage.Version v Nothing [] 0)) Portage.InfinityB)
-                                       (Portage.DAttr Portage.AnySlot [])
+at_least_c_p_v cat pn v = Portage.DependAtom $
+  Portage.Atom (Portage.mkPackageName cat pn)
+               (Portage.DRange (Portage.NonstrictLB (Portage.Version v Nothing [] 0)) Portage.InfinityB)
+               (Portage.DAttr Portage.AnySlot [])
 
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m

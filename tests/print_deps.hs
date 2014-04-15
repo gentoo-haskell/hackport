@@ -57,10 +57,10 @@ test_print_mixed = TestCase $ do
                           }
         d_all = P.DependAllOf
         d_any = P.DependAnyOf
-        d_ge v = P.Atom pn
+        d_ge v = P.DependAtom $ P.Atom pn
                         (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
                         def_attr
-        d_lt v = P.Atom pn
+        d_lt v = P.DependAtom $ P.Atom pn
                         (P.DRange P.ZeroB (P.StrictUB $ p_v v))
                         def_attr
         deps  = [ -- from agda: "mtl ==2.0.* || >=2.1.1 && <2.2"
@@ -99,10 +99,10 @@ test_print_denorm = TestCase $ do
                           }
         d_all = P.DependAllOf
         d_any = P.DependAnyOf
-        d_ge v = P.Atom pn
+        d_ge v = P.DependAtom $ P.Atom pn
                         (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
                         def_attr
-        d_lt v = P.Atom pn
+        d_lt v = P.DependAtom $ P.Atom pn
                         (P.DRange P.ZeroB (P.StrictUB $ p_v v))
                         def_attr
         deps  = [ -- from agda: "mtl ==2.0.* || >=2.1.1 && <2.2"

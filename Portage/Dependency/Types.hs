@@ -6,8 +6,11 @@ module Portage.Dependency.Types
   , DRange(..)
   , DAttr(..)
   , Dependency(..)
+  , Atom(..)
   , dep_as_broad_as
   , is_empty_dependency
+  , dep_is_case_of
+  , range_is_case_of
   ) where
 
 import Portage.PackageId
@@ -58,6 +61,11 @@ data DRange = DRange LBound UBound
             | DExact Version
     deriving (Eq, Show, Ord)
 
+range_is_case_of :: DRange -> DRange -> Bool
+range_is_case_of (DRange llow lup) (DRange rlow rup)
+   | llow >= rlow && lup <= rup = True
+range_is_case_of _ _ = False
+
 -- True if 'left' "interval" covers at least as much as the 'right' "interval"
 range_as_broad_as :: DRange -> DRange -> Bool
 range_as_broad_as (DRange llow lup) (DRange rlow rup)
@@ -67,11 +75,13 @@ range_as_broad_as _ _ = False
 data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show, Ord)
 
-data Dependency = Atom PackageName DRange DAttr
+data Dependency = DependAtom Atom
                 | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
     deriving (Eq, Show, Ord)
+
+data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)
 
 -- returns 'True' if left constraint is the same (or looser) than right
 dep_as_broad_as :: Dependency -> Dependency -> Bool
@@ -79,7 +89,7 @@ dep_as_broad_as l r
     -- very broad (not only on atoms) special case
     | l == r = True
 -- atoms
-dep_as_broad_as (Atom lpn lr lda) (Atom rpn rr rda)
+dep_as_broad_as (DependAtom (Atom lpn lr lda)) (DependAtom (Atom rpn rr rda))
     | lpn == rpn && lda == rda = lr `range_as_broad_as` rr
 -- AllOf (very common case in context propagation)
 dep_as_broad_as d (DependAllOf deps)
@@ -98,5 +108,14 @@ is_empty_dependency d =
             -> any is_empty_dependency deps
         DependAllOf deps
             -> all is_empty_dependency deps
-        Atom _pn _dr _dattr
+        DependAtom _
             -> False
+
+dep_is_case_of :: Dependency -> Dependency -> Bool
+dep_is_case_of l r
+    -- very broad (not only on atoms) special case
+    | l == r = True
+-- only on atoms
+dep_is_case_of (DependAtom (Atom lpn lr lda)) (DependAtom (Atom rpn rr rda))
+    | lpn == rpn && lda == rda = lr `range_is_case_of` rr
+dep_is_case_of _ _ = False

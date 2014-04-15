@@ -21,7 +21,7 @@ import Portage.Dependency.Types
 
 getPackage :: Dependency -> Maybe PackageName
 getPackage (DependAllOf _dependency) = Nothing
-getPackage (Atom pn _dr _attrs) = Just pn
+getPackage (DependAtom (Atom pn _dr _attrs)) = Just pn
 getPackage (DependAnyOf _dependency           ) = Nothing
 getPackage (DependIfUse  _useFlag _td _fd) = Nothing
 

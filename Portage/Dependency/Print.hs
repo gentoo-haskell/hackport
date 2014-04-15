@@ -52,7 +52,7 @@ valign :: Disp.Doc -> Disp.Doc
 valign d = nest 0 d
 
 showDepend :: Dependency -> Disp.Doc
-showDepend (Atom pn range dattr)
+showDepend (DependAtom (Atom pn range dattr))
     = case range of
         -- any version
         DRange ZeroB InfinityB -> DT.disp pn       <> dispDAttr dattr
@@ -60,9 +60,9 @@ showDepend (Atom pn range dattr)
         DRange lb InfinityB    -> dispLBound pn lb <> dispDAttr dattr
         -- TODO: handle >=foo-0    special case
         -- TODO: handle =foo-x.y.* special case
-        DRange lb ub          ->    showDepend (Atom pn (DRange lb InfinityB) dattr)
+        DRange lb ub          ->    showDepend (DependAtom (Atom pn (DRange lb InfinityB) dattr))
                                  <> Disp.char ' '
-                                 <> showDepend (Atom pn (DRange ZeroB ub)    dattr)
+                                 <> showDepend (DependAtom (Atom pn (DRange ZeroB ub)    dattr))
         DExact v              -> Disp.char '~' <> DT.disp pn <-> DT.disp v { versionRevision = 0 } <> dispDAttr dattr
 
 showDepend (DependIfUse u td fd)  = valign $ vcat [td_doc, fd_doc]
@@ -80,7 +80,7 @@ showDependInAnyOf :: Dependency -> Disp.Doc
 showDependInAnyOf d@(DependAllOf _deps) = sparens (showDepend d)
 -- both lower and upper bounds are present thus needs 2 atoms
 -- TODO: '=foo-x.y.*' will take only one atom, not two
-showDependInAnyOf d@(Atom _pn (DRange lb ub) _dattr)
+showDependInAnyOf d@(DependAtom (Atom _pn (DRange lb ub) _dattr))
     | lb /= ZeroB && ub /= InfinityB
                                        = sparens (showDepend d)
 -- rest are fine
