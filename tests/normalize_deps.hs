@@ -36,12 +36,12 @@ d_any :: [P.Dependency] -> P.Dependency
 d_any = P.DependAnyOf
 
 d_ge :: P.PackageName -> [Int] -> P.Dependency
-d_ge pn v = P.Atom pn
+d_ge pn v = P.DependAtom $ P.Atom pn
                    (P.DRange (P.NonstrictLB $ p_v v) P.InfinityB)
                    def_attr
 
 d_p :: String -> P.Dependency
-d_p pn = P.Atom (P.mkPackageName "c" pn)
+d_p pn = P.DependAtom $ P.Atom (P.mkPackageName "c" pn)
                 (P.DRange P.ZeroB P.InfinityB)
                 def_attr
 

@@ -27,7 +27,7 @@ convertLicense :: Cabal.License -> Either String String
 convertLicense l =
     case l of
         --  good ones
-        Cabal.AGPL mv      -> Right $ "AGPL-" ++ (maybe "3" Cabal.display mv)  -- almost certainly version 3
+--        Cabal.AGPL mv      -> Right $ "AGPL-" ++ (maybe "3" Cabal.display mv)  -- almost certainly version 3
         Cabal.GPL mv       -> Right $ "GPL-" ++ (maybe "2" Cabal.display mv)  -- almost certainly version 2
         Cabal.LGPL mv      -> Right $ "LGPL-" ++ (maybe "2.1" Cabal.display mv) -- probably version 2.1
         Cabal.BSD3         -> Right "BSD"

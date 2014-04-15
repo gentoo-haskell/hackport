@@ -83,6 +83,7 @@ Executable    hackport
     Portage.Overlay
     Portage.Resolve
     Portage.Host
+    Portage.Tables
     Merge.Dependencies
     Setup
     Status

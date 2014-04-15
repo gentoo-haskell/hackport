@@ -77,6 +77,7 @@ import qualified Portage.Dependency as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
+import qualified Portage.Tables as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -145,7 +146,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
-        | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
+        | treatAsLibrary = map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
         | otherwise      = haskellDependencies overlay (buildDepends pkg)
     test_deps
         | (not . L.null) (testSuites pkg) = testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
@@ -165,7 +166,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                           : build_tools
                           ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
-                    rdep = set_build_slot ghc_dep
+                    rdep = Portage.set_build_slot ghc_dep
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config_libs
@@ -181,7 +182,6 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                     rdep = extra_libs ++ pkg_config_libs
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
-    set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
 ---------------------------------------------------------------
 -- Test-suite dependencies
@@ -251,17 +251,19 @@ findCLibs (PackageDescription { library = lib, executables = exes }) =
   found =    [ p | Just p <- map staticTranslateExtraLib allE ]
 
 any_c_p_s_u :: String -> String -> Portage.SlotDepend -> [Portage.UseFlag] -> Portage.Dependency
-any_c_p_s_u cat pn slot uses = Portage.Atom (Portage.mkPackageName cat pn)
-                                            (Portage.DRange Portage.ZeroB Portage.InfinityB)
-                                            (Portage.DAttr slot uses)
+any_c_p_s_u cat pn slot uses = Portage.DependAtom $
+    Portage.Atom (Portage.mkPackageName cat pn)
+                 (Portage.DRange Portage.ZeroB Portage.InfinityB)
+                 (Portage.DAttr slot uses)
 
 any_c_p :: String -> String -> Portage.Dependency
 any_c_p cat pn = any_c_p_s_u cat pn Portage.AnySlot []
 
 at_least_c_p_v :: String -> String -> [Int] -> Portage.Dependency
-at_least_c_p_v cat pn v = Portage.Atom (Portage.mkPackageName cat pn)
-                                       (Portage.DRange (Portage.NonstrictLB (Portage.Version v Nothing [] 0)) Portage.InfinityB)
-                                       (Portage.DAttr Portage.AnySlot [])
+at_least_c_p_v cat pn v = Portage.DependAtom $
+  Portage.Atom (Portage.mkPackageName cat pn)
+               (Portage.DRange (Portage.NonstrictLB (Portage.Version v Nothing [] 0)) Portage.InfinityB)
+               (Portage.DAttr Portage.AnySlot [])
 
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m

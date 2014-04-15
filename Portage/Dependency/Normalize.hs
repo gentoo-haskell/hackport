@@ -46,7 +46,7 @@ remove_empty d =
         DependAllOf deps        -> DependAllOf $ filter (not . is_empty_dependency) $ map go deps
         DependAnyOf deps        -> DependAnyOf $                                      map go deps
         -- no change
-        Atom _pn _dr _dattr     -> d
+        DependAtom _            -> d
     where go = remove_empty
 
 -- Ideally 'combine_atoms' should handle those as well
@@ -56,7 +56,7 @@ remove_duplicates d =
         DependIfUse use td fd   -> DependIfUse use (go td) (go fd)
         DependAnyOf deps        -> DependAnyOf $ L.nub $ map go deps
         DependAllOf deps        -> DependAllOf $ L.nub $ map go deps
-        Atom _pn _dr _dattr     -> d
+        DependAtom  _           -> d
     where go = remove_duplicates
 
 -- TODO: implement flattening AnyOf the same way it's done for AllOf
@@ -73,7 +73,7 @@ flatten d =
                                        ([], [dep])   -> dep
                                        ([], ndall)   -> DependAllOf ndall
                                        (dall, ndall) -> go $ DependAllOf $ (concatMap undall dall) ++ ndall
-        Atom _pn _dr _dattr     -> d
+        DependAtom _            -> d
   where go :: Dependency -> Dependency
         go = flatten
 
@@ -93,24 +93,26 @@ combine_atoms d =
         DependIfUse use td fd -> DependIfUse use (go td) (go fd)
         DependAllOf deps      -> DependAllOf $ map go $ find_atom_intersections  deps
         DependAnyOf deps      -> DependAnyOf $ map go $ find_atom_concatenations deps
-        Atom _pn _dr _dattr   -> d
+        DependAtom  _         -> d
     where go = combine_atoms
 
 find_atom_intersections :: [Dependency] -> [Dependency]
 find_atom_intersections = map merge_depends . L.groupBy is_mergeable
     where is_mergeable :: Dependency -> Dependency -> Bool
-          is_mergeable (Atom lpn _ldrange lattr) (Atom rpn _rdrange rattr) = (lpn, lattr) == (rpn, rattr)
-          is_mergeable _                         _                         = False
+          is_mergeable (DependAtom (Atom lpn _ldrange lattr)) (DependAtom (Atom rpn _rdrange rattr))
+                          = (lpn, lattr) == (rpn, rattr)
+          is_mergeable _                                       _
+                          = False
 
           merge_depends :: [Dependency] -> Dependency
           merge_depends [x] = x
           merge_depends xs = L.foldl1' merge_pair xs
 
           merge_pair :: Dependency -> Dependency -> Dependency
-          merge_pair (Atom lp ld la) (Atom rp rd ra)
+          merge_pair (DependAtom (Atom lp ld la)) (DependAtom (Atom rp rd ra))
               | lp /= rp = error "merge_pair got different 'PackageName's"
               | la /= ra = error "merge_pair got different 'DAttr's"
-              | otherwise = Atom lp (mergeDRanges ld rd) la
+              | otherwise = DependAtom (Atom lp (mergeDRanges ld rd) la)
           merge_pair l r = error $ unwords ["merge_pair can't merge non-atoms:", show l, show r]
 
 -- TODO
@@ -136,7 +138,7 @@ combine_use_guards d =
         DependIfUse use td fd -> pop_common $ DependIfUse use (go td) (go fd)
         DependAllOf deps      -> DependAllOf $ map go $ find_use_intersections  deps
         DependAnyOf deps      -> DependAnyOf $ map go $ find_use_concatenations deps
-        Atom _pn _dr _dattr   -> d
+        DependAtom _          -> d
     where go = combine_use_guards
 
 find_use_intersections :: [Dependency] -> [Dependency]
@@ -202,7 +204,7 @@ propagate_context' ctx d =
                                                                     False -> Nothing -- haven't managed to optimize anything
                                                    ] ++ [Just deps] -- unmodified
         DependAnyOf deps      -> DependAnyOf $ map (go ctx) deps
-        Atom _pn _dr _dattr   -> case any (dep_as_broad_as d) ctx of
+        DependAtom _          -> case any (dep_as_broad_as d) ctx of
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
@@ -258,7 +260,7 @@ lift_context d =
         DependAnyOf _deps        -> case L.delete d new_ctx of
                                          []       -> d
                                          new_ctx' -> propagate_context $ DependAllOf $ d : new_ctx'
-        Atom _pn _dr _dattr      -> d
+        DependAtom  _            -> d
   where new_ctx = lift_context' d
 
 -- lift everything that can be shared somewhere else
@@ -271,7 +273,7 @@ lift_context' d =
         DependIfUse _use td fd   -> d : extract_common_constraints (map lift_context' [td, fd])
         DependAllOf deps         -> L.nub $ concatMap lift_context' deps
         DependAnyOf deps         -> extract_common_constraints $ map lift_context' deps
-        Atom _pn _dr _dattr      -> [d]
+        DependAtom  _            -> [d]
 
 -- it extracts common part of dependency comstraints.
 -- Some examples:
@@ -332,7 +334,7 @@ sort_deps d =
         DependIfUse use td fd   -> DependIfUse use (go td) (go fd)
         DependAnyOf deps        -> DependAnyOf $ L.sort $ map go deps
         DependAllOf deps        -> DependAllOf $ L.sort $ map go deps
-        Atom _pn _dr _dattr     -> d
+        DependAtom  _           -> d
     where go = sort_deps
 
 -- remove various types of redundancy
