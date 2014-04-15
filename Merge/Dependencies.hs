@@ -77,6 +77,7 @@ import qualified Portage.Dependency as Portage
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
+import qualified Portage.Tables as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -145,7 +146,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary = isJust (Cabal.library pkg)
     haskell_deps
-        | treatAsLibrary = map set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
+        | treatAsLibrary = map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
         | otherwise      = haskellDependencies overlay (buildDepends pkg)
     test_deps
         | (not . L.null) (testSuites pkg) = testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
@@ -165,7 +166,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                           : build_tools
                           ++ test_deps,
                     dep_e = [ "${RDEPEND}" ],
-                    rdep = set_build_slot ghc_dep
+                    rdep = Portage.set_build_slot ghc_dep
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config_libs
@@ -181,7 +182,6 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                     rdep = extra_libs ++ pkg_config_libs
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
-    set_build_slot = Portage.setSlotDep Portage.AnyBuildTimeSlot
 
 ---------------------------------------------------------------
 -- Test-suite dependencies
