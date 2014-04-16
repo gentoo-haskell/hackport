@@ -21,4 +21,7 @@ set_build_slot =
         | pn == nm  = Just s
         | otherwise = Nothing
 
-slottedPkgs = [(mkPackageName "dev-haskell" "quickcheck", GivenSlot "2=")]
+slottedPkgs =
+  [ (mkPackageName "dev-haskell" "quickcheck", GivenSlot "2=")
+  , (mkPackgeName "dev-haskell" "hdbc", GivenSlot "2=")
+  ]
