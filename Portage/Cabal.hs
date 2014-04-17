@@ -10,7 +10,6 @@ import qualified Data.Map as Map
 import qualified Distribution.Client.PackageIndex as Cabal
 import qualified Distribution.License             as Cabal
 import qualified Distribution.Package             as Cabal
-import qualified Distribution.Version             as Cabal
 import qualified Distribution.Text                as Cabal
 
 import qualified Portage.Overlay as Portage
@@ -42,7 +41,6 @@ convertLicense l =
 
 partition_depends :: [Cabal.PackageName] -> Cabal.PackageName -> [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency])
 partition_depends ghc_package_names merged_cabal_pkg_name = L.partition (not . is_internal_depend)
-    where is_internal_depend (Cabal.Dependency pn vr) = is_itself || is_ghc_package
-              where dep = Cabal.Dependency pn (Cabal.simplifyVersionRange vr)
-                    is_itself = pn == merged_cabal_pkg_name
+    where is_internal_depend (Cabal.Dependency pn _vr) = is_itself || is_ghc_package
+              where is_itself = pn == merged_cabal_pkg_name
                     is_ghc_package = pn `elem` ghc_package_names
