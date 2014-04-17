@@ -339,6 +339,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("openal", any_c_p "media-libs" "openal")
       , ("iw", any_c_p "net-wireless" "wireless-tools")
       , ("attr", any_c_p "sys-apps" "attr")
+      , ("ncurses", any_c_p "sys-libs" "ncurses")
+      , ("panel", any_c_p "sys-libs" "ncurses")
       ]
 
 ---------------------------------------------------------------
@@ -481,4 +483,8 @@ pkgconfig_table =
   ,("QtScript",                    ("dev-qt", "qtscript", Portage.AnySlot))
   ,("ImageMagick",                 ("media-gfx", "imagemagick", Portage.AnySlot))
   ,("MagickWand",                  ("media-gfx", "imagemagick", Portage.AnySlot))
+  ,("ncurses",                     ("sys-libs", "ncurses", Portage.AnySlot))
+  ,("ncursesw",                    ("sys-libs", "ncurses", Portage.AnySlot))
+  ,("panel",                       ("sys-libs", "ncurses", Portage.AnySlot))
+  ,("panelw",                      ("sys-libs", "ncurses", Portage.AnySlot))
   ]
