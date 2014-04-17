@@ -45,7 +45,6 @@ module Merge.Dependencies
   , resolveDependencies
   , intersection
   , difference
-  , null
   ) where
 
 import Distribution.PackageDescription ( PackageDescription(..)
@@ -59,7 +58,7 @@ import Distribution.PackageDescription ( PackageDescription(..)
                                        , TestSuite(..)
                                        , targetBuildDepends
                                        )
-import Prelude hiding (null)
+
 import Data.Maybe ( isJust, isNothing )
 import Data.Monoid ( Monoid, mempty, mappend)
 import Data.List ( nub )
@@ -122,9 +121,6 @@ difference (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (f a1 b1)
                                                         (f a3 b3)
                                                         (f a4 b4)
   where f a b = L.filter (`L.notElem` b) a
-
-null :: EDep -> Bool
-null e = e == mempty
 
 resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
                     -> [Cabal.PackageName] -> Cabal.PackageName
