@@ -43,8 +43,6 @@ DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
 module Merge.Dependencies
   ( EDep(..)
   , resolveDependencies
-  , intersection
-  , difference
   ) where
 
 import Distribution.PackageDescription ( PackageDescription(..)
@@ -107,20 +105,6 @@ instance Monoid EDep where
     , dep  = depA ++ depB
     , dep_e = S.toList $ (S.fromList dep_eA) `S.union` (S.fromList dep_eB)
     }
-
-
-intersection :: EDep -> EDep -> EDep
-intersection (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (L.intersect a1 b1)
-                                                          (L.intersect a2 b2)
-                                                          (L.intersect a3 b3)
-                                                          (L.intersect a4 b4)
-
-difference :: EDep -> EDep -> EDep
-difference (EDep a1 a2 a3 a4) (EDep b1 b2 b3 b4) = EDep (f a1 b1)
-                                                        (f a2 b2)
-                                                        (f a3 b3)
-                                                        (f a4 b4)
-  where f a b = L.filter (`L.notElem` b) a
 
 resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
                     -> [Cabal.PackageName] -> Cabal.PackageName
