@@ -1,9 +1,8 @@
 -- | Tables of portage specific convertations
 module Portage.Tables
-  ( set_build_slot 
+  ( set_build_slot
   ) where
 
-import Portage.Dependency (Atom(..), Dependency(..), DAttr(..))
 import Portage.Dependency.Builder
 import Portage.Dependency.Types
 import Portage.PackageId
@@ -21,7 +20,8 @@ set_build_slot =
         | pn == nm  = Just s
         | otherwise = Nothing
 
+slottedPkgs :: [(PackageName, SlotDepend)]
 slottedPkgs =
   [ (mkPackageName "dev-haskell" "quickcheck", GivenSlot "2=")
-  , (mkPackgeName "dev-haskell" "hdbc", GivenSlot "2=")
+  , (mkPackageName "dev-haskell" "hdbc", GivenSlot "2=")
   ]
