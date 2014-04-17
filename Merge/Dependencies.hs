@@ -144,21 +144,31 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
 
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
+    treatAsLibrary :: Bool
     treatAsLibrary = isJust (Cabal.library pkg)
+    haskell_deps :: [Portage.Dependency]
     haskell_deps
         | treatAsLibrary = map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
         | otherwise      = haskellDependencies overlay (buildDepends pkg)
+    test_deps :: [Portage.Dependency]
     test_deps
         | (not . L.null) (testSuites pkg) = testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
         | otherwise = [] -- tests not enabled
+    cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay pkg compiler
+    ghc_dep :: Portage.Dependency
     ghc_dep = compilerIdToDependency compiler
+    extra_libs :: [Portage.Dependency]
     extra_libs = findCLibs pkg
+    pkg_config_libs :: [Portage.Dependency]
     pkg_config_libs = pkgConfigDependencies overlay pkg
+    pkg_config_tools :: [Portage.Dependency]
     pkg_config_tools = if L.null pkg_config_libs
                            then []
                            else [any_c_p "virtual" "pkgconfig"]
+    build_tools :: [Portage.Dependency]
     build_tools = buildToolsDependencies pkg ++ pkg_config_tools
+    edeps :: EDep
     edeps
         | treatAsLibrary = mempty
                   {
