@@ -30,7 +30,7 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(CompilerId, PackageIndex)]
 ghcs = modern_ghcs ++ ancient_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762]
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782]
           ancient_ghcs = [ghc6104, ghc6121, ghc6122, ghc6123, ghc704]
 
 cabalFromGHC :: [Int] -> Maybe Version
@@ -52,6 +52,7 @@ cabalFromGHC ver = lookup ver table
           ,([7,4,2],  Version [1,14,0] [])
           ,([7,6,1],  Version [1,16,0] [])
           ,([7,6,2],  Version [1,16,0] [])
+          ,([7,8,2],  Version [1,18,1,3] [])
           ]
 
 platform :: Platform
@@ -117,6 +118,9 @@ packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
+ghc782 :: (CompilerId, PackageIndex)
+ghc782 = (ghc [7,8,2], mkIndex ghc782_pkgs)
+
 ghc762 :: (CompilerId, PackageIndex)
 ghc762 = (ghc [7,6,2], mkIndex ghc762_pkgs)
 
@@ -146,6 +150,33 @@ ghc6104 = (ghc [6,10,4], mkIndex ghc6104_pkgs)
 
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+
+ghc782_pkgs :: [PackageIdentifier]
+ghc782_pkgs =
+  [ p "array" [0,5,0,0]
+  , p "base" [4,7,0,0]
+--  , p "binary" [0,7,1,0]  package is upgradeable
+  , p "bytestring" [0,10,4,0]
+--  , p "Cabal" [1,18,1,3]  package is upgradeable
+  , p "containers" [0,5,5,1]
+  , p "deepseq" [1,3,0,2] -- used by time, haskell98
+  , p "directory" [1,2,1,0]
+  , p "filepath" [1,3,0,2]
+  , p "ghc-prim" [0,3,1,0]
+  , p "haskell2010" [1,1,2,0]
+  , p "haskell98" [2,0,0,3]
+  , p "hoopl" [3,10,0,1] -- used by libghc
+  , p "hpc" [0,6,0,1] -- used by libghc
+  , p "integer-gmp" [0,5,1,0]
+  , p "old-locale" [1,0,0,6]
+  , p "old-time" [1,1,0,2]
+  , p "pretty" [1,1,1,1]
+  , p "process" [1,2,0,0]
+  , p "template-haskell" [2,9,0,0] -- used by libghc
+  , p "time" [1,4,2] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
+--  , p "transformers" [0,3,0,0] -- used by libghc
+  , p "unix" [2,7,0,1]
+  ]
 
 ghc762_pkgs :: [PackageIdentifier]
 ghc762_pkgs =
