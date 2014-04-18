@@ -84,26 +84,26 @@ import Debug.Trace ( trace )
 -- | Dependencies of an ebuild
 data EDep = EDep
   {
-    rdep :: [Portage.Dependency],
-    rdep_e :: [String],
-    dep :: [Portage.Dependency],
-    dep_e :: [String]
+    rdep :: S.Set Portage.Dependency,
+    rdep_e :: S.Set String,
+    dep :: S.Set Portage.Dependency,
+    dep_e :: S.Set String
   }
   deriving (Show, Eq)
 
 instance Monoid EDep where
   mempty = EDep
       {
-        rdep = [],
-        rdep_e = [],
-        dep = [],
-        dep_e = []
+        rdep = S.empty,
+        rdep_e = S.empty,
+        dep = S.empty,
+        dep_e = S.empty
       }
   (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
-    { rdep = rdepA ++ rdepB
-    , rdep_e = S.toList $ (S.fromList rdep_eA) `S.union` (S.fromList rdep_eB)
-    , dep  = depA ++ depB
-    , dep_e = S.toList $ (S.fromList dep_eA) `S.union` (S.fromList dep_eB)
+    { rdep   = rdepA   `S.union` rdepB
+    , rdep_e = rdep_eA `S.union` rdep_eB
+    , dep    = depA    `S.union` depB
+    , dep_e  = dep_eA  `S.union` dep_eB
     }
 
 resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
@@ -112,15 +112,15 @@ resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
 resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name =
     edeps
       {
-        dep  = dep2,
-        rdep = rdep2
+        dep  = S.fromList dep2,
+        rdep = S.fromList rdep2
         -- todo: if rdep includes cabal or ghc, make sure it's the same
         -- version as in dep
       }
   where
-    dep1  = dep edeps
+    dep1  = S.toList $ dep edeps
     dep2  = Portage.simplifyUseDeps dep1 (dep1 ++ rdep2)
-    rdep1  = rdep edeps
+    rdep1  = S.toList $ rdep edeps
     rdep2  = Portage.simplifyUseDeps rdep1 rdep1
 
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
@@ -152,24 +152,28 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     edeps
         | treatAsLibrary = mempty
                   {
-                    dep = cabal_dep
+                    dep = S.fromList $
+                          cabal_dep
                           : build_tools
                           ++ test_deps,
-                    dep_e = [ "${RDEPEND}" ],
-                    rdep = Portage.set_build_slot ghc_dep
+                    dep_e = S.singleton "${RDEPEND}",
+                    rdep = S.fromList $
+                            Portage.set_build_slot ghc_dep
                             : haskell_deps
                             ++ extra_libs
                             ++ pkg_config_libs
                   }
         | otherwise = mempty
                   {
-                    dep = ghc_dep
+                    dep = S.fromList $
+                          ghc_dep
                           : cabal_dep
                           : build_tools
                           ++ haskell_deps
                           ++ test_deps,
-                    dep_e = [ "${RDEPEND}" ],
-                    rdep = extra_libs ++ pkg_config_libs
+                    dep_e = S.singleton "${RDEPEND}",
+                    rdep = S.fromList $
+                           extra_libs ++ pkg_config_libs
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
 
