@@ -281,7 +281,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       leave_only_dynamic_fa fa = fa L.\\ common_fa
 
       optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
-      optimize_fa_depends deps = Portage.sortDeps
+      optimize_fa_depends deps = L.sort
                                . simplify
                                . map ( (\fdep -> (fdep, []))
                                      . first leave_only_dynamic_fa) $ deps

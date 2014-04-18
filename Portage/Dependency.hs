@@ -1,7 +1,6 @@
 module Portage.Dependency
   (
     simplifyUseDeps
-  , sortDeps
 
   -- reexports
   , module Portage.Dependency.Builder
@@ -9,8 +8,7 @@ module Portage.Dependency
   , module Portage.Dependency.Types
   ) where
 
-import Data.Function ( on )
-import Data.List ( partition, sortBy )
+import qualified Data.List as L
 import Data.Maybe ( fromJust, mapMaybe )
 
 import Portage.PackageId
@@ -30,7 +28,7 @@ simplifyUseDeps :: [Dependency]         -- list where use deps is taken
                     -> [Dependency]     -- list where common deps is taken
                     -> [Dependency]     -- result deps
 simplifyUseDeps ds cs =
-    let (u,o) = partition isUseDep ds
+    let (u,o) = L.partition isUseDep ds
         c = mapMaybe getPackage cs
     in (mapMaybe (intersectD c) u)++o
 
@@ -54,29 +52,3 @@ intersectD fs x =
 isUseDep :: Dependency -> Bool
 isUseDep (DependIfUse _ _ _) = True
 isUseDep _ = False
-
-
-sortDeps :: [Dependency] -> [Dependency]
-sortDeps = sortBy dsort . map deeper
-  where
-    deeper :: Dependency -> Dependency
-    deeper (DependIfUse u1 td fd) = DependIfUse u1 (deeper td) (deeper fd)
-    deeper (DependAllOf ds)   = DependAllOf $ sortDeps ds
-    deeper (DependAnyOf ds)  = DependAnyOf $ sortDeps ds
-    deeper x = x
-    dsort :: Dependency -> Dependency -> Ordering
-    dsort (DependIfUse u1 _ _) (DependIfUse u2 _ _) = u1 `compare` u2
-    dsort (DependIfUse _ _ _)  (DependAnyOf _)   = LT
-    dsort (DependIfUse _ _ _)  (DependAllOf  _)   = LT
-    dsort (DependIfUse _ _ _)  _                  = GT
-    dsort (DependAnyOf _)   (DependAnyOf _)   = EQ
-    dsort (DependAnyOf _)  (DependIfUse _ _ _)   = GT
-    dsort (DependAnyOf _)   (DependAllOf _)    = LT
-    dsort (DependAnyOf _)   _                  = GT
-    dsort (DependAllOf _)    (DependAllOf _)    = EQ
-    dsort (DependAllOf _)    (DependIfUse  _ _ _) = LT
-    dsort (DependAllOf _)    (DependAnyOf _)   = GT
-    dsort _ (DependIfUse _ _ _)                   = LT
-    dsort _ (DependAllOf _)                     = LT
-    dsort _ (DependAnyOf _)                    = LT
-    dsort a b = (compare `on` getPackage) a b
