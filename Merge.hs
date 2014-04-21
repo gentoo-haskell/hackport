@@ -425,10 +425,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                       p  = if Cabal.flagDefault x then "+" else ""
                   in p ++ cfn_to_iuse fn
 
-      ebuild =   (\e -> e { E.depend        = S.toList $ Merge.dep tdeps} )
-               . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
-               . (\e -> e { E.rdepend       = S.toList $ Merge.rdep tdeps} )
-               . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
+      ebuild =   (\e -> e { E.depend        = Portage.DependAllOf $ S.toList $ Merge.dep tdeps} )
+               . (\e -> e { E.depend_extra  =                       S.toList $ Merge.dep_e tdeps } )
+               . (\e -> e { E.rdepend       = Portage.DependAllOf $ S.toList $ Merge.rdep tdeps} )
+               . (\e -> e { E.rdepend_extra =                       S.toList $ Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of

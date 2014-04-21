@@ -30,9 +30,9 @@ data EBuild = EBuild {
     slot :: String,
     keywords :: [String],
     iuse :: [String],
-    depend :: [Dependency],
+    depend :: Dependency,
     depend_extra :: [String],
-    rdepend :: [Dependency],
+    rdepend :: Dependency,
     rdepend_extra :: [String],
     features :: [String],
     my_pn :: Maybe String -- ^ Just 'myOldName' if the package name contains upper characters
@@ -59,9 +59,9 @@ ebuildTemplate = EBuild {
     slot = "0",
     keywords = ["~amd64","~x86"],
     iuse = [],
-    depend = [],
+    depend = empty_dependency,
     depend_extra = [],
-    rdepend = [],
+    rdepend = empty_dependency,
     rdepend_extra = [],
     features = [],
     my_pn = Nothing
@@ -174,10 +174,10 @@ tabify_line l = replicate need_tabs '\t'  ++ nonsp
 tabify :: String -> String
 tabify = unlines . map tabify_line . lines
 
-dep_str :: String -> [String] -> [Dependency] -> DString
-dep_str var extra deps = ss var. sc '='. quote' (ss $ drop_leadings $ unlines extra ++ deps_s). nl
+dep_str :: String -> [String] -> Dependency -> DString
+dep_str var extra dep = ss var. sc '='. quote' (ss $ drop_leadings $ unlines extra ++ deps_s). nl
     where indent = 1 * tab_size
-          deps_s = tabify (dep2str indent $ PN.normalize_depend $ DependAllOf deps)
+          deps_s = tabify (dep2str indent $ PN.normalize_depend dep)
           drop_leadings = dropWhile (== '\t')
 
 quote :: String -> DString
