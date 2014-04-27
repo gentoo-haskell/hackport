@@ -67,7 +67,7 @@ import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
 
-import Distribution.Compiler
+import qualified Distribution.Compiler as Cabal
 
 import qualified Portage.Cabal as Portage
 import qualified Portage.Dependency as Portage
@@ -106,7 +106,7 @@ instance Monoid EDep where
     , dep_e  = dep_eA  `S.union` dep_eB
     }
 
-resolveDependencies :: Portage.Overlay -> PackageDescription -> CompilerId
+resolveDependencies :: Portage.Overlay -> PackageDescription -> Cabal.CompilerId
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
 resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name =
@@ -202,8 +202,8 @@ haskellDependencies overlay deps =
 
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
-cabalDependency :: Portage.Overlay -> PackageDescription -> CompilerId -> Portage.Dependency
-cabalDependency overlay pkg ~(CompilerId GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
+cabalDependency :: Portage.Overlay -> PackageDescription -> Cabal.CompilerId -> Portage.Dependency
+cabalDependency overlay pkg ~(Cabal.CompilerId Cabal.GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
@@ -221,8 +221,8 @@ cabalDependency overlay pkg ~(CompilerId GHC _ghcVersion@(Cabal.Version versionN
 -- GHC Dependency
 ---------------------------------------------------------------
 
-compilerIdToDependency :: CompilerId -> Portage.Dependency
-compilerIdToDependency ~(CompilerId GHC versionNumbers) =
+compilerIdToDependency :: Cabal.CompilerId -> Portage.Dependency
+compilerIdToDependency ~(Cabal.CompilerId Cabal.GHC versionNumbers) =
   at_least_c_p_v "dev-lang" "ghc" (Cabal.versionBranch versionNumbers)
 
 ---------------------------------------------------------------
