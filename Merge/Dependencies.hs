@@ -335,6 +335,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("attr", any_c_p "sys-apps" "attr")
       , ("ncurses", any_c_p "sys-libs" "ncurses")
       , ("panel", any_c_p "sys-libs" "ncurses")
+      , ("nanomsg", any_c_p "dev-libs" "nanomsg")
       ]
 
 ---------------------------------------------------------------
