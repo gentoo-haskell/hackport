@@ -3,11 +3,9 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Arrow (first, second)
 import Control.Monad.Error
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.Map.Strict as M
 import Data.Function (on)
 import Data.Maybe
 import Data.Monoid
@@ -280,109 +278,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
       leave_only_dynamic_fa fa = fa L.\\ common_fa
 
-      optimize_fa_depends :: [([(Cabal.FlagName, Bool)], [Portage.Dependency])] -> [Portage.Dependency]
-      optimize_fa_depends deps = L.sort
-                               . simplify
-                               . map ( (\fdep -> (fdep, []))
-                                     . first leave_only_dynamic_fa) $ deps
-
       tdeps :: Merge.EDep
-      tdeps = (L.foldl' (\x y -> x `mappend` snd y) mempty deps1){
-            Merge.dep  = S.fromList $ optimize_fa_depends $ map (second (S.toList . Merge.dep )) deps1
-          , Merge.rdep = S.fromList $ optimize_fa_depends $ map (second (S.toList . Merge.rdep)) deps1
-          }
+      tdeps = L.foldl' (\x (fa, ed) -> x `mappend` set_fa_to_ed fa ed) mempty deps1
 
-      pop_common_deps :: [(FaDep,[FaDep])] -> (FaDep,[FaDep])
-      pop_common_deps xs =
-           case pop_from_pairs xs of
-                 []  -> error "impossible"
-                 [x] -> x
-                 r   -> pop_common_deps r
-          where
-            pop_from_pairs :: [(FaDep,[FaDep])] -> [(FaDep,[FaDep])]
-            pop_from_pairs [] = []
-            pop_from_pairs [y] = [y]
-            pop_from_pairs (y1:y2:rest) = y1 `pop_from_pair` y2 : pop_from_pairs rest
-
-            pop_from_pair :: (FaDep,[FaDep]) -> (FaDep,[FaDep]) -> (FaDep,[FaDep])
-            pop_from_pair ((lfa, ld), lx) ((rfa, rd), rx) = ((fa, d), x)
-                where fa = lfa `L.intersect` rfa
-                      d  = ld `L.intersect` rd
-                      x  = (lfa, ld L.\\ d)
-                         : (rfa, rd L.\\ d)
-                         : lx ++ rx
-
-      simplify :: [(FaDep,[FaDep])] -> [Portage.Dependency]
-      simplify fdephs =
-        let -- extract common part of the depends
-            -- filtering out empty groups
-            ((common_fas, common_fdeps), all_fdeps) = second (filter (not . null . snd)) $ pop_common_deps fdephs
-            -- apply assumption of 'fdep' on other depends
-            -- Handle at least:
-            --  1. redundant-USE cancelation
-            --    a? b? c? ( x ) a? ( x ) => a? ( x )
-            --  2. one-USE irrelevance
-            --    a? b? c? d? ( x ) a? b? !c? d? ( x ) => a? b? d? ( x )
-            -- Ideally this thing should be multipass
-            mergeD :: (Cabal.FlagAssignment, Portage.Dependency)
-                   -> [(Cabal.FlagAssignment, Portage.Dependency)]
-                   -> [(Cabal.FlagAssignment, Portage.Dependency)]
-            mergeD fdep [] = [fdep]
-            mergeD lfdep@(lfa, ld) (rfdep@(rfa, rd):rest) =
-                case (ld == rd, slfa `S.intersection` srfa) of
-                    -- [1]
-                    (True, ifa) | ifa == slfa || ifa == srfa
-                              -> mergeD (S.toList ifa, ld) rest
-                    -- [2]
-                    (True, ifa) | case (S.toList (slfa S.\\ ifa), S.toList (srfa S.\\ ifa)) of
-                                      ([(lfn, lfv)], [(rfn, rfv)])
-                                          -> lfn == rfn && lfv == not rfv
-                                      _   -> False
-                              -> mergeD (S.toList ifa, ld) rest
-                    -- otherwise
-                    _         -> rfdep:mergeD lfdep rest
-              where slfa = S.fromList lfa
-                    srfa = S.fromList rfa
-
-            sd :: [(Cabal.FlagAssignment, [Portage.Dependency])]
-            sd = M.toList $!
-                 L.foldl' (\fadeps (fa, new_deps) -> let push_front old_val = Just $!
-                                                             case old_val of
-                                                                 Nothing -> new_deps:[]
-                                                                 Just ds -> new_deps:ds
-                                                     in M.alter push_front fa fadeps
-                       ) M.empty $ L.foldl' (\fadeps fadep -> fadep `mergeD` fadeps)
-                                    []
-                                    (concatMap (\(fa, deps) -> map (\one_dep -> (fa, one_dep))
-                                                                   deps)
-                                               all_fdeps)
-            -- filter out splitted packages from common group
-            ys = filter (not.null.snd) $ map (second (filter (\d -> d `notElem` concatMap snd sd)
-                                                     )) all_fdeps
-            -- Now we need to find noniteracting use flags if they are then we
-            -- don't need to simplify them more, and output as-is
-            simplifyMore :: [(Cabal.FlagAssignment,[Portage.Dependency])] -> [Portage.Dependency]
-            simplifyMore [] = []
-            simplifyMore fdeps =
-                let fa_hist = get_fa_hist fdeps
-                    (u,_) = L.maximumBy (compare `on` snd) fa_hist
-                    (fdeps_u, fdeps_nu) = hasFlag u `L.partition` fdeps
-                in if null fa_hist
-                      then concatMap (\(a, b) -> liftFlags a b) fdeps
-                      else liftFlags [u] (simplify $ map (\x -> (x,[])) $ dropFlag u fdeps_u) ++ simplifyMore fdeps_nu
-        in liftFlags common_fas common_fdeps ++ simplifyMore (sd ++ ys)
-
-      get_fa_hist :: [FaDep] -> [((Cabal.FlagName,Bool),Int)]
-      get_fa_hist fdeps = reverse $! L.sortBy (compare `on` snd) $!
-                                     M.toList $!
-                                     go M.empty (concatMap fst fdeps)
-            where go hist [] = hist
-                  go hist (fd:fds) = go (M.insertWith (+) fd 1 hist) fds
-      -- drop selected use flag from a list
-      dropFlag :: (Cabal.FlagName,Bool) -> [FaDep] -> [FaDep]
-      dropFlag f = map (first (filter (f /=)))
-      hasFlag :: (Cabal.FlagName,Bool) -> FaDep -> Bool
-      hasFlag u = elem u . fst
+      set_fa_to_ed :: Cabal.FlagAssignment -> Merge.EDep -> Merge.EDep
+      set_fa_to_ed fa ed = ed { Merge.rdep = S.singleton $ Portage.DependAllOf $ liftFlags (leave_only_dynamic_fa fa) $ S.toList $ Merge.rdep ed
+                              , Merge.dep  = S.singleton $ Portage.DependAllOf $ liftFlags (leave_only_dynamic_fa fa) $ S.toList $ Merge.dep ed
+                              }
 
       liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)
@@ -513,5 +415,3 @@ mergeEbuild verbosity existing_meta pkgdir ebuild = do
 
 unFlagName :: Cabal.FlagName -> String
 unFlagName (Cabal.FlagName fname) = fname
-
-type FaDep = (Cabal.FlagAssignment, [Portage.Dependency])

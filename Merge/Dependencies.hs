@@ -109,20 +109,8 @@ instance Monoid EDep where
 resolveDependencies :: Portage.Overlay -> PackageDescription -> Cabal.CompilerId
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
-resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name =
-    edeps
-      {
-        dep  = S.fromList dep2,
-        rdep = S.fromList rdep2
-        -- todo: if rdep includes cabal or ghc, make sure it's the same
-        -- version as in dep
-      }
+resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name = edeps
   where
-    dep1  = S.toList $ dep edeps
-    dep2  = Portage.simplifyUseDeps dep1 (dep1 ++ rdep2)
-    rdep1  = S.toList $ rdep edeps
-    rdep2  = Portage.simplifyUseDeps rdep1 rdep1
-
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
     treatAsLibrary = isJust (Cabal.library pkg)
