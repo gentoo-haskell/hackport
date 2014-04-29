@@ -52,6 +52,7 @@ import Error as E
 import Network.URI
 
 import qualified Portage.Cabal as Portage
+import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
@@ -65,6 +66,8 @@ import qualified Portage.GHCCore as GHCCore
 import qualified Merge.Dependencies as Merge
 
 import qualified Util as U
+
+import Debug.Trace
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
@@ -279,12 +282,21 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       leave_only_dynamic_fa fa = fa L.\\ common_fa
 
       tdeps :: Merge.EDep
-      tdeps = L.foldl' (\x (fa, ed) -> x `mappend` set_fa_to_ed fa ed) mempty deps1
+      (tdeps, _) = L.foldl' (\(a, c) v -> let r = a `mappend` v
+                                          in if c > (1024 :: Int)
+                                                 then (trace ("RUN NORM:" ++ show (length (show r))) $
+                                                           normalize_ed r, 0)
+                                                 else (                 r, c + 1)
+                            ) (mempty, 0) $ map set_fa_to_ed deps1
 
-      set_fa_to_ed :: Cabal.FlagAssignment -> Merge.EDep -> Merge.EDep
-      set_fa_to_ed fa ed = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
-                              , Merge.dep  = liftFlags (leave_only_dynamic_fa fa) $ Merge.dep ed
-                              }
+      set_fa_to_ed :: (Cabal.FlagAssignment, Merge.EDep) -> Merge.EDep
+      set_fa_to_ed (fa, ed) = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
+                                 , Merge.dep  = liftFlags (leave_only_dynamic_fa fa) $ Merge.dep ed
+                                 }
+      normalize_ed :: Merge.EDep -> Merge.EDep
+      normalize_ed ed = ed { Merge.rdep = PN.normalize_depend $ Merge.rdep ed
+                           , Merge.dep  = PN.normalize_depend $ Merge.dep ed
+                           }
 
       liftFlags :: Cabal.FlagAssignment -> Portage.Dependency -> Portage.Dependency
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)

@@ -71,7 +71,6 @@ import qualified Distribution.Compiler as Cabal
 
 import qualified Portage.Cabal as Portage
 import qualified Portage.Dependency as Portage
-import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
@@ -101,9 +100,9 @@ instance Monoid EDep where
         dep_e = S.empty
       }
   (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
-    { rdep   = PN.normalize_depend $ Portage.DependAllOf [rdepA, rdepB]
+    { rdep   = Portage.DependAllOf [rdepA, rdepB]
     , rdep_e = rdep_eA `S.union` rdep_eB
-    , dep    = PN.normalize_depend $ Portage.DependAllOf [depA, depB]
+    , dep    = Portage.DependAllOf [depA, depB]
     , dep_e  = dep_eA  `S.union` dep_eB
     }
 

@@ -35,6 +35,7 @@ normalization_step = combine_atoms
                    . stabilize_pass remove_empty
                    . sort_deps
                    . combine_use_guards
+                   . stabilize_pass flatten
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
