@@ -71,6 +71,7 @@ import qualified Distribution.Compiler as Cabal
 
 import qualified Portage.Cabal as Portage
 import qualified Portage.Dependency as Portage
+import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
@@ -84,9 +85,9 @@ import Debug.Trace ( trace )
 -- | Dependencies of an ebuild
 data EDep = EDep
   {
-    rdep :: S.Set Portage.Dependency,
+    rdep :: Portage.Dependency,
     rdep_e :: S.Set String,
-    dep :: S.Set Portage.Dependency,
+    dep :: Portage.Dependency,
     dep_e :: S.Set String
   }
   deriving (Show, Eq)
@@ -94,15 +95,15 @@ data EDep = EDep
 instance Monoid EDep where
   mempty = EDep
       {
-        rdep = S.empty,
+        rdep = Portage.empty_dependency,
         rdep_e = S.empty,
-        dep = S.empty,
+        dep = Portage.empty_dependency,
         dep_e = S.empty
       }
   (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
-    { rdep   = rdepA   `S.union` rdepB
+    { rdep   = PN.normalize_depend $ Portage.DependAllOf [rdepA, rdepB]
     , rdep_e = rdep_eA `S.union` rdep_eB
-    , dep    = depA    `S.union` depB
+    , dep    = PN.normalize_depend $ Portage.DependAllOf [depA, depB]
     , dep_e  = dep_eA  `S.union` dep_eB
     }
 
@@ -114,54 +115,58 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
     treatAsLibrary = isJust (Cabal.library pkg)
-    haskell_deps :: [Portage.Dependency]
-    haskell_deps
-        | treatAsLibrary = map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
-        | otherwise      = haskellDependencies overlay (buildDepends pkg)
-    test_deps :: [Portage.Dependency]
-    test_deps
-        | (not . L.null) (testSuites pkg) = testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
-        | otherwise = [] -- tests not enabled
+    haskell_deps :: Portage.Dependency
+    haskell_deps = Portage.DependAllOf $
+        case () of
+          _ | treatAsLibrary -> map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
+          _ | otherwise      -> haskellDependencies overlay (buildDepends pkg)
+    test_deps :: Portage.Dependency
+    test_deps = Portage.DependAllOf $ testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep :: Portage.Dependency
     ghc_dep = compilerIdToDependency compiler
-    extra_libs :: [Portage.Dependency]
-    extra_libs = findCLibs pkg
+    extra_libs :: Portage.Dependency
+    extra_libs = Portage.DependAllOf $ findCLibs pkg
     pkg_config_libs :: [Portage.Dependency]
     pkg_config_libs = pkgConfigDependencies overlay pkg
-    pkg_config_tools :: [Portage.Dependency]
-    pkg_config_tools = if L.null pkg_config_libs
+    pkg_config_tools :: Portage.Dependency
+    pkg_config_tools = Portage.DependAllOf $ if L.null pkg_config_libs
                            then []
                            else [any_c_p "virtual" "pkgconfig"]
-    build_tools :: [Portage.Dependency]
-    build_tools = buildToolsDependencies pkg ++ pkg_config_tools
+    build_tools :: Portage.Dependency
+    build_tools = Portage.DependAllOf $ pkg_config_tools : buildToolsDependencies pkg
     edeps :: EDep
     edeps
         | treatAsLibrary = mempty
                   {
-                    dep = S.fromList $
-                          cabal_dep
-                          : build_tools
-                          ++ test_deps,
+                    dep = Portage.DependAllOf
+                              [ cabal_dep
+                              , build_tools
+                              , test_deps
+                              ],
                     dep_e = S.singleton "${RDEPEND}",
-                    rdep = S.fromList $
-                            Portage.set_build_slot ghc_dep
-                            : haskell_deps
-                            ++ extra_libs
-                            ++ pkg_config_libs
+                    rdep = Portage.DependAllOf
+                               [ Portage.set_build_slot ghc_dep
+                               , haskell_deps
+                               , extra_libs
+                               , Portage.DependAllOf pkg_config_libs
+                               ]
                   }
         | otherwise = mempty
                   {
-                    dep = S.fromList $
-                          ghc_dep
-                          : cabal_dep
-                          : build_tools
-                          ++ haskell_deps
-                          ++ test_deps,
+                    dep = Portage.DependAllOf
+                              [ ghc_dep
+                              , cabal_dep
+                              , build_tools
+                              , haskell_deps
+                              , test_deps
+                              ],
                     dep_e = S.singleton "${RDEPEND}",
-                    rdep = S.fromList $
-                           extra_libs ++ pkg_config_libs
+                    rdep = Portage.DependAllOf
+                               [ extra_libs
+                               , Portage.DependAllOf pkg_config_libs
+                               ]
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
 

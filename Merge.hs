@@ -282,14 +282,14 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       tdeps = L.foldl' (\x (fa, ed) -> x `mappend` set_fa_to_ed fa ed) mempty deps1
 
       set_fa_to_ed :: Cabal.FlagAssignment -> Merge.EDep -> Merge.EDep
-      set_fa_to_ed fa ed = ed { Merge.rdep = S.singleton $ Portage.DependAllOf $ liftFlags (leave_only_dynamic_fa fa) $ S.toList $ Merge.rdep ed
-                              , Merge.dep  = S.singleton $ Portage.DependAllOf $ liftFlags (leave_only_dynamic_fa fa) $ S.toList $ Merge.dep ed
+      set_fa_to_ed fa ed = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
+                              , Merge.dep  = liftFlags (leave_only_dynamic_fa fa) $ Merge.dep ed
                               }
 
-      liftFlags :: Cabal.FlagAssignment -> [Portage.Dependency] -> [Portage.Dependency]
+      liftFlags :: Cabal.FlagAssignment -> Portage.Dependency -> Portage.Dependency
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)
                                       id fs
-                       in [k $! Portage.DependAllOf e]
+                       in k e
 
       cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compilerId ghc_packages merged_cabal_pkg_name
@@ -327,10 +327,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                       p  = if Cabal.flagDefault x then "+" else ""
                   in p ++ cfn_to_iuse fn
 
-      ebuild =   (\e -> e { E.depend        = Portage.DependAllOf $ S.toList $ Merge.dep tdeps} )
-               . (\e -> e { E.depend_extra  =                       S.toList $ Merge.dep_e tdeps } )
-               . (\e -> e { E.rdepend       = Portage.DependAllOf $ S.toList $ Merge.rdep tdeps} )
-               . (\e -> e { E.rdepend_extra =                       S.toList $ Merge.rdep_e tdeps } )
+      ebuild =   (\e -> e { E.depend        =            Merge.dep tdeps} )
+               . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
+               . (\e -> e { E.rdepend       =            Merge.rdep tdeps} )
+               . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
                . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of
