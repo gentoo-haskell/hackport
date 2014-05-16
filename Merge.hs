@@ -101,7 +101,7 @@ readPackageString args = do
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
 resolveVersion :: [SourcePackage] -> Maybe Cabal.Version -> Maybe SourcePackage
-resolveVersion avails Nothing = Just $ L.maximumBy (comparing packageInfoId) avails
+resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . packageInfoId)) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (packageInfoId avail)
