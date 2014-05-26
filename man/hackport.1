@@ -1,0 +1,69 @@
+.TH HACKPORT "1" "May 2014" "hackport version 0.4" "User Commands"
+.SH NAME
+hackport \- Version 0.4
+.SH SYNOPSIS
+.B hackport
+\fICOMMAND \fR[\fIFLAGS\fR]
+.br
+.B hackport
+[\fIGLOBAL FLAGS\fR]
+.SH DESCRIPTION
+hackport \fB\-\-\fR Create Ebuilds from Cabal packages
+.SS "Global flags:"
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Show help text
+.TP
+\fB\-V\fR \fB\-\-version\fR
+Print version information
+.TP
+\fB\-\-numeric\-version\fR
+Print just the version number
+.TP
+\fB\-p\fR \fB\-\-overlay\-path\fR=\fIPATH\fR Override search path list where .hackport/ lives
+(default list: ['.', paludis\-ovls or emerge\-ovls])
+.HP
+\fB\-\-portage\-path\fR=\fIPATH\fR Override path to your portage tree
+.SS "Commands:"
+.TP
+list
+List packages
+.TP
+make\-ebuild
+Make an ebuild from a .cabal file
+.TP
+status
+Show status
+.TP
+diff
+Run diff
+.TP
+update
+Update the local cache
+.TP
+merge
+Make an ebuild out of hackage package
+.TP
+distromap
+Build a distromap file
+.TP
+help
+Help about commands.
+.PP
+TODO: this is the commandDescription for globalCommand
+.SH EXAMPLES
+\(bu Generate ebuild category/foo for foo.cabal into overlay /path/to/overlay:
+
+    $> hackport -p /path/to/overlay make-ebuild category foo.cabal
+.SH "SEE ALSO"
+The full documentation for
+.B hackport
+is maintained as a Texinfo manual.  If the
+.B info
+and
+.B hackport
+programs are properly installed at your site, the command
+.IP
+.B info hackport
+.PP
+should give you access to the complete manual.
