@@ -23,6 +23,6 @@ tarball_name="${srcdir}/${P}.tar.gz"
         # cabal is not able to unpack long tar names
         rm -rf -- cabal/Cabal/tests
     )
-    tar -czf "${tarball_name}" "${P}"/
+    TAR_OPTIONS=--format=ustar tar -czf "${tarball_name}" "${P}"/
 )
 rm -rf -- "${tempdir}"
