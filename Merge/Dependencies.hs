@@ -71,6 +71,7 @@ import qualified Distribution.Compiler as Cabal
 
 import qualified Portage.Cabal as Portage
 import qualified Portage.Dependency as Portage
+import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
@@ -114,15 +115,22 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
     treatAsLibrary = isJust (Cabal.library pkg)
+    -- without slot business
+    raw_haskell_deps :: Portage.Dependency
+    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
     haskell_deps :: Portage.Dependency
-    haskell_deps = Portage.DependAllOf $
+    haskell_deps =
         case () of
-          _ | treatAsLibrary -> map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
-          _ | otherwise      -> haskellDependencies overlay (buildDepends pkg)
+          _ | treatAsLibrary -> Portage.set_build_slot $ add_profile $ raw_haskell_deps
+          _ | otherwise      -> raw_haskell_deps
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
+                    Portage.set_build_slot $
                     Portage.DependAllOf $
-                        testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
+                    -- remove depends present in common section
+                    filter (\d -> not (Portage.dep_as_broad_as d raw_haskell_deps)) $
+                    map PN.normalize_depend $
+                    testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep :: Portage.Dependency

@@ -83,7 +83,7 @@ data Dependency = DependAtom Atom
 
 data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)
 
--- returns 'True' if left constraint is the same (or looser) than right
+-- returns 'True' if left constraint is the same as (or looser than) right
 dep_as_broad_as :: Dependency -> Dependency -> Bool
 dep_as_broad_as l r
     -- very broad (not only on atoms) special case
