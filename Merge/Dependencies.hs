@@ -125,7 +125,6 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
           _ | otherwise      -> raw_haskell_deps
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
-                    Portage.set_build_slot $
                     Portage.DependAllOf $
                     -- remove depends present in common section
                     filter (\d -> not (Portage.dep_as_broad_as d raw_haskell_deps)) $
