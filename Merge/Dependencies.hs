@@ -120,7 +120,9 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
           _ | treatAsLibrary -> map Portage.set_build_slot $ map add_profile $ haskellDependencies overlay (buildDepends pkg)
           _ | otherwise      -> haskellDependencies overlay (buildDepends pkg)
     test_deps :: Portage.Dependency
-    test_deps = Portage.DependAllOf $ testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
+    test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
+                    Portage.DependAllOf $
+                        testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay pkg compiler
     ghc_dep :: Portage.Dependency
@@ -174,8 +176,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
 ---------------------------------------------------------------
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
-testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name =
-    [Portage.mkUseDependency (True, Portage.Use "test") (Portage.DependAllOf deps)]
+testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
     where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
           cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
