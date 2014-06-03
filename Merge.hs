@@ -307,22 +307,24 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
       leave_only_dynamic_fa fa = filter (\(fn, _) -> all (fn /=) irrelevant_flags) $ fa L.\\ common_fa
 
+      -- build roughly balanced complete dependency tree instead of skewed one
+      bimerge :: [Merge.EDep] -> Merge.EDep
+      bimerge deps = case go deps of
+                         []  -> mempty
+                         [r] -> r
+                         _   -> error "bimerge: something bad happened"
+          where go deps' =
+                    case deps' of
+                        (d1:d2:ds) -> go (mappend d1 d2 : go ds)
+                        _          -> deps'
+
       tdeps :: Merge.EDep
-      (tdeps, _) = L.foldl' (\(a, c) v -> let r = a `mappend` v
-                                          in if c > (1024 :: Int)
-                                                 then (trace ("RUN NORM:" ++ show (length (show r))) $
-                                                           normalize_ed r, 0)
-                                                 else (                 r, c + 1)
-                            ) (mempty, 0) $ map set_fa_to_ed deps1'
+      tdeps = bimerge $ map set_fa_to_ed deps1'
 
       set_fa_to_ed :: (Cabal.FlagAssignment, Merge.EDep) -> Merge.EDep
       set_fa_to_ed (fa, ed) = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
                                  , Merge.dep  = liftFlags (leave_only_dynamic_fa fa) $ Merge.dep ed
                                  }
-      normalize_ed :: Merge.EDep -> Merge.EDep
-      normalize_ed ed = ed { Merge.rdep = PN.normalize_depend $ Merge.rdep ed
-                           , Merge.dep  = PN.normalize_depend $ Merge.dep ed
-                           }
 
       liftFlags :: Cabal.FlagAssignment -> Portage.Dependency -> Portage.Dependency
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)
