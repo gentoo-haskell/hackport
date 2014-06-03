@@ -305,7 +305,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       -- and finally prettify all deps:
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
-      leave_only_dynamic_fa fa = filter (\(fn, _) -> any (fn ==) irrelevant_flags) $ fa L.\\ common_fa
+      leave_only_dynamic_fa fa = filter (\(fn, _) -> all (fn /=) irrelevant_flags) $ fa L.\\ common_fa
 
       tdeps :: Merge.EDep
       (tdeps, _) = L.foldl' (\(a, c) v -> let r = a `mappend` v
