@@ -90,7 +90,7 @@ data EDep = EDep
     dep :: Portage.Dependency,
     dep_e :: S.Set String
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 instance Monoid EDep where
   mempty = EDep

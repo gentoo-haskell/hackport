@@ -277,9 +277,35 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       active_flags = all_flags L.\\ common_flags
       active_flag_descs = filter (\x -> Cabal.flagName x `elem` active_flags) cabal_flag_descs
       irresolvable_flag_assignments = all_possible_flag_assignments L.\\ successfully_resolved_flag_assignments
+      -- flags, not guarding any dependency variation, like:
+      --     if flag(foo)
+      --         ghc-options: -O2
+      (irrelevant_flags, deps1') = L.foldl' drop_irrelevant ([], deps1) active_flags
+          where drop_irrelevant :: ([Cabal.FlagName], [(Cabal.FlagAssignment, Merge.EDep)]) -> Cabal.FlagName -> ([Cabal.FlagName], [(Cabal.FlagAssignment, Merge.EDep)])
+                drop_irrelevant (ifs, ds) f =
+                    case fenabled_ds' == fdisabled_ds' of
+                        True  -> (f:ifs, fenabled_ds')
+                        False -> (  ifs, ds)
+                    where (fenabled_ds', fdisabled_ds') = ( L.sort $ map drop_f fenabled_ds
+                                                          , L.sort $ map drop_f fdisabled_ds
+                                                          )
+                          drop_f :: (Cabal.FlagAssignment, Merge.EDep) -> (Cabal.FlagAssignment, Merge.EDep)
+                          drop_f (fas, d) = (filter ((f /=) . fst) fas, d)
+                          (fenabled_ds, fdisabled_ds) = L.partition is_fe ds
+                          is_fe :: (Cabal.FlagAssignment, Merge.EDep) -> Bool
+                          is_fe (fas, _d) =
+                              case lookup f fas of
+                                  Just v  -> v
+                                  -- should not happen
+                                  Nothing -> error $ unwords [ "ERROR: drop_irrelevant: searched for missing flag"
+                                                             , show f
+                                                             , "in assignment"
+                                                             , show fas
+                                                             ]
+
       -- and finally prettify all deps:
       leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
-      leave_only_dynamic_fa fa = fa L.\\ common_fa
+      leave_only_dynamic_fa fa = filter (\(fn, _) -> any (fn ==) irrelevant_flags) $ fa L.\\ common_fa
 
       tdeps :: Merge.EDep
       (tdeps, _) = L.foldl' (\(a, c) v -> let r = a `mappend` v
@@ -287,7 +313,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                                  then (trace ("RUN NORM:" ++ show (length (show r))) $
                                                            normalize_ed r, 0)
                                                  else (                 r, c + 1)
-                            ) (mempty, 0) $ map set_fa_to_ed deps1
+                            ) (mempty, 0) $ map set_fa_to_ed deps1'
 
       set_fa_to_ed :: (Cabal.FlagAssignment, Merge.EDep) -> Merge.EDep
       set_fa_to_ed (fa, ed) = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
@@ -314,6 +340,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
   notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fa)
+  notice verbosity $ "Active flags: " ++ show (map unFlagName active_flags)
+  notice verbosity $ "Irrelevant flags: " ++ show (map unFlagName irrelevant_flags)
   -- mapM_ print tdeps
 
   forM_ ghc_packages $
