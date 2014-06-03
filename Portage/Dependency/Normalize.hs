@@ -5,6 +5,7 @@ module Portage.Dependency.Normalize
 
 import           Control.Monad
 import qualified Data.List as L
+import qualified Data.Set as S
 import           Data.Maybe
 
 import Portage.Dependency.Types
@@ -50,13 +51,16 @@ remove_empty d =
         DependAtom _            -> d
     where go = remove_empty
 
+s_uniq :: [Dependency] -> [Dependency]
+s_uniq = S.toList . S.fromList
+
 -- Ideally 'combine_atoms' should handle those as well
 remove_duplicates :: Dependency -> Dependency
 remove_duplicates d =
     case d of
         DependIfUse use td fd   -> DependIfUse use (go td) (go fd)
-        DependAnyOf deps        -> DependAnyOf $ L.nub $ map go deps
-        DependAllOf deps        -> DependAllOf $ L.nub $ map go deps
+        DependAnyOf deps        -> DependAnyOf $ s_uniq $ map go deps
+        DependAllOf deps        -> DependAllOf $ s_uniq $ map go deps
         DependAtom  _           -> d
     where go = remove_duplicates
 
@@ -73,7 +77,7 @@ flatten d =
                                        ([], [])      -> empty_dependency
                                        ([], [dep])   -> dep
                                        ([], ndall)   -> DependAllOf ndall
-                                       (dall, ndall) -> go $ DependAllOf $ (concatMap undall dall) ++ ndall
+                                       (dall, ndall) -> go $ DependAllOf $ s_uniq $ (concatMap undall dall) ++ ndall
         DependAtom _            -> d
   where go :: Dependency -> Dependency
         go = flatten
