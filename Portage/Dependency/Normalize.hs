@@ -28,7 +28,7 @@ stabilize_pass pass d
 
 -- remove one layer of redundancy
 normalization_step :: Dependency -> Dependency
-normalization_step = combine_atoms
+normalization_step = id
                    . stabilize_pass propagate_context
                    . stabilize_pass flatten
                    . lift_context
@@ -37,6 +37,7 @@ normalization_step = combine_atoms
                    . sort_deps
                    . combine_use_guards
                    . stabilize_pass flatten
+                   . combine_atoms
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -73,10 +74,10 @@ flatten d =
         DependAnyOf [dep]       -> go dep
         DependAnyOf deps        -> DependAnyOf $ map go deps
 
-        DependAllOf deps        -> case L.partition is_dall_of (map go deps) of
+        DependAllOf deps        -> case L.partition is_dall_of deps of
                                        ([], [])      -> empty_dependency
                                        ([], [dep])   -> dep
-                                       ([], ndall)   -> DependAllOf ndall
+                                       ([], ndall)   -> DependAllOf $ map go ndall
                                        (dall, ndall) -> go $ DependAllOf $ s_uniq $ (concatMap undall dall) ++ ndall
         DependAtom _            -> d
   where go :: Dependency -> Dependency
@@ -171,8 +172,7 @@ pop_common (DependIfUse _u td fd)
 pop_common d'@(DependIfUse _u td fd) =
     case td_ctx `L.intersect` fd_ctx of
         [] -> d'
-        -- TODO: force simplification right there
-        common_ctx -> DependAllOf $ propagate_context' common_ctx d' : common_ctx
+        common_ctx -> stabilize_pass flatten $ DependAllOf $ propagate_context' common_ctx d' : common_ctx
     where td_ctx = lift_context' td
           fd_ctx = lift_context' fd
 pop_common x = x
