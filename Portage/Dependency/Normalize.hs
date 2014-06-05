@@ -26,18 +26,33 @@ stabilize_pass pass d
     where go = stabilize_pass pass
           d' = pass d
 
+
 -- remove one layer of redundancy
-normalization_step :: Dependency -> Dependency
-normalization_step = id
-                   . stabilize_pass propagate_context
-                   . stabilize_pass flatten
-                   . lift_context
-                   . stabilize_pass remove_duplicates
-                   . stabilize_pass remove_empty
-                   . sort_deps
-                   . combine_use_guards
-                   . stabilize_pass flatten
-                   . combine_atom_ranges
+normalization_step :: Int -> Dependency -> Dependency
+normalization_step level =
+      id
+    . tp "PC" (stabilize_pass propagate_context)
+    . tp "F2" (stabilize_pass flatten)
+    . tp "LC" lift_context
+    . tp "RD" (stabilize_pass remove_duplicates)
+    . tp "RE" (stabilize_pass remove_empty)
+    . tp "SD" sort_deps
+    . tp "CUG" combine_use_guards
+    . tp "F1" (stabilize_pass flatten)
+    . tp "CAR" combine_atom_ranges
+    where tp :: String -> (Dependency -> Dependency) -> Dependency -> Dependency
+          tp pass_name pass d = t False d'
+              where d' = pass d
+                    t False = id
+                    t True  =
+                        trace (unwords [ "PASS"
+                                       , show level
+                                       , ":"
+                                       , pass_name
+                                       , show (length (show d))
+                                       , "->"
+                                       , show (length (show d'))
+                                       ])
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -344,11 +359,12 @@ sort_deps d =
 
 -- remove various types of redundancy
 normalize_depend :: Dependency -> Dependency
-normalize_depend = normalize_depend' 50 -- arbitrary limit
+normalize_depend = normalize_depend' 50 0 -- arbitrary limit
 
-normalize_depend' :: Int -> Dependency -> Dependency
-normalize_depend' 0     d = trace "WARNING: Normalize_depend hung up. Optimization is incomplete." d
-normalize_depend' level d = next_step next_d
-    where next_d = normalization_step d
+normalize_depend' :: Int -> Int -> Dependency -> Dependency
+normalize_depend' max_level level d
+    | level >= max_level = trace "WARNING: Normalize_depend hung up. Optimization is incomplete." d
+normalize_depend' max_level level d = next_step next_d
+    where next_d = normalization_step level d
           next_step | d == next_d = id
-                    | otherwise   = normalize_depend' (level - 1)
+                    | otherwise   = normalize_depend' max_level (level + 1)
