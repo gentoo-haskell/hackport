@@ -37,7 +37,7 @@ normalization_step = id
                    . sort_deps
                    . combine_use_guards
                    . stabilize_pass flatten
-                   . combine_atoms
+                   . combine_atom_ranges
 
 remove_empty :: Dependency -> Dependency
 remove_empty d =
@@ -55,7 +55,7 @@ remove_empty d =
 s_uniq :: [Dependency] -> [Dependency]
 s_uniq = S.toList . S.fromList
 
--- Ideally 'combine_atoms' should handle those as well
+-- Ideally 'combine_atom_ranges' should handle those as well
 remove_duplicates :: Dependency -> Dependency
 remove_duplicates d =
     case d of
@@ -93,14 +93,14 @@ flatten d =
 
 -- joins atoms with different version boundaries
 -- DependAllOf [ DRange ">=foo-1" Inf, Drange Zero "<foo-2" ] -> DRange ">=foo-1" "<foo-2"
-combine_atoms :: Dependency -> Dependency
-combine_atoms d =
+combine_atom_ranges :: Dependency -> Dependency
+combine_atom_ranges d =
     case d of
         DependIfUse use td fd -> DependIfUse use (go td) (go fd)
         DependAllOf deps      -> DependAllOf $ map go $ find_atom_intersections  deps
         DependAnyOf deps      -> DependAnyOf $ map go $ find_atom_concatenations deps
         DependAtom  _         -> d
-    where go = combine_atoms
+    where go = combine_atom_ranges
 
 find_atom_intersections :: [Dependency] -> [Dependency]
 find_atom_intersections = map merge_depends . L.groupBy is_mergeable
