@@ -31,9 +31,11 @@ stabilize_pass pass d
 normalization_step :: Int -> Dependency -> Dependency
 normalization_step level =
       id
-    . tp "PC" (stabilize_pass propagate_context)
-    . tp "F2" (stabilize_pass flatten)
+    . tp "PC2" (stabilize_pass propagate_context)
+    . tp "F3" (stabilize_pass flatten)
     . tp "LC" lift_context
+    . tp "PC1" (stabilize_pass propagate_context)
+    . tp "F2" (stabilize_pass flatten)
     . tp "RD" (stabilize_pass remove_duplicates)
     . tp "RE" (stabilize_pass remove_empty)
     . tp "SD" sort_deps
