@@ -214,6 +214,7 @@ propagate_context = propagate_context' []
 propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
+        _ | d `elem` ctx      -> empty_dependency
         DependIfUse use td fd -> DependIfUse use (go (refine_context (True,  use) ctx) td)
                                                  (go (refine_context (False, use) ctx) fd)
         DependAllOf deps      -> DependAllOf $ fromJust $ msum $
@@ -294,7 +295,7 @@ lift_context' d =
     case d of
         DependIfUse _use td fd   -> d : extract_common_constraints (map lift_context' [td, fd])
         DependAllOf deps         -> L.nub $ concatMap lift_context' deps
-        DependAnyOf deps         -> extract_common_constraints $ map lift_context' deps
+        DependAnyOf deps         -> d : extract_common_constraints (map lift_context' deps)
         DependAtom  _            -> [d]
 
 -- it extracts common part of dependency comstraints.

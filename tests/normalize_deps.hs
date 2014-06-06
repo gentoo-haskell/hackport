@@ -185,6 +185,16 @@ test_normalize_in_use_and_top = TestCase $ do
                   , [ "b? ( c/d )"
                     ]
                   )
+                , -- pop '|| ( some thing )' depend
+                  ( let any_part = d_any $ map d_p ["a", "b"] in
+                    d_all [ d_use  "u" $ d_all [ any_part , d_p "z"]
+                          , d_nuse "u" $         any_part
+                          ]
+                  , [ "u? ( c/z )"
+                    , "|| ( c/a"
+                    , "     c/b )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 $ PN.normalize_depend d
