@@ -76,9 +76,9 @@ data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show, Ord)
 
 data Dependency = DependAtom Atom
-                | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
+                | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
     deriving (Eq, Show, Ord)
 
 data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)

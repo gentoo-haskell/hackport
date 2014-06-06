@@ -190,9 +190,9 @@ test_normalize_in_use_and_top = TestCase $ do
                     d_all [ d_use  "u" $ d_all [ any_part , d_p "z"]
                           , d_nuse "u" $         any_part
                           ]
-                  , [ "u? ( c/z )"
-                    , "|| ( c/a"
+                  , [ "|| ( c/a"
                     , "     c/b )"
+                    , "u? ( c/z )"
                     ]
                   )
                 ]
