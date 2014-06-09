@@ -336,6 +336,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("ncurses", any_c_p "sys-libs" "ncurses")
       , ("panel", any_c_p "sys-libs" "ncurses")
       , ("nanomsg", any_c_p "dev-libs" "nanomsg")
+      , ("pgf", any_c_p "media-libs" "libpgf")
       ]
 
 ---------------------------------------------------------------
