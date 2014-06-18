@@ -337,6 +337,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("panel", any_c_p "sys-libs" "ncurses")
       , ("nanomsg", any_c_p "dev-libs" "nanomsg")
       , ("pgf", any_c_p "media-libs" "libpgf")
+      , ("ssh2", any_c_p "net-libs" "libssh2")
       ]
 
 ---------------------------------------------------------------
@@ -483,4 +484,5 @@ pkgconfig_table =
   ,("ncursesw",                    ("sys-libs", "ncurses", Portage.AnySlot))
   ,("panel",                       ("sys-libs", "ncurses", Portage.AnySlot))
   ,("panelw",                      ("sys-libs", "ncurses", Portage.AnySlot))
+  ,("libssh2",                     ("net-libs", "libssh2", Portage.AnySlot))
   ]
