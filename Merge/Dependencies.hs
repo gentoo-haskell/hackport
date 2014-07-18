@@ -338,6 +338,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("nanomsg", any_c_p "dev-libs" "nanomsg")
       , ("pgf", any_c_p "media-libs" "libpgf")
       , ("ssh2", any_c_p "net-libs" "libssh2")
+      , ("dl", any_c_p "virtual" "libc")
       ]
 
 ---------------------------------------------------------------
