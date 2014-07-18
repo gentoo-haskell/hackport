@@ -194,8 +194,10 @@ statusPrinter packages = do
     putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
     putStrLn $ toColor (PortageOnly "Magenta") ++ ": package only exist in the portage tree"
     putStrLn $ toColor (HackageOnly "Cyan") ++ ": package only exist on hackage"
-    forM_ (Map.toAscList packages) $ \(pkg, ebuilds) -> do
+    forM_ (zip [(1 :: Int) ..] $ Map.toAscList packages) $ \(ix, (pkg, ebuilds)) -> do
         let (PackageName c p) = pkg
+        putStr (bold (show ix))
+        putStr " "
         putStr $ display c ++ '/' : bold (display p)
         putStr " "
         forM_ ebuilds $ \e -> do
