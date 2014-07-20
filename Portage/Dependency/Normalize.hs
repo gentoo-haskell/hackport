@@ -269,7 +269,7 @@ slice_list (e:es) = (e, es) : map (\(v, vs) -> (v, e : vs)) (slice_list es)
 --   foo/bar
 --   || ( bar/baz
 --        bar/quux )
--- TODO: better add propagation in this exact plase to keep tree shrinking only
+-- TODO: better add propagation in this exact place to keep tree shrinking only
 lift_context :: Dependency -> Dependency
 lift_context d =
     case d of
