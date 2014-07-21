@@ -3,6 +3,7 @@ module Portage.Dependency.Normalize
     normalize_depend
   ) where
 
+import qualified Control.Arrow as A
 import           Control.Monad
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -205,6 +206,13 @@ find_use_concatenations = id
 -- gets translated to
 --   foo/bar
 --   u? ( bar/baz )
+--
+-- and more complex redundancy:
+--   v? ( foo/bar )
+--   u? ( !v? ( foo/bar ) )
+-- gets translated to
+--   v? ( foo/bar )
+--   u? ( foo/bar )
 propagate_context :: Dependency -> Dependency
 propagate_context = propagate_context' []
 
@@ -215,8 +223,22 @@ propagate_context' :: [Dependency] -> Dependency -> Dependency
 propagate_context' ctx d =
     case d of
         _ | d `elem` ctx      -> empty_dependency
-        DependIfUse use td fd -> DependIfUse use (go (refine_context (True,  use) ctx) td)
-                                                 (go (refine_context (False, use) ctx) fd)
+        DependIfUse use td fd -> let (t_ctx_comp, t_refined_ctx) = refine_context (True,  use) ctx
+                                     (f_ctx_comp, f_refined_ctx) = refine_context (False, use) ctx
+                                     tdr = go t_refined_ctx td
+                                     fdr = go f_refined_ctx fd
+                                     ctx_comp = filter (not . is_empty_dependency) $
+                                                concat [ (d_to_l tdr `L.intersect` t_ctx_comp)
+                                                       , (d_to_l fdr `L.intersect` f_ctx_comp)
+                                                       ]
+                                     diu_refined = DependIfUse use tdr
+                                                                   fdr
+                                 in case ctx_comp of
+                                    [] -> diu_refined
+                                    _  -> go ctx $
+                                              DependAllOf [ DependAllOf ctx_comp
+                                                          , diu_refined
+                                                          ]
         DependAllOf deps      -> DependAllOf $ fromJust $ msum $
                                                    [ v
                                                    | (optimized_d, other_deps) <- slice_list deps
@@ -231,20 +253,28 @@ propagate_context' ctx d =
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
+        d_to_l :: Dependency -> [Dependency]
+        d_to_l d' =
+            case d' of
+                DependAllOf ds -> concatMap d_to_l ds
+                _              -> [d']
 
-refine_context :: (Bool, Use) -> [Dependency] -> [Dependency]
-refine_context use_cond = map (stabilize_pass flatten . refine_ctx_unit use_cond)
-    where refine_ctx_unit :: (Bool, Use) -> Dependency -> Dependency
+-- returns (complement-dependencies, simplified-dependencies)
+refine_context :: (Bool, Use) -> [Dependency] -> ([Dependency], [Dependency])
+refine_context use_cond = unzip . map (A.second (stabilize_pass flatten) . refine_ctx_unit use_cond)
+    where refine_ctx_unit :: (Bool, Use) -> Dependency -> (Dependency, Dependency)
           refine_ctx_unit uc@(bu, u) d =
               case d of
                 DependIfUse u' td fd
                   -> case u == u' of
-                         False -> DependIfUse u' (refine_ctx_unit uc td)
-                                                 (refine_ctx_unit uc fd)
-                         True  -> refine_ctx_unit uc $ if bu
-                                                           then td
-                                                           else fd
-                _ -> d
+                         False -> ( empty_dependency
+                                  , DependIfUse u' (snd $ refine_ctx_unit uc td)
+                                                   (snd $ refine_ctx_unit uc fd)
+                                  )
+                         True  -> case bu of
+                                      True  -> (fd, snd $ refine_ctx_unit uc td)
+                                      False -> (td, snd $ refine_ctx_unit uc fd)
+                _ -> (empty_dependency, d)
 
 -- generates all pairs of:
 -- (list_element, list_without_element)

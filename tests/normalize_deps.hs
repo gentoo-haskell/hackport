@@ -195,6 +195,19 @@ test_normalize_in_use_and_top = TestCase $ do
                     , "u? ( c/z )"
                     ]
                   )
+                , -- simplify slightly more complex counterguard
+                  --   v? ( c/d )
+                  --   u? ( !v? ( c/d ) )
+                  -- to
+                  --   v? ( c/d )
+                  --   u? ( c/d )
+                  ( d_all [               d_use  "v" $ d_p "d"
+                          , d_use   "u" $ d_nuse "v" $ d_p "d"
+                          ]
+                  , [ "u? ( c/d )"
+                    , "v? ( c/d )"
+                    ]
+                  )
                 ]
     forM_ deps $ \(d, expected) ->
         let actual = P.dep2str 0 $ PN.normalize_depend d
