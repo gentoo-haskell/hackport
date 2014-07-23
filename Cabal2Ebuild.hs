@@ -16,11 +16,6 @@
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 -- General Public License for more details.
 --
--- |
--- Maintainer  : haskell@gentoo.org
---
--- cabal2ebuild - a program for generating a Gentoo ebuild from a .cabal file
---
 module Cabal2Ebuild
         (cabal2ebuild
         ,convertDependencies

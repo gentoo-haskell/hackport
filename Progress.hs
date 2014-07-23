@@ -4,7 +4,6 @@
 -- Copyright   :  (c) Duncan Coutts 2008
 -- License     :  BSD-like
 --
--- Maintainer  :  duncan@haskell.org
 -- Portability :  portable
 --
 -- Common types for dependency resolution.
