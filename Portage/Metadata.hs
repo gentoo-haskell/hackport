@@ -36,9 +36,6 @@ makeDefaultMetadata long_description =
             , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
             , "<pkgmetadata>"
             , "\t<herd>haskell</herd>"
-            , "\t<maintainer>"
-            , "\t\t<email>haskell@gentoo.org</email>"
-            , "\t</maintainer>"
             , (init {- strip trailing newline-}
               . unlines
               . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]
