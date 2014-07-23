@@ -100,7 +100,7 @@ showEBuild now ebuild =
      Nothing -> id
      Just pn -> ss "MY_PN=". quote pn. nl.
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
-  ss "DESCRIPTION=". quote (description ebuild). nl.
+  ss "DESCRIPTION=". quote (drop_tdot $ description ebuild). nl.
   ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
   ss "SRC_URI=". quote (toMirror $ src_uri ebuild). nl.
   nl.
@@ -135,6 +135,10 @@ showEBuild now ebuild =
 -- "b"  -> "b"
 sort_iuse :: [String] -> [String]
 sort_iuse = L.sortBy (compare `F.on` dropWhile ( `elem` "+"))
+
+-- drops trailing dot
+drop_tdot :: String -> String
+drop_tdot = reverse . dropWhile (== '.') . reverse
 
 type DString = String -> String
 
@@ -184,8 +188,12 @@ quote :: String -> DString
 quote str = sc '"'. ss (esc str). sc '"'
   where
   esc = concatMap esc'
-  esc' '"' = "\""
-  esc' c = [c]
+  esc' c =
+      case c of
+          '"'  -> "\""
+          '\n' -> " "
+          '`'  -> "'"
+          _    -> [c]
 
 quote' :: DString -> DString
 quote' str = sc '"'. str. sc '"'
