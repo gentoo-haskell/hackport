@@ -9,8 +9,8 @@ import qualified Data.List as L
 import qualified Data.Set as S
 import           Data.Maybe
 
-import Portage.Dependency.Types
 import Portage.Dependency.Builder
+import Portage.Dependency.Types
 import Portage.Use
 
 import Debug.Trace
@@ -26,7 +26,6 @@ stabilize_pass pass d
     | otherwise = go d'
     where go = stabilize_pass pass
           d' = pass d
-
 
 -- remove one layer of redundancy
 normalization_step :: Int -> Dependency -> Dependency
@@ -228,8 +227,8 @@ propagate_context' ctx d =
                                      tdr = go t_refined_ctx td
                                      fdr = go f_refined_ctx fd
                                      ctx_comp = filter (not . is_empty_dependency) $
-                                                concat [ (d_to_l tdr `L.intersect` t_ctx_comp)
-                                                       , (d_to_l fdr `L.intersect` f_ctx_comp)
+                                                concat [ (lift_context' tdr `L.intersect` (concatMap lift_context' t_ctx_comp))
+                                                       , (lift_context' fdr `L.intersect` (concatMap lift_context' f_ctx_comp))
                                                        ]
                                      diu_refined = DependIfUse use tdr
                                                                    fdr
@@ -237,7 +236,7 @@ propagate_context' ctx d =
                                     [] -> diu_refined
                                     _  -> go ctx $
                                               DependAllOf [ DependAllOf ctx_comp
-                                                          , diu_refined
+                                                          , go ctx_comp diu_refined
                                                           ]
         DependAllOf deps      -> DependAllOf $ fromJust $ msum $
                                                    [ v
@@ -253,11 +252,6 @@ propagate_context' ctx d =
                                      True  -> empty_dependency
                                      False -> d
   where go c = propagate_context' c
-        d_to_l :: Dependency -> [Dependency]
-        d_to_l d' =
-            case d' of
-                DependAllOf ds -> concatMap d_to_l ds
-                _              -> [d']
 
 -- returns (complement-dependencies, simplified-dependencies)
 refine_context :: (Bool, Use) -> [Dependency] -> ([Dependency], [Dependency])

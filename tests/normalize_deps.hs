@@ -209,6 +209,21 @@ test_normalize_in_use_and_top = TestCase $ do
                     ]
                   )
 
+                , --   ffi? ( c/d c/e )
+                  --   !ffi ( !gmp ( c/d c/e ) )
+                  --   gmp? ( c/d c/e )
+                  -- to
+                  --   ( c/d c/e )
+                  ( let de = d_all [ d_p "d" , d_p "e" ]
+                    in d_all [ d_use "ffi" de
+                             , d_nuse "ffi" $ d_nuse "gmp" $ de
+                             , d_use  "gmp" $ de
+                             ]
+                  , [ "c/d"
+                    , "c/e"
+                    ]
+                  )
+
                 {- TODO: another popular case
                 , -- simplify even more complex counterguard
                   --   u? ( c/d )
