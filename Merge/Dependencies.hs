@@ -487,4 +487,5 @@ pkgconfig_table =
   ,("panelw",                      ("sys-libs", "ncurses", Portage.AnySlot))
   ,("libssh2",                     ("net-libs", "libssh2", Portage.AnySlot))
   ,("SDL_image",                   ("media-libs", "sdl-image", Portage.AnySlot))
+  ,("libzmq",                      ("net-libs", "zeromq", Portage.AnySlot))
   ]
