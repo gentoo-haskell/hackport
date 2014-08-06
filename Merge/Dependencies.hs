@@ -339,6 +339,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("pgf", any_c_p "media-libs" "libpgf")
       , ("ssh2", any_c_p "net-libs" "libssh2")
       , ("dl", any_c_p "virtual" "libc")
+      , ("glfw", any_c_p "media-libs" "glfw")
       ]
 
 ---------------------------------------------------------------
