@@ -340,6 +340,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("ssh2", any_c_p "net-libs" "libssh2")
       , ("dl", any_c_p "virtual" "libc")
       , ("glfw", any_c_p "media-libs" "glfw")
+      , ("nettle", any_c_p "dev-libs" "nettle")
       ]
 
 ---------------------------------------------------------------
