@@ -243,8 +243,9 @@ propagate_context' ctx d =
                                                    | (optimized_d, other_deps) <- slice_list deps
                                                    , let ctx' = ctx ++ other_deps
                                                          d'   = go ctx' optimized_d
+                                                         d'ctx = d' : ctx
                                                          v    = case d' /= optimized_d of
-                                                                    True  -> Just (d':other_deps)
+                                                                    True  -> Just (d':map (go d'ctx) other_deps)
                                                                     False -> Nothing -- haven't managed to optimize anything
                                                    ] ++ [Just deps] -- unmodified
         DependAnyOf deps      -> DependAnyOf $ map (go ctx) deps
