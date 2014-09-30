@@ -375,6 +375,7 @@ buildToolsTable =
   , ("llvm-config",         any_c_p "sys-devel" "llvm")
   , ("cpphs",               any_c_p "dev-haskell" "cpphs")
   , ("ghc",                 any_c_p "dev-lang" "ghc")
+  , ("Xpm",                 any_c_p "x11-libs" "libXpm")
   ]
 
 -- tools that are provided by ghc or some other existing program
