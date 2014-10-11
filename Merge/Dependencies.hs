@@ -342,6 +342,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("glfw", any_c_p "media-libs" "glfw")
       , ("nettle", any_c_p "dev-libs" "nettle")
       , ("Xpm",    any_c_p "x11-libs" "libXpm")
+      , ("Xss",    any_c_p "x11-libs" "libXScrnSaver")
       ]
 
 ---------------------------------------------------------------
