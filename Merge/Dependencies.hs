@@ -343,6 +343,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("nettle", any_c_p "dev-libs" "nettle")
       , ("Xpm",    any_c_p "x11-libs" "libXpm")
       , ("Xss",    any_c_p "x11-libs" "libXScrnSaver")
+      , ("tag_c",  any_c_p "media-libs" "taglib")
       ]
 
 ---------------------------------------------------------------
@@ -492,4 +493,5 @@ pkgconfig_table =
   ,("libssh2",                     ("net-libs", "libssh2", Portage.AnySlot))
   ,("SDL_image",                   ("media-libs", "sdl-image", Portage.AnySlot))
   ,("libzmq",                      ("net-libs", "zeromq", Portage.AnySlot))
+  ,("taglib_c",                    ("media-libs", "taglib", Portage.AnySlot))
   ]
