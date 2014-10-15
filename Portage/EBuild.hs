@@ -119,23 +119,29 @@ showEBuild now ebuild =
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
+
   gnl . gs "pkg_setup() {" . gnl.
   gs (tabify_line " games_pkg_setup") . gnl.
   gs (tabify_line " haskell-cabal_pkg_setup") . gnl.
   gs "}" . gnl.
+
   verbatim (nl. ss "src_prepare() {" . nl)
                (src_prepare ebuild)
            (ss "}" . nl).
+
   verbatim (nl. ss "src_configure() {" . nl)
                (src_configure ebuild)
            (ss "}" . nl).
+
   gnl . gs "src_compile() {" . gnl.
   gs (tabify_line " haskell-cabal_src_compile") . gnl.
   gs "}" . gnl.
+
   gnl . gs "src_install() {" . gnl.
   gs (tabify_line " haskell-cabal_src_install") . gnl.
   gs (tabify_line " prepgamesdirs") . gnl.
   gs "}" . gnl.
+
   id $ []
   where
         expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
