@@ -361,7 +361,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       addGamesFlags :: [String] -> [String]
       addGamesFlags xs
-        | Portage.isGamesCat cat =
+        | Portage.is_games_cat cat =
             (if null xs then ["haskell-cabal_src_configure \\"] else xs) ++
             gamesFlags
         | otherwise = xs

@@ -6,7 +6,7 @@ module Portage.EBuild
         ) where
 
 import Portage.Dependency
-import Portage.PackageId(isGamesCatS)
+import qualified Portage.PackageId as PI
 import qualified Portage.Dependency.Normalize as PN
 
 import Data.String.Utils
@@ -145,9 +145,13 @@ showEBuild now ebuild =
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
         gs :: String -> DString
-        gs xs = ss $ if isGamesCatS . category $ ebuild then xs else ""
+        gs s = if PI.is_games_cat (PI.Category (category ebuild))
+                   then ss s
+                   else id
         gnl :: DString
-        gnl = if isGamesCatS . category $ ebuild then nl else ss ""
+        gnl = if PI.is_games_cat (PI.Category (category ebuild))
+                   then nl
+                   else id
 
 -- "+a" -> "a"
 -- "b"  -> "b"
