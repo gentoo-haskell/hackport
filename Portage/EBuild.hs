@@ -76,7 +76,7 @@ ebuildTemplate = EBuild {
 -- | Given an EBuild, give the URI to the tarball of the source code.
 -- Assumes that the server is always hackage.haskell.org.
 src_uri :: EBuild -> String
-src_uri e = 
+src_uri e =
   case my_pn e of
     -- use standard address given that the package name has no upper
     -- characters
