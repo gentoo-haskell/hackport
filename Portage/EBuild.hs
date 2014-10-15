@@ -142,6 +142,11 @@ showEBuild now ebuild =
             ss (tabify_line " prepgamesdirs") . nl.
             ss "}" . nl).
 
+  if_games (nl . ss "pkg_postinst() {" . nl.
+            ss (tabify_line " ghc-package_pkg_postinst") . nl.
+            ss (tabify_line " games_pkg_postinst") . nl.
+            ss "}" . nl).
+
   id $ []
   where
         expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
