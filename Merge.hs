@@ -376,7 +376,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . ( case requested_cabal_flags of
                        Nothing  -> id
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
-               $ C2E.cabal2ebuild pkgDesc
+               $ C2E.cabal2ebuild cat pkgDesc
 
   mergeEbuild verbosity existing_meta pkgdir ebuild
   when fetch $ do

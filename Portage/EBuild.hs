@@ -20,6 +20,7 @@ import qualified System.Locale as TC
 
 data EBuild = EBuild {
     name :: String,
+    category :: String,
     hackage_name :: String, -- might differ a bit (we mangle case)
     version :: String,
     hackportVersion :: String,
@@ -49,6 +50,7 @@ getHackportVersion Version {versionBranch=[]} = ""
 ebuildTemplate :: EBuild
 ebuildTemplate = EBuild {
     name = "foobar",
+    category = "dev-haskell",
     hackage_name = "FooBar",
     version = "0.1",
     hackportVersion = getHackportVersion Paths_hackport.version,
