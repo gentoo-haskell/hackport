@@ -6,6 +6,7 @@ module Portage.EBuild
         ) where
 
 import Portage.Dependency
+import Portage.PackageId(isGamesCatS)
 import qualified Portage.Dependency.Normalize as PN
 
 import Data.String.Utils
@@ -96,7 +97,7 @@ showEBuild now ebuild =
   sconcat (map (\(k, v) -> ss "#hackport: " . ss k . ss ": " . ss v . nl) $ used_options ebuild).
   nl.
   ss "CABAL_FEATURES=". quote' (sepBy " " $ features ebuild). nl.
-  ss "inherit haskell-cabal". nl.
+  ss "inherit haskell-cabal". gs " games" . nl.
   nl.
   (case my_pn ebuild of
      Nothing -> id
@@ -118,12 +119,23 @@ showEBuild now ebuild =
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
+  gnl . gs "pkg_setup() {" . gnl.
+  gs (tabify_line " games_pkg_setup") . gnl.
+  gs (tabify_line " haskell-cabal_pkg_setup") . gnl.
+  gs "}" . gnl.
   verbatim (nl. ss "src_prepare() {" . nl)
                (src_prepare ebuild)
            (ss "}" . nl).
   verbatim (nl. ss "src_configure() {" . nl)
                (src_configure ebuild)
            (ss "}" . nl).
+  gnl . gs "src_compile() {" . gnl.
+  gs (tabify_line " haskell-cabal_src_compile") . gnl.
+  gs "}" . gnl.
+  gnl . gs "src_install() {" . gnl.
+  gs (tabify_line " haskell-cabal_src_install") . gnl.
+  gs (tabify_line " prepgamesdirs") . gnl.
+  gs "}" . gnl.
   id $ []
   where
         expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
@@ -132,6 +144,10 @@ showEBuild now ebuild =
         toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
+        gs :: String -> DString
+        gs xs = ss $ if isGamesCatS . category $ ebuild then xs else ""
+        gnl :: DString
+        gnl = if isGamesCatS . category $ ebuild then nl else ss ""
 
 -- "+a" -> "a"
 -- "b"  -> "b"
