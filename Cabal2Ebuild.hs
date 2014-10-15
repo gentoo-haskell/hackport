@@ -39,9 +39,10 @@ import qualified Portage.EBuild as E
 import qualified Portage.Overlay as O
 import Portage.Version
 
-cabal2ebuild :: Cabal.PackageDescription -> Portage.EBuild
-cabal2ebuild pkg = Portage.ebuildTemplate {
+cabal2ebuild :: Portage.Category -> Cabal.PackageDescription -> Portage.EBuild
+cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.name        = Portage.cabal_pn_to_PN cabal_pn,
+    E.category    = display cat,
     E.hackage_name= cabalPkgName,
     E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg

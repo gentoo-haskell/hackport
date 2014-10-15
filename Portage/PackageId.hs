@@ -12,7 +12,9 @@ module Portage.PackageId (
     normalizeCabalPackageName,
     normalizeCabalPackageId,
     packageIdToFilePath,
-    cabal_pn_to_PN
+    cabal_pn_to_PN,
+    isGamesCat,
+    isGamesCatS
   ) where
 
 import Data.Char
@@ -129,3 +131,9 @@ parseFriendlyPackage str =
 
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map toLower . display
+
+isGamesCat :: Category -> Bool
+isGamesCat = isGamesCatS . display
+
+isGamesCatS :: String -> Bool
+isGamesCatS = (==) "games" . takeWhile (/= '-')

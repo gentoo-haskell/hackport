@@ -3,7 +3,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Function (on)
@@ -40,7 +40,7 @@ import System.Directory ( getCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
                         )
-import System.Cmd (system)
+import System.Process (system)
 import System.FilePath ((</>))
 import System.Exit
 
@@ -52,7 +52,6 @@ import Error as E
 import Network.URI
 
 import qualified Portage.Cabal as Portage
-import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
@@ -67,7 +66,6 @@ import qualified Merge.Dependencies as Merge
 
 import qualified Util as U
 
-import Debug.Trace
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
@@ -358,6 +356,16 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       icalate _s [x]    = [x]
       icalate  s (x:xs) = (x ++ s) : icalate s xs
 
+      gamesFlags :: [String]
+      gamesFlags = ["\t--prefix=\"${GAMES_PREFIX}\""]
+
+      addGamesFlags :: [String] -> [String]
+      addGamesFlags xs
+        | Portage.isGamesCat cat =
+            (if null xs then ["haskell-cabal_src_configure \\"] else xs) ++
+            gamesFlags
+        | otherwise = xs
+
       selected_flags :: ([Cabal.FlagName], Cabal.FlagAssignment) -> [String]
       selected_flags ([], []) = []
       selected_flags (active_fns, users_fas) = icalate " \\" $ "haskell-cabal_src_configure" : map snd (L.sortBy (compare `on` fst) flag_pairs)
@@ -373,12 +381,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       =            Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = selected_flags (active_flags, user_specified_fas) } )
+               . (\e -> e { E.src_configure = addGamesFlags $ selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of
                        Nothing  -> id
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
-               $ C2E.cabal2ebuild pkgDesc
+               $ C2E.cabal2ebuild cat pkgDesc
 
   mergeEbuild verbosity existing_meta pkgdir ebuild
   when fetch $ do
