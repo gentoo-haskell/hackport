@@ -97,7 +97,7 @@ showEBuild now ebuild =
   sconcat (map (\(k, v) -> ss "#hackport: " . ss k . ss ": " . ss v . nl) $ used_options ebuild).
   nl.
   ss "CABAL_FEATURES=". quote' (sepBy " " $ features ebuild). nl.
-  ss "inherit haskell-cabal". gs " games" . nl.
+  ss "inherit haskell-cabal". if_games (ss " games") . nl.
   nl.
   (case my_pn ebuild of
      Nothing -> id
@@ -120,12 +120,12 @@ showEBuild now ebuild =
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
 
-  gnl . gs "pkg_setup() {" . gnl.
-  gs (tabify_line " games_pkg_setup") . gnl.
-  gs (tabify_line " haskell-cabal_pkg_setup") . gnl.
-  gs "}" . gnl.
+  if_games (nl . ss "pkg_setup() {" . nl.
+            ss (tabify_line " games_pkg_setup") . nl.
+            ss (tabify_line " haskell-cabal_pkg_setup") . nl.
+            ss "}" . nl).
 
-  verbatim (nl. ss "src_prepare() {" . nl)
+  verbatim (nl . ss "src_prepare() {" . nl)
                (src_prepare ebuild)
            (ss "}" . nl).
 
@@ -133,14 +133,14 @@ showEBuild now ebuild =
                (src_configure ebuild)
            (ss "}" . nl).
 
-  gnl . gs "src_compile() {" . gnl.
-  gs (tabify_line " haskell-cabal_src_compile") . gnl.
-  gs "}" . gnl.
+  if_games (nl . ss "src_compile() {" . nl.
+            ss (tabify_line " haskell-cabal_src_compile") . nl.
+            ss "}" . nl).
 
-  gnl . gs "src_install() {" . gnl.
-  gs (tabify_line " haskell-cabal_src_install") . gnl.
-  gs (tabify_line " prepgamesdirs") . gnl.
-  gs "}" . gnl.
+  if_games (nl . ss "src_install() {" . nl.
+            ss (tabify_line " haskell-cabal_src_install") . nl.
+            ss (tabify_line " prepgamesdirs") . nl.
+            ss "}" . nl).
 
   id $ []
   where
@@ -150,14 +150,10 @@ showEBuild now ebuild =
         toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
-        gs :: String -> DString
-        gs s = if PI.is_games_cat (PI.Category (category ebuild))
-                   then ss s
-                   else id
-        gnl :: DString
-        gnl = if PI.is_games_cat (PI.Category (category ebuild))
-                   then nl
-                   else id
+        if_games :: DString -> DString
+        if_games ds = if PI.is_games_cat (PI.Category (category ebuild))
+                          then ds
+                          else id
 
 -- "+a" -> "a"
 -- "b"  -> "b"
