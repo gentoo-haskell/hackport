@@ -3,7 +3,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Function (on)
@@ -40,7 +40,7 @@ import System.Directory ( getCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
                         )
-import System.Cmd (system)
+import System.Process (system)
 import System.FilePath ((</>))
 import System.Exit
 
@@ -52,7 +52,6 @@ import Error as E
 import Network.URI
 
 import qualified Portage.Cabal as Portage
-import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
@@ -67,7 +66,6 @@ import qualified Merge.Dependencies as Merge
 
 import qualified Util as U
 
-import Debug.Trace
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
