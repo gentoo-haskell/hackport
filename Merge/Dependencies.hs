@@ -433,6 +433,9 @@ pkgconfig_table =
   ,("gtk+-unix-print-2.0", ("x11-libs", "gtk+", Portage.GivenSlot "2"))
   ,("gtk+-x11-2.0",        ("x11-libs", "gtk+", Portage.GivenSlot "2"))
 
+  ,("gtk+-3.0",            ("x11-libs", "gtk+", Portage.GivenSlot "3"))
+  ,("webkitgtk-3.0",       ("net-libs", "webkit-gtk", Portage.GivenSlot "3"))
+
   ,("cairo",            ("x11-libs", "cairo", Portage.AnySlot)) -- need [svg] for dev-haskell/cairo
   ,("cairo-ft",         ("x11-libs", "cairo", Portage.AnySlot))
   ,("cairo-ps",         ("x11-libs", "cairo", Portage.AnySlot))
