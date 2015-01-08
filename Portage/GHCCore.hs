@@ -139,8 +139,8 @@ ghc782_pkgs =
   , p "hoopl" [3,10,0,1] -- used by libghc
   , p "hpc" [0,6,0,1] -- used by libghc
   , p "integer-gmp" [0,5,1,0]
-  , p "old-locale" [1,0,0,6]
-  , p "old-time" [1,1,0,2]
+  -- , p "old-locale" [1,0,0,6] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,2] -- stopped shipping in 7.10, deprecated
   , p "pretty" [1,1,1,1]
   , p "process" [1,2,0,0]
   , p "template-haskell" [2,9,0,0] -- used by libghc
@@ -166,8 +166,8 @@ ghc762_pkgs =
   , p "hoopl" [3,9,0,0] -- used by libghc
   , p "hpc" [0,6,0,0] -- used by libghc
   , p "integer-gmp" [0,5,0,0]
-  , p "old-locale" [1,0,0,5]
-  , p "old-time" [1,1,0,1]
+  -- , p "old-locale" [1,0,0,5] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,1] -- stopped shipping in 7.10, deprecated
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,2]
   , p "template-haskell" [2,8,0,0] -- used by libghc
@@ -192,8 +192,8 @@ ghc761_pkgs =
   , p "hoopl" [3,9,0,0] -- used by libghc
   , p "hpc" [0,6,0,0] -- used by libghc
   , p "integer-gmp" [0,5,0,0]
-  , p "old-locale" [1,0,0,5]
-  , p "old-time" [1,1,0,1]
+  -- , p "old-locale" [1,0,0,5] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,1] -- stopped shipping in 7.10, deprecated
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,2]
   , p "template-haskell" [2,8,0,0] -- used by libghc
@@ -219,8 +219,8 @@ ghc742_pkgs =
   , p "hoopl" [3,8,7,3] -- used by libghc
   , p "hpc" [0,5,1,1] -- used by libghc
   , p "integer-gmp" [0,4,0,0]
-  , p "old-locale" [1,0,0,4]
-  , p "old-time" [1,1,0,0]
+  -- , p "old-locale" [1,0,0,4] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,0] -- stopped shipping in 7.10, deprecated
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,1]
   , p "template-haskell" [2,7,0,0] -- used by libghc
@@ -246,8 +246,8 @@ ghc741_pkgs =
   , p "hoopl" [3,8,7,3] -- used by libghc
   , p "hpc" [0,5,1,1] -- used by libghc
   , p "integer-gmp" [0,4,0,0]
-  , p "old-locale" [1,0,0,4]
-  , p "old-time" [1,1,0,0]
+  -- , p "old-locale" [1,0,0,4] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,0] -- stopped shipping in 7.10, deprecated
   , p "pretty" [1,1,1,0]
   , p "process" [1,1,0,1]
   , p "template-haskell" [2,7,0,0] -- used by libghc
