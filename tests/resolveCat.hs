@@ -13,7 +13,7 @@ tests :: Test
 tests = TestList [ TestLabel "resolve cabal" (test_resolveCategory "dev-haskell" "cabal")
                  , TestLabel "resolve ghc" (test_resolveCategory "dev-lang" "ghc")
                  , TestLabel "resolve Cabal" (test_resolveCategory "dev-haskell" "Cabal")
-                 , TestLabel "resolve DaRsC" (test_resolveCategory "dev-vcs" "darcs")
+                 , TestLabel "resolve DaRcS" (test_resolveCategory "dev-vcs" "DaRcS")
                  ]
 
 test_resolveCategory :: String -> String -> Test
