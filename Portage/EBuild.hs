@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Portage.EBuild
         ( EBuild(..)
         , ebuildTemplate
@@ -17,7 +18,11 @@ import qualified Data.List as L
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
+#if MIN_VERSION_time(1,5,0)
+import qualified System.Locale as SL
+#else
 import qualified System.Locale as TC
+#endif
 
 data EBuild = EBuild {
     name :: String,
