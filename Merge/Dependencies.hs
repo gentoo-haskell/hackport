@@ -345,6 +345,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("Xss",    any_c_p "x11-libs" "libXScrnSaver")
       , ("tag_c",  any_c_p "media-libs" "taglib")
       , ("magic",  any_c_p "sys-apps" "file")
+      , ("crypt",  any_c_p "virtual" "libc")
       ]
 
 ---------------------------------------------------------------
