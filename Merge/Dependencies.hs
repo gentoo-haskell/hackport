@@ -346,6 +346,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("tag_c",  any_c_p "media-libs" "taglib")
       , ("magic",  any_c_p "sys-apps" "file")
       , ("crypt",  any_c_p "virtual" "libc")
+      , ("Xrender", any_c_p "x11-libs" "libXrender")
       ]
 
 ---------------------------------------------------------------
