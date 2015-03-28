@@ -357,22 +357,27 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       icalate  s (x:xs) = (x ++ s) : icalate s xs
 
       gamesFlags :: [String]
-      gamesFlags = ["\t--prefix=\"${GAMES_PREFIX}\""]
+      gamesFlags = ["--prefix=\"${GAMES_PREFIX}\""]
 
       addGamesFlags :: [String] -> [String]
       addGamesFlags xs
-        | Portage.is_games_cat cat =
-            (if null xs then ["haskell-cabal_src_configure \\"] else xs) ++
-            gamesFlags
-        | otherwise = xs
+        | Portage.is_games_cat cat = xs ++ gamesFlags
+        | otherwise                = xs
 
+      build_configure_call :: [String] -> [String]
+      build_configure_call [] = []
+      build_configure_call conf_args = icalate " \\" $
+                                           "haskell-cabal_src_configure" :
+                                           map ('\t':) conf_args
+
+      -- returns list USE-parameters to './setup configure'
       selected_flags :: ([Cabal.FlagName], Cabal.FlagAssignment) -> [String]
       selected_flags ([], []) = []
-      selected_flags (active_fns, users_fas) = icalate " \\" $ "haskell-cabal_src_configure" : map snd (L.sortBy (compare `on` fst) flag_pairs)
+      selected_flags (active_fns, users_fas) = map snd (L.sortBy (compare `on` fst) flag_pairs)
           where flag_pairs :: [(String, String)]
                 flag_pairs = active_pairs ++ users_pairs
-                active_pairs = map (\fn -> (fn,                    "\t$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
-                users_pairs  = map (\fa -> ((unFlagName . fst) fa, "\t--flag=" ++ pp_fn fa)) users_fas
+                active_pairs = map (\fn -> (fn,                    "$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
+                users_pairs  = map (\fa -> ((unFlagName . fst) fa, "--flag=" ++ pp_fn fa)) users_fas
       to_iuse x = let fn = unFlagName $ Cabal.flagName x
                       p  = if Cabal.flagDefault x then "+" else ""
                   in p ++ cfn_to_iuse fn
@@ -381,7 +386,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       =            Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = addGamesFlags $ selected_flags (active_flags, user_specified_fas) } )
+               . (\e -> e { E.src_configure = build_configure_call $ addGamesFlags $ selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of
                        Nothing  -> id
