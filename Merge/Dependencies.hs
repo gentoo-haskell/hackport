@@ -118,11 +118,6 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
     raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
-    haskell_deps :: Portage.Dependency
-    haskell_deps =
-        case () of
-          _ | treatAsLibrary -> Portage.set_build_slot $ add_profile $ raw_haskell_deps
-          _ | otherwise      -> raw_haskell_deps
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
                     Portage.DependAllOf $
@@ -156,7 +151,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                     dep_e = S.singleton "${RDEPEND}",
                     rdep = Portage.DependAllOf
                                [ Portage.set_build_slot ghc_dep
-                               , haskell_deps
+                               , Portage.set_build_slot $ add_profile $ raw_haskell_deps
                                , extra_libs
                                , Portage.DependAllOf pkg_config_libs
                                ]
@@ -167,7 +162,7 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                               [ ghc_dep
                               , cabal_dep
                               , build_tools
-                              , haskell_deps
+                              , raw_haskell_deps
                               , test_deps
                               ],
                     dep_e = S.singleton "${RDEPEND}",
