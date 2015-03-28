@@ -30,7 +30,7 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(CompilerId, PackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782]
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -39,6 +39,7 @@ cabalFromGHC ver = lookup ver table
           , ([7,6,1],  Version [1,16,0] [])
           , ([7,6,2],  Version [1,16,0] [])
           , ([7,8,2],  Version [1,18,1,3] [])
+          , ([7,10,1], Version [1,22,2,0] [])
           ]
 
 platform :: Platform
@@ -104,6 +105,9 @@ packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 ghc :: [Int] -> CompilerId
 ghc nrs = CompilerId GHC (Version nrs [])
 
+ghc7101 :: (CompilerId, PackageIndex)
+ghc7101 = (ghc [7,10,1], mkIndex ghc7101_pkgs)
+
 ghc782 :: (CompilerId, PackageIndex)
 ghc782 = (ghc [7,8,2], mkIndex ghc782_pkgs)
 
@@ -121,6 +125,34 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+--         and our binary tarballs (package.conf.d.initial subdir)
+
+ghc7101_pkgs :: [PackageIdentifier]
+ghc7101_pkgs =
+  [ p "array" [0,5,1,0]
+  , p "base" [4,8,0,0]
+--  , p "binary" [0,7,3,0]  package is upgradeable
+  , p "bytestring" [0,10,6,0]
+--  , p "Cabal" [1,18,1,3]  package is upgradeable
+  , p "containers" [0,5,6,2]
+  , p "deepseq" [1,4,1,1] -- used by time
+  , p "directory" [1,2,2,0]
+  , p "filepath" [1,4,0,0]
+  , p "ghc-prim" [0,4,0,0]
+  -- , p "haskell2010" [1,1,2,0] -- stopped shipping in 7.10, deprecated
+  -- , p "haskell98" [2,0,0,3] -- stopped shipping in 7.10, deprecated
+  , p "hoopl" [3,10,0,2] -- used by libghc
+  , p "hpc" [0,6,0,2] -- used by libghc
+  , p "integer-gmp" [1,0,0,0]
+  -- , p "old-locale" [1,0,0,6] -- stopped shipping in 7.10, deprecated
+  -- , p "old-time" [1,1,0,2] -- stopped shipping in 7.10, deprecated
+  , p "pretty" [1,1,2,0]
+  , p "process" [1,2,3,0]
+  , p "template-haskell" [2,10,0,0] -- used by libghc
+  , p "time" [1,5,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
+--  , p "transformers" [0,4,2,0] -- used by libghc
+  , p "unix" [2,7,1,0]
+  ]
 
 ghc782_pkgs :: [PackageIdentifier]
 ghc782_pkgs =
