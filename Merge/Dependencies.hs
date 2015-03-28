@@ -159,15 +159,15 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
         | otherwise = mempty
                   {
                     dep = Portage.DependAllOf
-                              [ ghc_dep
-                              , cabal_dep
+                              [ cabal_dep
                               , build_tools
-                              , raw_haskell_deps
                               , test_deps
                               ],
                     dep_e = S.singleton "${RDEPEND}",
                     rdep = Portage.DependAllOf
-                               [ extra_libs
+                               [ Portage.set_build_slot ghc_dep
+                               , Portage.set_build_slot $ raw_haskell_deps
+                               , extra_libs
                                , Portage.DependAllOf pkg_config_libs
                                ]
                   }
