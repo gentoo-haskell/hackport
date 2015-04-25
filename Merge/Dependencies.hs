@@ -495,4 +495,5 @@ pkgconfig_table =
   ,("SDL_image",                   ("media-libs", "sdl-image", Portage.AnySlot))
   ,("libzmq",                      ("net-libs", "zeromq", Portage.AnySlot))
   ,("taglib_c",                    ("media-libs", "taglib", Portage.AnySlot))
+  ,("libcurl",                     ("net-misc", "curl", Portage.AnySlot))
   ]
