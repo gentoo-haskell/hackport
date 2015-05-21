@@ -14,8 +14,6 @@ import Portage.Overlay
 import Portage.PackageId
 import Portage.Resolve
 
-import Control.Monad.State
-
 import qualified Data.List as List
 
 import qualified Data.ByteString.Char8 as BS
@@ -27,6 +25,7 @@ import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
 import Control.Applicative
+import Control.Monad
 
 -- cabal
 import Distribution.Client.Types ( Repo, SourcePackageDb(..), SourcePackage(..) )
@@ -98,7 +97,7 @@ status verbosity portdir overlaydir = do
     portage <- filterByHerd ("haskell" `elem`) <$> loadLazy portdir
     let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
-    both' <- T.forM both $ mapM $ \e -> liftIO $ do
+    both' <- T.forM both $ mapM $ \e -> do
             -- can't fail, we know the ebuild exists in both portagedirs
             -- also, one of them is already bound to 'e'
             let (Just e1) = lookupEbuildWith (overlayMap portage) (ebuildId e)
