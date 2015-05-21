@@ -3,7 +3,7 @@ module Portage.EMeta
   , findExistingMeta
   ) where
 
-import Control.Monad.Error
+import Control.Monad
 import Data.Char (isSpace)
 import qualified Data.List as L
 

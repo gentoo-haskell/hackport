@@ -3,7 +3,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Monad.Error
+import Control.Monad
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Function (on)
