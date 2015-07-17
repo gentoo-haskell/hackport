@@ -342,6 +342,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("magic",  any_c_p "sys-apps" "file")
       , ("crypt",  any_c_p "virtual" "libc")
       , ("Xrender", any_c_p "x11-libs" "libXrender")
+      , ("Xcursor", any_c_p "x11-libs" "libXcursor")
+      , ("Xinerama", any_c_p "x11-libs" "libXinerama")
       ]
 
 ---------------------------------------------------------------
