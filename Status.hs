@@ -163,6 +163,7 @@ toPortageFilter = Map.mapMaybe $ \ sts ->
         latestPortageVersion = List.maximum $ map (pkgVersion . ebuildId . fromStatus) inPortage
         interestingPackages = flip filter sts $ \st ->
             case st of
+                HackageOnly _ -> False
                 Differs _ _ -> True
                 _ | pkgVersion (ebuildId (fromStatus st)) > latestPortageVersion -> True
                   | otherwise -> False
