@@ -498,4 +498,5 @@ pkgconfig_table =
   ,("libzmq",                      ("net-libs", "zeromq", Portage.AnySlot))
   ,("taglib_c",                    ("media-libs", "taglib", Portage.AnySlot))
   ,("libcurl",                     ("net-misc", "curl", Portage.AnySlot))
+  ,("libpq",                       ("dev-db", "postgresql", Portage.AnySlot))
   ]
