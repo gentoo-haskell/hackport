@@ -260,7 +260,7 @@ staticTranslateExtraLib lib = lookup lib m
   m = [ ("z", any_c_p "sys-libs" "zlib")
       , ("bz2", any_c_p "app-arch" "bzip2")
       , ("mysqlclient", at_least_c_p_v "virtual" "mysql" [4,0])
-      , ("pq", at_least_c_p_v "dev-db" "postgresql-base" [7])
+      , ("pq", at_least_c_p_v "dev-db" "postgresql" [7])
       , ("ev", any_c_p "dev-libs" "libev")
       , ("expat", any_c_p "dev-libs" "expat")
       , ("curl", any_c_p "net-misc" "curl")
