@@ -455,6 +455,7 @@ pkgconfig_table =
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
   ,("webkit-1.0", ("net-libs","webkit-gtk", Portage.GivenSlot "2"))
+  ,("gtksourceview-3.0", ("x11-libs", "gtksourceview", Portage.GivenSlot "3.0"))
 
   ,("gstreamer-0.10",              ("media-libs", "gstreamer", Portage.AnySlot))
   ,("gstreamer-base-0.10",         ("media-libs", "gstreamer", Portage.AnySlot))
