@@ -24,6 +24,7 @@ import Distribution.Text (display, simpleParse)
 
 import Distribution.Client.Types
 import Distribution.Client.Update
+import qualified Distribution.Client.HttpUtils as DCH
 
 import qualified Distribution.Client.PackageIndex as Index
 import qualified Distribution.Client.IndexUtils as Index
@@ -300,7 +301,8 @@ updateAction flags extraArgs globalFlags = do
     die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
   overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  update verbosity [ defaultRepo overlayPath ]
+  http_transport <- DCH.configureTransport verbosity Nothing
+  update http_transport verbosity [ defaultRepo overlayPath ]
   
 
 -----------------------------------------------------------------------

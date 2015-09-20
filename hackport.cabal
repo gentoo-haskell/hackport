@@ -15,8 +15,6 @@ source-repository head
   type: git
   location: git://github.com/gentoo-haskell/hackport.git
 
-Flag split-base
-
 Executable    hackport
   ghc-options: -Wall
   ghc-prof-options: -caf-all -auto-all -rtsopts
@@ -41,6 +39,9 @@ Executable    hackport
     extensible-exceptions,
     time,
     -- cabal depends
+    binary,
+    random,
+    stm,
     unix
 
   -- extensions due to hackport
@@ -54,16 +55,13 @@ Executable    hackport
     ForeignFunctionInterface,
     PatternGuards
 
-  if flag(split-base)
-    Build-Depends:
-      base >= 3 && < 5,
-      directory,
-      containers,
-      process,
-      old-time,
-      bytestring
-  else
-     Build-Depends: base < 3
+  Build-Depends:
+    base >= 3 && < 5,
+    directory,
+    containers,
+    process,
+    old-time,
+    bytestring
 
   other-modules:
     AnsiColor
@@ -112,16 +110,13 @@ Executable    hackport-guess-ghc-version
   -- tar >= 0.3.0.0 && < 0.4
     extensible-exceptions
 
-  if flag(split-base)
-    Build-Depends:
-      base >= 3 && < 5,
-      directory,
-      containers,
-      process,
-      old-time,
-      bytestring
-  else
-     Build-Depends: base < 3
+  Build-Depends:
+    base >= 3 && < 5,
+    directory,
+    containers,
+    process,
+    old-time,
+    bytestring
 
   other-modules:
     Portage.GHCCore
@@ -133,6 +128,7 @@ Test-Suite test-resolve-category
   Main-Is:              tests/resolveCat.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
   Build-Depends:        base >= 3 && < 5,
+                        binary,
                         deepseq >= 1.3,
                         bytestring,
                         containers,
@@ -153,6 +149,7 @@ Test-Suite test-print-deps
   Main-Is:              tests/print_deps.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
   Build-Depends:        base >= 3 && < 5,
+                        binary,
                         deepseq >= 1.3,
                         bytestring,
                         containers,
@@ -173,6 +170,7 @@ Test-Suite test-normalize-deps
   Main-Is:              tests/normalize_deps.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
   Build-Depends:        base >= 3 && < 5,
+                        binary,
                         deepseq >= 1.3,
                         bytestring,
                         containers,

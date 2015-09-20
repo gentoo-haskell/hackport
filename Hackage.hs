@@ -17,13 +17,16 @@ import System.FilePath
 defaultRepo :: FilePath -> Repo
 defaultRepo overlayPath =
   Repo {
-      repoKind = Left hackage,
+      repoKind = Left defaultRemoteRepo,
       repoLocalDir = overlayPath </> ".hackport"
     }
+
+-- A copy from cabal-install/Distribution.Client.Config
+defaultRemoteRepo :: RemoteRepo
+defaultRemoteRepo = RemoteRepo name uri () False
   where
-    hackage = RemoteRepo server_name uri
-    server_name = "hackage.haskell.org"
-    uri  = URI "http:" (Just (URIAuth "" server_name "")) "/packages/archive" "" ""
+    name = "hackage.haskell.org"
+    uri  = URI "http:" (Just (URIAuth "" name "")) "/" "" ""
 
 defaultRepoURI :: FilePath -> URI
 defaultRepoURI overlayPath =

@@ -107,10 +107,10 @@ instance Monoid EDep where
     , dep_e  = dep_eA  `S.union` dep_eB
     }
 
-resolveDependencies :: Portage.Overlay -> PackageDescription -> Cabal.CompilerId
+resolveDependencies :: Portage.Overlay -> PackageDescription -> Cabal.CompilerInfo
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
-resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name = edeps
+resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg_name = edeps
   where
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
@@ -126,9 +126,9 @@ resolveDependencies overlay pkg compiler ghc_package_names merged_cabal_pkg_name
                     map PN.normalize_depend $
                     testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
-    cabal_dep = cabalDependency overlay pkg compiler
+    cabal_dep = cabalDependency overlay pkg compiler_info
     ghc_dep :: Portage.Dependency
-    ghc_dep = compilerIdToDependency compiler
+    ghc_dep = compilerInfoToDependency compiler_info
     extra_libs :: Portage.Dependency
     extra_libs = Portage.DependAllOf $ findCLibs pkg
     pkg_config_libs :: [Portage.Dependency]
@@ -197,8 +197,11 @@ haskellDependencies overlay deps =
 
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
-cabalDependency :: Portage.Overlay -> PackageDescription -> Cabal.CompilerId -> Portage.Dependency
-cabalDependency overlay pkg ~(Cabal.CompilerId Cabal.GHC _ghcVersion@(Cabal.Version versionNumbers _)) =
+cabalDependency :: Portage.Overlay -> PackageDescription -> Cabal.CompilerInfo -> Portage.Dependency
+cabalDependency overlay pkg ~(Cabal.CompilerInfo {
+                                  Cabal.compilerInfoId =
+                                      Cabal.CompilerId Cabal.GHC (Cabal.Version versionNumbers _)
+                              }) =
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.PackageName "Cabal")
@@ -216,8 +219,10 @@ cabalDependency overlay pkg ~(Cabal.CompilerId Cabal.GHC _ghcVersion@(Cabal.Vers
 -- GHC Dependency
 ---------------------------------------------------------------
 
-compilerIdToDependency :: Cabal.CompilerId -> Portage.Dependency
-compilerIdToDependency ~(Cabal.CompilerId Cabal.GHC versionNumbers) =
+compilerInfoToDependency :: Cabal.CompilerInfo -> Portage.Dependency
+compilerInfoToDependency ~(Cabal.CompilerInfo {
+                               Cabal.compilerInfoId =
+                                   Cabal.CompilerId Cabal.GHC versionNumbers}) =
   at_least_c_p_v "dev-lang" "ghc" (Cabal.versionBranch versionNumbers)
 
 ---------------------------------------------------------------

@@ -8,10 +8,11 @@ module Portage.GHCCore
         , dependencySatisfiable
         ) where
 
+import qualified Distribution.Compiler as DC
 import Distribution.Package
 import Distribution.Version
 import Distribution.Simple.PackageIndex
-import Distribution.InstalledPackageInfo
+import Distribution.InstalledPackageInfo as IPI
 
 import Distribution.PackageDescription
 import Distribution.PackageDescription.Configuration
@@ -28,7 +29,7 @@ import Debug.Trace
 
 -- ghcs tried in specified order.
 -- It means that first ghc in this list is a minmum default.
-ghcs :: [(CompilerId, PackageIndex)]
+ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
     where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101]
 
@@ -45,7 +46,7 @@ cabalFromGHC ver = lookup ver table
 platform :: Platform
 platform = Platform X86_64 Linux
 
-packageIsCore :: PackageIndex -> PackageName -> Bool
+packageIsCore :: InstalledPackageIndex -> PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
 
 packageIsCoreInAnyGHC :: PackageName -> Bool
@@ -55,7 +56,7 @@ packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
 -- representing the core packages in a GHC version.
 -- Packages that are not core will always be accepted, packages that are
 -- core in any ghc must be satisfied by the 'PackageIndex'.
-dependencySatisfiable :: PackageIndex -> Dependency -> Bool
+dependencySatisfiable :: InstalledPackageIndex -> Dependency -> Bool
 dependencySatisfiable pindex dep@(Dependency pn _rang)
   | pn == PackageName "Win32" = False -- only exists on windows, not in linux
   | not . null $ lookupDependency pindex dep = True -- the package index satisfies the dep
@@ -65,62 +66,63 @@ dependencySatisfiable pindex dep@(Dependency pn _rang)
 packageBuildableWithGHCVersion
   :: GenericPackageDescription
   -> FlagAssignment
-  -> (CompilerId, PackageIndex)
+  -> (DC.CompilerInfo, InstalledPackageIndex)
   -> Either [Dependency] (PackageDescription, FlagAssignment)
-packageBuildableWithGHCVersion pkg user_specified_fas (compiler, pkgIndex) = trace_failure $
-  finalizePackageDescription user_specified_fas (dependencySatisfiable pkgIndex) platform compiler [] pkg
+packageBuildableWithGHCVersion pkg user_specified_fas (compiler_info, pkgIndex) = trace_failure $
+  finalizePackageDescription user_specified_fas (dependencySatisfiable pkgIndex) platform compiler_info [] pkg
     where trace_failure v = case v of
-              (Left deps) -> trace (unwords ["rejecting dep:" , show_compiler compiler
+              (Left deps) -> trace (unwords ["rejecting dep:" , show_compiler compiler_info
                                             , "as", show_deps deps
                                             , "were not found."
                                             ]
                                    ) v
-              _           -> trace (unwords ["accepting dep:" , show_compiler compiler
+              _           -> trace (unwords ["accepting dep:" , show_compiler compiler_info
                                             ]
                                    ) v
           show_deps = show . map display
-          show_compiler (CompilerId GHC v) = "ghc-" ++ showVersion v
+          show_compiler (DC.CompilerInfo { DC.compilerInfoId = CompilerId GHC v }) = "ghc-" ++ showVersion v
           show_compiler c = show c
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> FlagAssignment -> Maybe (CompilerId, [PackageName], PackageDescription, FlagAssignment, PackageIndex)
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> FlagAssignment -> Maybe (DC.CompilerInfo, [PackageName], PackageDescription, FlagAssignment, InstalledPackageIndex)
 minimumGHCVersionToBuildPackage gpd user_specified_fas =
-  listToMaybe [ (cid, packageNamesFromPackageIndex pix, pkg_desc, picked_flags, pix)
-              | g@(cid, pix) <- ghcs
+  listToMaybe [ (cinfo, packageNamesFromPackageIndex pix, pkg_desc, picked_flags, pix)
+              | g@(cinfo, pix) <- ghcs
               , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd user_specified_fas g)]
 
-mkIndex :: [PackageIdentifier] -> PackageIndex
+mkIndex :: [PackageIdentifier] -> InstalledPackageIndex
 mkIndex pids = fromList
   [ emptyInstalledPackageInfo
-      { installedPackageId = InstalledPackageId $ display name ++ "-" ++  display version
+      { IPI.installedPackageId = InstalledPackageId $ display name ++ "-" ++  display version
       , sourcePackageId = pindex
       , exposed = True
       }
   | pindex@(PackageIdentifier name version) <- pids ]
 
-packageNamesFromPackageIndex :: PackageIndex -> [PackageName]
+packageNamesFromPackageIndex :: InstalledPackageIndex -> [PackageName]
 packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 
-ghc :: [Int] -> CompilerId
-ghc nrs = CompilerId GHC (Version nrs [])
+ghc :: [Int] -> DC.CompilerInfo
+ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
+    where c_id = CompilerId GHC (Version nrs [])
 
-ghc7101 :: (CompilerId, PackageIndex)
+ghc7101 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc7101 = (ghc [7,10,1], mkIndex ghc7101_pkgs)
 
-ghc782 :: (CompilerId, PackageIndex)
+ghc782 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc782 = (ghc [7,8,2], mkIndex ghc782_pkgs)
 
-ghc762 :: (CompilerId, PackageIndex)
+ghc762 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc762 = (ghc [7,6,2], mkIndex ghc762_pkgs)
 
-ghc761 :: (CompilerId, PackageIndex)
+ghc761 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc761 = (ghc [7,6,1], mkIndex ghc761_pkgs)
 
-ghc742 :: (CompilerId, PackageIndex)
+ghc742 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
 
-ghc741 :: (CompilerId, PackageIndex)
+ghc741 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 
 -- | Non-upgradeable core packages

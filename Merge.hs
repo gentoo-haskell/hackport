@@ -204,7 +204,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
 
   debug verbosity "searching for minimal suitable ghc version"
-  (compilerId, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc user_specified_fas of
+  (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc user_specified_fas of
               Just v  -> return v
               Nothing -> let pn = display merged_cabal_pkg_name
                              cn = display cat
@@ -252,7 +252,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   GHCCore.platform
-                                                                  compilerId
+                                                                  compiler_info
                                                                   []
                                                                   pkgGenericDesc]
                -- drop circular deps and shipped deps
@@ -330,7 +330,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        in k e
 
       cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
-      cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compilerId ghc_packages merged_cabal_pkg_name
+      cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compiler_info ghc_packages merged_cabal_pkg_name
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
