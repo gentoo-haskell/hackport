@@ -109,7 +109,7 @@ showEBuild now ebuild =
      Just pn -> ss "MY_PN=". quote pn. nl.
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (drop_tdot $ description ebuild). nl.
-  ss "HOMEPAGE=". quote (expandVars (homepage ebuild)). nl.
+  ss "HOMEPAGE=". quote (toHttps $ expandVars (homepage ebuild)). nl.
   ss "SRC_URI=". quote (toMirror $ src_uri ebuild). nl.
   nl.
   ss "LICENSE=". (either (\err -> quote "" . ss ("\t# FIXME: " ++ err))
@@ -158,6 +158,8 @@ showEBuild now ebuild =
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
         toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
+        -- TODO: this needs to be more generic
+        toHttps  = replace "http://github.com/" "https://github.com/"
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
         if_games :: DString -> DString
