@@ -432,6 +432,7 @@ pkgconfig_table =
 
   ,("gtk+-2.0",            ("x11-libs", "gtk+", Portage.GivenSlot "2"))
   ,("gdk-2.0",             ("x11-libs", "gtk+", Portage.GivenSlot "2"))
+  ,("gdk-3.0",             ("x11-libs", "gtk+", Portage.GivenSlot "3"))
   ,("gdk-pixbuf-2.0",      ("x11-libs", "gtk+", Portage.GivenSlot "2"))
   ,("gdk-pixbuf-xlib-2.0", ("x11-libs", "gtk+", Portage.GivenSlot "2"))
   ,("gdk-x11-2.0",         ("x11-libs", "gtk+", Portage.GivenSlot "2"))
@@ -505,4 +506,5 @@ pkgconfig_table =
   ,("taglib_c",                    ("media-libs", "taglib", Portage.AnySlot))
   ,("libcurl",                     ("net-misc", "curl", Portage.AnySlot))
   ,("libpq",                       ("dev-db", "postgresql", Portage.AnySlot))
+  ,("poppler-glib",                ("app-text", "poppler", Portage.AnySlot))
   ]
