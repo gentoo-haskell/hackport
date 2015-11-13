@@ -375,14 +375,15 @@ buildToolsTable =
   [ ("happy", any_c_p "dev-haskell" "happy")
   , ("alex", any_c_p "dev-haskell" "alex")
   , ("c2hs", any_c_p "dev-haskell" "c2hs")
+  , ("cabal",               any_c_p "dev-haskell" "cabal-install")
   , ("cabal-install", any_c_p "dev-haskell" "cabal-install")
+  , ("cpphs",               any_c_p "dev-haskell" "cpphs")
+  , ("ghc",                 any_c_p "dev-lang" "ghc")
   , ("gtk2hsTypeGen",       any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("gtk2hsHookGenerator", any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("gtk2hsC2hs",          any_c_p "dev-haskell" "gtk2hs-buildtools")
-  , ("cabal",               any_c_p "dev-haskell" "cabal-install")
+  , ("hsb2hs",              any_c_p "dev-haskell" "hsb2hs")
   , ("llvm-config",         any_c_p "sys-devel" "llvm")
-  , ("cpphs",               any_c_p "dev-haskell" "cpphs")
-  , ("ghc",                 any_c_p "dev-lang" "ghc")
   ]
 
 -- tools that are provided by ghc or some other existing program
@@ -507,4 +508,5 @@ pkgconfig_table =
   ,("libcurl",                     ("net-misc", "curl", Portage.AnySlot))
   ,("libpq",                       ("dev-db", "postgresql", Portage.AnySlot))
   ,("poppler-glib",                ("app-text", "poppler", Portage.AnySlot))
+  ,("gsl",                         ("sci-libs", "gsl", Portage.AnySlot))
   ]
