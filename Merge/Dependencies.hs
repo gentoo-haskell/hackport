@@ -349,6 +349,10 @@ staticTranslateExtraLib lib = lookup lib m
       , ("Xrender", any_c_p "x11-libs" "libXrender")
       , ("Xcursor", any_c_p "x11-libs" "libXcursor")
       , ("Xinerama", any_c_p "x11-libs" "libXinerama")
+      , ("wayland-client", any_c_p "dev-libs" "wayland")
+      , ("wayland-cursor", any_c_p "dev-libs" "wayland")
+      , ("wayland-server", any_c_p "dev-libs" "wayland")
+      , ("wayland-egl", any_c_p_s_u "media-libs" "mesa" Portage.AnySlot [Portage.mkUse (Portage.Use "wayland")])
       ]
 
 ---------------------------------------------------------------
