@@ -353,6 +353,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("wayland-cursor", any_c_p "dev-libs" "wayland")
       , ("wayland-server", any_c_p "dev-libs" "wayland")
       , ("wayland-egl", any_c_p_s_u "media-libs" "mesa" Portage.AnySlot [Portage.mkUse (Portage.Use "wayland")])
+      , ("xkbcommon", any_c_p "x11-libs" "libxkbcommon")
       ]
 
 ---------------------------------------------------------------
