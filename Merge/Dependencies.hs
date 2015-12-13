@@ -355,6 +355,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("wayland-egl", any_c_p_s_u "media-libs" "mesa" Portage.AnySlot [Portage.mkUse (Portage.Use "wayland")])
       , ("xkbcommon", any_c_p "x11-libs" "libxkbcommon")
       , ("SDL_gfx", any_c_p "media-libs" "sdl-gfx")
+      , ("SDL_image", any_c_p "media-libs" "sdl-image")
+      , ("SDL_ttf", any_c_p "media-libs" "sdl-ttf")
       ]
 
 ---------------------------------------------------------------
