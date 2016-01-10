@@ -148,7 +148,7 @@ showEBuild now ebuild =
             ss "}" . nl).
 
   if_games (nl . ss "pkg_postinst() {" . nl.
-            ss (tabify_line " ghc-package_pkg_postinst") . nl.
+            ss (tabify_line " haskell-cabal_pkg_postinst") . nl.
             ss (tabify_line " games_pkg_postinst") . nl.
             ss "}" . nl).
 
