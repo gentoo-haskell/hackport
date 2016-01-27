@@ -6,7 +6,7 @@ module Portage.Overlay
   , getDirectoryTree, DirectoryTree
 
   , reduceOverlay
-  , filterByHerd
+  , filterByEmail
   , inOverlay
   )
   where
@@ -96,13 +96,13 @@ mkMetadataMap root dir =
         , File "metadata.xml" <- files
         ]
 
-filterByHerd :: ([String] -> Bool) -> Overlay -> Overlay
-filterByHerd p overlay = overlay
+filterByEmail :: ([String] -> Bool) -> Overlay -> Overlay
+filterByEmail p overlay = overlay
                             { overlayMetadata = metadataMap'
                             , overlayMap = pkgMap'
                             }
   where
-    metadataMap' = Map.filter (p . Portage.metadataHerds) (overlayMetadata overlay)
+    metadataMap' = Map.filter (p . Portage.metadata_emails) (overlayMetadata overlay)
     pkgMap' = Map.intersection (overlayMap overlay) metadataMap'
 
 

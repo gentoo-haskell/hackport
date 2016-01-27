@@ -94,7 +94,7 @@ status verbosity portdir overlaydir = do
     let repo = defaultRepo overlaydir
     overlay <- loadLazy overlaydir
     hackage <- loadHackage verbosity repo overlay
-    portage <- filterByHerd ("haskell" `elem`) <$> loadLazy portdir
+    portage <- filterByEmail ("haskell@gentoo.org" `elem`) <$> loadLazy portdir
     let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
     both' <- T.forM both $ mapM $ \e -> do

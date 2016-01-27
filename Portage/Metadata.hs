@@ -11,7 +11,7 @@ import Control.Applicative
 import Text.XML.Light
 
 data Metadata = Metadata
-      { metadataHerds :: [String]
+      { metadata_emails :: [String]
       -- , metadataMaintainers :: [String],
       -- , metadataUseFlags :: [(String,String)]
       } deriving (Show)
@@ -22,12 +22,8 @@ metadataFromFile fp = do
   return (doc >>= parseMetadata)
 
 parseMetadata :: Element -> Maybe Metadata
-parseMetadata xml = do
-  let herds = map strContent (findChildren (unqual "herd") xml)
-  return Metadata
-            {
-              metadataHerds = herds
-            }
+parseMetadata xml =
+  return Metadata { metadata_emails = map strContent (findElements (unqual "email") xml) }
 
 -- don't use Text.XML.Light as we like our own pretty printer
 makeDefaultMetadata :: String -> String
