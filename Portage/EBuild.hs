@@ -7,7 +7,6 @@ module Portage.EBuild
         ) where
 
 import Portage.Dependency
-import qualified Portage.PackageId as PI
 import qualified Portage.Dependency.Normalize as PN
 
 import Data.String.Utils
@@ -18,9 +17,7 @@ import qualified Data.List as L
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
-#if MIN_VERSION_time(1,5,0)
-import qualified System.Locale as SL
-#else
+#if ! MIN_VERSION_time(1,5,0)
 import qualified System.Locale as TC
 #endif
 
@@ -102,7 +99,7 @@ showEBuild now ebuild =
   sconcat (map (\(k, v) -> ss "#hackport: " . ss k . ss ": " . ss v . nl) $ used_options ebuild).
   nl.
   ss "CABAL_FEATURES=". quote' (sepBy " " $ features ebuild). nl.
-  ss "inherit haskell-cabal". if_games (ss " games") . nl.
+  ss "inherit haskell-cabal". nl.
   nl.
   (case my_pn ebuild of
      Nothing -> id
@@ -125,11 +122,6 @@ showEBuild now ebuild =
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
 
-  if_games (nl . ss "pkg_setup() {" . nl.
-            ss (tabify_line " games_pkg_setup") . nl.
-            ss (tabify_line " haskell-cabal_pkg_setup") . nl.
-            ss "}" . nl).
-
   verbatim (nl . ss "src_prepare() {" . nl)
                (src_prepare ebuild)
            (ss "}" . nl).
@@ -137,20 +129,6 @@ showEBuild now ebuild =
   verbatim (nl. ss "src_configure() {" . nl)
                (src_configure ebuild)
            (ss "}" . nl).
-
-  if_games (nl . ss "src_compile() {" . nl.
-            ss (tabify_line " haskell-cabal_src_compile") . nl.
-            ss "}" . nl).
-
-  if_games (nl . ss "src_install() {" . nl.
-            ss (tabify_line " haskell-cabal_src_install") . nl.
-            ss (tabify_line " prepgamesdirs") . nl.
-            ss "}" . nl).
-
-  if_games (nl . ss "pkg_postinst() {" . nl.
-            ss (tabify_line " haskell-cabal_pkg_postinst") . nl.
-            ss (tabify_line " games_pkg_postinst") . nl.
-            ss "}" . nl).
 
   id $ []
   where
@@ -162,10 +140,6 @@ showEBuild now ebuild =
         toHttps  = replace "http://github.com/" "https://github.com/"
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
-        if_games :: DString -> DString
-        if_games ds = if PI.is_games_cat (PI.Category (category ebuild))
-                          then ds
-                          else id
 
 -- "+a" -> "a"
 -- "b"  -> "b"

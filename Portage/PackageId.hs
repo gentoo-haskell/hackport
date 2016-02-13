@@ -12,12 +12,10 @@ module Portage.PackageId (
     normalizeCabalPackageName,
     normalizeCabalPackageId,
     packageIdToFilePath,
-    cabal_pn_to_PN,
-    is_games_cat
+    cabal_pn_to_PN
   ) where
 
 import Data.Char
-import qualified Data.List as L
 
 import qualified Distribution.Package as Cabal
 import Distribution.Text (Text(..))
@@ -131,6 +129,3 @@ parseFriendlyPackage str =
 
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map toLower . display
-
-is_games_cat :: Category -> Bool
-is_games_cat = L.isPrefixOf "games" . unCategory

@@ -356,14 +356,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       icalate _s [x]    = [x]
       icalate  s (x:xs) = (x ++ s) : icalate s xs
 
-      gamesFlags :: [String]
-      gamesFlags = ["--prefix=\"${GAMES_PREFIX}\""]
-
-      addGamesFlags :: [String] -> [String]
-      addGamesFlags xs
-        | Portage.is_games_cat cat = xs ++ gamesFlags
-        | otherwise                = xs
-
       build_configure_call :: [String] -> [String]
       build_configure_call [] = []
       build_configure_call conf_args = icalate " \\" $
@@ -386,7 +378,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
                . (\e -> e { E.rdepend       =            Merge.rdep tdeps} )
                . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = build_configure_call $ addGamesFlags $ selected_flags (active_flags, user_specified_fas) } )
+               . (\e -> e { E.src_configure = build_configure_call $
+                                                  selected_flags (active_flags, user_specified_fas) } )
                . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of
                        Nothing  -> id
