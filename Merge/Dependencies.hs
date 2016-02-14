@@ -357,6 +357,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("SDL_gfx", any_c_p "media-libs" "sdl-gfx")
       , ("SDL_image", any_c_p "media-libs" "sdl-image")
       , ("SDL_ttf", any_c_p "media-libs" "sdl-ttf")
+      , ("odbc", any_c_p "dev-db" "unixODBC")
       ]
 
 ---------------------------------------------------------------
