@@ -518,4 +518,5 @@ pkgconfig_table =
   ,("libpq",                       ("dev-db", "postgresql", Portage.AnySlot))
   ,("poppler-glib",                ("app-text", "poppler", Portage.AnySlot))
   ,("gsl",                         ("sci-libs", "gsl", Portage.AnySlot))
+  ,("libvirt",                     ("app-emulation", "libvirt", Portage.AnySlot))
   ]
