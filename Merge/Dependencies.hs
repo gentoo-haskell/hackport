@@ -519,4 +519,10 @@ pkgconfig_table =
   ,("poppler-glib",                ("app-text", "poppler", Portage.AnySlot))
   ,("gsl",                         ("sci-libs", "gsl", Portage.AnySlot))
   ,("libvirt",                     ("app-emulation", "libvirt", Portage.AnySlot))
+
+  ,("Qt5Core",                     ("dev-qt", "qtcore", Portage.GivenSlot "5"))
+  ,("Qt5Gui",                      ("dev-qt", "qtgui", Portage.GivenSlot "5"))
+  ,("Qt5Qml",                      ("dev-qt", "qtdeclarative", Portage.GivenSlot "5"))
+  ,("Qt5Quick",                    ("dev-qt", "qtdeclarative", Portage.GivenSlot "5"))
+  ,("Qt5Widgets",                  ("dev-qt", "qtwidgets", Portage.GivenSlot "5"))
   ]
