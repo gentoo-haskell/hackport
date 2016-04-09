@@ -106,7 +106,6 @@ Executable    hackport
   other-modules:
     AnsiColor
     Cabal2Ebuild
-    CacheFile
     Diff
     Error
     Hackage

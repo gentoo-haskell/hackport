@@ -5,11 +5,10 @@ module Overlays
 import Control.Monad
 import Data.List (nub, inits)
 import Data.Maybe (maybeToList, listToMaybe, isJust, fromJust)
-import System.Directory
+import qualified System.Directory as SD
 import System.FilePath ((</>), splitPath, joinPath)
 
 import Error
-import CacheFile
 import Portage.Host
 
 -- cabal
@@ -32,7 +31,7 @@ getOverlayPath verbosity override_overlay = do
     let loop [] = throwEx (MultipleOverlays mul)
         loop (x:xs) = do
           info verbosity $ "Checking '" ++ x ++ "'..."
-          found <- doesFileExist (cacheFile x)
+          found <- SD.doesDirectoryExist (x </> ".hackport")
           if found
             then do
               info verbosity "OK!"
@@ -62,10 +61,9 @@ getOverlays = do
 
 getLocalOverlay :: IO (Maybe FilePath)
 getLocalOverlay = do
-  curDir <- getCurrentDirectory
+  curDir <- SD.getCurrentDirectory
   let lookIn = map joinPath . reverse . inits . splitPath $ curDir
   fmap listToMaybe (filterM probe lookIn)
 
   where
-    probe dir = doesDirectoryExist (dir </> "dev-haskell")
-
+    probe dir = SD.doesDirectoryExist (dir </> "dev-haskell")

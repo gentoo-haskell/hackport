@@ -23,6 +23,7 @@ Quick start
     $ cd ~/overlays
     $ git clone git://github.com/gentoo-haskell/gentoo-haskell.git
     $ cd gentoo-haskell
+    $ mkdir .hackport
     $ hackport update
     $ ls -1 .hackport/
         00-index.tar
