@@ -106,7 +106,6 @@ Executable    hackport
   other-modules:
     AnsiColor
     Cabal2Ebuild
-    Diff
     Error
     Hackage
     Main

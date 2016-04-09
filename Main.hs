@@ -1,4 +1,4 @@
-module Main where
+module Main (main) where
 
 import Control.Applicative
 import Control.Monad
@@ -11,10 +11,9 @@ import Data.Monoid
 import Distribution.Simple.Setup
         ( Flag(..), fromFlag
         , trueArg
-        , flagToList
         , optionVerbosity
         )
-import Distribution.ReadE ( succeedReadE )
+
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die, cabalVersion, warn )
 import qualified Distribution.PackageDescription.Parse as Cabal
@@ -31,7 +30,6 @@ import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 import Portage.Host as Host ( getInfo, portage_dir )
 import Portage.PackageId ( normalizeCabalPackageId )
 
-import Network.URI ( URI(..), parseURI )
 import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
@@ -39,7 +37,6 @@ import System.FilePath ( (</>) )
 
 import qualified HackPort.GlobalFlags as H
 
-import Diff
 import Error
 import Status
 import Overlays
@@ -172,75 +169,6 @@ makeEbuildCommand = CommandUI {
         (reqArg' "cabal_flags" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
       ]
   }
-
------------------------------------------------------------------------
--- Diff
------------------------------------------------------------------------
-
-data DiffFlags = DiffFlags {
-    -- diffMode :: Flag String, -- DiffMode,
-    diffVerbosity :: Flag Verbosity
-    -- , diffServerURI :: Flag String
-  }
-
-instance Monoid DiffFlags where
-  mempty = DiffFlags {
-    -- diffMode = mempty,
-    diffVerbosity = mempty
-    -- , diffServerURI = mempty
-  }
-  mappend a b = DiffFlags {
-    -- diffMode = combine diffMode,
-    diffVerbosity = combine diffVerbosity
-    -- , diffServerURI = combine diffServerURI
-  }
-    where combine field = field a `mappend` field b
-
-defaultDiffFlags :: DiffFlags
-defaultDiffFlags = DiffFlags {
-    -- diffMode = Flag "all",
-    diffVerbosity = Flag normal
-    -- , diffServerURI = Flag defaultHackageServerURI
-  }
-
-diffCommand :: CommandUI DiffFlags
-diffCommand = CommandUI {
-    commandName = "diff",
-    commandSynopsis = "Run diff",
-    commandUsage = usagePackages "diff",
-    commandDescription = Nothing,
-    commandNotes = Nothing,
-
-    commandDefaultFlags = defaultDiffFlags,
-    commandOptions = \_showOrParseArgs ->
-      [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
-      {-
-      , option [] ["mode"]
-         "Diff mode, one of: all, newer, missing, additions, common"
-         diffMode (\v flags -> flags { diffMode = v })
-         (reqArgFlag "MODE") -- I don't know how to map it strictly to DiffMode
-      -}
-      ]
-  }
-
-diffAction :: DiffFlags -> [String] -> H.GlobalFlags -> IO ()
-diffAction flags args globalFlags = do
-  let verbosity = fromFlag (diffVerbosity flags)
-      -- dm0 = fromFlag (diffMode flags)
-  dm <- case args of
-          [] -> return ShowAll
-          ["all"] -> return ShowAll
-          ["missing"] -> return ShowMissing
-          ["additions"] -> return ShowAdditions
-          ["newer"] -> return ShowNewer
-          ["common"] -> return ShowCommon
-          ("package":  pkgs) -> return (ShowPackages pkgs)
-          -- TODO: ["package",packagePattern] ->
-          --          return ShowPackagePattern packagePattern
-          _ -> die $ "Unknown mode: " ++ unwords args
-  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
-  H.withHackPortContext verbosity globalFlags $ \repoContext ->
-      runDiff verbosity overlayPath dm repoContext
 
 -----------------------------------------------------------------------
 -- Update
@@ -447,16 +375,6 @@ distroMapAction flags extraArgs globalFlags = do
 -- Utils
 -----------------------------------------------------------------------
 
-getServerURI :: String -> IO URI
-getServerURI str =
-  case parseURI str of
-    Just uri -> return uri
-    Nothing -> throwEx (InvalidServer str)
-
-reqArgFlag :: ArgPlaceHolder -> SFlags -> LFlags -> Description ->
-              (b -> Flag String) -> (Flag String -> b -> b) -> OptDescr b
-reqArgFlag ad = reqArg ad (succeedReadE Flag) flagToList
-
 usagePackages :: String -> String -> String
 usagePackages op_name pname =
   "Usage: " ++ pname ++ " " ++ op_name ++ " [FLAGS] [PACKAGE]\n\n"
@@ -545,7 +463,6 @@ mainWorker args =
       [ listCommand `commandAddAction` listAction
       , makeEbuildCommand `commandAddAction` makeEbuildAction
       , statusCommand `commandAddAction` statusAction
-      , diffCommand `commandAddAction` diffAction
       , updateCommand `commandAddAction` updateAction
       , mergeCommand `commandAddAction` mergeAction
       , distroMapCommand `commandAddAction` distroMapAction
