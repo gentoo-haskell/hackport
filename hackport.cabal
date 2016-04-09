@@ -126,40 +126,6 @@ Executable    hackport
     Merge
     Util
 
-
-Executable    hackport-guess-ghc-version
-  ghc-options: -Wall
-  Main-Is:    Main-GuessGHC.hs
-  Default-Language: Haskell98
-  Buildable:    False
-  -- this was used as a test while developing the
-  -- ghc-guessfeature. now we can disable building
-  Build-Depends:
-    base >= 2.0 && < 5,
-    filepath,
-    parsec,
-    network >= 2.6, network-uri >= 2.6,
-    pretty,
-    regex-compat,
-    HTTP >= 4000.0.3,
-    zlib,
-    tar,
-    array,
-  -- array is inherited from cabal-install 
-  -- tar >= 0.3.0.0 && < 0.4
-    extensible-exceptions
-
-  Build-Depends:
-    base >= 3 && < 5,
-    directory,
-    containers,
-    process,
-    old-time,
-    bytestring
-
-  other-modules:
-    Portage.GHCCore
-
 Test-Suite test-resolve-category
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
