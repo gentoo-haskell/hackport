@@ -41,7 +41,6 @@ import Error
 import Status
 import Overlays
 import Merge
-import DistroMap ( distroMap )
 
 import qualified Paths_cabal_install
 import qualified Paths_hackport
@@ -326,52 +325,6 @@ mergeAction flags extraArgs globalFlags = do
     merge verbosity repoContext extraArgs overlayPath (fromFlag $ mergeCabalFlags flags)
 
 -----------------------------------------------------------------------
--- DistroMap
------------------------------------------------------------------------
-
-data DistroMapFlags = DistroMapFlags {
-    distroMapVerbosity :: Flag Verbosity
-  }
-
-instance Monoid DistroMapFlags where
-  mempty = DistroMapFlags {
-    distroMapVerbosity = mempty
-    -- , mergeServerURI = mempty
-  }
-  mappend a b = DistroMapFlags {
-    distroMapVerbosity = combine distroMapVerbosity
-  }
-    where combine field = field a `mappend` field b
-
-defaultDistroMapFlags :: DistroMapFlags
-defaultDistroMapFlags = DistroMapFlags {
-    distroMapVerbosity = Flag normal
-  }
-
-distroMapCommand :: CommandUI DistroMapFlags
-distroMapCommand = CommandUI {
-    commandName = "distromap",
-    commandSynopsis = "Build hackage a distromap file",
-    commandUsage = usagePackages "distromap",
-    commandDescription = Nothing,
-    commandNotes = Nothing,
-
-    commandDefaultFlags = defaultDistroMapFlags,
-    commandOptions = \_showOrParseArgs ->
-      [ optionVerbosity distroMapVerbosity (\v flags -> flags { distroMapVerbosity = v })
-      ]
-  }
-
-distroMapAction :: DistroMapFlags-> [String] -> H.GlobalFlags -> IO ()
-distroMapAction flags extraArgs globalFlags = do
-  let verbosity = fromFlag (distroMapVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
-  portagePath <- getPortageDir verbosity globalFlags
-
-  H.withHackPortContext verbosity globalFlags $ \repoContext ->
-    distroMap verbosity repoContext portagePath overlayPath extraArgs
-
------------------------------------------------------------------------
 -- Utils
 -----------------------------------------------------------------------
 
@@ -465,7 +418,6 @@ mainWorker args =
       , statusCommand `commandAddAction` statusAction
       , updateCommand `commandAddAction` updateAction
       , mergeCommand `commandAddAction` mergeAction
-      , distroMapCommand `commandAddAction` distroMapAction
       ]
 
 main :: IO ()
