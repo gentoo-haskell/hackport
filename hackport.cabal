@@ -178,6 +178,7 @@ Test-Suite test-resolve-category
                         HUnit,
                         pretty,
                         process,
+                        split,
                         time,
                         unix,
                         xml

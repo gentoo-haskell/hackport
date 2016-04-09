@@ -4,6 +4,7 @@ module Portage.Host
   ) where
 
 import Util (run_cmd)
+import qualified Data.List.Split as DLS
 import Data.Maybe (fromJust, isJust, catMaybes)
 import Control.Applicative ( (<$>) )
 
@@ -73,7 +74,7 @@ getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "cave info"
 
 parsePaludisInfo :: String -> LocalInfo
 parsePaludisInfo text =
-  let chunks = splitBy (=="") . lines $ text
+  let chunks = DLS.splitOn [""] . lines $ text
       repositories = catMaybes (map parseRepository chunks)
   in  fromJust (mkLocalInfo repositories)
   where
@@ -97,13 +98,6 @@ parsePaludisInfo text =
               , portage_dir = gentooLocation
               , overlay_list = overlays
               })
-
-splitBy :: (a -> Bool) -> [a] -> [[a]]
-splitBy _ [] = []
-splitBy c lst =
-  let (x,xs) = break c lst
-      (_,xs') = span c xs
-  in x : splitBy c xs'
 
 ---------
 -- Emerge
