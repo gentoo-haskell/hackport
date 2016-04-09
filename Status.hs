@@ -28,16 +28,15 @@ import Control.Applicative
 import Control.Monad
 
 -- cabal
-import Distribution.Client.Types ( Repo, SourcePackageDb(..), SourcePackage(..) )
+import Distribution.Client.Types ( SourcePackageDb(..), SourcePackage(..) )
 import Distribution.Verbosity
 import Distribution.Package (pkgName)
 import Distribution.Simple.Utils (comparing, die, equating)
 import Distribution.Text ( display, simpleParse )
 
-import qualified Distribution.Client.PackageIndex as CabalInstall
+import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
-
-import Hackage (defaultRepo)
+import qualified Distribution.Client.PackageIndex as CabalInstall
 
 data StatusDirection
     = PortagePlusOverlay
@@ -76,9 +75,9 @@ fromStatus fs =
 
 
 
-loadHackage :: Verbosity -> Distribution.Client.Types.Repo -> Overlay -> IO [[PackageId]]
-loadHackage verbosity repo overlay = do
-    SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity [repo]
+loadHackage :: Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
+loadHackage verbosity repoContext overlay = do
+    SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
     let get_cat cabal_pkg = case resolveCategories overlay (pkgName cabal_pkg) of
                                 []    -> Category "dev-haskell"
                                 [cat] -> cat
@@ -89,11 +88,10 @@ loadHackage verbosity repo overlay = do
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
 
-status :: Verbosity -> FilePath -> FilePath -> IO (Map PackageName [FileStatus ExistingEbuild])
-status verbosity portdir overlaydir = do
-    let repo = defaultRepo overlaydir
+status :: Verbosity -> FilePath -> FilePath -> CabalInstall.RepoContext -> IO (Map PackageName [FileStatus ExistingEbuild])
+status verbosity portdir overlaydir repoContext = do
     overlay <- loadLazy overlaydir
-    hackage <- loadHackage verbosity repo overlay
+    hackage <- loadHackage verbosity repoContext overlay
     portage <- filterByEmail ("haskell@gentoo.org" `elem`) <$> loadLazy portdir
     let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
@@ -132,8 +130,8 @@ lookupEbuildWith overlay pkgid = do
   ebuilds <- Map.lookup (packageId pkgid) overlay
   List.find (\e -> ebuildId e == pkgid) ebuilds
 
-runStatus :: Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> IO ()
-runStatus verbosity portdir overlaydir direction pkgs = do
+runStatus :: Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> CabalInstall.RepoContext -> IO ()
+runStatus verbosity portdir overlaydir direction pkgs repoContext = do
   let pkgFilter = case direction of
                       OverlayToPortage   -> toPortageFilter
                       PortagePlusOverlay -> id
@@ -142,7 +140,7 @@ runStatus verbosity portdir overlaydir direction pkgs = do
             case simpleParse p of
               Nothing -> die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
-  tree0 <- status verbosity portdir overlaydir
+  tree0 <- status verbosity portdir overlaydir repoContext
   let tree = pkgFilter tree0
   if (null pkgs')
     then statusPrinter tree

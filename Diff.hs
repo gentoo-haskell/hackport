@@ -19,7 +19,9 @@ import qualified Data.Version as Cabal
 import Distribution.Verbosity
 import Distribution.Text(display)
 import qualified Distribution.Package as Cabal
+import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.PackageIndex as Index
+import qualified Distribution.Client.ProjectConfig as CabalInstall
 import Distribution.Simple.Utils (equating)
 
 -- cabal-install
@@ -58,10 +60,10 @@ showDiffState pkg st = (tabs (display pkg)) ++ " [" ++ (case st of
   OnlyInRight y -> "none<" ++ display y) ++ "]"
 -}
 
-runDiff :: Verbosity -> FilePath -> DiffMode -> Cabal.Repo -> IO ()
-runDiff verbosity overlayPath dm repo = do
+runDiff :: Verbosity -> FilePath -> DiffMode -> CabalInstall.RepoContext -> IO ()
+runDiff verbosity overlayPath dm repoContext = do
   -- get package list from hackage
-  pkgDB <- Index.getSourcePackages verbosity [ repo ]
+  pkgDB <- Index.getSourcePackages verbosity repoContext
   let (Cabal.SourcePackageDb hackageIndex _) = pkgDB
 
   -- get package list from the overlay
@@ -100,7 +102,7 @@ showPackageCompareInfo pkgCmpInfo =
           GT -> ">"
           LT -> "<"
 
-diff :: [Cabal.SourcePackage]
+diff :: [Cabal.UnresolvedSourcePackage]
      -> [Portage.ExistingEbuild]
      -> DiffMode
      -> IO ()

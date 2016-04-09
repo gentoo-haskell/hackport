@@ -5,31 +5,13 @@
 
     Utilities to work with hackage-alike repositories
 -}
-module Hackage
-    ( defaultRepo
-    , defaultRepoURI
-    ) where
+module Hackage ( defaultRemoteRepo ) where
 
-import Distribution.Client.Types (Repo(..), RemoteRepo(..))
-import Network.URI (URI(..), URIAuth(..))
-import System.FilePath
+import Distribution.Client.Types as DCT
+import qualified Network.URI as NU
 
-defaultRepo :: FilePath -> Repo
-defaultRepo overlayPath =
-  Repo {
-      repoKind = Left defaultRemoteRepo,
-      repoLocalDir = overlayPath </> ".hackport"
-    }
-
--- A copy from cabal-install/Distribution.Client.Config
-defaultRemoteRepo :: RemoteRepo
-defaultRemoteRepo = RemoteRepo name uri () False
-  where
-    name = "hackage.haskell.org"
-    uri  = URI "http:" (Just (URIAuth "" name "")) "/" "" ""
-
-defaultRepoURI :: FilePath -> URI
-defaultRepoURI overlayPath =
-  case repoKind (defaultRepo overlayPath) of
-    Left (RemoteRepo { remoteRepoURI = uri }) -> uri
-    Right _                                   -> error $ "defaultRepoURI: unable to get URI for " ++ overlayPath
+defaultRemoteRepo :: DCT.RemoteRepo
+defaultRemoteRepo = (DCT.emptyRemoteRepo name) { DCT.remoteRepoURI = uri }
+   where
+    Just uri = NU.parseURI "https://hackage.haskell.org/"
+    name     = "hackage.haskell.org"

@@ -114,7 +114,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
   where
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
-    treatAsLibrary = isJust (Cabal.library pkg)
+    treatAsLibrary = Cabal.libraries pkg /= []
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
     raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
@@ -230,14 +230,14 @@ compilerInfoToDependency ~(Cabal.CompilerInfo {
 ---------------------------------------------------------------
 
 findCLibs :: PackageDescription -> [Portage.Dependency]
-findCLibs (PackageDescription { library = lib, executables = exes }) =
+findCLibs (PackageDescription { libraries = libs, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
           (any_c_p "unknown-c-lib" p)
   | p <- notFound
   ] ++
   found
   where
-  libE = maybe [] (extraLibs.libBuildInfo) lib
+  libE = concatMap (extraLibs . libBuildInfo) libs
   exeE = concatMap extraLibs (filter buildable (map buildInfo exes))
   allE = libE ++ exeE
 
@@ -365,7 +365,7 @@ staticTranslateExtraLib lib = lookup lib m
 ---------------------------------------------------------------
 
 buildToolsDependencies :: PackageDescription -> [Portage.Dependency]
-buildToolsDependencies (PackageDescription { library = lib, executables = exes }) = nub $
+buildToolsDependencies (PackageDescription { libraries = libs, executables = exes }) = nub $
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
@@ -375,7 +375,7 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   ]
   where
   cabalDeps = filter notProvided $ depL ++ depE
-  depL = maybe [] (buildTools.libBuildInfo) lib
+  depL = concatMap (buildTools . libBuildInfo) libs
   depE = concatMap buildTools (filter buildable (map buildInfo exes))
   notProvided (Cabal.Dependency (Cabal.PackageName pn) _range) = pn `notElem` buildToolsProvided
 
@@ -406,10 +406,10 @@ buildToolsProvided = ["hsc2hs"]
 ---------------------------------------------------------------
 
 pkgConfigDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
-pkgConfigDependencies overlay (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
+pkgConfigDependencies overlay (PackageDescription { libraries = libs, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
   where
   cabalDeps = depL ++ depE
-  depL = maybe [] (pkgconfigDepends.libBuildInfo) lib
+  depL = concatMap (pkgconfigDepends . libBuildInfo) libs
   depE = concatMap pkgconfigDepends (filter buildable (map buildInfo exes))
 
 resolvePkgConfigs :: Portage.Overlay -> [Cabal.Dependency] -> [Portage.Dependency]

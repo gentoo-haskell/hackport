@@ -95,8 +95,7 @@ minimumGHCVersionToBuildPackage gpd user_specified_fas =
 mkIndex :: [PackageIdentifier] -> InstalledPackageIndex
 mkIndex pids = fromList
   [ emptyInstalledPackageInfo
-      { IPI.installedPackageId = InstalledPackageId $ display name ++ "-" ++  display version
-      , sourcePackageId = pindex
+      { sourcePackageId = pindex
       , exposed = True
       }
   | pindex@(PackageIdentifier name version) <- pids ]

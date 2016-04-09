@@ -51,8 +51,10 @@ import Distribution.Simple.Utils ( info )
 
 import qualified Data.Version as Cabal
 import qualified Distribution.Package as Cabal
-import qualified Distribution.Client.PackageIndex as CabalInstall
+import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
+import qualified Distribution.Client.PackageIndex as CabalInstall
+import qualified Distribution.Client.ProjectConfig as CabalInstall
 
 import Portage.Overlay (  readOverlayByPackage, getDirectoryTree )
 import qualified Portage.PackageId as Portage
@@ -61,8 +63,8 @@ import qualified Portage.Version as Portage
 type PVU = (Cabal.PackageName, Cabal.Version, Maybe String)
 type PVU_Map = Map Portage.PackageName [(Cabal.Version, Maybe String)]
 
-distroMap :: Verbosity -> Repo -> FilePath -> FilePath -> [String] -> IO ()
-distroMap verbosity repo portagePath overlayPath args = do
+distroMap :: Verbosity -> CabalInstall.RepoContext -> FilePath -> FilePath -> [String] -> IO ()
+distroMap verbosity repoContext portagePath overlayPath args = do
   info verbosity "distro map called"
   info verbosity ("verbosity: " ++ show verbosity)
   info verbosity ("portage: " ++ portagePath)
@@ -84,7 +86,7 @@ distroMap verbosity repo portagePath overlayPath args = do
   info verbosity ("complete map: " ++ show (Map.size completeMap))
 
   SourcePackageDb { packageIndex = packageIndex } <-
-    CabalInstall.getSourcePackages verbosity [repo]
+    CabalInstall.getSourcePackages verbosity repoContext
 
   let pkgs0 = map (map packageInfoId) (CabalInstall.allPackagesByName packageIndex)
       hackagePkgs = [ (Cabal.pkgName (head p), map Cabal.pkgVersion p) | p <- pkgs0 ]

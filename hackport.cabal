@@ -20,7 +20,12 @@ Executable    hackport
   ghc-prof-options: -caf-all -auto-all -rtsopts
   Main-Is:    Main.hs
   Default-Language: Haskell98
-  Hs-Source-Dirs: ., cabal, cabal/Cabal, cabal/cabal-install
+  Hs-Source-Dirs:
+      .,
+      cabal,
+      cabal/Cabal,
+      cabal/cabal-install,
+      hackage-security/hackage-security/src
   Build-Depends:
     base >= 2.0 && < 5,
     deepseq >= 1.3,
@@ -42,18 +47,52 @@ Executable    hackport
     binary,
     random,
     stm,
-    unix
+    unix,
+    -- cabal-install depends
+    --  hackage-security depends
+    base64-bytestring,
+    cryptohash,
+    ed25519,
+    ghc-prim,
+    hashable,
+    mtl,
+    template-haskell,
+    transformers
 
-  -- extensions due to hackport
+  default-extensions:
+    -- hackage-security
+    DefaultSignatures,
+    DeriveDataTypeable,
+    EmptyDataDecls,
+    ExistentialQuantification,
+    FlexibleContexts,
+    FlexibleInstances,
+    GADTs,
+    GeneralizedNewtypeDeriving,
+    KindSignatures,
+    MultiParamTypeClasses,
+    PatternGuards,
+    RankNTypes,
+    RecordWildCards,
+    ScopedTypeVariables,
+    StandaloneDeriving,
+    TypeFamilies,
+    TypeOperators,
+    ViewPatterns
   other-extensions:
     DeriveDataTypeable,
-    PatternGuards
-
-  -- extensions due to bundled cabal-install
-  other-extensions:
+    PatternGuards,
+    -- extensions due to bundled cabal-install
     CPP,
     ForeignFunctionInterface,
-    PatternGuards
+    --  hackage-security extensions
+    DefaultSignatures,
+    GeneralizedNewtypeDeriving,
+    GADTs,
+    KindSignatures,
+    RankNTypes,
+    RecordWildCards,
+    TypeOperators
 
   Build-Depends:
     base >= 3 && < 5,

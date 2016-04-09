@@ -51,17 +51,22 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
                                                else Cabal.description pkg,
     E.homepage        = thisHomepage,
     E.license         = Portage.convertLicense $ Cabal.license pkg,
-    E.slot            = (E.slot E.ebuildTemplate) ++ maybe [] (const "/${PV}") (Cabal.library pkg),
+    E.slot            = (E.slot E.ebuildTemplate) ++ (if hasLibs then "/${PV}" else ""),
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
-                   ++ (if hasExe then ["bin"] else [])
-                   ++ maybe [] (const (["lib","profile","haddock","hoogle"]
-                        ++ if cabalPkgName == "hscolour" then [] else ["hscolour"])
-                        ) (Cabal.library pkg) -- hscolour can't colour its own sources
-                   ++ (if hasTests then ["test-suite"] else [])
+                   ++ (if hasExe then ["bin"]
+                                 else [])
+                   ++ (if hasLibs then (["lib","profile","haddock","hoogle"]
+                                        ++ if cabalPkgName == "hscolour"
+                                                then []
+                                                else ["hscolour"])
+                                  else [])
+                   ++ (if hasTests then ["test-suite"]
+                                   else [])
   } where
         cabal_pn = Cabal.pkgName $ Cabal.package pkg
         cabalPkgName = display cabal_pn
+        hasLibs = Cabal.libraries pkg /= []
         hasExe = (not . null) (Cabal.executables pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)

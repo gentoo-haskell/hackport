@@ -8,5 +8,8 @@ indexFile = "00-index.tar.gz"
 hackportDir :: String
 hackportDir = ".hackport"
 
+hackageDir :: String
+hackageDir = "hackage.haskell.org"
+
 cacheFile :: FilePath -> FilePath
-cacheFile tree = tree </> hackportDir </> indexFile
+cacheFile tree = tree </> hackportDir </> hackageDir </> indexFile

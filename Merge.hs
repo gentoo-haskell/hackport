@@ -31,7 +31,9 @@ import Distribution.Simple.Utils
 
 -- cabal-install
 import Distribution.Client.IndexUtils ( getSourcePackages )
+import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.PackageIndex as Index
+import qualified Distribution.Client.ProjectConfig as CabalInstall
 import Distribution.Client.Types
 
 -- others
@@ -98,14 +100,14 @@ readPackageString args = do
 -- | Given a list of available packages, and maybe a preferred version,
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
-resolveVersion :: [SourcePackage] -> Maybe Cabal.Version -> Maybe SourcePackage
+resolveVersion :: [UnresolvedSourcePackage] -> Maybe Cabal.Version -> Maybe UnresolvedSourcePackage
 resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . packageInfoId)) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (packageInfoId avail)
 
-merge :: Verbosity -> Repo -> URI -> [String] -> FilePath -> Maybe String -> IO ()
-merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
+merge :: Verbosity -> CabalInstall.RepoContext -> [String] -> FilePath -> Maybe String -> IO ()
+merge verbosity repoContext args overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
     case readPackageString args of
       Left err -> throwEx err
@@ -125,7 +127,7 @@ merge verbosity repo _serverURI args overlayPath users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
   -- portage_path <- Host.portage_dir `fmap` Host.getInfo
   -- portage <- Overlay.loadLazy portage_path
-  index <- fmap packageIndex $ getSourcePackages verbosity [ repo ]
+  index <- fmap packageIndex $ getSourcePackages verbosity repoContext
 
   -- find all packages that maches the user specified package name
   availablePkgs <-

@@ -24,12 +24,8 @@ import Distribution.Text (display, simpleParse)
 
 import Distribution.Client.Types
 import Distribution.Client.Update
-import qualified Distribution.Client.HttpUtils as DCH
-
 import qualified Distribution.Client.PackageIndex as Index
 import qualified Distribution.Client.IndexUtils as Index
-
-import Hackage (defaultRepo, defaultRepoURI)
 
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 import Portage.Host as Host ( getInfo, portage_dir )
@@ -40,6 +36,8 @@ import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
 import System.FilePath ( (</>) )
+
+import qualified HackPort.GlobalFlags as H
 
 import Diff
 import Error
@@ -57,37 +55,30 @@ import qualified Paths_hackport
 
 data ListFlags = ListFlags {
     listVerbosity :: Flag Verbosity
-    -- , listOverlayPath :: Flag FilePath
-    -- , listServerURI :: Flag String
   }
 
 instance Monoid ListFlags where
   mempty = ListFlags {
     listVerbosity = mempty
-    -- , listOverlayPath = mempty
-    -- , listServerURI = mempty
   }
   mappend a b = ListFlags {
     listVerbosity = combine listVerbosity
-    -- , listOverlayPath = combine listOverlayPath
-    -- , listServerURI = combine listServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultListFlags :: ListFlags
 defaultListFlags = ListFlags {
     listVerbosity = Flag normal
-    -- , listOverlayPath = NoFlag
-    -- , listServerURI = Flag defaultHackageServerURI
   }
 
 listCommand :: CommandUI ListFlags
 listCommand = CommandUI {
     commandName = "list",
-    commandSynopsis = "List packages",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for listCommand\n",
+    commandSynopsis = "List package versions matching pattern",
     commandUsage = usagePackages "list",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultListFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity listVerbosity (\v flags -> flags { listVerbosity = v })
@@ -100,12 +91,12 @@ listCommand = CommandUI {
       ]
   }
 
-listAction :: ListFlags -> [String] -> GlobalFlags -> IO ()
+listAction :: ListFlags -> [String] -> H.GlobalFlags -> IO ()
 listAction flags extraArgs globalFlags = do
-  let verbosity = fromFlag (listVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  let repo = defaultRepo overlayPath
-  index <- fmap packageIndex (Index.getSourcePackages verbosity [ repo ])
+ let verbosity = fromFlag (listVerbosity flags)
+ H.withHackPortContext verbosity globalFlags $ \repoContext -> do
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
+  index <- fmap packageIndex (Index.getSourcePackages verbosity repoContext)
   overlay <- Overlay.loadLazy overlayPath
   let pkgs | null extraArgs = Index.allPackages index
            | otherwise = concatMap (concatMap snd . Index.searchByNameSubstring index) extraArgs
@@ -146,7 +137,7 @@ defaultMakeEbuildFlags = MakeEbuildFlags {
   , makeEbuildCabalFlags = Flag Nothing
   }
 
-makeEbuildAction :: MakeEbuildFlags -> [String] -> GlobalFlags -> IO ()
+makeEbuildAction :: MakeEbuildFlags -> [String] -> H.GlobalFlags -> IO ()
 makeEbuildAction flags args globalFlags = do
   (catstr,cabals) <- case args of
                       (category:cabal1:cabaln) -> return (category, cabal1:cabaln)
@@ -155,7 +146,7 @@ makeEbuildAction flags args globalFlags = do
             Just c -> return c
             Nothing -> throwEx (ArgumentError ("could not parse category: " ++ catstr))
   let verbosity = fromFlag (makeEbuildVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
   forM_ cabals $ \cabalFileName -> do
     pkg <- Cabal.readPackageDescription normal cabalFileName
     mergeGenericPackageDescription verbosity overlayPath cat pkg False (fromFlag $ makeEbuildCabalFlags flags)
@@ -164,9 +155,10 @@ makeEbuildCommand :: CommandUI MakeEbuildFlags
 makeEbuildCommand = CommandUI {
     commandName = "make-ebuild",
     commandSynopsis = "Make an ebuild from a .cabal file",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for makeEbuildCommand\n",
     commandUsage = \_ -> [],
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultMakeEbuildFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity makeEbuildVerbosity (\v flags -> flags { makeEbuildVerbosity = v })
@@ -215,9 +207,10 @@ diffCommand :: CommandUI DiffFlags
 diffCommand = CommandUI {
     commandName = "diff",
     commandSynopsis = "Run diff",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for diffCommand\n",
     commandUsage = usagePackages "diff",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultDiffFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity diffVerbosity (\v flags -> flags { diffVerbosity = v })
@@ -230,7 +223,7 @@ diffCommand = CommandUI {
       ]
   }
 
-diffAction :: DiffFlags -> [String] -> GlobalFlags -> IO ()
+diffAction :: DiffFlags -> [String] -> H.GlobalFlags -> IO ()
 diffAction flags args globalFlags = do
   let verbosity = fromFlag (diffVerbosity flags)
       -- dm0 = fromFlag (diffMode flags)
@@ -245,9 +238,9 @@ diffAction flags args globalFlags = do
           -- TODO: ["package",packagePattern] ->
           --          return ShowPackagePattern packagePattern
           _ -> die $ "Unknown mode: " ++ unwords args
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  let repo = defaultRepo overlayPath
-  runDiff verbosity overlayPath dm repo
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
+  H.withHackPortContext verbosity globalFlags $ \repoContext ->
+      runDiff verbosity overlayPath dm repoContext
 
 -----------------------------------------------------------------------
 -- Update
@@ -255,33 +248,30 @@ diffAction flags args globalFlags = do
 
 data UpdateFlags = UpdateFlags {
     updateVerbosity :: Flag Verbosity
-    -- , updateServerURI :: Flag String
   }
 
 instance Monoid UpdateFlags where
   mempty = UpdateFlags {
     updateVerbosity = mempty
-    -- , updateServerURI = mempty
   }
   mappend a b = UpdateFlags {
     updateVerbosity = combine updateVerbosity
-    -- , updateServerURI = combine updateServerURI
   }
     where combine field = field a `mappend` field b
 
 defaultUpdateFlags :: UpdateFlags
 defaultUpdateFlags = UpdateFlags {
     updateVerbosity = Flag normal
-    -- , updateServerURI = Flag defaultHackageServerURI
   }
 
 updateCommand :: CommandUI UpdateFlags
 updateCommand = CommandUI {
     commandName = "update",
-    commandSynopsis = "Update the local cache",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for updateCommand\n",
+    commandSynopsis = "Update the local package database",
     commandUsage = usageFlags "update",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultUpdateFlags,
     commandOptions = \_ ->
       [ optionVerbosity updateVerbosity (\v flags -> flags { updateVerbosity = v })
@@ -295,15 +285,14 @@ updateCommand = CommandUI {
       ]
   }
 
-updateAction :: UpdateFlags -> [String] -> GlobalFlags -> IO ()
+updateAction :: UpdateFlags -> [String] -> H.GlobalFlags -> IO ()
 updateAction flags extraArgs globalFlags = do
   unless (null extraArgs) $
     die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  http_transport <- DCH.configureTransport verbosity Nothing
-  update http_transport verbosity [ defaultRepo overlayPath ]
-  
+
+  H.withHackPortContext verbosity globalFlags $ \repoContext ->
+    update verbosity repoContext
 
 -----------------------------------------------------------------------
 -- Status
@@ -323,10 +312,11 @@ defaultStatusFlags = StatusFlags {
 statusCommand :: CommandUI StatusFlags
 statusCommand = CommandUI {
     commandName = "status",
-    commandSynopsis = "Show status(??)",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for statusCommand\n",
+    commandSynopsis = "Show up-to-date status against other repos (hackage, ::gentoo)",
     commandUsage = usagePackages "status",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultStatusFlags,
     commandOptions = \_ ->
       [ optionVerbosity statusVerbosity (\v flags -> flags { statusVerbosity = v })
@@ -341,13 +331,15 @@ statusCommand = CommandUI {
       ]
   }
 
-statusAction :: StatusFlags -> [String] -> GlobalFlags -> IO ()
+statusAction :: StatusFlags -> [String] -> H.GlobalFlags -> IO ()
 statusAction flags args globalFlags = do
   let verbosity = fromFlag (statusVerbosity flags)
       direction = fromFlag (statusDirection flags)
   portagePath <- getPortageDir verbosity globalFlags
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  runStatus verbosity portagePath overlayPath direction args
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
+
+  H.withHackPortContext verbosity globalFlags $ \repoContext ->
+      runStatus verbosity portagePath overlayPath direction args repoContext
 
 -----------------------------------------------------------------------
 -- Merge
@@ -379,9 +371,10 @@ mergeCommand :: CommandUI MergeFlags
 mergeCommand = CommandUI {
     commandName = "merge",
     commandSynopsis = "Make an ebuild out of hackage package",
-    commandDescription = Just $ \_pname ->
-      "TODO: this is the commandDescription for mergeCommand\n",
     commandUsage = usagePackages "merge",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultMergeFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity mergeVerbosity (\v flags -> flags { mergeVerbosity = v })
@@ -396,12 +389,13 @@ mergeCommand = CommandUI {
       ]
   }
 
-mergeAction :: MergeFlags -> [String] -> GlobalFlags -> IO ()
+mergeAction :: MergeFlags -> [String] -> H.GlobalFlags -> IO ()
 mergeAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (mergeVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  let repo = defaultRepo overlayPath
-  merge verbosity repo (defaultRepoURI overlayPath) extraArgs overlayPath (fromFlag $ mergeCabalFlags flags)
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
+
+  H.withHackPortContext verbosity globalFlags $ \repoContext ->
+    merge verbosity repoContext extraArgs overlayPath (fromFlag $ mergeCabalFlags flags)
 
 -----------------------------------------------------------------------
 -- DistroMap
@@ -429,23 +423,25 @@ defaultDistroMapFlags = DistroMapFlags {
 distroMapCommand :: CommandUI DistroMapFlags
 distroMapCommand = CommandUI {
     commandName = "distromap",
-    commandSynopsis = "Build a distromap file",
-    commandDescription = Just $ \_pname ->
-      "TODO: this is the commandDescription for distroMapCommand\n",
+    commandSynopsis = "Build hackage a distromap file",
     commandUsage = usagePackages "distromap",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
+
     commandDefaultFlags = defaultDistroMapFlags,
     commandOptions = \_showOrParseArgs ->
       [ optionVerbosity distroMapVerbosity (\v flags -> flags { distroMapVerbosity = v })
       ]
   }
 
-distroMapAction :: DistroMapFlags-> [String] -> GlobalFlags -> IO ()
+distroMapAction :: DistroMapFlags-> [String] -> H.GlobalFlags -> IO ()
 distroMapAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (distroMapVerbosity flags)
-  overlayPath <- getOverlayPath verbosity (fromFlag $ globalPathToOverlay globalFlags)
-  let repo = defaultRepo overlayPath
+  overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
   portagePath <- getPortageDir verbosity globalFlags
-  distroMap verbosity repo portagePath overlayPath extraArgs
+
+  H.withHackPortContext verbosity globalFlags $ \repoContext ->
+    distroMap verbosity repoContext portagePath overlayPath extraArgs
 
 -----------------------------------------------------------------------
 -- Utils
@@ -471,9 +467,9 @@ usageFlags flag_name pname =
       "Usage: " ++ pname ++ " " ++ flag_name ++ " [FLAGS]\n\n"
       ++ "Flags for " ++ flag_name ++ ":"
 
-getPortageDir :: Verbosity -> GlobalFlags -> IO FilePath
+getPortageDir :: Verbosity -> H.GlobalFlags -> IO FilePath
 getPortageDir verbosity globalFlags = do
-  let portagePathM =  fromFlag (globalPathToPortage globalFlags)
+  let portagePathM =  fromFlag (H.globalPathToPortage globalFlags)
   portagePath <- case portagePathM of
                    Nothing -> Host.portage_dir <$> Host.getInfo
                    Just path -> return path
@@ -486,45 +482,31 @@ getPortageDir verbosity globalFlags = do
 -- Main
 -----------------------------------------------------------------------
 
-data GlobalFlags =
-    GlobalFlags { globalVersion :: Flag Bool
-                , globalNumericVersion :: Flag Bool
-                , globalPathToOverlay :: Flag (Maybe FilePath)
-                , globalPathToPortage :: Flag (Maybe FilePath)
-                }
-
-defaultGlobalFlags :: GlobalFlags
-defaultGlobalFlags =
-    GlobalFlags { globalVersion = Flag False
-                , globalNumericVersion = Flag False
-                , globalPathToOverlay = Flag Nothing
-                , globalPathToPortage = Flag Nothing
-                }
-
-globalCommand :: CommandUI GlobalFlags
+globalCommand :: CommandUI H.GlobalFlags
 globalCommand = CommandUI {
     commandName = "",
     commandSynopsis = "",
-    commandDescription = Just $ \_pname ->
-        "TODO: this is the commandDescription for globalCommand\n",
+    commandDescription = Nothing,
+    commandNotes = Nothing,
     commandUsage = \_ -> [],
-    commandDefaultFlags = defaultGlobalFlags,
+
+    commandDefaultFlags = H.defaultGlobalFlags,
     commandOptions = \_showOrParseArgs ->
         [ option ['V'] ["version"]
             "Print version information"
-            globalVersion (\v flags -> flags { globalVersion = v })
+            H.globalVersion (\v flags -> flags { H.globalVersion = v })
             trueArg
         , option [] ["numeric-version"]
             "Print just the version number"
-            globalNumericVersion (\v flags -> flags { globalNumericVersion = v })
+            H.globalNumericVersion (\v flags -> flags { H.globalNumericVersion = v })
             trueArg
         , option ['p'] ["overlay-path"]
             "Override search path list where .hackport/ lives (default list: ['.', paludis-ovls or emerge-ovls])"
-            globalPathToOverlay (\ovrl_path flags -> flags { globalPathToOverlay = ovrl_path })
+            H.globalPathToOverlay (\ovrl_path flags -> flags { H.globalPathToOverlay = ovrl_path })
             (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
         , option [] ["portage-path"]
             "Override path to your portage tree"
-            globalPathToPortage (\port_path flags -> flags { globalPathToPortage = port_path })
+            H.globalPathToPortage (\port_path flags -> flags { H.globalPathToPortage = port_path })
             (reqArg' "PATH" (Flag . Just) (\(Flag ms) -> catMaybes [ms]))
         ]
     }
@@ -537,8 +519,8 @@ mainWorker args =
     CommandErrors errs -> printErrors errs
     CommandReadyToGo (globalflags, commandParse) -> do
       case commandParse of
-        _ | fromFlag (globalVersion globalflags)        -> printVersion
-          | fromFlag (globalNumericVersion globalflags) -> printNumericVersion
+        _ | fromFlag (H.globalVersion globalflags)        -> printVersion
+          | fromFlag (H.globalNumericVersion globalflags) -> printNumericVersion
         CommandHelp help        -> printHelp help
         CommandList opts        -> printOptionsList opts
         CommandErrors errs      -> printErrors errs
