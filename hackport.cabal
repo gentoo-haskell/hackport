@@ -107,7 +107,6 @@ Executable    hackport
     AnsiColor
     Cabal2Ebuild
     Error
-    Hackage
     Main
     Overlays
     Paths_hackport
