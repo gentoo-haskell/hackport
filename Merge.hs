@@ -33,10 +33,10 @@ import Distribution.Simple.Utils
 import Distribution.Client.IndexUtils ( getSourcePackages )
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.PackageIndex as Index
-import qualified Distribution.Client.ProjectConfig as CabalInstall
 import Distribution.Client.Types
 
 -- others
+import qualified Data.List.Split as DLS
 import System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
@@ -51,8 +51,6 @@ import qualified Portage.EBuild as E
 import qualified Portage.EMeta as EM
 import Error as E
 
-import Network.URI
-
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
@@ -65,9 +63,6 @@ import qualified Portage.Use as Portage
 import qualified Portage.GHCCore as GHCCore
 
 import qualified Merge.Dependencies as Merge
-
-import qualified Util as U
-
 
 (<.>) :: String -> String -> String
 a <.> b = a ++ '.':b
@@ -188,7 +183,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                 user_renames = [ (cfn, ein)
                                | ((Cabal.FlagName cfn, ein), Nothing) <- cn_in_mb
                                ]
-                cn_in_mb = map read_fa $ U.split (== ',') user_fas_s
+                cn_in_mb = map read_fa $ DLS.splitOn "," user_fas_s
                 read_fa :: String -> ((Cabal.FlagName, String), Maybe Bool)
                 read_fa [] = error $ "read_fas: empty flag?"
                 read_fa (op:flag) =
@@ -198,7 +193,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                         _     -> (get_rename (op:flag), Nothing)
                   where get_rename :: String -> (Cabal.FlagName, String)
                         get_rename s =
-                            case U.split (== ':') s of
+                            case DLS.splitOn ":" s of
                                 [cabal_flag_name] -> (Cabal.FlagName cabal_flag_name, cabal_flag_name)
                                 [cabal_flag_name, iuse_name] -> (Cabal.FlagName cabal_flag_name, iuse_name)
                                 _                 -> error $ "get_rename: too many components" ++ show (s)
