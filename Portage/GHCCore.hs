@@ -31,7 +31,7 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102]
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801]
 
 cabalFromGHC :: [Int] -> Maybe Version
 cabalFromGHC ver = lookup ver table
@@ -42,6 +42,7 @@ cabalFromGHC ver = lookup ver table
           , ([7,8,2],  Version [1,18,1,3] [])
           , ([7,10,1], Version [1,22,2,0] [])
           , ([7,10,2], Version [1,22,4,0] [])
+          , ([8,0,1],  Version [1,24,0,0] [])
           ]
 
 platform :: Platform
@@ -107,6 +108,9 @@ ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (Version nrs [])
 
+ghc801 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc801 = (ghc [8,0,1], mkIndex ghc801_pkgs)
+
 ghc7102 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc7102 = (ghc [7,10,2], mkIndex ghc7102_pkgs)
 
@@ -131,6 +135,33 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 --         and our binary tarballs (package.conf.d.initial subdir)
+
+ghc801_pkgs :: [PackageIdentifier]
+ghc801_pkgs =
+  [ p "array" [0,5,1,1]
+  , p "base" [4,9,0,0]
+--  , p "binary" [0,8,3,0]  package is upgradeable
+  , p "bytestring" [0,10,8,0]
+--  , p "Cabal" [1,24,0,0]  package is upgradeable
+  , p "containers" [0,5,7,1]
+  , p "deepseq" [1,4,2,0] -- used by time
+  , p "directory" [1,2,6,2]
+  , p "filepath" [1,4,1,0]
+  , p "ghc-boot" [8,0,1]
+  , p "ghc-prim" [0,5,0,0]
+  , p "ghci" [8,0,1]
+  , p "hoopl" [3,10,2,1] -- used by libghc
+  , p "hpc" [0,6,0,3] -- used by libghc
+  , p "integer-gmp" [1,0,0,1]
+  , p "pretty" [1,1,3,3]
+  , p "process" [1,4,2,0]
+  , p "template-haskell" [2,11,0,0] -- used by libghc
+  -- , p "terminfo" [0,4,0,2]
+  , p "time" [1,6,0,1] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+--  , p "transformers" [0,5,2,0] -- used by libghc
+  , p "unix" [2,7,2,0]
+--  , p "xhtml" [3000,2,1]
+  ]
 
 ghc7102_pkgs :: [PackageIdentifier]
 ghc7102_pkgs =
