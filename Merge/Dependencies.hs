@@ -359,6 +359,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("SDL_ttf", any_c_p "media-libs" "sdl-ttf")
       , ("odbc", any_c_p "dev-db" "unixODBC")
       , ("uuid", any_c_p "sys-apps" "util-linux")
+      , ("notify", any_c_p "x11-libs" "libnotify")
       ]
 
 ---------------------------------------------------------------
