@@ -158,7 +158,7 @@ ghc801_pkgs =
   , p "template-haskell" [2,11,0,0] -- used by libghc
   -- , p "terminfo" [0,4,0,2]
   , p "time" [1,6,0,1] -- used by unix, directory, hpc, ghc. unsafe to upgrade
---  , p "transformers" [0,5,2,0] -- used by libghc
+  , p "transformers" [0,5,2,0] -- used by libghc
   , p "unix" [2,7,2,0]
 --  , p "xhtml" [3000,2,1]
   ]
@@ -186,7 +186,7 @@ ghc7102_pkgs =
   , p "process" [1,2,3,0]
   , p "template-haskell" [2,10,0,0] -- used by libghc
   , p "time" [1,5,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
---  , p "transformers" [0,4,2,0] -- used by libghc
+  , p "transformers" [0,4,2,0] -- used by libghc
   , p "unix" [2,7,1,0]
   ]
 
@@ -213,7 +213,7 @@ ghc7101_pkgs =
   , p "process" [1,2,3,0]
   , p "template-haskell" [2,10,0,0] -- used by libghc
   , p "time" [1,5,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
---  , p "transformers" [0,4,2,0] -- used by libghc
+  , p "transformers" [0,4,2,0] -- used by libghc
   , p "unix" [2,7,1,0]
   ]
 
@@ -240,7 +240,7 @@ ghc782_pkgs =
   , p "process" [1,2,0,0]
   , p "template-haskell" [2,9,0,0] -- used by libghc
   , p "time" [1,4,2] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
---  , p "transformers" [0,3,0,0] -- used by libghc
+  , p "transformers" [0,3,0,0] -- used by libghc
   , p "unix" [2,7,0,1]
   ]
 
