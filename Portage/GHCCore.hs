@@ -99,7 +99,7 @@ mkIndex pids = fromList
       { sourcePackageId = pindex
       , exposed = True
       }
-  | pindex@(PackageIdentifier name version) <- pids ]
+  | pindex@(PackageIdentifier _name _version) <- pids ]
 
 packageNamesFromPackageIndex :: InstalledPackageIndex -> [PackageName]
 packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
@@ -140,7 +140,7 @@ ghc801_pkgs :: [PackageIdentifier]
 ghc801_pkgs =
   [ p "array" [0,5,1,1]
   , p "base" [4,9,0,0]
---  , p "binary" [0,8,3,0]  package is upgradeable
+  , p "binary" [0,8,3,0] -- used by libghc
   , p "bytestring" [0,10,8,0]
 --  , p "Cabal" [1,24,0,0]  package is upgradeable
   , p "containers" [0,5,7,1]
@@ -167,7 +167,7 @@ ghc7102_pkgs :: [PackageIdentifier]
 ghc7102_pkgs =
   [ p "array" [0,5,1,0]
   , p "base" [4,8,1,0]
---  , p "binary" [0,7,3,0]  package is upgradeable
+  , p "binary" [0,7,3,0] -- used by libghc
   , p "bytestring" [0,10,6,0]
 --  , p "Cabal" [1,18,1,3]  package is upgradeable
   , p "containers" [0,5,6,2]
@@ -194,7 +194,7 @@ ghc7101_pkgs :: [PackageIdentifier]
 ghc7101_pkgs =
   [ p "array" [0,5,1,0]
   , p "base" [4,8,0,0]
---  , p "binary" [0,7,3,0]  package is upgradeable
+  , p "binary" [0,7,3,0] -- used by libghc
   , p "bytestring" [0,10,6,0]
 --  , p "Cabal" [1,18,1,3]  package is upgradeable
   , p "containers" [0,5,6,2]
@@ -221,7 +221,7 @@ ghc782_pkgs :: [PackageIdentifier]
 ghc782_pkgs =
   [ p "array" [0,5,0,0]
   , p "base" [4,7,0,0]
---  , p "binary" [0,7,1,0]  package is upgradeable
+  , p "binary" [0,7,1,0] -- used by libghc
   , p "bytestring" [0,10,4,0]
 --  , p "Cabal" [1,18,1,3]  package is upgradeable
   , p "containers" [0,5,5,1]
@@ -248,7 +248,7 @@ ghc762_pkgs :: [PackageIdentifier]
 ghc762_pkgs =
   [ p "array" [0,4,0,1]
   , p "base" [4,6,0,1]
---  , p "binary" [0,5,1,1]  package is upgradeable
+  , p "binary" [0,5,1,1] -- used by libghc
   , p "bytestring" [0,10,0,2]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
@@ -274,7 +274,7 @@ ghc761_pkgs :: [PackageIdentifier]
 ghc761_pkgs =
   [ p "array" [0,4,0,1]
   , p "base" [4,6,0,0]
---  , p "binary" [0,5,1,1]  package is upgradeable
+  , p "binary" [0,5,1,1] -- used by libghc
   , p "bytestring" [0,10,0,0]
 --  , p "Cabal" [1,16,0]  package is upgradeable
   , p "containers" [0,5,0,0]
@@ -300,7 +300,7 @@ ghc742_pkgs :: [PackageIdentifier]
 ghc742_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,1,0]
---  , p "binary" [0,5,1,0]  package is upgradeable
+  , p "binary" [0,5,1,0] -- used by libghc
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
@@ -327,7 +327,7 @@ ghc741_pkgs :: [PackageIdentifier]
 ghc741_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,0,0]
---  , p "binary" [0,5,1,0]  package is upgradeable
+  , p "binary" [0,5,1,0] -- used by libghc
   , p "bytestring" [0,9,2,1]
 --  , p "Cabal" [1,14,0]  package is upgradeable
   , p "containers" [0,4,2,1]
