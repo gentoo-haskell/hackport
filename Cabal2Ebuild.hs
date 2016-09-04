@@ -34,6 +34,7 @@ import Portage.Dependency
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.EBuild as Portage
+import qualified Portage.EBuild.CabalFeature as Portage
 import qualified Portage.Resolve as Portage
 import qualified Portage.EBuild as E
 import qualified Portage.Overlay as O
@@ -54,20 +55,21 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.slot            = (E.slot E.ebuildTemplate) ++ (if hasLibs then "/${PV}" else ""),
     E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
-                   ++ (if hasExe then ["bin"]
-                                 else [])
-                   ++ (if hasLibs then (["lib","profile","haddock","hoogle"]
+                   ++ (if hasLibs then ([ Portage.Lib
+                                        , Portage.Profile
+                                        , Portage.Haddock
+                                        , Portage.Hoogle
+                                        ]
                                         ++ if cabalPkgName == "hscolour"
                                                 then []
-                                                else ["hscolour"])
+                                                else [Portage.HsColour])
                                   else [])
-                   ++ (if hasTests then ["test-suite"]
+                   ++ (if hasTests then [Portage.TestSuite]
                                    else [])
   } where
         cabal_pn = Cabal.pkgName $ Cabal.package pkg
         cabalPkgName = display cabal_pn
         hasLibs = Cabal.libraries pkg /= []
-        hasExe = (not . null) (Cabal.executables pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate

@@ -62,9 +62,8 @@ Features
         KEYWORDS
             Defaults to ~amd64 ~x86
         CABAL_FEATURES
-            Set to "bin" for executables, and "lib haddock profile" for
-            libraries. Packages that contains both a binary and library will
-            get the union.
+            Populates the following features (see haskell-cabal.eclass):
+            lib, profile, haddock, hoogle, hscolour, test-suite
         DEPEND
             GHC dependency defaults to >=dev-lang/ghc-6.6.1.
             Cabal dependency is fetched from Cabal field 'Cabal-Version'.

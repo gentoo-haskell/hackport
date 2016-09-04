@@ -112,6 +112,9 @@ Executable    hackport
     Paths_hackport
     Portage.Version
     Portage.Dependency
+    Portage.EBuild
+    Portage.EBuild.CabalFeature
+    Portage.EBuild.Render
     Portage.GHCCore
     Portage.PackageId
     Portage.Overlay
