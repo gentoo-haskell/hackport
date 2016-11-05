@@ -113,7 +113,14 @@ status verbosity portdir overlaydir repoContext = do
         mk_fake_ee ~pkgs@(p:_) = (packageId p, map p_to_ee pkgs)
 
         map_diff = Map.differenceWith (\le re -> Just $ foldr (List.deleteBy (Cabal.equating ebuildId)) le re)
-        hack = ((Map.fromList $ map mk_fake_ee hackage) `map_diff` overlayMap overlay) `map_diff` overlayMap portage
+        hack = (( -- We merge package names as we do case-insensitive match.
+                  -- Hackage contains the following 2 package names:
+                  --   ... Cabal-1.24.0.0 Cabal-1.24.1.0
+                  --   cabal-0.0.0.0
+                  -- We need to pick both lists of versions, not the first.
+                  -- TODO: have a way to distict between them in the output.
+                  Map.fromListWith (++) $
+                      map mk_fake_ee hackage) `map_diff` overlayMap overlay) `map_diff` overlayMap portage
 
         meld = Map.unionsWith (\a b -> List.sort (a++b))
                 [ Map.map (map PortageOnly) port
