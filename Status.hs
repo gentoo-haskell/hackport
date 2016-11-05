@@ -28,11 +28,11 @@ import Control.Applicative
 import Control.Monad
 
 -- cabal
-import Distribution.Client.Types ( SourcePackageDb(..), SourcePackage(..) )
-import Distribution.Verbosity
-import Distribution.Package (pkgName)
-import Distribution.Simple.Utils (comparing, die, equating)
-import Distribution.Text ( display, simpleParse )
+import qualified Distribution.Client.Types as Cabal ( SourcePackageDb(..), SourcePackage(..) )
+import qualified Distribution.Verbosity as Cabal
+import qualified Distribution.Package as Cabal (pkgName)
+import qualified Distribution.Simple.Utils as Cabal (comparing, die, equating)
+import qualified Distribution.Text as Cabal ( display, simpleParse )
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
@@ -53,7 +53,7 @@ data FileStatus a
         deriving (Show,Eq)
 
 instance Ord a => Ord (FileStatus a) where
-    compare = comparing fromStatus
+    compare = Cabal.comparing fromStatus
 
 instance Functor FileStatus where
     fmap f st =
@@ -75,20 +75,20 @@ fromStatus fs =
 
 
 
-loadHackage :: Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
+loadHackage :: Cabal.Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
 loadHackage verbosity repoContext overlay = do
-    SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
-    let get_cat cabal_pkg = case resolveCategories overlay (pkgName cabal_pkg) of
+    Cabal.SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
+    let get_cat cabal_pkg = case resolveCategories overlay (Cabal.pkgName cabal_pkg) of
                                 []    -> Category "dev-haskell"
                                 [cat] -> cat
                                 _     -> {- ambig -} Category "dev-haskell"
         pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
                         . map ((\p -> fromCabalPackageId (get_cat p) p)
-                              . packageInfoId))
+                              . Cabal.packageInfoId))
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
 
-status :: Verbosity -> FilePath -> FilePath -> CabalInstall.RepoContext -> IO (Map PackageName [FileStatus ExistingEbuild])
+status :: Cabal.Verbosity -> FilePath -> FilePath -> CabalInstall.RepoContext -> IO (Map PackageName [FileStatus ExistingEbuild])
 status verbosity portdir overlaydir repoContext = do
     overlay <- loadLazy overlaydir
     hackage <- loadHackage verbosity repoContext overlay
@@ -112,7 +112,7 @@ status verbosity portdir overlaydir repoContext = do
         mk_fake_ee :: [PackageId] -> (PackageName, [ExistingEbuild])
         mk_fake_ee ~pkgs@(p:_) = (packageId p, map p_to_ee pkgs)
 
-        map_diff = Map.differenceWith (\le re -> Just $ foldr (List.deleteBy (equating ebuildId)) le re)
+        map_diff = Map.differenceWith (\le re -> Just $ foldr (List.deleteBy (Cabal.equating ebuildId)) le re)
         hack = ((Map.fromList $ map mk_fake_ee hackage) `map_diff` overlayMap overlay) `map_diff` overlayMap portage
 
         meld = Map.unionsWith (\a b -> List.sort (a++b))
@@ -130,15 +130,15 @@ lookupEbuildWith overlay pkgid = do
   ebuilds <- Map.lookup (packageId pkgid) overlay
   List.find (\e -> ebuildId e == pkgid) ebuilds
 
-runStatus :: Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> CabalInstall.RepoContext -> IO ()
+runStatus :: Cabal.Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> CabalInstall.RepoContext -> IO ()
 runStatus verbosity portdir overlaydir direction pkgs repoContext = do
   let pkgFilter = case direction of
                       OverlayToPortage   -> toPortageFilter
                       PortagePlusOverlay -> id
                       HackageToOverlay   -> fromHackageFilter
   pkgs' <- forM pkgs $ \p ->
-            case simpleParse p of
-              Nothing -> die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
+            case Cabal.simpleParse p of
+              Nothing -> Cabal.die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
   tree0 <- status verbosity portdir overlaydir repoContext
   let tree = pkgFilter tree0
@@ -196,10 +196,10 @@ statusPrinter packages = do
         let (PackageName c p) = pkg
         putStr (bold (show ix))
         putStr " "
-        putStr $ display c ++ '/' : bold (display p)
+        putStr $ Cabal.display c ++ '/' : bold (Cabal.display p)
         putStr " "
         forM_ ebuilds $ \e -> do
-            putStr $ toColor (fmap (display . pkgVersion . ebuildId) e)
+            putStr $ toColor (fmap (Cabal.display . pkgVersion . ebuildId) e)
             putChar ' '
         putStrLn ""
 
@@ -215,12 +215,12 @@ toColor st = inColor c False Default (fromStatus st)
 
 portageDiff :: EMap -> EMap -> (EMap, EMap, EMap)
 portageDiff p1 p2 = (in1, ins, in2)
-    where ins = Map.filter (not . null) $ Map.intersectionWith (List.intersectBy $ equating ebuildId) p1 p2
+    where ins = Map.filter (not . null) $ Map.intersectionWith (List.intersectBy $ Cabal.equating ebuildId) p1 p2
           in1 = difference p1 p2
           in2 = difference p2 p1
           difference x y = Map.filter (not . null) $
                        Map.differenceWith (\xs ys ->
-                        let lst = foldr (List.deleteBy (equating ebuildId)) xs ys in
+                        let lst = foldr (List.deleteBy (Cabal.equating ebuildId)) xs ys in
                         if null lst
                             then Nothing
                             else Just lst
@@ -236,7 +236,7 @@ equals fp1 fp2 = do
     return (equal' f1 f2)
 
 equal' :: BS.ByteString -> BS.ByteString -> Bool
-equal' = equating essence
+equal' = Cabal.equating essence
     where
     essence = filter (not . isEmpty) . filter (not . isComment) . BS.lines
     isComment = BS.isPrefixOf (BS.pack "#") . BS.dropWhile isSpace
