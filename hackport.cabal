@@ -51,6 +51,7 @@ Executable    hackport
     unix,
     -- cabal-install depends
     --  hackage-security depends
+    base16-bytestring,
     base64-bytestring,
     cryptohash,
     ed25519,
