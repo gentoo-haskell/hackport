@@ -5,21 +5,8 @@ module Merge.Dependencies
   , resolveDependencies
   ) where
 
-import Distribution.PackageDescription ( PackageDescription(..)
-                                       , libBuildInfo
-                                       , buildInfo
-                                       , buildable
-                                       , extraLibs
-                                       , buildTools
-                                       , pkgconfigDepends
-                                       , specVersion
-                                       , TestSuite(..)
-                                       , targetBuildDepends
-                                       )
-
 import Data.Maybe ( isJust, isNothing )
 import Data.Monoid ( Monoid, mempty, mappend)
-import Data.List ( nub )
 import qualified Data.List as L
 import qualified Data.Set as S
 
@@ -68,7 +55,7 @@ instance Monoid EDep where
     , dep_e  = dep_eA  `S.union` dep_eB
     }
 
-resolveDependencies :: Portage.Overlay -> PackageDescription -> Cabal.CompilerInfo
+resolveDependencies :: Portage.Overlay -> Cabal.PackageDescription -> Cabal.CompilerInfo
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
 resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg_name = edeps
@@ -78,7 +65,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     treatAsLibrary = isJust (Cabal.library pkg)
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
-    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
+    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (Cabal.buildDepends pkg)
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
                     Portage.DependAllOf $
@@ -146,9 +133,9 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
 -- TODO: move partitioning part to Merge:mergeGenericPackageDescription
 ---------------------------------------------------------------
 
-setupDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
+setupDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
 setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
-    where cabalDeps = maybe [] id $ Cabal.setupDepends `fmap` setupBuildInfo pkg
+    where cabalDeps = maybe [] id $ Cabal.setupDepends `fmap` Cabal.setupBuildInfo pkg
           cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
 
@@ -157,9 +144,9 @@ setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
 -- TODO: move partitioning part to Merge:mergeGenericPackageDescription
 ---------------------------------------------------------------
 
-testDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
+testDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
 testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
-    where cabalDeps = concat $ map targetBuildDepends $ map testBuildInfo (testSuites pkg)
+    where cabalDeps = concat $ map Cabal.targetBuildDepends $ map Cabal.testBuildInfo (Cabal.testSuites pkg)
           cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
 
@@ -177,7 +164,7 @@ haskellDependencies overlay deps =
 
 -- | Select the most restrictive dependency on Cabal, either the .cabal
 -- file's descCabalVersion, or the Cabal GHC shipped with.
-cabalDependency :: Portage.Overlay -> PackageDescription -> Cabal.CompilerInfo -> Portage.Dependency
+cabalDependency :: Portage.Overlay -> Cabal.PackageDescription -> Cabal.CompilerInfo -> Portage.Dependency
 cabalDependency overlay pkg ~(Cabal.CompilerInfo {
                                   Cabal.compilerInfoId =
                                       Cabal.CompilerId Cabal.GHC cabal_version
@@ -188,7 +175,7 @@ cabalDependency overlay pkg ~(Cabal.CompilerInfo {
                                                  finalCabalDep)
   where
     versionNumbers = Cabal.versionNumbers cabal_version
-    userCabalVersion = Cabal.orLaterVersion (specVersion pkg)
+    userCabalVersion = Cabal.orLaterVersion (Cabal.specVersion pkg)
     shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
     shippedCabalDep = maybe Cabal.anyVersion Cabal.orLaterVersion shippedCabalVersion
     finalCabalDep = Cabal.simplifyVersionRange
@@ -210,16 +197,16 @@ compilerInfoToDependency ~(Cabal.CompilerInfo {
 -- C Libraries
 ---------------------------------------------------------------
 
-findCLibs :: PackageDescription -> [Portage.Dependency]
-findCLibs (PackageDescription { library = lib, executables = exes }) =
+findCLibs :: Cabal.PackageDescription -> [Portage.Dependency]
+findCLibs (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
           (any_c_p "unknown-c-lib" p)
   | p <- notFound
   ] ++
   found
   where
-  libE = concatMap (extraLibs . libBuildInfo) $ maybe [] return lib
-  exeE = concatMap extraLibs (filter buildable (map buildInfo exes))
+  libE = concatMap (Cabal.extraLibs . Cabal.libBuildInfo) $ maybe [] return lib
+  exeE = concatMap Cabal.extraLibs (filter Cabal.buildable (map Cabal.buildInfo exes))
   allE = libE ++ exeE
 
   notFound = [ p | p <- allE, isNothing (staticTranslateExtraLib p) ]
@@ -347,8 +334,8 @@ staticTranslateExtraLib lib = lookup lib m
 -- Build Tools
 ---------------------------------------------------------------
 
-buildToolsDependencies :: PackageDescription -> [Portage.Dependency]
-buildToolsDependencies (PackageDescription { library = lib, executables = exes }) = nub $
+buildToolsDependencies :: Cabal.PackageDescription -> [Portage.Dependency]
+buildToolsDependencies (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) = L.nub $
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ Cabal.display exe ++ "'. Check the generated ebuild.")
@@ -358,8 +345,8 @@ buildToolsDependencies (PackageDescription { library = lib, executables = exes }
   ]
   where
   cabalDeps = filter notProvided $ depL ++ depE
-  depL = concatMap (buildTools . libBuildInfo) $ maybe [] return lib
-  depE = concatMap buildTools (filter buildable (map buildInfo exes))
+  depL = concatMap (Cabal.buildTools . Cabal.libBuildInfo) $ maybe [] return lib
+  depE = concatMap Cabal.buildTools (filter Cabal.buildable (map Cabal.buildInfo exes))
   notProvided (Cabal.LegacyExeDependency pn _range) = pn `notElem` buildToolsProvided
 
 buildToolsTable :: [(String, Portage.Dependency)]
@@ -388,12 +375,12 @@ buildToolsProvided = ["hsc2hs"]
 -- pkg-config
 ---------------------------------------------------------------
 
-pkgConfigDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
-pkgConfigDependencies overlay (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
+pkgConfigDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Portage.Dependency]
+pkgConfigDependencies overlay (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) = L.nub $ resolvePkgConfigs overlay cabalDeps
   where
   cabalDeps = depL ++ depE
-  depL = concatMap (pkgconfigDepends . libBuildInfo) $ maybe [] return lib
-  depE = concatMap pkgconfigDepends (filter buildable (map buildInfo exes))
+  depL = concatMap (Cabal.pkgconfigDepends . Cabal.libBuildInfo) $ maybe [] return lib
+  depE = concatMap Cabal.pkgconfigDepends (filter Cabal.buildable (map Cabal.buildInfo exes))
 
 resolvePkgConfigs :: Portage.Overlay -> [Cabal.PkgconfigDependency] -> [Portage.Dependency]
 resolvePkgConfigs overlay cdeps =
