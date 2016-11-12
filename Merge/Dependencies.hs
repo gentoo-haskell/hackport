@@ -1,45 +1,5 @@
 {- | Merge a package from hackage to an ebuild.
-
-Merging a library
-=================
-
-Compile time:
-  ghc
-  cabal
-  build tools
-  deps (haskell dependencies)
-  extra-libs (c-libs)
-  pkg-config (c-libs)
-
-Run time:
-  ghc
-  deps (haskell dependencies)
-  extra-libs (c-libs)
-  pkg-config (c-libs)
-
-RDEPEND="ghc ${DEPS} ${EXTRALIBS}"
-DEPEND="${RDEPEND} cabal ${BUILDTOOLS}"
-
-Merging an executable
-=====================
-Packages with both executable and library must be treated as libraries, as it will impose a stricter DEPEND.
-
-Compile time:
-  ghc
-  cabal
-  build tools
-  deps (haskell dependencies)
-  extra-libs (c-libs)
-  pkg-config (c-libs)
-
-Run time:
-  extra-libs (c-libs)
-  pkg-config (c-libs)
-
-RDEPEND="${EXTRALIBS}"
-DEPEND="${RDEPEND} ghc cabal ${DEPS} ${BUILDTOOLS}"
-
--}
+ -}
 module Merge.Dependencies
   ( EDep(..)
   , resolveDependencies
