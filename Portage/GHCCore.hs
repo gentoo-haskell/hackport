@@ -9,7 +9,8 @@ module Portage.GHCCore
         ) where
 
 import qualified Distribution.Compiler as DC
-import Distribution.Package
+import qualified Distribution.Package as Cabal
+import qualified Distribution.Version as Cabal
 import Distribution.Version
 import Distribution.Simple.PackageIndex
 import Distribution.InstalledPackageInfo as IPI
@@ -23,7 +24,6 @@ import Distribution.Text
 
 import Data.Maybe
 import Data.List ( nub )
-import Data.Version
 
 import Debug.Trace
 
@@ -33,34 +33,34 @@ ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
     where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801]
 
-cabalFromGHC :: [Int] -> Maybe Version
+cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
   where
-  table = [ ([7,4,2],  Version [1,14,0] [])
-          , ([7,6,1],  Version [1,16,0] [])
-          , ([7,6,2],  Version [1,16,0] [])
-          , ([7,8,2],  Version [1,18,1,3] [])
-          , ([7,10,1], Version [1,22,2,0] [])
-          , ([7,10,2], Version [1,22,4,0] [])
-          , ([8,0,1],  Version [1,24,0,0] [])
+  table = [ ([7,4,2],  Cabal.mkVersion [1,14,0])
+          , ([7,6,1],  Cabal.mkVersion [1,16,0])
+          , ([7,6,2],  Cabal.mkVersion [1,16,0])
+          , ([7,8,2],  Cabal.mkVersion [1,18,1,3])
+          , ([7,10,1], Cabal.mkVersion [1,22,2,0])
+          , ([7,10,2], Cabal.mkVersion [1,22,4,0])
+          , ([8,0,1],  Cabal.mkVersion [1,24,0,0])
           ]
 
 platform :: Platform
 platform = Platform X86_64 Linux
 
-packageIsCore :: InstalledPackageIndex -> PackageName -> Bool
+packageIsCore :: InstalledPackageIndex -> Cabal.PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
 
-packageIsCoreInAnyGHC :: PackageName -> Bool
+packageIsCoreInAnyGHC :: Cabal.PackageName -> Bool
 packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
 
 -- | Check if a dependency is satisfiable given a 'PackageIndex'
 -- representing the core packages in a GHC version.
 -- Packages that are not core will always be accepted, packages that are
 -- core in any ghc must be satisfied by the 'PackageIndex'.
-dependencySatisfiable :: InstalledPackageIndex -> Dependency -> Bool
-dependencySatisfiable pindex dep@(Dependency pn _rang)
-  | pn == PackageName "Win32" = False -- only exists on windows, not in linux
+dependencySatisfiable :: InstalledPackageIndex -> Cabal.Dependency -> Bool
+dependencySatisfiable pindex dep@(Cabal.Dependency pn _rang)
+  | Cabal.unPackageName pn == "Win32" = False -- only exists on windows, not in linux
   | not . null $ lookupDependency pindex dep = True -- the package index satisfies the dep
   | packageIsCoreInAnyGHC pn = False -- some other ghcs support the dependency
   | otherwise = True -- the dep is not related with core packages, accept the dep
@@ -69,7 +69,7 @@ packageBuildableWithGHCVersion
   :: GenericPackageDescription
   -> FlagAssignment
   -> (DC.CompilerInfo, InstalledPackageIndex)
-  -> Either [Dependency] (PackageDescription, FlagAssignment)
+  -> Either [Cabal.Dependency] (PackageDescription, FlagAssignment)
 packageBuildableWithGHCVersion pkg user_specified_fas (compiler_info, pkgIndex) = trace_failure $
   finalizePackageDescription user_specified_fas (dependencySatisfiable pkgIndex) platform compiler_info [] pkg
     where trace_failure v = case v of
@@ -82,31 +82,35 @@ packageBuildableWithGHCVersion pkg user_specified_fas (compiler_info, pkgIndex) 
                                             ]
                                    ) v
           show_deps = show . map display
-          show_compiler (DC.CompilerInfo { DC.compilerInfoId = CompilerId GHC v }) = "ghc-" ++ showVersion v
+          show_compiler (DC.CompilerInfo { DC.compilerInfoId = CompilerId GHC v }) = "ghc-" ++ display v
           show_compiler c = show c
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
 -- to build a package, and a list of core packages to that GHC version.
-minimumGHCVersionToBuildPackage :: GenericPackageDescription -> FlagAssignment -> Maybe (DC.CompilerInfo, [PackageName], PackageDescription, FlagAssignment, InstalledPackageIndex)
+minimumGHCVersionToBuildPackage :: GenericPackageDescription -> FlagAssignment -> Maybe ( DC.CompilerInfo
+                                                                                        , [Cabal.PackageName]
+                                                                                        , PackageDescription
+                                                                                        , FlagAssignment
+                                                                                        , InstalledPackageIndex)
 minimumGHCVersionToBuildPackage gpd user_specified_fas =
   listToMaybe [ (cinfo, packageNamesFromPackageIndex pix, pkg_desc, picked_flags, pix)
               | g@(cinfo, pix) <- ghcs
               , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd user_specified_fas g)]
 
-mkIndex :: [PackageIdentifier] -> InstalledPackageIndex
+mkIndex :: [Cabal.PackageIdentifier] -> InstalledPackageIndex
 mkIndex pids = fromList
   [ emptyInstalledPackageInfo
       { sourcePackageId = pindex
       , exposed = True
       }
-  | pindex@(PackageIdentifier _name _version) <- pids ]
+  | pindex@(Cabal.PackageIdentifier _name _version) <- pids ]
 
-packageNamesFromPackageIndex :: InstalledPackageIndex -> [PackageName]
+packageNamesFromPackageIndex :: InstalledPackageIndex -> [Cabal.PackageName]
 packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
 
 ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
-    where c_id = CompilerId GHC (Version nrs [])
+    where c_id = CompilerId GHC (mkVersion nrs)
 
 ghc801 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc801 = (ghc [8,0,1], mkIndex ghc801_pkgs)
@@ -136,7 +140,7 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 --         and our binary tarballs (package.conf.d.initial subdir)
 
-ghc801_pkgs :: [PackageIdentifier]
+ghc801_pkgs :: [Cabal.PackageIdentifier]
 ghc801_pkgs =
   [ p "array" [0,5,1,1]
   , p "base" [4,9,0,0]
@@ -163,7 +167,7 @@ ghc801_pkgs =
 --  , p "xhtml" [3000,2,1]
   ]
 
-ghc7102_pkgs :: [PackageIdentifier]
+ghc7102_pkgs :: [Cabal.PackageIdentifier]
 ghc7102_pkgs =
   [ p "array" [0,5,1,0]
   , p "base" [4,8,1,0]
@@ -190,7 +194,7 @@ ghc7102_pkgs =
   , p "unix" [2,7,1,0]
   ]
 
-ghc7101_pkgs :: [PackageIdentifier]
+ghc7101_pkgs :: [Cabal.PackageIdentifier]
 ghc7101_pkgs =
   [ p "array" [0,5,1,0]
   , p "base" [4,8,0,0]
@@ -217,7 +221,7 @@ ghc7101_pkgs =
   , p "unix" [2,7,1,0]
   ]
 
-ghc782_pkgs :: [PackageIdentifier]
+ghc782_pkgs :: [Cabal.PackageIdentifier]
 ghc782_pkgs =
   [ p "array" [0,5,0,0]
   , p "base" [4,7,0,0]
@@ -244,7 +248,7 @@ ghc782_pkgs =
   , p "unix" [2,7,0,1]
   ]
 
-ghc762_pkgs :: [PackageIdentifier]
+ghc762_pkgs :: [Cabal.PackageIdentifier]
 ghc762_pkgs =
   [ p "array" [0,4,0,1]
   , p "base" [4,6,0,1]
@@ -270,7 +274,7 @@ ghc762_pkgs =
   , p "unix" [2,6,0,1]
   ]
 
-ghc761_pkgs :: [PackageIdentifier]
+ghc761_pkgs :: [Cabal.PackageIdentifier]
 ghc761_pkgs =
   [ p "array" [0,4,0,1]
   , p "base" [4,6,0,0]
@@ -296,7 +300,7 @@ ghc761_pkgs =
   , p "unix" [2,6,0,0]
   ]
 
-ghc742_pkgs :: [PackageIdentifier]
+ghc742_pkgs :: [Cabal.PackageIdentifier]
 ghc742_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,1,0]
@@ -323,7 +327,7 @@ ghc742_pkgs =
   , p "unix" [2,5,1,1]
   ]
 
-ghc741_pkgs :: [PackageIdentifier]
+ghc741_pkgs :: [Cabal.PackageIdentifier]
 ghc741_pkgs =
   [ p "array" [0,4,0,0]
   , p "base" [4,5,0,0]
@@ -350,5 +354,5 @@ ghc741_pkgs =
   , p "unix" [2,5,1,0]
   ]
 
-p :: String -> [Int] -> PackageIdentifier
-p pn vs = PackageIdentifier (PackageName pn) (Version vs [])
+p :: String -> [Int] -> Cabal.PackageIdentifier
+p pn vs = Cabal.PackageIdentifier (Cabal.mkPackageName pn) (mkVersion vs)

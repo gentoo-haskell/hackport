@@ -28,7 +28,6 @@ import Control.Applicative
 import Control.Monad
 
 -- cabal
-import qualified Distribution.Client.Types as Cabal ( SourcePackageDb(..), SourcePackage(..) )
 import qualified Distribution.Verbosity as Cabal
 import qualified Distribution.Package as Cabal (pkgName)
 import qualified Distribution.Simple.Utils as Cabal (comparing, die, equating)
@@ -36,7 +35,9 @@ import qualified Distribution.Text as Cabal ( display, simpleParse )
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
-import qualified Distribution.Client.PackageIndex as CabalInstall
+import qualified Distribution.Client.Types as CabalInstall ( SourcePackageDb(..) )
+import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
+import qualified Distribution.Solver.Types.SourcePackage as CabalInstall ( SourcePackage(..) )
 
 data StatusDirection
     = PortagePlusOverlay
@@ -77,14 +78,14 @@ fromStatus fs =
 
 loadHackage :: Cabal.Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
 loadHackage verbosity repoContext overlay = do
-    Cabal.SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
+    CabalInstall.SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
     let get_cat cabal_pkg = case resolveCategories overlay (Cabal.pkgName cabal_pkg) of
                                 []    -> Category "dev-haskell"
                                 [cat] -> cat
                                 _     -> {- ambig -} Category "dev-haskell"
         pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
                         . map ((\p -> fromCabalPackageId (get_cat p) p)
-                              . Cabal.packageInfoId))
+                              . CabalInstall.packageInfoId))
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
 

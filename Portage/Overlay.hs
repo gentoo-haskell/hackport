@@ -34,7 +34,11 @@ data ExistingEbuild = ExistingEbuild {
     ebuildPath    :: FilePath
   } deriving (Show,Ord,Eq)
 
-instance Cabal.Package ExistingEbuild where packageId = ebuildCabalId
+instance Cabal.Package ExistingEbuild where
+    packageId = ebuildCabalId
+
+instance Cabal.HasUnitId ExistingEbuild where
+    installedUnitId _ = error "Portage.Cabal.installedUnitId: FIXME: should not be used"
 
 data Overlay = Overlay {
     overlayPath  :: FilePath,

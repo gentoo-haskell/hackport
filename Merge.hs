@@ -8,22 +8,17 @@ import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Function (on)
 import Data.Maybe
-import Data.Monoid
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.Time.Clock as TC
-import Data.Version
 
 -- cabal
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
-import qualified Distribution.PackageDescription as Cabal ( PackageDescription(..)
-                                       , Flag(..)
-                                       , FlagAssignment
-                                       , FlagName(..)
-                                       , GenericPackageDescription(..)
-                                       )
-import qualified Distribution.PackageDescription.Parse as Cabal (showPackageDescription)
+import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.PackageDescription.PrettyPrint as Cabal (showPackageDescription)
+import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
+import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
 import Distribution.Text (display)
 import Distribution.Verbosity
@@ -32,7 +27,6 @@ import Distribution.Simple.Utils
 -- cabal-install
 import Distribution.Client.IndexUtils ( getSourcePackages )
 import qualified Distribution.Client.GlobalFlags as CabalInstall
-import qualified Distribution.Client.PackageIndex as Index
 import Distribution.Client.Types
 
 -- others
@@ -96,10 +90,10 @@ readPackageString args = do
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
 resolveVersion :: [UnresolvedSourcePackage] -> Maybe Cabal.Version -> Maybe UnresolvedSourcePackage
-resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . packageInfoId)) avails
+resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . CabalInstall.packageInfoId)) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
-    match avail = ver == Cabal.pkgVersion (packageInfoId avail)
+    match avail = ver == Cabal.pkgVersion (CabalInstall.packageInfoId avail)
 
 merge :: Verbosity -> CabalInstall.RepoContext -> [String] -> FilePath -> Maybe String -> IO ()
 merge verbosity repoContext args overlayPath users_cabal_flags = do
@@ -117,7 +111,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
   debug verbosity $ "Package: " ++ show user_pName
   debug verbosity $ "Version: " ++ show m_version
 
-  let (Cabal.PackageName user_pname_str) = user_pName
+  let user_pname_str = Cabal.unPackageName user_pName
 
   overlay <- Overlay.loadLazy overlayPath
   -- portage_path <- Host.portage_dir `fmap` Host.getInfo
@@ -126,17 +120,15 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
 
   -- find all packages that maches the user specified package name
   availablePkgs <-
-    case map snd (Index.searchByName index user_pname_str) of
+    case map snd (CabalInstall.searchByName index user_pname_str) of
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
-      pkgs  -> do let cabal_pkg_to_pn pkg =
-                          case Cabal.pkgName (packageInfoId pkg) of
-                              Cabal.PackageName pn -> pn
+      pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.packageInfoId pkg)
                       names      = map (cabal_pkg_to_pn . L.head) pkgs
                   notice verbosity $ "Ambiguous names: " ++ L.intercalate ", " names
                   forM_ pkgs $ \ps ->
                       do let p_name = (cabal_pkg_to_pn . L.head) ps
-                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (showVersion . Cabal.pkgVersion . packageInfoId) ps)
+                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (display . Cabal.pkgVersion . CabalInstall.packageInfoId) ps)
                   return $ concat pkgs
 
   -- select a single package taking into account the user specified version
@@ -145,21 +137,21 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
         forM_ availablePkgs $ \ avail ->
-          putStrLn (display . packageInfoId $ avail)
+          putStrLn (display . CabalInstall.packageInfoId $ avail)
         throwEx (ArgumentError "no such version for that package")
       Just avail -> return avail
 
   -- print some info
   info verbosity "Selecting package:"
   forM_ availablePkgs $ \ avail -> do
-    let match_text | packageInfoId avail == packageInfoId selectedPkg = "* "
+    let match_text | CabalInstall.packageInfoId avail == CabalInstall.packageInfoId selectedPkg = "* "
                    | otherwise = "- "
-    info verbosity $ match_text ++ (display . packageInfoId $ avail)
+    info verbosity $ match_text ++ (display . CabalInstall.packageInfoId $ avail)
 
-  let cabal_pkgId = packageInfoId selectedPkg
+  let cabal_pkgId = CabalInstall.packageInfoId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
-  mergeGenericPackageDescription verbosity overlayPath cat (packageDescription selectedPkg) True users_cabal_flags
+  mergeGenericPackageDescription verbosity overlayPath cat (CabalInstall.packageDescription selectedPkg) True users_cabal_flags
 
 first_just_of :: [Maybe a] -> Maybe a
 first_just_of = msum
@@ -181,7 +173,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                            | ((cf, _), Just b) <- cn_in_mb
                            ]
                 user_renames = [ (cfn, ein)
-                               | ((Cabal.FlagName cfn, ein), Nothing) <- cn_in_mb
+                               | ((cabal_cfn, ein), Nothing) <- cn_in_mb
+                               , let cfn = Cabal.unFlagName cabal_cfn
                                ]
                 cn_in_mb = map read_fa $ DLS.splitOn "," user_fas_s
                 read_fa :: String -> ((Cabal.FlagName, String), Maybe Bool)
@@ -194,8 +187,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                   where get_rename :: String -> (Cabal.FlagName, String)
                         get_rename s =
                             case DLS.splitOn ":" s of
-                                [cabal_flag_name] -> (Cabal.FlagName cabal_flag_name, cabal_flag_name)
-                                [cabal_flag_name, iuse_name] -> (Cabal.FlagName cabal_flag_name, iuse_name)
+                                [cabal_flag_name] -> (Cabal.mkFlagName cabal_flag_name, cabal_flag_name)
+                                [cabal_flag_name, iuse_name] -> (Cabal.mkFlagName cabal_flag_name, iuse_name)
                                 _                 -> error $ "get_rename: too many components" ++ show (s)
 
       (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
@@ -232,7 +225,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       pp_fa :: Cabal.FlagAssignment -> String
       pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
-                                    | (Cabal.FlagName f, b) <- fa
+                                    | (cabal_f, b) <- fa
+                                    , let f = Cabal.unFlagName cabal_f
                                     ]
 
 
@@ -322,7 +316,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                  }
 
       liftFlags :: Cabal.FlagAssignment -> Portage.Dependency -> Portage.Dependency
-      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . unFlagName $ y) . x)
+      liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . Cabal.unFlagName $ y) . x)
                                       id fs
                        in k e
 
@@ -336,16 +330,17 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
-  notice verbosity $ "Dropped  flags: " ++ show (map (unFlagName.fst) common_fa)
-  notice verbosity $ "Active flags: " ++ show (map unFlagName active_flags)
-  notice verbosity $ "Irrelevant flags: " ++ show (map unFlagName irrelevant_flags)
+  notice verbosity $ "Dropped  flags: " ++ show (map (Cabal.unFlagName.fst) common_fa)
+  notice verbosity $ "Active flags: " ++ show (map Cabal.unFlagName active_flags)
+  notice verbosity $ "Irrelevant flags: " ++ show (map Cabal.unFlagName irrelevant_flags)
   -- mapM_ print tdeps
 
   forM_ ghc_packages $
-      \(Cabal.PackageName name) -> info verbosity $ "Excluded packages (comes with ghc): " ++ name
+      \name -> info verbosity $ "Excluded packages (comes with ghc): " ++ Cabal.unPackageName name
 
-  let pp_fn (Cabal.FlagName fn, True)  =     fn
-      pp_fn (Cabal.FlagName fn, False) = '-':fn
+  let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
+          where b True  = ""
+                b False = "-"
 
       -- appends 's' to each line except the last one
       --  handy to build multiline shell expressions
@@ -365,9 +360,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       selected_flags (active_fns, users_fas) = map snd (L.sortBy (compare `on` fst) flag_pairs)
           where flag_pairs :: [(String, String)]
                 flag_pairs = active_pairs ++ users_pairs
-                active_pairs = map (\fn -> (fn,                    "$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map unFlagName active_fns
-                users_pairs  = map (\fa -> ((unFlagName . fst) fa, "--flag=" ++ pp_fn fa)) users_fas
-      to_iuse x = let fn = unFlagName $ Cabal.flagName x
+                active_pairs = map (\fn -> (fn,                    "$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map Cabal.unFlagName active_fns
+                users_pairs  = map (\fa -> ((Cabal.unFlagName . fst) fa, "--flag=" ++ pp_fn fa)) users_fas
+      to_iuse x = let fn = Cabal.unFlagName $ Cabal.flagName x
                       p  = if Cabal.flagDefault x then "+" else ""
                   in p ++ cfn_to_iuse fn
 
@@ -457,6 +452,3 @@ mergeEbuild verbosity existing_meta pkgdir ebuild = do
       else do current_meta <- BL.readFile mpath
               when (current_meta /= default_meta) $
                   notice verbosity $ "Default and current " ++ emeta ++ " differ."
-
-unFlagName :: Cabal.FlagName -> String
-unFlagName (Cabal.FlagName fname) = fname

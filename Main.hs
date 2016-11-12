@@ -23,8 +23,10 @@ import Distribution.Text (display, simpleParse)
 
 import Distribution.Client.Types
 import Distribution.Client.Update
-import qualified Distribution.Client.PackageIndex as Index
-import qualified Distribution.Client.IndexUtils as Index
+
+import qualified Distribution.Client.IndexUtils as CabalInstall
+import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
+import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
 import Portage.Overlay as Overlay ( loadLazy, inOverlay )
 import Portage.Host as Host ( getInfo, portage_dir )
@@ -92,11 +94,11 @@ listAction flags extraArgs globalFlags = do
  let verbosity = fromFlag (listVerbosity flags)
  H.withHackPortContext verbosity globalFlags $ \repoContext -> do
   overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
-  index <- fmap packageIndex (Index.getSourcePackages verbosity repoContext)
+  index <- fmap packageIndex (CabalInstall.getSourcePackages verbosity repoContext)
   overlay <- Overlay.loadLazy overlayPath
-  let pkgs | null extraArgs = Index.allPackages index
-           | otherwise = concatMap (concatMap snd . Index.searchByNameSubstring index) extraArgs
-      normalized = map (normalizeCabalPackageId . packageInfoId) pkgs
+  let pkgs | null extraArgs = CabalInstall.allPackages index
+           | otherwise = concatMap (concatMap snd . CabalInstall.searchByNameSubstring index) extraArgs
+      normalized = map (normalizeCabalPackageId . CabalInstall.packageInfoId) pkgs
   let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
   mapM_ (putStrLn . pretty) decorated
   where

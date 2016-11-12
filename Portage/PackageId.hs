@@ -62,7 +62,7 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <.> b = a ++ '.':b
 
 mkPackageName :: String -> String -> PackageName
-mkPackageName cat package = PackageName (Category cat) (Cabal.PackageName package)
+mkPackageName cat package = PackageName (Category cat) (Cabal.mkPackageName package)
 
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
@@ -70,8 +70,8 @@ fromCabalPackageId category (Cabal.PackageIdentifier name version) =
             (Portage.fromCabalVersion version)
 
 normalizeCabalPackageName :: Cabal.PackageName -> Cabal.PackageName
-normalizeCabalPackageName (Cabal.PackageName name) =
-  Cabal.PackageName (map Char.toLower name)
+normalizeCabalPackageName =
+  Cabal.mkPackageName . map Char.toLower . Cabal.unPackageName
 
 normalizeCabalPackageId :: Cabal.PackageIdentifier -> Cabal.PackageIdentifier
 normalizeCabalPackageId (Cabal.PackageIdentifier name version) =

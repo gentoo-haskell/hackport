@@ -50,10 +50,10 @@ data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
 
 fromCabalVersion :: Cabal.Version -> Version
-fromCabalVersion (Cabal.Version nums _tags) = Version nums Nothing [] 0
+fromCabalVersion cabal_version = Version (Cabal.versionNumbers cabal_version) Nothing [] 0
 
 toCabalVersion :: Version -> Maybe Cabal.Version
-toCabalVersion (Version nums Nothing [] _) = Just (Cabal.Version nums [])
+toCabalVersion (Version nums Nothing [] _) = Just (Cabal.mkVersion nums)
 toCabalVersion _                           = Nothing
 
 instance Text Version where

@@ -29,6 +29,7 @@ import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange'
 import Distribution.Text (display)
 
 import Data.Char          (isUpper)
+import Data.Maybe
 
 import Portage.Dependency
 import qualified Portage.Cabal as Portage
@@ -69,7 +70,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
   } where
         cabal_pn = Cabal.pkgName $ Cabal.package pkg
         cabalPkgName = display cabal_pn
-        hasLibs = Cabal.libraries pkg /= []
+        hasLibs = isJust (Cabal.library pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
@@ -98,6 +99,7 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
             )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\">= v\"@
             )(\v     -> mk_p (DRange ZeroB                (NonstrictUB (p_v v))) -- ^ @\"<= v\"@
             )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
+            )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"^>= v\"@ major upper bound
             )(\g1 g2 -> DependAnyOf [g1, g2]                                  -- ^ @\"_ || _\"@ union
             )(\r1 r2 -> DependAllOf [r1, r2]                                  -- ^ @\"_ && _\"@ intersection
             )(\dp    -> dp                                                    -- ^ @\"(_)\"@ parentheses

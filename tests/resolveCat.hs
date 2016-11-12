@@ -20,7 +20,7 @@ test_resolveCategory :: String -> String -> Test
 test_resolveCategory cat pkg = TestCase $ do
   portage_dir <- Portage.portage_dir `fmap` Portage.getInfo
   portage <- Portage.loadLazy portage_dir
-  let cabal = Cabal.PackageName pkg
+  let cabal = Cabal.mkPackageName pkg
       hits = Portage.resolveFullPortageName portage cabal
       expected = Just (Portage.PackageName (Portage.Category cat) (Portage.normalizeCabalPackageName cabal))
   assertEqual ("expecting to find package " ++ pkg) expected hits

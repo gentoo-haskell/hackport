@@ -7,7 +7,7 @@ module Portage.Cabal
 import qualified Data.List as L
 import qualified Data.Map as Map
 
-import qualified Distribution.Client.PackageIndex as Cabal
+import qualified Distribution.Simple.PackageIndex as Cabal
 import qualified Distribution.License             as Cabal
 import qualified Distribution.Package             as Cabal
 import qualified Distribution.Text                as Cabal

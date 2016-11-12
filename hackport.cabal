@@ -50,6 +50,7 @@ Executable    hackport
     stm,
     unix,
     -- cabal-install depends
+    async,
     --  hackage-security depends
     base16-bytestring,
     base64-bytestring,

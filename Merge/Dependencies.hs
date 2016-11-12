@@ -114,7 +114,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
   where
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
-    treatAsLibrary = Cabal.libraries pkg /= []
+    treatAsLibrary = isJust (Cabal.library pkg)
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
     raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
@@ -200,13 +200,14 @@ haskellDependencies overlay deps =
 cabalDependency :: Portage.Overlay -> PackageDescription -> Cabal.CompilerInfo -> Portage.Dependency
 cabalDependency overlay pkg ~(Cabal.CompilerInfo {
                                   Cabal.compilerInfoId =
-                                      Cabal.CompilerId Cabal.GHC (Cabal.Version versionNumbers _)
+                                      Cabal.CompilerId Cabal.GHC cabal_version
                               }) =
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
-                               (Cabal.Dependency (Cabal.PackageName "Cabal")
+                               (Cabal.Dependency (Cabal.mkPackageName "Cabal")
                                                  finalCabalDep)
   where
+    versionNumbers = Cabal.versionNumbers cabal_version
     userCabalVersion = Cabal.orLaterVersion (specVersion pkg)
     shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
     shippedCabalDep = maybe Cabal.anyVersion Cabal.orLaterVersion shippedCabalVersion
@@ -222,22 +223,22 @@ cabalDependency overlay pkg ~(Cabal.CompilerInfo {
 compilerInfoToDependency :: Cabal.CompilerInfo -> Portage.Dependency
 compilerInfoToDependency ~(Cabal.CompilerInfo {
                                Cabal.compilerInfoId =
-                                   Cabal.CompilerId Cabal.GHC versionNumbers}) =
-  at_least_c_p_v "dev-lang" "ghc" (Cabal.versionBranch versionNumbers)
+                                   Cabal.CompilerId Cabal.GHC cabal_version}) =
+  at_least_c_p_v "dev-lang" "ghc" (Cabal.versionNumbers cabal_version)
 
 ---------------------------------------------------------------
 -- C Libraries
 ---------------------------------------------------------------
 
 findCLibs :: PackageDescription -> [Portage.Dependency]
-findCLibs (PackageDescription { libraries = libs, executables = exes }) =
+findCLibs (PackageDescription { library = lib, executables = exes }) =
   [ trace ("WARNING: This package depends on a C library we don't know the portage name for: " ++ p ++ ". Check the generated ebuild.")
           (any_c_p "unknown-c-lib" p)
   | p <- notFound
   ] ++
   found
   where
-  libE = concatMap (extraLibs . libBuildInfo) libs
+  libE = concatMap (extraLibs . libBuildInfo) $ maybe [] return lib
   exeE = concatMap extraLibs (filter buildable (map buildInfo exes))
   allE = libE ++ exeE
 
@@ -367,19 +368,19 @@ staticTranslateExtraLib lib = lookup lib m
 ---------------------------------------------------------------
 
 buildToolsDependencies :: PackageDescription -> [Portage.Dependency]
-buildToolsDependencies (PackageDescription { libraries = libs, executables = exes }) = nub $
+buildToolsDependencies (PackageDescription { library = lib, executables = exes }) = nub $
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
                        (any_c_p "unknown-build-tool" pn)
-  | Cabal.Dependency (Cabal.PackageName pn) _range <- cabalDeps
+  | Cabal.LegacyExeDependency pn _range <- cabalDeps
   , pkg <- return (lookup pn buildToolsTable)
   ]
   where
   cabalDeps = filter notProvided $ depL ++ depE
-  depL = concatMap (buildTools . libBuildInfo) libs
+  depL = concatMap (buildTools . libBuildInfo) $ maybe [] return lib
   depE = concatMap buildTools (filter buildable (map buildInfo exes))
-  notProvided (Cabal.Dependency (Cabal.PackageName pn) _range) = pn `notElem` buildToolsProvided
+  notProvided (Cabal.LegacyExeDependency pn _range) = pn `notElem` buildToolsProvided
 
 buildToolsTable :: [(String, Portage.Dependency)]
 buildToolsTable =
@@ -408,23 +409,25 @@ buildToolsProvided = ["hsc2hs"]
 ---------------------------------------------------------------
 
 pkgConfigDependencies :: Portage.Overlay -> PackageDescription -> [Portage.Dependency]
-pkgConfigDependencies overlay (PackageDescription { libraries = libs, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
+pkgConfigDependencies overlay (PackageDescription { library = lib, executables = exes }) = nub $ resolvePkgConfigs overlay cabalDeps
   where
   cabalDeps = depL ++ depE
-  depL = concatMap (pkgconfigDepends . libBuildInfo) libs
+  depL = concatMap (pkgconfigDepends . libBuildInfo) $ maybe [] return lib
   depE = concatMap pkgconfigDepends (filter buildable (map buildInfo exes))
 
-resolvePkgConfigs :: Portage.Overlay -> [Cabal.Dependency] -> [Portage.Dependency]
+resolvePkgConfigs :: Portage.Overlay -> [Cabal.PkgconfigDependency] -> [Portage.Dependency]
 resolvePkgConfigs overlay cdeps =
   [ case resolvePkgConfig overlay pkg of
       Just d -> d
       Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
                        (any_c_p "unknown-pkg-config" pn)
-  | pkg@(Cabal.Dependency (Cabal.PackageName pn) _range) <- cdeps ]
+  | pkg@(Cabal.PkgconfigDependency cabal_pn _range) <- cdeps
+  , let pn = Cabal.unPkgconfigName cabal_pn
+  ]
 
-resolvePkgConfig :: Portage.Overlay -> Cabal.Dependency -> Maybe Portage.Dependency
-resolvePkgConfig _overlay (Cabal.Dependency (Cabal.PackageName pn) _cabalVersion) = do
-  (cat,portname, slot) <- lookup pn pkgconfig_table
+resolvePkgConfig :: Portage.Overlay -> Cabal.PkgconfigDependency -> Maybe Portage.Dependency
+resolvePkgConfig _overlay (Cabal.PkgconfigDependency cabal_pn _cabalVersion) = do
+  (cat,portname, slot) <- lookup (Cabal.unPkgconfigName cabal_pn) pkgconfig_table
   return $ any_c_p_s_u cat portname slot []
 
 pkgconfig_table :: [(String, (String, String, Portage.SlotDepend))]
