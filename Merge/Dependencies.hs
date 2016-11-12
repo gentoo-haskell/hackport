@@ -66,6 +66,7 @@ import qualified Data.Set as S
 import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
+import qualified Distribution.Text as Cabal
 
 import qualified Distribution.Compiler as Cabal
 
@@ -371,9 +372,9 @@ buildToolsDependencies :: PackageDescription -> [Portage.Dependency]
 buildToolsDependencies (PackageDescription { library = lib, executables = exes }) = nub $
   [ case pkg of
       Just p -> p
-      Nothing -> trace ("WARNING: Unknown build tool '" ++ pn ++ "'. Check the generated ebuild.")
+      Nothing -> trace ("WARNING: Unknown build tool '" ++ Cabal.display exe ++ "'. Check the generated ebuild.")
                        (any_c_p "unknown-build-tool" pn)
-  | Cabal.LegacyExeDependency pn _range <- cabalDeps
+  | exe@(Cabal.LegacyExeDependency pn _range) <- cabalDeps
   , pkg <- return (lookup pn buildToolsTable)
   ]
   where
@@ -419,7 +420,7 @@ resolvePkgConfigs :: Portage.Overlay -> [Cabal.PkgconfigDependency] -> [Portage.
 resolvePkgConfigs overlay cdeps =
   [ case resolvePkgConfig overlay pkg of
       Just d -> d
-      Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ pn ++ ". Check generated ebuild.")
+      Nothing -> trace ("WARNING: Could not resolve pkg-config: " ++ Cabal.display pkg ++ ". Check generated ebuild.")
                        (any_c_p "unknown-pkg-config" pn)
   | pkg@(Cabal.PkgconfigDependency cabal_pn _range) <- cdeps
   , let pn = Cabal.unPkgconfigName cabal_pn
