@@ -100,12 +100,18 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                            else [any_c_p "virtual" "pkgconfig"]
     build_tools :: Portage.Dependency
     build_tools = Portage.DependAllOf $ pkg_config_tools : buildToolsDependencies pkg
+
+    setup_deps :: Portage.Dependency
+    setup_deps = PN.normalize_depend $ Portage.DependAllOf $
+                     setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
+
     edeps :: EDep
     edeps
         | treatAsLibrary = mempty
                   {
                     dep = Portage.DependAllOf
                               [ cabal_dep
+                              , setup_deps
                               , build_tools
                               , test_deps
                               ],
@@ -121,6 +127,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                   {
                     dep = Portage.DependAllOf
                               [ cabal_dep
+                              , setup_deps
                               , build_tools
                               , test_deps
                               ],
@@ -135,7 +142,19 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
 
 ---------------------------------------------------------------
+-- Custom-setup dependencies
+-- TODO: move partitioning part to Merge:mergeGenericPackageDescription
+---------------------------------------------------------------
+
+setupDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
+setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
+    where cabalDeps = maybe [] id $ Cabal.setupDepends `fmap` setupBuildInfo pkg
+          cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
+          deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
+
+---------------------------------------------------------------
 -- Test-suite dependencies
+-- TODO: move partitioning part to Merge:mergeGenericPackageDescription
 ---------------------------------------------------------------
 
 testDependencies :: Portage.Overlay -> PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
