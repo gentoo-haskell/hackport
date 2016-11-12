@@ -358,11 +358,30 @@ getPortageDir verbosity globalFlags = do
 globalCommand :: CommandUI H.GlobalFlags
 globalCommand = CommandUI {
     commandName = "",
-    commandSynopsis = "",
-    commandDescription = Nothing,
-    commandNotes = Nothing,
-    commandUsage = \_ -> [],
+    commandSynopsis = "HackPort is an .ebuild generator from .cabal files with hackage index support",
+    commandDescription = Just $ \pname ->
+       let
+         commands' = commands ++ [commandAddAction helpCommandUI undefined]
+         cmdDescs = getNormalCommandDescriptions commands'
+         maxlen    = maximum $ [length name | (name, _) <- cmdDescs]
+         align str = str ++ replicate (maxlen - length str) ' '
+       in
+          "Commands:\n"
+       ++ unlines [ "  " ++ align name ++ "    " ++ descr
+                  | (name, descr) <- cmdDescs ]
+       ++ "\n"
+       ++ "For more information about a command use\n"
+       ++ "  " ++ pname ++ " COMMAND --help\n\n"
+       ++ "Typical steps for generating ebuilds from hackage packages:\n"
+       ++ concat [ "  " ++ pname ++ " " ++ x ++ "\n"
+                 | x <- ["update", "merge <package>"]]
+       ++ "\n"
+       ++ "Advanced usage:\n"
+       ++ concat [ "  " ++ pname ++ " " ++ x ++ "\n"
+                 | x <- ["update", "make-ebuild <ebuild.name> <CATEGORY>"]],
 
+    commandNotes = Nothing,
+    commandUsage = \pname -> "Usage: " ++ pname ++ " [GLOBAL FLAGS] [COMMAND [FLAGS]]\n",
     commandDefaultFlags = H.defaultGlobalFlags,
     commandOptions = \_showOrParseArgs ->
         [ option ['V'] ["version"]
@@ -414,7 +433,9 @@ mainWorker args =
     errorHandler :: HackPortError -> IO ()
     errorHandler e = do
       putStrLn (hackPortShowError e)
-    commands =
+
+commands :: [Command (H.GlobalFlags -> IO ())]
+commands =
       [ listCommand `commandAddAction` listAction
       , makeEbuildCommand `commandAddAction` makeEbuildAction
       , statusCommand `commandAddAction` statusAction
