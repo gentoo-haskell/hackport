@@ -427,15 +427,17 @@ mergeEbuild verbosity existing_meta pkgdir ebuild = do
   createDirectoryIfMissing True edir
   now <- TC.getCurrentTime
 
-  let (existing_keywords, existing_license)  = (EM.keywords existing_meta, EM.license existing_meta)
+  let (existing_keywords, existing_license, existing_description) = (EM.keywords existing_meta, EM.license existing_meta, EM.description existing_meta)
       new_keywords = maybe (E.keywords ebuild) (map to_unstable) existing_keywords
       new_license  = either (\err -> maybe (Left err)
                                            Right
                                            existing_license)
                             Right
                             (E.license ebuild)
+      new_description = maybe (E.description ebuild) id existing_description
       ebuild'      = ebuild { E.keywords = new_keywords
                             , E.license = new_license
+                            , E.description = new_description
                             }
       s_ebuild'    = E.showEBuild now ebuild'
 

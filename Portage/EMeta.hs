@@ -58,10 +58,15 @@ extractCabalFlags :: FilePath -> String -> Maybe String
 extractCabalFlags ebuild_path s_ebuild =
     extract_hackport_var ebuild_path s_ebuild "flags"
 
+extractDescription :: FilePath -> String -> Maybe String
+extractDescription ebuild_path s_ebuild =
+    extract_quoted_string ebuild_path s_ebuild "DESCRIPTION"
+
 -- aggregated (best inferred) metadata for a new ebuild of package
 data EMeta = EMeta { keywords :: Maybe [String]
                    , license  :: Maybe String
                    , cabal_flags :: Maybe String
+                   , description :: Maybe String
                    }
 
 findExistingMeta :: FilePath -> IO EMeta
@@ -76,10 +81,12 @@ findExistingMeta pkgdir =
                          return EMeta { keywords = extractKeywords e e_conts
                                       , license = extractLicense  e e_conts
                                       , cabal_flags = extractCabalFlags e e_conts
+                                      , description = extractDescription e e_conts
                                       }
        let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
            aggregated_meta = EMeta { keywords = get_latest $ map keywords e_metas
                                    , license = get_latest $ map license e_metas
                                    , cabal_flags = get_latest $ map cabal_flags e_metas
+                                   , description = get_latest $ map description e_metas
                                    }
        return aggregated_meta
