@@ -40,7 +40,7 @@ Executable    hackport
     old-locale,
     regex-compat,
     split,
-    tar,
+    tar >= 0.5,
     time,
     zlib,
     xml >= 1.3.7,
