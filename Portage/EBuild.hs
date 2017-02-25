@@ -93,7 +93,6 @@ showEBuild :: TC.UTCTime -> EBuild -> String
 showEBuild now ebuild =
   ss ("# Copyright 1999-" ++ this_year ++ " Gentoo Foundation"). nl.
   ss "# Distributed under the terms of the GNU General Public License v2". nl.
-  ss "# $Id$". nl.
   nl.
   ss "EAPI=6". nl.
   nl.
