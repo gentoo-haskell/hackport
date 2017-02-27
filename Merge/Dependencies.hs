@@ -329,6 +329,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("uuid", any_c_p "sys-apps" "util-linux")
       , ("notify", any_c_p "x11-libs" "libnotify")
       , ("SDL2", any_c_p " media-libs" "libsdl2")
+      , ("SDL2_mixer", any_c_p "media-libs" "sdl2-mixer")
       ]
 
 ---------------------------------------------------------------
@@ -500,4 +501,6 @@ pkgconfig_table =
   ,("Qt5Widgets",                  ("dev-qt", "qtwidgets", Portage.GivenSlot "5"))
 
   ,("sdl2",                        ("media-libs", "libsdl2", Portage.AnySlot))
+  ,("SDL2_image",                  ("media-libs", "sdl2-image", Portage.AnySlot))
+  ,("SDL2_mixer",                  ("media-libs", "sdl2-mixer", Portage.AnySlot))
   ]
