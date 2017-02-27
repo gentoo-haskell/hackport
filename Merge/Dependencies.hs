@@ -328,6 +328,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("odbc", any_c_p "dev-db" "unixODBC")
       , ("uuid", any_c_p "sys-apps" "util-linux")
       , ("notify", any_c_p "x11-libs" "libnotify")
+      , ("SDL2", any_c_p " media-libs" "libsdl2")
       ]
 
 ---------------------------------------------------------------
@@ -497,4 +498,6 @@ pkgconfig_table =
   ,("Qt5Qml",                      ("dev-qt", "qtdeclarative", Portage.GivenSlot "5"))
   ,("Qt5Quick",                    ("dev-qt", "qtdeclarative", Portage.GivenSlot "5"))
   ,("Qt5Widgets",                  ("dev-qt", "qtwidgets", Portage.GivenSlot "5"))
+
+  ,("sdl2",                        ("media-libs", "libsdl2", Portage.AnySlot))
   ]
