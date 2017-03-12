@@ -201,6 +201,7 @@ quote str = sc '"'. ss (esc str). sc '"'
   esc = concatMap esc'
   esc' c =
       case c of
+          '\\' -> "\\\\"
           '"'  -> "\\\""
           '\n' -> " "
           '`'  -> "'"
