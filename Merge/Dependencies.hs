@@ -436,6 +436,7 @@ pkgconfig_table =
   ,("cairo-xlib-xrender", ("x11-libs", "cairo", Portage.AnySlot))
 
   ,("javascriptcoregtk-4.0",   ("net-libs", "webkit-gtk", Portage.GivenSlot "4"))
+  ,("webkit2gtk-4.0",          ("net-libs", "webkit-gtk", Portage.GivenSlot "4"))
 
   ,("pangocairo",       ("x11-libs", "pango", Portage.AnySlot))
   ,("pangoft2",         ("x11-libs", "pango", Portage.AnySlot))
