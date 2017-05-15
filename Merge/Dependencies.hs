@@ -442,6 +442,7 @@ pkgconfig_table =
   ,("pangox",           ("x11-libs", "pango", Portage.AnySlot))
 
   ,("libglade-2.0", ("gnome-base", "libglade", Portage.AnySlot))
+  ,("libsoup-2.4",   ("net-libs", "libsoup", Portage.GivenSlot "2.4"))
   ,("gnome-vfs-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
   ,("gnome-vfs-module-2.0", ("gnome-base", "gnome-vfs", Portage.AnySlot))
   ,("webkit-1.0", ("net-libs","webkit-gtk", Portage.GivenSlot "2"))
