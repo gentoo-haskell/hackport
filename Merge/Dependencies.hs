@@ -428,6 +428,7 @@ pkgconfig_table =
   ,("webkitgtk-3.0",       ("net-libs", "webkit-gtk", Portage.GivenSlot "3"))
 
   ,("cairo",            ("x11-libs", "cairo", Portage.AnySlot)) -- need [svg] for dev-haskell/cairo
+  ,("cairo-gobject",    ("x11-libs", "cairo", Portage.AnySlot)) -- need [glib] for dev-haskell/cairo
   ,("cairo-ft",         ("x11-libs", "cairo", Portage.AnySlot))
   ,("cairo-ps",         ("x11-libs", "cairo", Portage.AnySlot))
   ,("cairo-png",        ("x11-libs", "cairo", Portage.AnySlot))
