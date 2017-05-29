@@ -403,6 +403,7 @@ pkgconfig_table :: [(String, (String, String, Portage.SlotDepend))]
 pkgconfig_table =
   [
    ("alsa",         ("media-libs", "alsa-lib", Portage.AnySlot))
+  ,("atk",          ("dev-libs", "atk", Portage.AnySlot))
   ,("gconf-2.0",    ("gnome-base", "gconf", Portage.AnySlot))
 
   ,("gio-2.0",                ("dev-libs", "glib", Portage.GivenSlot "2"))
