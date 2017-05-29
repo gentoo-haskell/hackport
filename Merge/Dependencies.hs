@@ -69,9 +69,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
                     Portage.DependAllOf $
-                    -- remove depends present in common section
-                    filter (\d -> not (Portage.dep_as_broad_as d raw_haskell_deps)) $
-                    map PN.normalize_depend $
+                    remove_raw_common $
                     testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay pkg compiler_info
@@ -90,6 +88,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
 
     setup_deps :: Portage.Dependency
     setup_deps = PN.normalize_depend $ Portage.DependAllOf $
+                     remove_raw_common $
                      setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
 
     edeps :: EDep
@@ -127,6 +126,9 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                                ]
                   }
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
+    -- remove depends present in common section
+    remove_raw_common = filter (\d -> not (Portage.dep_as_broad_as d raw_haskell_deps))
+                      . map PN.normalize_depend
 
 ---------------------------------------------------------------
 -- Custom-setup dependencies
