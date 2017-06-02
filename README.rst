@@ -104,7 +104,7 @@ Features
 
     'hackport status [toportage]'
         Provides an overview comparing the overlay to the portage tree.
-        It will teel you, for each package and version, if the package exist
+        It will tell you, for each package and version, if the package exist
 
             - only in the portage tree
             - only in the overlay
