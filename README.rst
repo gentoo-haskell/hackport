@@ -29,7 +29,7 @@ Quick start
         00-index.tar
         00-index.tar.gz
 
-3. Add your ~/overlays/gentoo-haskell to PORTDIR_OVERLAY in /etc/make.conf.
+3. Add your ~/overlays/gentoo-haskell to PORTDIR_OVERLAY in /etc/portage/make.conf.
 
 Done! Now you can `hackport merge <package-name>` to get an ebuild merged to
 your overlay!

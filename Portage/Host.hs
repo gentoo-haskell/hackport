@@ -103,6 +103,7 @@ parsePaludisInfo text =
 -- Emerge
 ---------
 
+-- TODO: emerge --info doen't output PORTDIR_OVERLAY
 parse_emerge_output :: String -> LocalInfo
 parse_emerge_output raw_data =
     foldl updateInfo defaultInfo $ lines raw_data
