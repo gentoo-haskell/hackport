@@ -109,7 +109,6 @@ Executable    hackport
     AnsiColor
     Cabal2Ebuild
     Error
-    Main
     Overlays
     Paths_hackport
     Portage.Version
@@ -124,7 +123,6 @@ Executable    hackport
     Portage.Host
     Portage.Tables
     Merge.Dependencies
-    Setup
     Status
     Merge
     Util
