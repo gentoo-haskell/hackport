@@ -31,7 +31,7 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802]
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821]
 
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
@@ -44,6 +44,7 @@ cabalFromGHC ver = lookup ver table
           , ([7,10,2], Cabal.mkVersion [1,22,4,0])
           , ([8,0,1],  Cabal.mkVersion [1,24,0,0])
           , ([8,0,2],  Cabal.mkVersion [1,24,2,0])
+          , ([8,2,1],  Cabal.mkVersion [2,0,0,0])
           ]
 
 platform :: Platform
@@ -113,6 +114,9 @@ ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (mkVersion nrs)
 
+ghc821 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc821 = (ghc [8,2,1], mkIndex ghc821_pkgs)
+
 ghc802 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc802 = (ghc [8,0,2], mkIndex ghc802_pkgs)
 
@@ -143,6 +147,40 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 -- | Non-upgradeable core packages
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 --         and our binary tarballs (package.conf.d.initial subdir)
+
+
+ghc821_pkgs :: [Cabal.PackageIdentifier]
+ghc821_pkgs =
+  [ p "array" [0,5,2,0]
+  , p "base" [4,10,0,0]
+  , p "binary" [0,8,5,1] -- used by libghc
+  , p "bytestring" [0,10,8,2]
+--  , p "Cabal" [2,0,0,0]  package is upgradeable
+  , p "containers" [0,5,10,2]
+  , p "deepseq" [1,4,3,0] -- used by time
+  , p "directory" [1,3,0,2]
+  , p "filepath" [1,4,1,2]
+  , p "ghc-boot" [8,2,1]
+--  , p "ghc-boot-th" [] err... vOv
+  , p "ghc-compact" [0,1,0,0] -- new addition
+  , p "ghc-prim" [0,5,1,0]
+  , p "ghci" [8,2,1]
+  , p "hoopl" [3,10,2,2] -- used by libghc
+  , p "hpc" [0,6,0,3] -- used by libghc
+  , p "integer-gmp" [1,0,0,1]
+--  , p "pretty" [] the copy in ghc is used only by ghc
+--  https://hackage.haskell.org/package/ghc-8.2.1/docs/src/Pretty.html
+  , p "process" [1,6,1,0]
+  , p "template-haskell" [2,12,0,0] -- used by libghc
+  , p "time" [1,8,0,1] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+-- transformers is not actually part of ghc and infact a separate package, could
+-- this be removed?
+  , p "transformers" [0,5,4,0] -- used by libghc
+  , p "unix" [2,7,2,2]
+-- could this be added (because Prefix and WSL)?
+--  , p "Win32" [2,5,4,1]
+  ]
+
 
 ghc802_pkgs :: [Cabal.PackageIdentifier]
 ghc802_pkgs =
