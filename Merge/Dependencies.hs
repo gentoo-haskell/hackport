@@ -366,6 +366,7 @@ buildToolsTable =
   , ("gtk2hsHookGenerator", any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("gtk2hsC2hs",          any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("hsb2hs",              any_c_p "dev-haskell" "hsb2hs")
+  , ("hsx2hs",              any_c_p "dev-haskell" "hsx2hs")
   , ("llvm-config",         any_c_p "sys-devel" "llvm")
   ]
 
