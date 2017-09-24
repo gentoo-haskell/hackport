@@ -240,6 +240,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
       deps1  = [ (f `updateFa` fr, cabal_to_emerge_dep pkgDesc_filtered_bdeps)
                | f <- all_possible_flag_assignments
+               -- TODO: move from 'finalizePackageDescription' to 'finalizePD'
                , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   GHCCore.platform
