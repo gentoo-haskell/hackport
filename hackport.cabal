@@ -133,7 +133,8 @@ Test-Suite test-resolve-category
   Default-Language:     Haskell98
   Main-Is:              tests/resolveCat.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
-  Build-Depends:        base >= 3 && < 5,
+  Build-Depends:        array,
+                        base >= 3 && < 5,
                         binary,
                         deepseq >= 1.3,
                         bytestring,
@@ -142,6 +143,7 @@ Test-Suite test-resolve-category
                         extensible-exceptions,
                         filepath,
                         HUnit,
+                        parsec,
                         pretty,
                         process,
                         split,
@@ -155,7 +157,8 @@ Test-Suite test-print-deps
   Default-Language:     Haskell98
   Main-Is:              tests/print_deps.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
-  Build-Depends:        base >= 3 && < 5,
+  Build-Depends:        array,
+                        base >= 3 && < 5,
                         binary,
                         deepseq >= 1.3,
                         bytestring,
@@ -164,6 +167,7 @@ Test-Suite test-print-deps
                         extensible-exceptions,
                         filepath,
                         HUnit,
+                        parsec,
                         pretty,
                         process,
                         time,
@@ -176,7 +180,8 @@ Test-Suite test-normalize-deps
   Default-Language:     Haskell98
   Main-Is:              tests/normalize_deps.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
-  Build-Depends:        base >= 3 && < 5,
+  Build-Depends:        array,
+                        base >= 3 && < 5,
                         binary,
                         deepseq >= 1.3,
                         bytestring,
@@ -185,6 +190,7 @@ Test-Suite test-normalize-deps
                         extensible-exceptions,
                         filepath,
                         HUnit,
+                        parsec,
                         pretty,
                         process,
                         time,

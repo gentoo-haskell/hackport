@@ -1,25 +1,13 @@
 module Portage.Cabal
-  ( fromOverlay
-  , convertLicense
+  ( convertLicense
   , partition_depends
   ) where
 
 import qualified Data.List as L
-import qualified Data.Map as Map
 
-import qualified Distribution.Simple.PackageIndex as Cabal
 import qualified Distribution.License             as Cabal
 import qualified Distribution.Package             as Cabal
 import qualified Distribution.Text                as Cabal
-
-import qualified Portage.Overlay as Portage
-
-fromOverlay :: Portage.Overlay -> Cabal.PackageIndex Portage.ExistingEbuild
-fromOverlay overlay = Cabal.fromList $
-  [ ebuild
-  | (_pn, ebuilds) <- Map.toAscList (Portage.overlayMap overlay)
-  , ebuild <- ebuilds
-  ]
 
 -- map the cabal license type to the gentoo license string format
 convertLicense :: Cabal.License -> Either String String

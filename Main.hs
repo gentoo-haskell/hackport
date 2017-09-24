@@ -21,8 +21,9 @@ import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
 import Distribution.Text (display, simpleParse)
 
-import Distribution.Client.Types
-import Distribution.Client.Update
+import qualified Distribution.Client.Setup as CabalInstall
+import qualified Distribution.Client.Types as CabalInstall
+import qualified Distribution.Client.Update as CabalInstall
 
 import qualified Distribution.Client.IndexUtils as CabalInstall
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
@@ -94,7 +95,7 @@ listAction flags extraArgs globalFlags = do
  let verbosity = fromFlag (listVerbosity flags)
  H.withHackPortContext verbosity globalFlags $ \repoContext -> do
   overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
-  index <- fmap packageIndex (CabalInstall.getSourcePackages verbosity repoContext)
+  index <- fmap CabalInstall.packageIndex (CabalInstall.getSourcePackages verbosity repoContext)
   overlay <- Overlay.loadLazy overlayPath
   let pkgs | null extraArgs = CabalInstall.allPackages index
            | otherwise = concatMap (concatMap snd . CabalInstall.searchByNameSubstring index) extraArgs
@@ -221,7 +222,11 @@ updateAction flags extraArgs globalFlags = do
   let verbosity = fromFlag (updateVerbosity flags)
 
   H.withHackPortContext verbosity globalFlags $ \repoContext ->
-    update verbosity repoContext
+    -- TODO: parse user's flags as cabal-iinstall does.
+    -- Currently I'm lazy to adapt new flag and user:
+    --    defaultUpdateFlags
+    let updateFlags = commandDefaultFlags CabalInstall.updateCommand
+    in CabalInstall.update verbosity updateFlags repoContext
 
 -----------------------------------------------------------------------
 -- Status

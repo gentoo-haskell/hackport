@@ -14,6 +14,8 @@ import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.Text as Cabal
+import qualified Distribution.Types.LegacyExeDependency as Cabal
+import qualified Distribution.Types.PkgconfigDependency as Cabal
 
 import qualified Distribution.Compiler as Cabal
 
