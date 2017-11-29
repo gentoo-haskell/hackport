@@ -383,7 +383,7 @@ globalCommand = CommandUI {
        ++ "\n"
        ++ "Advanced usage:\n"
        ++ concat [ "  " ++ pname ++ " " ++ x ++ "\n"
-                 | x <- ["update", "make-ebuild <ebuild.name> <CATEGORY>"]],
+                 | x <- ["update", "make-ebuild <CATEGORY> <ebuild.name>"]],
 
     commandNotes = Nothing,
     commandUsage = \pname -> "Usage: " ++ pname ++ " [GLOBAL FLAGS] [COMMAND [FLAGS]]\n",
