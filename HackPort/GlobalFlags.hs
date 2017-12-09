@@ -6,6 +6,7 @@ module HackPort.GlobalFlags
 
 import qualified Distribution.Verbosity as DV
 import qualified Distribution.Simple.Setup as DSS
+import qualified Distribution.Client.Config as DCC
 import qualified Distribution.Client.GlobalFlags as DCG
 import qualified Distribution.Client.Types as DCT
 import qualified Distribution.Utils.NubList as DUN
@@ -32,7 +33,7 @@ defaultGlobalFlags =
                 }
 
 defaultRemoteRepo :: DCT.RemoteRepo
-defaultRemoteRepo = (DCT.emptyRemoteRepo name) { DCT.remoteRepoURI = uri }
+defaultRemoteRepo = DCC.addInfoForKnownRepos $ (DCT.emptyRemoteRepo name) { DCT.remoteRepoURI = uri }
    where
     Just uri = NU.parseURI "https://hackage.haskell.org/"
     name     = "hackage.haskell.org"
