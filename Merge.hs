@@ -156,6 +156,9 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
 first_just_of :: [Maybe a] -> Maybe a
 first_just_of = msum
 
+-- used to be FlagAssignment in Cabal but now it's an opaque type
+type CabalFlags = [(Cabal.FlagName, Bool)]
+
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
@@ -166,7 +169,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   let requested_cabal_flags = first_just_of [users_cabal_flags, EM.cabal_flags existing_meta]
 
       -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
-      read_fas :: Maybe String -> (Cabal.FlagAssignment, [(String, String)])
+      read_fas :: Maybe String -> (CabalFlags, [(String, String)])
       read_fas Nothing = ([], [])
       read_fas (Just user_fas_s) = (user_fas, user_renames)
           where user_fas = [ (cf, b)
@@ -194,7 +197,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
 
   debug verbosity "searching for minimal suitable ghc version"
-  (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc user_specified_fas of
+  (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc (Cabal.mkFlagAssignment user_specified_fas) of
               Just v  -> return v
               Nothing -> let pn = display merged_cabal_pkg_name
                              cn = display cat
@@ -210,7 +213,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
-      make_fas  :: [Cabal.Flag] -> [Cabal.FlagAssignment]
+      make_fas  :: [Cabal.Flag] -> [CabalFlags]
       make_fas  [] = [[]]
       make_fas  (f:rest) = [ (fn, is_enabled) : fas
                            | fas <- make_fas rest
@@ -220,10 +223,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                                  (\b -> [b])
                                                  users_choice
                            ]
-      all_possible_flag_assignments :: [Cabal.FlagAssignment]
+      all_possible_flag_assignments :: [CabalFlags]
       all_possible_flag_assignments = make_fas cabal_flag_descs
 
-      pp_fa :: Cabal.FlagAssignment -> String
+      pp_fa :: CabalFlags -> String
       pp_fa fa = L.intercalate ", " [ (if b then '+' else '-') : f
                                     | (cabal_f, b) <- fa
                                     , let f = Cabal.unFlagName cabal_f
@@ -237,11 +240,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
               Just ein -> ein
 
       -- key idea is to generate all possible list of flags
-      deps1 :: [(Cabal.FlagAssignment, Merge.EDep)]
-      deps1  = [ (f `updateFa` fr, cabal_to_emerge_dep pkgDesc_filtered_bdeps)
+      deps1 :: [(CabalFlags, Merge.EDep)]
+      deps1  = [ ( f `updateFa` Cabal.unFlagAssignment fr
+                 , cabal_to_emerge_dep pkgDesc_filtered_bdeps)
                | f <- all_possible_flag_assignments
                -- TODO: move from 'finalizePackageDescription' to 'finalizePD'
-               , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription f
+               , Right (pkgDesc1,fr) <- [GHCCore.finalizePackageDescription (Cabal.mkFlagAssignment f)
                                                                   (GHCCore.dependencySatisfiable pix)
                                                                   GHCCore.platform
                                                                   compiler_info
@@ -254,7 +258,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
                ]
           where
-            updateFa :: Cabal.FlagAssignment -> Cabal.FlagAssignment -> Cabal.FlagAssignment
+            updateFa :: CabalFlags -> CabalFlags -> CabalFlags
             updateFa [] _ = []
             updateFa (x:xs) y = case lookup (fst x) y of
                                   -- TODO: when does this code get triggered?
@@ -271,7 +275,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       --     if flag(foo)
       --         ghc-options: -O2
       (irrelevant_flags, deps1') = L.foldl' drop_irrelevant ([], deps1) active_flags
-          where drop_irrelevant :: ([Cabal.FlagName], [(Cabal.FlagAssignment, Merge.EDep)]) -> Cabal.FlagName -> ([Cabal.FlagName], [(Cabal.FlagAssignment, Merge.EDep)])
+          where drop_irrelevant :: ([Cabal.FlagName], [(CabalFlags, Merge.EDep)]) -> Cabal.FlagName -> ([Cabal.FlagName], [(CabalFlags, Merge.EDep)])
                 drop_irrelevant (ifs, ds) f =
                     case fenabled_ds' == fdisabled_ds' of
                         True  -> (f:ifs, fenabled_ds')
@@ -279,10 +283,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                     where (fenabled_ds', fdisabled_ds') = ( L.sort $ map drop_f fenabled_ds
                                                           , L.sort $ map drop_f fdisabled_ds
                                                           )
-                          drop_f :: (Cabal.FlagAssignment, Merge.EDep) -> (Cabal.FlagAssignment, Merge.EDep)
+                          drop_f :: (CabalFlags, Merge.EDep) -> (CabalFlags, Merge.EDep)
                           drop_f (fas, d) = (filter ((f /=) . fst) fas, d)
                           (fenabled_ds, fdisabled_ds) = L.partition is_fe ds
-                          is_fe :: (Cabal.FlagAssignment, Merge.EDep) -> Bool
+                          is_fe :: (CabalFlags, Merge.EDep) -> Bool
                           is_fe (fas, _d) =
                               case lookup f fas of
                                   Just v  -> v
@@ -294,7 +298,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                                              ]
 
       -- and finally prettify all deps:
-      leave_only_dynamic_fa :: Cabal.FlagAssignment -> Cabal.FlagAssignment
+      leave_only_dynamic_fa :: CabalFlags -> CabalFlags
       leave_only_dynamic_fa fa = filter (\(fn, _) -> all (fn /=) irrelevant_flags) $ fa L.\\ common_fa
 
       -- build roughly balanced complete dependency tree instead of skewed one
@@ -311,12 +315,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       tdeps :: Merge.EDep
       tdeps = bimerge $ map set_fa_to_ed deps1'
 
-      set_fa_to_ed :: (Cabal.FlagAssignment, Merge.EDep) -> Merge.EDep
+      set_fa_to_ed :: (CabalFlags, Merge.EDep) -> Merge.EDep
       set_fa_to_ed (fa, ed) = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
                                  , Merge.dep  = liftFlags (leave_only_dynamic_fa fa) $ Merge.dep ed
                                  }
 
-      liftFlags :: Cabal.FlagAssignment -> Portage.Dependency -> Portage.Dependency
+      liftFlags :: CabalFlags -> Portage.Dependency -> Portage.Dependency
       liftFlags fs e = let k = foldr (\(y,b) x -> Portage.mkUseDependency (b, Portage.Use . cfn_to_iuse . Cabal.unFlagName $ y) . x)
                                       id fs
                        in k e
@@ -356,7 +360,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                            map ('\t':) conf_args
 
       -- returns list USE-parameters to './setup configure'
-      selected_flags :: ([Cabal.FlagName], Cabal.FlagAssignment) -> [String]
+      selected_flags :: ([Cabal.FlagName], CabalFlags) -> [String]
       selected_flags ([], []) = []
       selected_flags (active_fns, users_fas) = map snd (L.sortBy (compare `on` fst) flag_pairs)
           where flag_pairs :: [(String, String)]
