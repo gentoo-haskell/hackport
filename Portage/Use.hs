@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Portage.Use (
   -- * main structures
   UseFlag(..),
@@ -12,6 +14,10 @@ module Portage.Use (
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Distribution.Text as DT
+
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 -- | Use variable modificator
 data UseFlag = UseFlag Use           -- ^ no modificator

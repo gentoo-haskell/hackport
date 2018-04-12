@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- | Merge a package from hackage to an ebuild.
  -}
 module Merge.Dependencies
@@ -32,6 +34,10 @@ import qualified Portage.GHCCore as GHCCore
 
 import Debug.Trace ( trace )
 
+#if MIN_VERSION_base(4,9,0)
+import Data.Semigroup (Semigroup(..))
+#endif
+
 -- | Dependencies of an ebuild
 data EDep = EDep
   {
@@ -42,6 +48,16 @@ data EDep = EDep
   }
   deriving (Show, Eq, Ord)
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup EDep where
+  (EDep rdepA rdep_eA depA dep_eA) <> (EDep rdepB rdep_eB depB dep_eB) = EDep
+    { rdep   = Portage.DependAllOf [rdepA, rdepB]
+    , rdep_e = rdep_eA `S.union` rdep_eB
+    , dep    = Portage.DependAllOf [depA, depB]
+    , dep_e  = dep_eA  `S.union` dep_eB
+    }
+#endif  
+  
 instance Monoid EDep where
   mempty = EDep
       {
@@ -50,12 +66,14 @@ instance Monoid EDep where
         dep = Portage.empty_dependency,
         dep_e = S.empty
       }
+#if !(MIN_VERSION_base(4,11,0))
   (EDep rdepA rdep_eA depA dep_eA) `mappend` (EDep rdepB rdep_eB depB dep_eB) = EDep
     { rdep   = Portage.DependAllOf [rdepA, rdepB]
     , rdep_e = rdep_eA `S.union` rdep_eB
     , dep    = Portage.DependAllOf [depA, depB]
     , dep_e  = dep_eA  `S.union` dep_eB
     }
+#endif
 
 resolveDependencies :: Portage.Overlay -> Cabal.PackageDescription -> Cabal.CompilerInfo
                     -> [Cabal.PackageName] -> Cabal.PackageName
