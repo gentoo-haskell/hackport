@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- | Portage package identifiers, which unlike Cabal ones include a category.
 --
 module Portage.PackageId (
@@ -30,6 +32,10 @@ import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
 
 import Distribution.Text(display)
 import System.FilePath ( (</>) )
+
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)

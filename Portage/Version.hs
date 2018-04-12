@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-|
     Author      :  Andres Loeh <kosmikus@gentoo.org>
     Stability   :  provisional
@@ -25,6 +27,10 @@ import qualified Distribution.Compat.ReadP as Parse
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlpha, isDigit)
+
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
                        , versionChar     :: (Maybe Char)  -- optional letter

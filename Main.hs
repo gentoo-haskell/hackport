@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Main (main) where
 
 import Control.Applicative
@@ -36,6 +38,8 @@ import Portage.PackageId ( normalizeCabalPackageId )
 import System.Environment ( getArgs, getProgName )
 import System.Directory ( doesDirectoryExist )
 import System.Exit ( exitFailure )
+{-# LANGUAGE CPP #-}
+
 import System.FilePath ( (</>) )
 
 import qualified HackPort.GlobalFlags as H
@@ -56,14 +60,24 @@ data ListFlags = ListFlags {
     listVerbosity :: Flag Verbosity
   }
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup ListFlags where
+  a <> b = ListFlags {
+    listVerbosity = combine listVerbosity
+  }
+    where combine field = field a <> field b
+#endif
+
 instance Monoid ListFlags where
   mempty = ListFlags {
     listVerbosity = mempty
   }
+#if !(MIN_VERSION_base(4,11,0))
   mappend a b = ListFlags {
     listVerbosity = combine listVerbosity
   }
     where combine field = field a `mappend` field b
+#endif
 
 defaultListFlags :: ListFlags
 defaultListFlags = ListFlags {
@@ -119,16 +133,27 @@ data MakeEbuildFlags = MakeEbuildFlags {
   , makeEbuildCabalFlags :: Flag (Maybe String)
   }
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup MakeEbuildFlags where
+  a <> b = MakeEbuildFlags {
+    makeEbuildVerbosity = combine makeEbuildVerbosity
+  , makeEbuildCabalFlags = makeEbuildCabalFlags b
+  }
+    where combine field = field a <> field b
+#endif
+
 instance Monoid MakeEbuildFlags where
   mempty = MakeEbuildFlags {
     makeEbuildVerbosity = mempty
   , makeEbuildCabalFlags = mempty
   }
+#if MIN_VERSION_base(4,9,0)
   mappend a b = MakeEbuildFlags {
     makeEbuildVerbosity = combine makeEbuildVerbosity
   , makeEbuildCabalFlags = makeEbuildCabalFlags b
   }
     where combine field = field a `mappend` field b
+#endif
 
 defaultMakeEbuildFlags :: MakeEbuildFlags
 defaultMakeEbuildFlags = MakeEbuildFlags {
@@ -180,14 +205,24 @@ data UpdateFlags = UpdateFlags {
     updateVerbosity :: Flag Verbosity
   }
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup UpdateFlags where
+  a <> b = UpdateFlags {
+    updateVerbosity = combine updateVerbosity
+  }
+    where combine field = field a <> field b
+#endif
+
 instance Monoid UpdateFlags where
   mempty = UpdateFlags {
     updateVerbosity = mempty
   }
+#if !(MIN_VERSION_base(4,11,0))
   mappend a b = UpdateFlags {
     updateVerbosity = combine updateVerbosity
   }
     where combine field = field a `mappend` field b
+#endif
 
 defaultUpdateFlags :: UpdateFlags
 defaultUpdateFlags = UpdateFlags {
@@ -284,16 +319,27 @@ data MergeFlags = MergeFlags {
   , mergeCabalFlags :: Flag (Maybe String)
   }
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup MergeFlags where
+  a <> b = MergeFlags {
+    mergeVerbosity = combine mergeVerbosity
+  , mergeCabalFlags = mergeCabalFlags b
+  }
+    where combine field = field a <> field b
+#endif
+
 instance Monoid MergeFlags where
   mempty = MergeFlags {
     mergeVerbosity = mempty
   , mergeCabalFlags = mempty
   }
+#if !(MIN_VERSION_base(4,11,0))
   mappend a b = MergeFlags {
     mergeVerbosity = combine mergeVerbosity
   , mergeCabalFlags = mergeCabalFlags b
   }
     where combine field = field a `mappend` field b
+#endif
 
 defaultMergeFlags :: MergeFlags
 defaultMergeFlags = MergeFlags {

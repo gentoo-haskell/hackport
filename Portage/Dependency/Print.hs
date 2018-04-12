@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Portage.Dependency.Print
   (
     dep2str
@@ -14,6 +16,10 @@ import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( (<>), vcat, nest, render )
 
 import Portage.Dependency.Types
+
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 dispSlot :: SlotDepend -> Disp.Doc
 dispSlot AnySlot          = Disp.empty
