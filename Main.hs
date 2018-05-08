@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.List
 import Data.Monoid
         ( Monoid(..) )
+import qualified Data.Semigroup as S
 
 -- cabal
 import Distribution.Simple.Setup
@@ -61,11 +62,11 @@ data ListFlags = ListFlags {
   }
 
 #if MIN_VERSION_base(4,9,0)
-instance Semigroup ListFlags where
+instance S.Semigroup ListFlags where
   a <> b = ListFlags {
     listVerbosity = combine listVerbosity
   }
-    where combine field = field a <> field b
+    where combine field = field a S.<> field b
 #endif
 
 instance Monoid ListFlags where
@@ -134,12 +135,12 @@ data MakeEbuildFlags = MakeEbuildFlags {
   }
 
 #if MIN_VERSION_base(4,9,0)
-instance Semigroup MakeEbuildFlags where
+instance S.Semigroup MakeEbuildFlags where
   a <> b = MakeEbuildFlags {
     makeEbuildVerbosity = combine makeEbuildVerbosity
   , makeEbuildCabalFlags = makeEbuildCabalFlags b
   }
-    where combine field = field a <> field b
+    where combine field = field a S.<> field b
 #endif
 
 instance Monoid MakeEbuildFlags where
@@ -206,11 +207,11 @@ data UpdateFlags = UpdateFlags {
   }
 
 #if MIN_VERSION_base(4,9,0)
-instance Semigroup UpdateFlags where
+instance S.Semigroup UpdateFlags where
   a <> b = UpdateFlags {
     updateVerbosity = combine updateVerbosity
   }
-    where combine field = field a <> field b
+    where combine field = field a S.<> field b
 #endif
 
 instance Monoid UpdateFlags where
@@ -320,12 +321,12 @@ data MergeFlags = MergeFlags {
   }
 
 #if MIN_VERSION_base(4,9,0)
-instance Semigroup MergeFlags where
+instance S.Semigroup MergeFlags where
   a <> b = MergeFlags {
     mergeVerbosity = combine mergeVerbosity
   , mergeCabalFlags = mergeCabalFlags b
   }
-    where combine field = field a <> field b
+    where combine field = field a S.<> field b
 #endif
 
 instance Monoid MergeFlags where
