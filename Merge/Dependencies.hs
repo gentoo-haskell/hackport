@@ -352,6 +352,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("notify", any_c_p "x11-libs" "libnotify")
       , ("SDL2", any_c_p " media-libs" "libsdl2")
       , ("SDL2_mixer", any_c_p "media-libs" "sdl2-mixer")
+      , ("blas", any_c_p "virtual" "blas")
+      , ("lapack", any_c_p "virtual" "lapack")
       ]
 
 ---------------------------------------------------------------
