@@ -383,7 +383,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild cat pkgDesc
 
-  mergeEbuild verbosity existing_meta pkgdir ebuild
+  mergeEbuild verbosity existing_meta pkgdir ebuild cabal_flag_descs
   when fetch $ do
     let cabal_pkgId = Cabal.packageId pkgDesc
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
@@ -421,14 +421,18 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
-mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> IO ()
-mergeEbuild verbosity existing_meta pkgdir ebuild = do
+-- | Generate a list of tuples containing Cabal flag names and descriptions
+metaFlags :: [Cabal.Flag] -> [(String, String)]
+metaFlags flags = zip (Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+
+mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
+mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-      default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
+      default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild) (metaFlags flags)
   createDirectoryIfMissing True edir
   now <- TC.getCurrentTime
 
