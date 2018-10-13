@@ -438,6 +438,8 @@ pkgconfig_table =
   ,("gmodule-export-2.0",     ("dev-libs", "glib", Portage.GivenSlot "2"))
   ,("gmodule-no-export-2.0",  ("dev-libs", "glib", Portage.GivenSlot "2"))
   ,("gobject-2.0",            ("dev-libs", "glib", Portage.GivenSlot "2"))
+  ,("gobject-introspection-1.0", ("dev-libs", "gobject-introspection",
+                                  Portage.AnySlot))
   ,("gthread-2.0",            ("dev-libs", "glib", Portage.GivenSlot "2"))
 
   ,("gtk+-2.0",            ("x11-libs", "gtk+", Portage.GivenSlot "2"))
