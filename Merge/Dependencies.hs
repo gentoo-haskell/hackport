@@ -16,6 +16,7 @@ import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.Text as Cabal
+import qualified Distribution.Types.ExeDependency as Cabal
 import qualified Distribution.Types.LegacyExeDependency as Cabal
 import qualified Distribution.Types.PkgconfigDependency as Cabal
 
@@ -104,7 +105,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                            then []
                            else [any_c_p "virtual" "pkgconfig"]
     build_tools :: Portage.Dependency
-    build_tools = Portage.DependAllOf $ pkg_config_tools : legacyBuildToolsDependencies pkg
+    build_tools = Portage.DependAllOf $ pkg_config_tools : legacyBuildToolsDependencies pkg ++ hackageBuildToolsDependencies overlay pkg
 
     setup_deps :: Portage.Dependency
     setup_deps = PN.normalize_depend $ Portage.DependAllOf $
@@ -397,6 +398,20 @@ buildToolsTable =
 buildToolsProvided :: [String]
 buildToolsProvided = ["hsc2hs"]
 
+---------------------------------------------------------------
+-- Hackage Build Tools (behind `build-tool-depends`)
+---------------------------------------------------------------
+
+hackageBuildToolsDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Portage.Dependency]
+hackageBuildToolsDependencies overlay (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) =
+  haskellDependencies overlay $ L.nub $
+    [ Cabal.Dependency pn versionRange
+    | Cabal.ExeDependency pn _component versionRange <- cabalDeps
+    ]
+  where
+    cabalDeps = depL ++ depE
+    depL = concatMap (Cabal.buildToolDepends . Cabal.libBuildInfo) $ maybe [] return lib
+    depE = concatMap Cabal.buildToolDepends (filter Cabal.buildable (map Cabal.buildInfo exes))
 
 ---------------------------------------------------------------
 -- pkg-config
