@@ -104,7 +104,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                            then []
                            else [any_c_p "virtual" "pkgconfig"]
     build_tools :: Portage.Dependency
-    build_tools = Portage.DependAllOf $ pkg_config_tools : buildToolsDependencies pkg
+    build_tools = Portage.DependAllOf $ pkg_config_tools : legacyBuildToolsDependencies pkg
 
     setup_deps :: Portage.Dependency
     setup_deps = PN.normalize_depend $ Portage.DependAllOf $
@@ -357,11 +357,11 @@ staticTranslateExtraLib lib = lookup lib m
       ]
 
 ---------------------------------------------------------------
--- Build Tools
+-- Build Tools (legacy, a list of well-known tools)
 ---------------------------------------------------------------
 
-buildToolsDependencies :: Cabal.PackageDescription -> [Portage.Dependency]
-buildToolsDependencies (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) = L.nub $
+legacyBuildToolsDependencies :: Cabal.PackageDescription -> [Portage.Dependency]
+legacyBuildToolsDependencies (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) = L.nub $
   [ case pkg of
       Just p -> p
       Nothing -> trace ("WARNING: Unknown build tool '" ++ Cabal.display exe ++ "'. Check the generated ebuild.")
