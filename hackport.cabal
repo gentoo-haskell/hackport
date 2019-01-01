@@ -66,6 +66,7 @@ Executable    hackport
     -- hackage-security
     DefaultSignatures,
     DeriveDataTypeable,
+    DoAndIfThenElse,
     EmptyDataDecls,
     ExistentialQuantification,
     FlexibleContexts,
@@ -126,6 +127,8 @@ Executable    hackport
     Status
     Merge
     Util
+    -- hsc files
+    Hackage.Security.Util.FileLock
 
 Test-Suite test-resolve-category
   ghc-options: -Wall
