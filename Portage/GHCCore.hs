@@ -31,7 +31,7 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc861]
+    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc861, ghc863]
 
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
@@ -116,6 +116,9 @@ ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (mkVersion nrs)
 
+ghc863 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc863 = (ghc [8,6,3], mkIndex ghc863_pkgs)
+
 ghc861 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc861 = (ghc [8,6,1], mkIndex ghc861_pkgs)
 
@@ -156,6 +159,39 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 -- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 --         and our binary tarballs (package.conf.d.initial subdir)
 
+
+ghc863_pkgs :: [Cabal.PackageIdentifier]
+ghc863_pkgs =
+  [ p "array" [0,5,3,0]
+  , p "base" [4,12,0,0]
+  , p "binary" [0,8,6,0] -- used by libghc
+  , p "bytestring" [0,10,8,2]
+--  , p "Cabal" [2,4,0,1]  package is upgradeable
+  , p "containers" [0,6,0,1]
+  , p "deepseq" [1,4,4,0] -- used by time
+  , p "directory" [1,3,3,0]
+  , p "filepath" [1,4,2,1]
+  , p "ghc-boot" [8,6,3] 
+  , p "ghc-boot-th" [8,6,3] 
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,5,3,0]
+  , p "ghci" [8,6,3]
+--  , p "haskeline" [0,7,4,3]  package is upgradeable
+  , p "hpc" [0,6,0,3] -- used by libghc
+  , p "integer-gmp" [1,0,2,0]
+  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,3,0]
+  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "template-haskell" [2,14,0,0] -- used by libghc
+  -- , p "terminfo" [0,4,1,2]
+  -- , p "text" [1,2,3,1] dependency of Cabal library
+  , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+  , p "transformers" [0,5,5,0] -- used by libghc
+  , p "unix" [2,7,2,2]
+--  , p "xhtml" [3000,2,2,1]
+  ]
 
 ghc861_pkgs :: [Cabal.PackageIdentifier]
 ghc861_pkgs =
