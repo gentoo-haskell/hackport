@@ -13,6 +13,7 @@ module Portage.PackageId (
     parseFriendlyPackage,
     normalizeCabalPackageName,
     normalizeCabalPackageId,
+    filePathToPackageId,
     packageIdToFilePath,
     cabal_pn_to_PN
   ) where
@@ -67,6 +68,31 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
+-- This could be cleaned up with parsers.
+-- | Attempt to generate a PackageId from a FilePath. If not, return
+-- the provided PackageId as-is.
+filePathToPackageId :: PackageId -> FilePath -> PackageId
+filePathToPackageId pkgId fp = do
+  -- take package name from provided FilePath
+  let pn = take (length ((Cabal.unPackageName
+                          . cabalPkgName
+                          . packageId)
+                         pkgId)) fp
+      -- drop .ebuild file extension
+      p = reverse . drop 1 $ dropWhile (/='.') $ reverse fp
+      -- drop package name and the following dash
+      v = drop ((length ((Cabal.unPackageName
+                          . cabalPkgName
+                          . packageId)
+                         pkgId)) + 1) p
+      c = unCategory . category . packageId $ pkgId
+      -- parse and extract version
+      parsed_v = case parseVersion v of
+                   Just (Just my_v) -> my_v
+                   _ -> pkgVersion pkgId
+  -- Construct PackageId
+  PackageId (mkPackageName c pn) parsed_v
+  
 mkPackageName :: String -> String -> PackageName
 mkPackageName cat package = PackageName (Category cat) (Cabal.mkPackageName package)
 
@@ -133,5 +159,19 @@ parseFriendlyPackage str =
       return (Just v)
     return (mc, p, mv)
 
+-- | Parse a String in the form of a Portage version
+parseVersion :: FilePath -> Maybe (Maybe Portage.Version)
+parseVersion str =
+    case [ p | (p,s) <- Parse.readP_to_S parser str
+           , all Char.isSpace s ] of
+      [] -> Nothing
+      (x:_) -> Just x
+    where
+      parser = do
+        mv <- Parse.option Nothing $ do
+                 v <- parse
+                 return (Just v)
+        return mv
+    
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map toLower . display

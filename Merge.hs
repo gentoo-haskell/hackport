@@ -35,6 +35,7 @@ import System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
+                        , listDirectory
                         )
 import System.Process (system)
 import System.FilePath ((</>))
@@ -64,7 +65,6 @@ a <.> b = a ++ '.':b
 {-
 Requested features:
   * Add files to git?
-  * Print diff with the next latest version?
 -}
 
 readPackageString :: [String]
@@ -152,6 +152,39 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
   mergeGenericPackageDescription verbosity overlayPath cat (CabalInstall.packageDescription selectedPkg) True users_cabal_flags
+
+  -- Maybe generate a diff
+  let pkgPath = overlayPath </> (Portage.unCategory cat) </> (Cabal.unPackageName norm_pkgName)
+  pkgDir <- listDirectory pkgPath
+  let newPkgId = Portage.fromCabalPackageId cat cabal_pkgId
+      previousPkg = getPreviousPackageId pkgDir newPkgId
+  case previousPkg of
+    Just validPkg -> do info verbosity "Generating a diff..."
+                        diffEbuilds overlayPath validPkg newPkgId
+    _ -> info verbosity "Nothing to diff!"
+  
+-- | Call diff between two ebuilds.
+diffEbuilds :: FilePath -> Portage.PackageId -> Portage.PackageId -> IO ()
+diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
+                             ++ fp </> Portage.packageIdToFilePath a
+                             ++ " " ++ fp </> Portage.packageIdToFilePath b
+                        exitSuccess
+
+-- | Maybe return a Portage.PackageId of the previous highest version.
+--   We achieve this by applying Portage.filePathToPackageId to the
+--   provided list of ebuilds (ie package directory arranged into a list).
+getPreviousPackageId :: [FilePath] -- ^ list of ebuilds for given package
+                     -> Portage.PackageId -- ^ new PackageId
+                     -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version of package
+getPreviousPackageId pkgDir newPkgId = do
+  let ebuildsOnly = filter ( \x -> reverse (takeWhile (/='.') (reverse x)) == "ebuild") pkgDir
+      pkgIds = L.reverse 
+               . L.sortOn (Portage.pkgVersion)
+               . L.filter (<newPkgId)
+               $ Portage.filePathToPackageId newPkgId <$> ebuildsOnly
+  case pkgIds of
+    x:_ -> Just x
+    _ -> Nothing
 
 first_just_of :: [Maybe a] -> Maybe a
 first_just_of = msum
