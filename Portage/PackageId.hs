@@ -40,7 +40,7 @@ import Prelude hiding ((<>))
 newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)
 
-data PackageName = PackageName Category Cabal.PackageName
+data PackageName = PackageName { category :: Category, cabalPkgName :: Cabal.PackageName }
   deriving (Eq, Ord, Show, Read)
 
 data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
