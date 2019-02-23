@@ -1,2 +1,4 @@
 dist/
+dist-newstyle/
 cabal-dev/
+.ghc.environment*
