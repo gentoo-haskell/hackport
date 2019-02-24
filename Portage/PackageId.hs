@@ -32,7 +32,7 @@ import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
 
 import Distribution.Text(display)
-import System.FilePath ( (</>) )
+import System.FilePath ((</>), dropExtension)
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -68,23 +68,18 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
--- This could be cleaned up with parsers.
 -- | Attempt to generate a PackageId from a FilePath. If not, return
 -- the provided PackageId as-is.
 filePathToPackageId :: PackageId -> FilePath -> PackageId
 filePathToPackageId pkgId fp = do
-  -- take package name from provided FilePath
-  let pn = take (length ((Cabal.unPackageName
-                          . cabalPkgName
-                          . packageId)
-                         pkgId)) fp
+      -- take package name from provided FilePath
+  let pn = take (length
+                 $ Cabal.unPackageName . cabalPkgName . packageId
+                 $ pkgId) fp
       -- drop .ebuild file extension
-      p = reverse . drop 1 $ dropWhile (/='.') $ reverse fp
+      p = dropExtension fp
       -- drop package name and the following dash
-      v = drop ((length ((Cabal.unPackageName
-                          . cabalPkgName
-                          . packageId)
-                         pkgId)) + 1) p
+      v = drop ((length pn) +1) p
       c = unCategory . category . packageId $ pkgId
       -- parse and extract version
       parsed_v = case parseVersion v of

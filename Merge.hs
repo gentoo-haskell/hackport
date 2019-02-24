@@ -38,7 +38,7 @@ import System.Directory ( getCurrentDirectory
                         , listDirectory
                         )
 import System.Process (system)
-import System.FilePath ((</>))
+import System.FilePath ((</>), isExtensionOf)
 import System.Exit
 
 import qualified Cabal2Ebuild as C2E
@@ -155,10 +155,9 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
 
   -- Maybe generate a diff
   let pkgPath = overlayPath </> (Portage.unCategory cat) </> (Cabal.unPackageName norm_pkgName)
+      newPkgId = Portage.fromCabalPackageId cat cabal_pkgId
   pkgDir <- listDirectory pkgPath
-  let newPkgId = Portage.fromCabalPackageId cat cabal_pkgId
-      previousPkg = getPreviousPackageId pkgDir newPkgId
-  case previousPkg of
+  case getPreviousPackageId pkgDir newPkgId of
     Just validPkg -> do info verbosity "Generating a diff..."
                         diffEbuilds overlayPath validPkg newPkgId
     _ -> info verbosity "Nothing to diff!"
@@ -166,22 +165,24 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
 -- | Call diff between two ebuilds.
 diffEbuilds :: FilePath -> Portage.PackageId -> Portage.PackageId -> IO ()
 diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
-                             ++ fp </> Portage.packageIdToFilePath a
-                             ++ " " ++ fp </> Portage.packageIdToFilePath b
+                             ++ fp </> Portage.packageIdToFilePath a ++ " "
+                             ++ fp </> Portage.packageIdToFilePath b
                         exitSuccess
 
--- | Maybe return a Portage.PackageId of the previous highest version.
---   We achieve this by applying Portage.filePathToPackageId to the
---   provided list of ebuilds (ie package directory arranged into a list).
+-- | Maybe return a PackageId of the next highest version for a given
+--   package, relative to the provided PackageId of the new version.
+--   We achieve this by mapping Portage.filePathToPackageId over the
+--   provided package directory, whose contents are filtered for files
+--   with the '.ebuild' file extension
 getPreviousPackageId :: [FilePath] -- ^ list of ebuilds for given package
                      -> Portage.PackageId -- ^ new PackageId
-                     -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version of package
+                     -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version
 getPreviousPackageId pkgDir newPkgId = do
-  let ebuildsOnly = filter ( \x -> reverse (takeWhile (/='.') (reverse x)) == "ebuild") pkgDir
-      pkgIds = L.reverse 
+  let pkgIds = reverse 
                . L.sortOn (Portage.pkgVersion)
-               . L.filter (<newPkgId)
-               $ Portage.filePathToPackageId newPkgId <$> ebuildsOnly
+               . filter (<newPkgId)
+               $ Portage.filePathToPackageId newPkgId
+               <$> filter (\fp -> ".ebuild" `isExtensionOf` fp) pkgDir
   case pkgIds of
     x:_ -> Just x
     _ -> Nothing
