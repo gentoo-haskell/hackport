@@ -6,6 +6,7 @@ module Merge
 import Control.Monad
 import Control.Exception
 import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.ByteString.Builder as BL (stringUtf8, toLazyByteString)
 import Data.Function (on)
 import Data.Maybe
 import qualified Data.List as L
@@ -466,7 +467,9 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-      default_meta = BL.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild) (metaFlags flags)
+      default_meta = BL.toLazyByteString . BL.stringUtf8
+                     $ Portage.makeDefaultMetadata (E.long_desc ebuild)
+                     $ metaFlags flags
   createDirectoryIfMissing True edir
   now <- TC.getCurrentTime
 
