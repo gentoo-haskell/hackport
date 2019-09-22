@@ -267,11 +267,18 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                     , let f = Cabal.unFlagName cabal_f
                                     ]
 
+      -- Gentoo allows underscore ('_') names in IUSE only for
+      -- USE_EXPAND values. If it's not a user-specified rename mangle
+      -- it into a hyphen ('-').
+      mangle_iuse :: String -> String
+      mangle_iuse = map f
+          where f '_' = '-'
+                f c   = c
 
       cfn_to_iuse :: String -> String
       cfn_to_iuse cfn =
           case lookup cfn cf_to_iuse_rename of
-              Nothing  -> cfn
+              Nothing  -> mangle_iuse cfn
               Just ein -> ein
 
       -- key idea is to generate all possible list of flags
