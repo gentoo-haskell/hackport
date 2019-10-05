@@ -191,6 +191,14 @@ getPreviousPackageId pkgDir newPkgId = do
 first_just_of :: [Maybe a] -> Maybe a
 first_just_of = msum
 
+-- Gentoo allows underscore ('_') names in IUSE only for
+-- USE_EXPAND values. If it's not a user-specified rename mangle
+-- it into a hyphen ('-').
+mangle_iuse :: String -> String
+mangle_iuse = map f
+  where f '_' = '-'
+        f c   = c
+
 -- used to be FlagAssignment in Cabal but now it's an opaque type
 type CabalFlags = [(Cabal.FlagName, Bool)]
 
@@ -266,14 +274,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                     | (cabal_f, b) <- fa
                                     , let f = Cabal.unFlagName cabal_f
                                     ]
-
-      -- Gentoo allows underscore ('_') names in IUSE only for
-      -- USE_EXPAND values. If it's not a user-specified rename mangle
-      -- it into a hyphen ('-').
-      mangle_iuse :: String -> String
-      mangle_iuse = map f
-          where f '_' = '-'
-                f c   = c
 
       cfn_to_iuse :: String -> String
       cfn_to_iuse cfn =
@@ -465,7 +465,7 @@ to_unstable kw =
 
 -- | Generate a list of tuples containing Cabal flag names and descriptions
 metaFlags :: [Cabal.Flag] -> [(String, String)]
-metaFlags flags = zip (Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+metaFlags flags = zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
 
 mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
 mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
