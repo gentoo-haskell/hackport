@@ -199,6 +199,14 @@ mangle_iuse = map f
   where f '_' = '-'
         f c   = c
 
+-- | Remove "with_" or "with-" from beginning of flag names.
+drop_with :: String -> String
+drop_with = \x ->
+  case splitAt 5 x of
+    ("with_", b) -> b
+    ("with-", b) -> b
+    _ -> x
+
 -- used to be FlagAssignment in Cabal but now it's an opaque type
 type CabalFlags = [(Cabal.FlagName, Bool)]
 
@@ -278,7 +286,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       cfn_to_iuse :: String -> String
       cfn_to_iuse cfn =
           case lookup cfn cf_to_iuse_rename of
-              Nothing  -> mangle_iuse cfn
+              Nothing  -> mangle_iuse . drop_with $ cfn
               Just ein -> ein
 
       -- key idea is to generate all possible list of flags
@@ -425,13 +433,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild cat pkgDesc
 
-  mergeEbuild verbosity existing_meta pkgdir ebuild cabal_flag_descs
+  mergeEbuild verbosity existing_meta pkgdir ebuild active_flag_descs
   when fetch $ do
     let cabal_pkgId = Cabal.packageId pkgDesc
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-    fetchDigestAndCheck
-      verbosity
-      (overlayPath </> display cat </> display norm_pkgName)
+    fetchDigestAndCheck verbosity (overlayPath </> display cat </> display norm_pkgName)
 
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
@@ -465,7 +471,7 @@ to_unstable kw =
 
 -- | Generate a list of tuples containing Cabal flag names and descriptions
 metaFlags :: [Cabal.Flag] -> [(String, String)]
-metaFlags flags = zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+metaFlags flags = zip (mangle_iuse . drop_with . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
 
 mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
 mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
