@@ -51,9 +51,9 @@ hackPortShowError err = case err of
     ExtractionFailed tarball file code -> "Extracting '"++file++"' from '"++tarball++"' failed with '"++show code++"'"
     CabalParseFailed file reason -> "Error while parsing cabal file '"++file++"': "++reason
     BashNotFound -> "The 'bash' executable was not found. It is required to figure out your portage-overlay. If you don't want to install bash, use '-p path-to-overlay'"
-    BashError str -> "Error while guessing your portage-overlay. Either set PORTDIR_OVERLAY in /etc/make.conf or use '-p path-to-overlay'.\nThe error was: \""++str++"\""
+    BashError str -> "Error while guessing your repository's location. Either set a repository 'haskell' in '/etc/portage/repos.conf' or use '-p path-to-overlay'.\nThe error was: \""++str++"\""
     MultipleOverlays overlays -> "You have the following overlays available: '"++unwords overlays++"'. Please choose one by using 'hackport -p path-to-overlay' <command>"
-    NoOverlay -> "You don't have PORTDIR_OVERLAY set in '/etc/make.conf'. Please set it or use '-p path-to-overlay'"
+    NoOverlay -> "Unable to find a repository 'haskell'. Consider defining it in '/etc/portage/repos.conf' and verify '~/.hackport/repositories' (in overlay_list) or use '-p path-to-overlay'"
     UnknownVerbosityLevel str -> "The verbosity level '"++str++"' is invalid. Please use debug,normal or silent"
     InvalidServer srv -> "Invalid server address, could not parse: " ++ srv
     --WrongCacheVersion -> "The version of the cache is too old. Please update the cache using 'hackport update'"
