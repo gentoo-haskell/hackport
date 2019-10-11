@@ -30,7 +30,7 @@ getInfo :: IO LocalInfo
 getInfo = fromJust `fmap`
     performMaybes [ readConfig
                   , performMaybes [ getPaludisInfo
-                                  , fmap parse_emerge_output <$> (run_cmd "emerge --info")
+                                  , askPortageq
                                   , return (Just defaultInfo)
                                   ] >>= showAnnoyingWarning
                   ]
@@ -103,16 +103,22 @@ parsePaludisInfo text =
 -- Emerge
 ---------
 
-parse_emerge_output :: String -> LocalInfo
-parse_emerge_output raw_data =
-    foldl updateInfo defaultInfo $ lines raw_data
-    where updateInfo info str =
-              case (break (== '=') str) of
-                  ("DISTDIR", '=':value)
-                      -> info{distfiles_dir = unquote value}
-                  ("PORTDIR", '=':value)
-                      -> info{portage_dir = unquote value}
-                  ("PORTDIR_OVERLAY", '=':value)
-                      -> info{overlay_list = words $ unquote value}
-                  _   -> info
-          unquote = init . tail
+askPortageq :: IO (Maybe LocalInfo)
+askPortageq = do
+    distdir <- run_cmd "portageq distdir"
+    portdir <- run_cmd "portageq get_repo_path / gentoo"
+    hsRepo  <- run_cmd "portageq get_repo_path / haskell"
+    --There really ought to be both distdir and portdir,
+    --but maybe no hsRepo defined yet.
+    let info = if any (==Nothing) [distdir,portdir]
+               then Nothing
+               else Just LocalInfo
+                      { distfiles_dir = grab distdir
+                      , portage_dir = grab portdir
+                      , overlay_list = iffy hsRepo
+                      }
+                 --init: kill newline char
+                 where grab = init . fromJust
+                       iffy Nothing     = []
+                       iffy (Just repo) = [init repo]
+    return info
