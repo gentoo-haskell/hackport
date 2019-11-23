@@ -84,10 +84,10 @@ src_uri e =
   case my_pn e of
     -- use standard address given that the package name has no upper
     -- characters
-    Nothing -> "http://hackage.haskell.org/packages/archive/${PN}/${PV}/${P}.tar.gz"
+    Nothing -> "https://hackage.haskell.org/package/${P}/${P}.tar.gz"
     -- use MY_X variables (defined in showEBuild) as we've renamed the
     -- package
-    Just _  -> "http://hackage.haskell.org/packages/archive/${MY_PN}/${PV}/${MY_P}.tar.gz"
+    Just _  -> "https://hackage.haskell.org/package/${MY_P}/${MY_P}.tar.gz"
 
 showEBuild :: TC.UTCTime -> EBuild -> String
 showEBuild now ebuild =
@@ -108,7 +108,7 @@ showEBuild now ebuild =
                 ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
   ss "DESCRIPTION=". quote (drop_tdot $ description ebuild). nl.
   ss "HOMEPAGE=". quote (toHttps $ expandVars (homepage ebuild)). nl.
-  ss "SRC_URI=". quote (toMirror $ src_uri ebuild). nl.
+  ss "SRC_URI=". quote (src_uri ebuild). nl.
   nl.
   ss "LICENSE=". (either (\err -> quote "" . ss ("\t# FIXME: " ++ err))
                          quote
@@ -136,7 +136,6 @@ showEBuild now ebuild =
         expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
-        toMirror = replace "http://hackage.haskell.org/" "mirror://hackage/"
         -- TODO: this needs to be more generic
         toHttps  = replace "http://github.com/" "https://github.com/"
         this_year :: String
