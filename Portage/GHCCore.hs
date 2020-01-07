@@ -3,7 +3,8 @@
 module Portage.GHCCore
         ( minimumGHCVersionToBuildPackage
         , cabalFromGHC
-        , finalizePackageDescription
+        , defaultComponentRequestedSpec
+        , finalizePD
         , platform
         , dependencySatisfiable
         ) where
@@ -19,6 +20,7 @@ import Distribution.PackageDescription
 import Distribution.PackageDescription.Configuration
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.System
+import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 
 import Distribution.Text
 
@@ -76,7 +78,7 @@ packageBuildableWithGHCVersion
   -> (DC.CompilerInfo, InstalledPackageIndex)
   -> Either [Cabal.Dependency] (PackageDescription, FlagAssignment)
 packageBuildableWithGHCVersion pkg user_specified_fas (compiler_info, pkgIndex) = trace_failure $
-  finalizePackageDescription user_specified_fas (dependencySatisfiable pkgIndex) platform compiler_info [] pkg
+  finalizePD user_specified_fas defaultComponentRequestedSpec (dependencySatisfiable pkgIndex) platform compiler_info [] pkg
     where trace_failure v = case v of
               (Left deps) -> trace (unwords ["rejecting dep:" , show_compiler compiler_info
                                             , "as", show_deps deps
