@@ -33,13 +33,12 @@ import Debug.Trace
 -- It means that first ghc in this list is a minmum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc761, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc861, ghc863, ghc881]
+    where modern_ghcs  = [ghc741, ghc742, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc863, ghc865, ghc881]
 
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
   where
   table = [ ([7,4,2],  Cabal.mkVersion [1,14,0])
-          , ([7,6,1],  Cabal.mkVersion [1,16,0])
           , ([7,6,2],  Cabal.mkVersion [1,16,0])
           , ([7,8,2],  Cabal.mkVersion [1,18,1,3])
           , ([7,10,1], Cabal.mkVersion [1,22,2,0])
@@ -48,7 +47,8 @@ cabalFromGHC ver = lookup ver table
           , ([8,0,2],  Cabal.mkVersion [1,24,2,0])
           , ([8,2,1],  Cabal.mkVersion [2,0,0,2])
           , ([8,4,3],  Cabal.mkVersion [2,2,0,1])
-          , ([8,6,1],  Cabal.mkVersion [2,4,0,1])
+          , ([8,6,3],  Cabal.mkVersion [2,4,0,1])
+          , ([8,6,5],  Cabal.mkVersion [2,4,0,1])
           , ([8,8,1],  Cabal.mkVersion [3,0,0,0])
           ]
 
@@ -122,11 +122,11 @@ ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
 ghc881 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc881 = (ghc [8,8,1], mkIndex ghc881_pkgs)
 
+ghc865 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc865 = (ghc [8,6,5], mkIndex ghc865_pkgs)
+
 ghc863 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc863 = (ghc [8,6,3], mkIndex ghc863_pkgs)
-
-ghc861 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc861 = (ghc [8,6,1], mkIndex ghc861_pkgs)
 
 ghc843 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc843 = (ghc [8,4,3], mkIndex ghc843_pkgs)
@@ -152,9 +152,6 @@ ghc782 = (ghc [7,8,2], mkIndex ghc782_pkgs)
 ghc762 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc762 = (ghc [7,6,2], mkIndex ghc762_pkgs)
 
-ghc761 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc761 = (ghc [7,6,1], mkIndex ghc761_pkgs)
-
 ghc742 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc742 = (ghc [7,4,2], mkIndex ghc742_pkgs)
 
@@ -162,8 +159,11 @@ ghc741 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 
 -- | Non-upgradeable core packages
--- Source: http://haskell.org/haskellwiki/Libraries_released_with_GHC
---         and our binary tarballs (package.conf.d.initial subdir)
+-- Sources:
+--  * release notes
+--      example: https://downloads.haskell.org/~ghc/8.6.5/docs/html/users_guide/8.6.5-notes.html
+--  * our binary tarballs (package.conf.d.initial subdir)
+--  * ancient: http://haskell.org/haskellwiki/Libraries_released_with_GHC
 
 ghc881_pkgs :: [Cabal.PackageIdentifier]
 ghc881_pkgs =
@@ -176,8 +176,8 @@ ghc881_pkgs =
   , p "deepseq" [1,4,4,0] -- used by time
   , p "directory" [1,3,3,2]
   , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,8,1] 
-  , p "ghc-boot-th" [8,8,1] 
+  , p "ghc-boot" [8,8,1]
+  , p "ghc-boot-th" [8,8,1]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,5,3,0]
   , p "ghci" [8,8,1]
@@ -198,6 +198,39 @@ ghc881_pkgs =
 --  , p "xhtml" [3000,2,2,1]
   ]
 
+ghc865_pkgs :: [Cabal.PackageIdentifier]
+ghc865_pkgs =
+  [ p "array" [0,5,3,0]
+  , p "base" [4,12,0,0]
+  , p "binary" [0,8,6,0] -- used by libghc
+  , p "bytestring" [0,10,8,2]
+--  , p "Cabal" [2,4,0,1]  package is upgradeable
+  , p "containers" [0,6,0,1]
+  , p "deepseq" [1,4,4,0] -- used by time
+  , p "directory" [1,3,3,0]
+  , p "filepath" [1,4,2,1]
+  , p "ghc-boot" [8,6,5]
+  , p "ghc-boot-th" [8,6,5]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,5,3,0]
+  , p "ghci" [8,6,5]
+--  , p "haskeline" [0,7,4,3]  package is upgradeable
+  , p "hpc" [0,6,0,3] -- used by libghc
+  , p "integer-gmp" [1,0,2,0]
+  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,5,0]
+  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "template-haskell" [2,14,0,0] -- used by libghc
+  -- , p "terminfo" [0,4,1,2]
+  -- , p "text" [1,2,3,1] dependency of Cabal library
+  , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+  , p "transformers" [0,5,6,2] -- used by libghc
+  , p "unix" [2,7,2,2]
+--  , p "xhtml" [3000,2,2,1]
+  ]
+
 ghc863_pkgs :: [Cabal.PackageIdentifier]
 ghc863_pkgs =
   [ p "array" [0,5,3,0]
@@ -209,44 +242,11 @@ ghc863_pkgs =
   , p "deepseq" [1,4,4,0] -- used by time
   , p "directory" [1,3,3,0]
   , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,6,3] 
-  , p "ghc-boot-th" [8,6,3] 
+  , p "ghc-boot" [8,6,3]
+  , p "ghc-boot-th" [8,6,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,5,3,0]
   , p "ghci" [8,6,3]
---  , p "haskeline" [0,7,4,3]  package is upgradeable
-  , p "hpc" [0,6,0,3] -- used by libghc
-  , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
-  --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,3,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
-  , p "template-haskell" [2,14,0,0] -- used by libghc
-  -- , p "terminfo" [0,4,1,2]
-  -- , p "text" [1,2,3,1] dependency of Cabal library
-  , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,5,0] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc861_pkgs :: [Cabal.PackageIdentifier]
-ghc861_pkgs =
-  [ p "array" [0,5,2,0]
-  , p "base" [4,12,0,0]
-  , p "binary" [0,8,6,0] -- used by libghc
-  , p "bytestring" [0,10,8,2]
---  , p "Cabal" [2,4,0,1]  package is upgradeable
-  , p "containers" [0,6,0,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,3,0]
-  , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,6,1] 
-  , p "ghc-boot-th" [8,6,1] 
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,5,3,0]
-  , p "ghci" [8,6,1]
 --  , p "haskeline" [0,7,4,3]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
@@ -488,32 +488,6 @@ ghc762_pkgs =
   , p "template-haskell" [2,8,0,0] -- used by libghc
   , p "time" [1,4,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
   , p "unix" [2,6,0,1]
-  ]
-
-ghc761_pkgs :: [Cabal.PackageIdentifier]
-ghc761_pkgs =
-  [ p "array" [0,4,0,1]
-  , p "base" [4,6,0,0]
-  , p "binary" [0,5,1,1] -- used by libghc
-  , p "bytestring" [0,10,0,0]
---  , p "Cabal" [1,16,0]  package is upgradeable
-  , p "containers" [0,5,0,0]
-  , p "deepseq" [1,3,0,1] -- used by time, haskell98
-  , p "directory" [1,2,0,0]
-  , p "filepath" [1,3,0,1]
-  , p "ghc-prim" [0,3,0,0]
-  , p "haskell2010" [1,1,1,0]
-  , p "haskell98" [2,0,0,2]
-  , p "hoopl" [3,9,0,0] -- used by libghc
-  , p "hpc" [0,6,0,0] -- used by libghc
-  , p "integer-gmp" [0,5,0,0]
-  -- , p "old-locale" [1,0,0,5] -- stopped shipping in 7.10, deprecated
-  -- , p "old-time" [1,1,0,1] -- stopped shipping in 7.10, deprecated
-  , p "pretty" [1,1,1,0]
-  , p "process" [1,1,0,2]
-  , p "template-haskell" [2,8,0,0] -- used by libghc
-  , p "time" [1,4,0,1] -- used by haskell98, unix, directory, hpc, ghc. unsafe to upgrade
-  , p "unix" [2,6,0,0]
   ]
 
 ghc742_pkgs :: [Cabal.PackageIdentifier]
