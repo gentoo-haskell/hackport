@@ -86,7 +86,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     treatAsLibrary = isJust (Cabal.library pkg)
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
-    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (Cabal.buildDepends pkg)
+    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (Cabal.allBuildDepends pkg)
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
                     Portage.DependAllOf $
