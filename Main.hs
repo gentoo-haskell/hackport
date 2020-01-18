@@ -19,7 +19,7 @@ import Distribution.Simple.Setup
 
 import Distribution.Simple.Command -- commandsRun
 import Distribution.Simple.Utils ( die, cabalVersion, warn )
-import qualified Distribution.PackageDescription.Parse as Cabal
+import qualified Distribution.PackageDescription.Parsec as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
 import Distribution.Text (display, simpleParse)
@@ -173,7 +173,7 @@ makeEbuildAction flags args globalFlags = do
   let verbosity = fromFlag (makeEbuildVerbosity flags)
   overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
   forM_ cabals $ \cabalFileName -> do
-    pkg <- Cabal.readPackageDescription normal cabalFileName
+    pkg <- Cabal.readGenericPackageDescription normal cabalFileName
     mergeGenericPackageDescription verbosity overlayPath cat pkg False (fromFlag $ makeEbuildCabalFlags flags)
 
 makeEbuildCommand :: CommandUI MakeEbuildFlags
