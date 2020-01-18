@@ -22,7 +22,7 @@ module Cabal2Ebuild
         ,convertDependency) where
 
 import qualified Distribution.PackageDescription as Cabal
-                                                (PackageDescription(..))
+                                                (PackageDescription(..), license)
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , Dependency(..))
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')

@@ -6,13 +6,14 @@ module Portage.Cabal
 import qualified Data.List as L
 
 import qualified Distribution.License             as Cabal
+import qualified Distribution.SPDX.License        as SPDX
 import qualified Distribution.Package             as Cabal
 import qualified Distribution.Text                as Cabal
 
 -- map the cabal license type to the gentoo license string format
-convertLicense :: Cabal.License -> Either String String
+convertLicense :: SPDX.License -> Either String String
 convertLicense l =
-    case l of
+    case Cabal.licenseFromSPDX l of
         --  good ones
         Cabal.AGPL mv      -> Right $ "AGPL-" ++ (maybe "3" Cabal.display mv)  -- almost certainly version 3
         Cabal.GPL mv       -> Right $ "GPL-" ++ (maybe "2" Cabal.display mv)  -- almost certainly version 2
