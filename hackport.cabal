@@ -1,5 +1,5 @@
 Name:           hackport
-Version:        0.6.2
+Version:        0.6.3
 License:        GPL
 License-file:   LICENSE
 Author:         Henning Günther, Duncan Coutts, Lennart Kolmodin
@@ -48,6 +48,7 @@ Executable    hackport
     binary,
     random,
     stm,
+    text,
     unix,
     -- cabal-install depends
     async,
