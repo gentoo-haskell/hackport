@@ -263,8 +263,10 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                             , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
                                             ]
 
-  let (accepted_deps, skipped_deps) = Portage.partition_depends ghc_packages merged_cabal_pkg_name (Cabal.buildDepends pkgDesc0)
-      pkgDesc = pkgDesc0 { Cabal.buildDepends = accepted_deps }
+  let (accepted_deps, skipped_deps) = Portage.partition_depends ghc_packages merged_cabal_pkg_name
+                                      (Merge.exeAndLibDeps pkgDesc0)
+
+      pkgDesc = Merge.RetroPackageDescription pkgDesc0 accepted_deps
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
       make_fas  :: [Cabal.Flag] -> [CabalFlags]
@@ -291,7 +293,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
           case lookup cfn cf_to_iuse_rename of
               Nothing  -> mangle_iuse cfn
               Just ein -> ein
-
       -- key idea is to generate all possible list of flags
       deps1 :: [(CabalFlags, Merge.EDep)]
       deps1  = [ ( f `updateFa` Cabal.unFlagAssignment fr
@@ -305,10 +306,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                          []
                                          pkgGenericDesc]
                -- drop circular deps and shipped deps
-               , let (ad, _sd) = Portage.partition_depends ghc_packages merged_cabal_pkg_name (Cabal.buildDepends pkgDesc1)
+               , let (ad, _sd) = Portage.partition_depends ghc_packages merged_cabal_pkg_name
+                                 (Merge.exeAndLibDeps pkgDesc1)
                -- TODO: drop ghc libraries from tests depends as well
                -- (see deepseq in hackport-0.3.5 as an example)
-               , let pkgDesc_filtered_bdeps = pkgDesc1 { Cabal.buildDepends = ad }
+               , let pkgDesc_filtered_bdeps = Merge.RetroPackageDescription pkgDesc1 ad
                ]
           where
             updateFa :: CabalFlags -> CabalFlags -> CabalFlags
@@ -378,12 +380,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                       id fs
                        in k e
 
-      cabal_to_emerge_dep :: Cabal.PackageDescription -> Merge.EDep
+      cabal_to_emerge_dep :: Merge.RetroPackageDescription -> Merge.EDep
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compiler_info ghc_packages merged_cabal_pkg_name
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
-  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Cabal.buildDepends pkgDesc0))
-  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Cabal.buildDepends pkgDesc))
+  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Merge.exeAndLibDeps pkgDesc0))
+  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Merge.buildDepends pkgDesc))
 
   notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
   notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
@@ -434,11 +436,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                . ( case requested_cabal_flags of
                        Nothing  -> id
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
-               $ C2E.cabal2ebuild cat pkgDesc
+               $ C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc)
 
   mergeEbuild verbosity existing_meta pkgdir ebuild active_flag_descs
   when fetch $ do
-    let cabal_pkgId = Cabal.packageId pkgDesc
+    let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchDigestAndCheck verbosity (overlayPath </> display cat </> display norm_pkgName)
 

@@ -4,6 +4,9 @@
  -}
 module Merge.Dependencies
   ( EDep(..)
+  , RetroPackageDescription(..)
+  , exeAndLibDeps
+  , mkRetroPD
   , resolveDependencies
   ) where
 
@@ -49,6 +52,26 @@ data EDep = EDep
   }
   deriving (Show, Eq, Ord)
 
+-- | Cabal-1 style PackageDescription, with a top-level buildDepends function
+data RetroPackageDescription = RetroPackageDescription {
+  packageDescription :: Cabal.PackageDescription,
+  buildDepends :: [Cabal.Dependency]
+  } deriving (Show)
+
+-- | Construct a RetroPackageDescription using exeAndLibDeps for the buildDepends.
+mkRetroPD :: Cabal.PackageDescription -> RetroPackageDescription
+mkRetroPD pd = RetroPackageDescription { packageDescription = pd, buildDepends = exeAndLibDeps pd }
+
+-- | extract only the build dependencies for libraries and executables for a given package.
+exeAndLibDeps :: Cabal.PackageDescription -> [Cabal.Dependency]
+exeAndLibDeps pkg = L.union
+                    (concat
+                     $ map Cabal.targetBuildDepends
+                     $ map Cabal.buildInfo (Cabal.executables pkg))
+                    (concat
+                     $ map Cabal.targetBuildDepends
+                     $ map Cabal.libBuildInfo (Cabal.allLibraries pkg))
+
 #if MIN_VERSION_base(4,9,0)
 instance Semigroup EDep where
   (EDep rdepA rdep_eA depA dep_eA) <> (EDep rdepB rdep_eB depB dep_eB) = EDep
@@ -76,41 +99,42 @@ instance Monoid EDep where
     }
 #endif
 
-resolveDependencies :: Portage.Overlay -> Cabal.PackageDescription -> Cabal.CompilerInfo
+resolveDependencies :: Portage.Overlay -> RetroPackageDescription -> Cabal.CompilerInfo
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep
 resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg_name = edeps
   where
     -- hasBuildableExes p = any (buildable . buildInfo) . executables $ p
     treatAsLibrary :: Bool
-    treatAsLibrary = isJust (Cabal.library pkg)
+    treatAsLibrary = isJust (Cabal.library (packageDescription pkg))
     -- without slot business
     raw_haskell_deps :: Portage.Dependency
-    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (Cabal.allBuildDepends pkg)
+    raw_haskell_deps = PN.normalize_depend $ Portage.DependAllOf $ haskellDependencies overlay (buildDepends pkg)
     test_deps :: Portage.Dependency
     test_deps = Portage.mkUseDependency (True, Portage.Use "test") $
                     Portage.DependAllOf $
                     remove_raw_common $
-                    testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
+                    testDependencies overlay (packageDescription pkg) ghc_package_names merged_cabal_pkg_name
     cabal_dep :: Portage.Dependency
-    cabal_dep = cabalDependency overlay pkg compiler_info
+    cabal_dep = cabalDependency overlay (packageDescription pkg) compiler_info
     ghc_dep :: Portage.Dependency
     ghc_dep = compilerInfoToDependency compiler_info
     extra_libs :: Portage.Dependency
-    extra_libs = Portage.DependAllOf $ findCLibs pkg
+    extra_libs = Portage.DependAllOf $ findCLibs (packageDescription pkg)
     pkg_config_libs :: [Portage.Dependency]
-    pkg_config_libs = pkgConfigDependencies overlay pkg
+    pkg_config_libs = pkgConfigDependencies overlay (packageDescription pkg)
     pkg_config_tools :: Portage.Dependency
     pkg_config_tools = Portage.DependAllOf $ if L.null pkg_config_libs
                            then []
                            else [any_c_p "virtual" "pkgconfig"]
     build_tools :: Portage.Dependency
-    build_tools = Portage.DependAllOf $ pkg_config_tools : legacyBuildToolsDependencies pkg ++ hackageBuildToolsDependencies overlay pkg
+    build_tools = Portage.DependAllOf $ pkg_config_tools : legacyBuildToolsDependencies (packageDescription pkg)
+                  ++ hackageBuildToolsDependencies overlay (packageDescription pkg)
 
     setup_deps :: Portage.Dependency
     setup_deps = PN.normalize_depend $ Portage.DependAllOf $
                      remove_raw_common $
-                     setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name
+                     setupDependencies overlay (packageDescription pkg) ghc_package_names merged_cabal_pkg_name
 
     edeps :: EDep
     edeps
