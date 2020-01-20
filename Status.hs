@@ -30,7 +30,7 @@ import Control.Monad
 -- cabal
 import qualified Distribution.Verbosity as Cabal
 import qualified Distribution.Package as Cabal (pkgName)
-import qualified Distribution.Simple.Utils as Cabal (comparing, die, equating)
+import qualified Distribution.Simple.Utils as Cabal (comparing, die', equating)
 import qualified Distribution.Text as Cabal ( display, simpleParse )
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
@@ -146,7 +146,7 @@ runStatus verbosity portdir overlaydir direction pkgs repoContext = do
                       HackageToOverlay   -> fromHackageFilter
   pkgs' <- forM pkgs $ \p ->
             case Cabal.simpleParse p of
-              Nothing -> Cabal.die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
+              Nothing -> Cabal.die' verbosity ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
   tree0 <- status verbosity portdir overlaydir repoContext
   let tree = pkgFilter tree0

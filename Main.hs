@@ -18,7 +18,7 @@ import Distribution.Simple.Setup
         )
 
 import Distribution.Simple.Command -- commandsRun
-import Distribution.Simple.Utils ( die, cabalVersion, warn )
+import Distribution.Simple.Utils ( dieNoVerbosity, cabalVersion, warn )
 import qualified Distribution.PackageDescription.Parsec as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
@@ -254,7 +254,7 @@ updateCommand = CommandUI {
 updateAction :: UpdateFlags -> [String] -> H.GlobalFlags -> IO ()
 updateAction flags extraArgs globalFlags = do
   unless (null extraArgs) $
-    die $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
+    dieNoVerbosity $ "'update' doesn't take any extra arguments: " ++ unwords extraArgs
   let verbosity = fromFlag (updateVerbosity flags)
 
   H.withHackPortContext verbosity globalFlags $ \repoContext ->
