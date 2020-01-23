@@ -31,7 +31,8 @@ import Control.Monad
 import qualified Distribution.Verbosity as Cabal
 import qualified Distribution.Package as Cabal (pkgName)
 import qualified Distribution.Simple.Utils as Cabal (comparing, die', equating)
-import qualified Distribution.Text as Cabal ( display, simpleParse )
+import Distribution.Pretty (prettyShow)
+import Distribution.Parsec.Class (simpleParsec)
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
@@ -145,7 +146,7 @@ runStatus verbosity portdir overlaydir direction pkgs repoContext = do
                       PortagePlusOverlay -> id
                       HackageToOverlay   -> fromHackageFilter
   pkgs' <- forM pkgs $ \p ->
-            case Cabal.simpleParse p of
+            case simpleParsec p of
               Nothing -> Cabal.die' verbosity ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
   tree0 <- status verbosity portdir overlaydir repoContext
@@ -204,10 +205,10 @@ statusPrinter packages = do
         let (PackageName c p) = pkg
         putStr (bold (show ix))
         putStr " "
-        putStr $ Cabal.display c ++ '/' : bold (Cabal.display p)
+        putStr $ prettyShow c ++ '/' : bold (prettyShow p)
         putStr " "
         forM_ ebuilds $ \e -> do
-            putStr $ toColor (fmap (Cabal.display . pkgVersion . ebuildId) e)
+            putStr $ toColor (fmap (prettyShow . pkgVersion . ebuildId) e)
             putChar ' '
         putStrLn ""
 
