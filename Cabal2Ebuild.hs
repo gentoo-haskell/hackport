@@ -26,7 +26,7 @@ import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , Dependency(..))
 import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')
-import Distribution.Text (display)
+import Distribution.Pretty (prettyShow)
 
 import Data.Char          (isUpper)
 import Data.Maybe
@@ -44,9 +44,9 @@ import Portage.Version
 cabal2ebuild :: Portage.Category -> Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.name        = Portage.cabal_pn_to_PN cabal_pn,
-    E.category    = display cat,
+    E.category    = prettyShow cat,
     E.hackage_name= cabalPkgName,
-    E.version     = display (Cabal.pkgVersion (Cabal.package pkg)),
+    E.version     = prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
     E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
                                                else Cabal.synopsis pkg,
     E.long_desc       = if null (Cabal.description pkg) then Cabal.synopsis pkg
@@ -69,7 +69,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
                                    else [])
   } where
         cabal_pn = Cabal.pkgName $ Cabal.package pkg
-        cabalPkgName = display cabal_pn
+        cabalPkgName = prettyShow cabal_pn
         hasLibs = isJust (Cabal.library pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         thisHomepage = if (null $ Cabal.homepage pkg)
