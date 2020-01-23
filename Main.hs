@@ -22,7 +22,10 @@ import Distribution.Simple.Utils ( dieNoVerbosity, cabalVersion, warn )
 import qualified Distribution.PackageDescription.Parsec as Cabal
 import qualified Distribution.Package as Cabal
 import Distribution.Verbosity (Verbosity, normal)
-import Distribution.Text (display, simpleParse)
+
+import Data.Version (showVersion)
+import Distribution.Pretty (prettyShow)
+import Distribution.Parsec.Class (simpleParsec)
 
 import qualified Distribution.Client.Setup as CabalInstall
 import qualified Distribution.Client.Types as CabalInstall
@@ -122,7 +125,7 @@ listAction flags extraArgs globalFlags = do
   pretty (isInOverlay, pkgId) =
       let dec | isInOverlay = " * "
               | otherwise   = "   "
-      in dec ++ display pkgId
+      in dec ++ prettyShow pkgId
 
 
 -----------------------------------------------------------------------
@@ -167,7 +170,7 @@ makeEbuildAction flags args globalFlags = do
   (catstr,cabals) <- case args of
                       (category:cabal1:cabaln) -> return (category, cabal1:cabaln)
                       _ -> throwEx (ArgumentError "make-ebuild needs at least two arguments. <category> <cabal-1> <cabal-n>")
-  cat <- case simpleParse catstr of
+  cat <- case simpleParsec catstr of
             Just c -> return c
             Nothing -> throwEx (ArgumentError ("could not parse category: " ++ catstr))
   let verbosity = fromFlag (makeEbuildVerbosity flags)
@@ -475,13 +478,13 @@ mainWorker args =
     printErrors errs = do
       putStr (concat (intersperse "\n" errs))
       exitFailure
-    printNumericVersion = putStrLn $ display Paths_hackport.version
+    printNumericVersion = putStrLn $ showVersion Paths_hackport.version
     printVersion        = putStrLn $ "hackport version "
-                                  ++ display Paths_hackport.version
+                                  ++ showVersion Paths_hackport.version
                                   ++ "\nusing cabal-install "
-                                  ++ display Paths_cabal_install.version
+                                  ++ showVersion Paths_cabal_install.version
                                   ++ " and the Cabal library version "
-                                  ++ display cabalVersion
+                                  ++ prettyShow cabalVersion
     errorHandler :: HackPortError -> IO ()
     errorHandler e = do
       putStrLn (hackPortShowError e)
