@@ -76,6 +76,7 @@ Executable    hackport
     GeneralizedNewtypeDeriving,
     KindSignatures,
     MultiParamTypeClasses,
+    -- cabal
     PatternGuards,
     RankNTypes,
     RecordWildCards,
@@ -86,7 +87,6 @@ Executable    hackport
     ViewPatterns
   other-extensions:
     DeriveDataTypeable,
-    PatternGuards,
     -- extensions due to bundled cabal-install
     CPP,
     ForeignFunctionInterface,
@@ -151,9 +151,15 @@ Test-Suite test-resolve-category
                         pretty,
                         process,
                         split,
+                        text,
                         time,
+                        transformers,
                         unix,
                         xml
+  default-extensions:
+    -- cabal
+    PatternGuards,
+    DoAndIfThenElse
 
 Test-Suite test-print-deps
   ghc-options: -Wall
@@ -174,9 +180,15 @@ Test-Suite test-print-deps
                         parsec,
                         pretty,
                         process,
+                        text,
                         time,
+                        transformers,
                         unix,
                         xml
+  default-extensions:
+    -- cabal
+    PatternGuards,
+    DoAndIfThenElse
 
 Test-Suite test-normalize-deps
   ghc-options: -Wall
@@ -197,6 +209,13 @@ Test-Suite test-normalize-deps
                         parsec,
                         pretty,
                         process,
+                        text,
                         time,
+                        transformers,
                         unix,
                         xml
+
+  default-extensions:
+    -- cabal
+    PatternGuards,
+    DoAndIfThenElse
