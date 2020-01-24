@@ -18,19 +18,16 @@ module Portage.PackageId (
     cabal_pn_to_PN
   ) where
 
-import Data.Char
-
 import qualified Distribution.Package as Cabal
 
-import qualified Distribution.Compat.ReadP as Parse (readP_to_S) -- deprecated.
-import Distribution.Parsec.Class (Parsec(..))
+import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec)
 import qualified Distribution.Compat.CharParsing as P
 
 import qualified Portage.Version as Portage
 
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
+import qualified Data.Char as Char (isAlphaNum, toLower)
 
 import Distribution.Pretty (Pretty(..), prettyShow)
 import System.FilePath ((</>), dropExtension)
@@ -87,6 +84,8 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
 
 -- | Attempt to generate a PackageId from a FilePath. If not, return
 -- the provided PackageId as-is.
+--
+-- TODO: rewrite this function using Parsec.
 filePathToPackageId :: PackageId -> FilePath -> PackageId
 filePathToPackageId pkgId fp = do
       -- take package name from provided FilePath
@@ -128,29 +127,41 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
 
 parseFriendlyPackage :: String -> Maybe (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
 parseFriendlyPackage str =
-  case [ p | (p,s) <- Parse.readP_to_S parser str
-       , all Char.isSpace s ] of
-    [] -> Nothing
-    (x:_) -> Just x
+  case explicitEitherParsec parser str of
+    Right x -> Just x
+    Left _ -> Nothing
   where
   parser = do
-    mc <- P.optional $ do
+    mc <- P.optional . P.try $ do
       c <- parsec
       _ <- P.char '/'
       return c
-    p <- parsec
+    p <- parseCabalPackageName
     mv <- P.optional $ do
+      _ <- P.char '-'
       v <- parsec
       return v
     return (mc, p, mv)
 
+-- | Parse a Cabal PackageName. Note that we cannot use the @parsec@
+-- method as defined in the @Parsec PackageName@ instance, since it
+-- fails the entire PackageName parse if it tries to parse a version
+-- number.
+parseCabalPackageName :: CabalParsing m => m Cabal.PackageName
+parseCabalPackageName = do
+  pn <- P.some . P.try $
+    P.choice
+    [ P.alphaNum
+    , P.char '-' <* P.notFollowedBy (P.some P.digit <* P.notFollowedBy (P.some P.letter))
+    ]
+  return $ Cabal.mkPackageName pn
+
 -- | Parse a String in the form of a Portage version
 parseVersion :: FilePath -> Maybe Portage.Version
 parseVersion str =
-    case [ p | (p,s) <- Parse.readP_to_S parser str
-           , all Char.isSpace s ] of
-      [] -> Nothing
-      (x:_) -> x
+  case explicitEitherParsec parser str of
+    Right x -> x
+    Left _ -> Nothing
     where
       parser = do
         mv <- P.optional $ do
@@ -159,4 +170,4 @@ parseVersion str =
         return mv
 
 cabal_pn_to_PN :: Cabal.PackageName -> String
-cabal_pn_to_PN = map toLower . prettyShow
+cabal_pn_to_PN = map Char.toLower . prettyShow
