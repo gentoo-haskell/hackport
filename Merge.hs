@@ -39,7 +39,8 @@ import System.Directory ( getCurrentDirectory
                         , listDirectory
                         )
 import System.Process (system)
-import System.FilePath ((</>), isExtensionOf)
+import System.FilePath ((</>))
+import qualified System.FilePath as SF
 import System.Exit
 
 import qualified Cabal2Ebuild as C2E
@@ -183,7 +184,7 @@ getPreviousPackageId pkgDir newPkgId = do
                . L.sortOn (Portage.pkgVersion)
                . filter (<newPkgId)
                $ Portage.filePathToPackageId newPkgId
-               <$> filter (\fp -> ".ebuild" `isExtensionOf` fp) pkgDir
+               <$> filter (\fp -> SF.takeExtension fp == ".ebuild") pkgDir
   case pkgIds of
     x:_ -> Just x
     _ -> Nothing
