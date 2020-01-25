@@ -70,6 +70,7 @@ Executable    hackport
     DoAndIfThenElse,
     EmptyDataDecls,
     ExistentialQuantification,
+    ForeignFunctionInterface,
     FlexibleContexts,
     FlexibleInstances,
     GADTs,
