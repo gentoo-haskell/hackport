@@ -80,10 +80,13 @@ readPackageString args = do
       [pkg] -> return pkg
       _ -> Left (ArgumentError ("Too many arguments: " ++ unwords args))
   case Portage.parseFriendlyPackage packageString of
-    Just v@(_,_,Nothing) -> return v
+    Right v@(_,_,Nothing) -> return v
     -- we only allow versions we can convert into cabal versions
-    Just v@(_,_,Just (Portage.Version _ Nothing [] 0)) -> return v
-    _ -> Left (ArgumentError ("Could not parse [category/]package[-version]: " ++ packageString))
+    Right v@(_,_,Just (Portage.Version _ Nothing [] 0)) -> return v
+    Left e -> Left $ ArgumentError $ "Could not parse [category/]package[-version]: "
+              ++ packageString ++ "\nParsec error: " ++ e
+    _ -> Left $ ArgumentError $ "Could not parse [category/]package[-version]: "
+         ++ packageString
 
 
 

@@ -125,11 +125,8 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
   fmap (Cabal.PackageIdentifier name)
            (Portage.toCabalVersion version)
 
-parseFriendlyPackage :: String -> Maybe (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
-parseFriendlyPackage str =
-  case explicitEitherParsec parser str of
-    Right x -> Just x
-    Left _ -> Nothing
+parseFriendlyPackage :: String -> Either String (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
+parseFriendlyPackage str = explicitEitherParsec parser str
   where
   parser = do
     mc <- P.optional . P.try $ do
