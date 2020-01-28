@@ -20,7 +20,7 @@ module Portage.PackageId (
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec)
+import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec, simpleParsec)
 import qualified Distribution.Compat.CharParsing as P
 
 import qualified Portage.Version as Portage
@@ -98,7 +98,7 @@ filePathToPackageId pkgId fp = do
       v = drop ((length pn) +1) p
       c = unCategory . category . packageId $ pkgId
       -- parse and extract version
-      parsed_v = case parseVersion v of
+      parsed_v = case simpleParsec v of
                    Just my_v -> my_v
                    _ -> pkgVersion pkgId
   -- Construct PackageId
@@ -149,22 +149,9 @@ parseCabalPackageName = do
   pn <- P.some . P.try $
     P.choice
     [ P.alphaNum
-    , P.char '-' <* P.notFollowedBy (P.some P.digit <* P.notFollowedBy (P.some P.letter))
+    , P.char '-' <* P.notFollowedBy (P.some P.digit <* P.notFollowedBy P.letter)
     ]
   return $ Cabal.mkPackageName pn
-
--- | Parse a String in the form of a Portage version
-parseVersion :: FilePath -> Maybe Portage.Version
-parseVersion str =
-  case explicitEitherParsec parser str of
-    Right x -> x
-    Left _ -> Nothing
-    where
-      parser = do
-        mv <- P.optional $ do
-          v <- parsec
-          return v
-        return mv
 
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map Char.toLower . prettyShow
