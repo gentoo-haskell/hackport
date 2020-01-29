@@ -18,20 +18,18 @@ module Portage.PackageId (
     cabal_pn_to_PN
   ) where
 
-import Data.Char
-
 import qualified Distribution.Package as Cabal
-import Distribution.Text (Text(..))
 
-import qualified Distribution.Compat.ReadP as Parse
+import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec, simpleParsec)
+import qualified Distribution.Compat.CharParsing as P
 
 import qualified Portage.Version as Portage
 
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, isSpace, toLower)
+import qualified Data.Char as Char (isAlphaNum, toLower)
 
-import Distribution.Text(display)
+import Distribution.Pretty (Pretty(..), prettyShow)
 import System.FilePath ((</>), dropExtension)
 
 #if MIN_VERSION_base(4,11,0)
@@ -47,29 +45,47 @@ data PackageName = PackageName { category :: Category, cabalPkgName :: Cabal.Pac
 data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
-{-
-instance Text PN where
-  disp (PN n) = Disp.text n
-  parse = do
-    ns <- Parse.sepBy1 component (Parse.char '-')
-    return (PN (concat (intersperse "-" ns)))
+instance Pretty Category where
+  pretty (Category c) = Disp.text c
+
+instance Parsec Category where
+  parsec = Category <$> P.munch1 categoryChar
     where
-      component = do
-        cs <- Parse.munch1 Char.isAlphaNum
-        if all Char.isDigit cs then Parse.pfail else return cs
-        -- each component must contain an alphabetic character, to avoid
-        -- ambiguity in identifiers like foo-1 (the 1 is the version number).
--}
+      categoryChar c = Char.isAlphaNum c || c == '-'
+
+instance Pretty PackageName where
+  pretty (PackageName category name) =
+    pretty category <> Disp.char '/' <> pretty name
+
+instance Parsec PackageName where
+  parsec = do
+    category <- parsec
+    _ <- P.char '/'
+    name <- parsec
+    return $ PackageName category name
+
+instance Pretty PackageId where
+  pretty (PackageId name version) =
+    pretty name <> Disp.char '-' <> pretty version
+
+instance Parsec PackageId where
+  parsec = do
+    name <- parsec
+    _ <- P.char '-'
+    version <- parsec
+    return $ PackageId name version
 
 packageIdToFilePath :: PackageId -> FilePath
 packageIdToFilePath (PackageId (PackageName cat pn) version) =
-  display cat </> display pn </> display pn <-> display version <.> "ebuild"
+  prettyShow cat </> prettyShow pn </> prettyShow pn <-> prettyShow version <.> "ebuild"
   where
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
 -- | Attempt to generate a PackageId from a FilePath. If not, return
 -- the provided PackageId as-is.
+--
+-- TODO: rewrite this function using Parsec.
 filePathToPackageId :: PackageId -> FilePath -> PackageId
 filePathToPackageId pkgId fp = do
       -- take package name from provided FilePath
@@ -82,8 +98,8 @@ filePathToPackageId pkgId fp = do
       v = drop ((length pn) +1) p
       c = unCategory . category . packageId $ pkgId
       -- parse and extract version
-      parsed_v = case parseVersion v of
-                   Just (Just my_v) -> my_v
+      parsed_v = case simpleParsec v of
+                   Just my_v -> my_v
                    _ -> pkgVersion pkgId
   -- Construct PackageId
   PackageId (mkPackageName c pn) parsed_v
@@ -109,64 +125,33 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
   fmap (Cabal.PackageIdentifier name)
            (Portage.toCabalVersion version)
 
-instance Text Category where
-  disp (Category c) = Disp.text c
-  parse = fmap Category (Parse.munch1 categoryChar)
-    where
-      categoryChar c = Char.isAlphaNum c || c == '-'
-
-instance Text PackageName where
-  disp (PackageName category name) =
-    disp category <> Disp.char '/' <> disp name
-
-  parse = do
-    category <- parse
-    _ <- Parse.char '/'
-    name <- parse
-    return (PackageName category name)
-
-instance Text PackageId where
-  disp (PackageId name version) =
-    disp name <> Disp.char '-' <> disp version
-
-  parse = do
-    name <- parse
-    _ <- Parse.char '-'
-    version <- parse
-    return (PackageId name version)
-
-parseFriendlyPackage :: String -> Maybe (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
-parseFriendlyPackage str =
-  case [ p | (p,s) <- Parse.readP_to_S parser str
-       , all Char.isSpace s ] of
-    [] -> Nothing
-    (x:_) -> Just x
+parseFriendlyPackage :: String -> Either String (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
+parseFriendlyPackage str = explicitEitherParsec parser str
   where
   parser = do
-    mc <- Parse.option Nothing $ do
-      c <- parse
-      _ <- Parse.char '/'
-      return (Just c)
-    p <- parse
-    mv <- Parse.option Nothing $ do
-      _ <- Parse.char '-'
-      v <- parse
-      return (Just v)
+    mc <- P.optional . P.try $ do
+      c <- parsec
+      _ <- P.char '/'
+      return c
+    p <- parseCabalPackageName
+    mv <- P.optional $ do
+      _ <- P.char '-'
+      v <- parsec
+      return v
     return (mc, p, mv)
 
--- | Parse a String in the form of a Portage version
-parseVersion :: FilePath -> Maybe (Maybe Portage.Version)
-parseVersion str =
-    case [ p | (p,s) <- Parse.readP_to_S parser str
-           , all Char.isSpace s ] of
-      [] -> Nothing
-      (x:_) -> Just x
-    where
-      parser = do
-        mv <- Parse.option Nothing $ do
-                 v <- parse
-                 return (Just v)
-        return mv
-    
+-- | Parse a Cabal PackageName. Note that we cannot use the @parsec@
+-- method as defined in the @Parsec PackageName@ instance, since it
+-- fails the entire PackageName parse if it tries to parse a version
+-- number.
+parseCabalPackageName :: CabalParsing m => m Cabal.PackageName
+parseCabalPackageName = do
+  pn <- P.some . P.try $
+    P.choice
+    [ P.alphaNum
+    , P.char '-' <* P.notFollowedBy (P.some P.digit <* P.notFollowedBy P.letter)
+    ]
+  return $ Cabal.mkPackageName pn
+
 cabal_pn_to_PN :: Cabal.PackageName -> String
-cabal_pn_to_PN = map toLower . display
+cabal_pn_to_PN = map Char.toLower . prettyShow

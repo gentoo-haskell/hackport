@@ -11,7 +11,7 @@ import Portage.Use
 
 import Portage.PackageId
 
-import qualified Distribution.Text as DT
+import qualified Distribution.Pretty as DP (Pretty(..))
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ( vcat, nest, render )
 import Text.PrettyPrint as PP ((<>))
@@ -24,13 +24,13 @@ dispSlot AnyBuildTimeSlot = Disp.text ":="
 dispSlot (GivenSlot slot) = Disp.text (':' : slot)
 
 dispLBound :: PackageName -> LBound -> Disp.Doc
-dispLBound pn (StrictLB    v) = Disp.char '>' PP.<> DT.disp pn <-> DT.disp v
-dispLBound pn (NonstrictLB v) = Disp.text ">=" PP.<> DT.disp pn <-> DT.disp v
+dispLBound pn (StrictLB    v) = Disp.char '>' PP.<> DP.pretty pn <-> DP.pretty v
+dispLBound pn (NonstrictLB v) = Disp.text ">=" PP.<> DP.pretty pn <-> DP.pretty v
 dispLBound _pn ZeroB = error "unhandled 'dispLBound ZeroB'"
 
 dispUBound :: PackageName -> UBound -> Disp.Doc
-dispUBound pn (StrictUB    v) = Disp.char '<' PP.<> DT.disp pn <-> DT.disp v
-dispUBound pn (NonstrictUB v) = Disp.text "<=" PP.<> DT.disp pn <-> DT.disp v
+dispUBound pn (StrictUB    v) = Disp.char '<' PP.<> DP.pretty pn <-> DP.pretty v
+dispUBound pn (NonstrictUB v) = Disp.text "<=" PP.<> DP.pretty pn <-> DP.pretty v
 dispUBound _pn InfinityB = error "unhandled 'dispUBound Infinity'"
 
 dispDAttr :: DAttr -> Disp.Doc
@@ -58,7 +58,7 @@ showDepend :: Dependency -> Disp.Doc
 showDepend (DependAtom (Atom pn range dattr))
     = case range of
         -- any version
-        DRange ZeroB InfinityB -> DT.disp pn       PP.<> dispDAttr dattr
+        DRange ZeroB InfinityB -> DP.pretty pn       PP.<> dispDAttr dattr
         DRange ZeroB ub        -> dispUBound pn ub PP.<> dispDAttr dattr
         DRange lb InfinityB    -> dispLBound pn lb PP.<> dispDAttr dattr
         -- TODO: handle >=foo-0    special case
@@ -66,15 +66,15 @@ showDepend (DependAtom (Atom pn range dattr))
         DRange lb ub          ->    showDepend (DependAtom (Atom pn (DRange lb InfinityB) dattr))
                                  PP.<> Disp.char ' '
                                  PP.<> showDepend (DependAtom (Atom pn (DRange ZeroB ub)    dattr))
-        DExact v              -> Disp.char '~' PP.<> DT.disp pn <-> DT.disp v { versionRevision = 0 } PP.<> dispDAttr dattr
+        DExact v              -> Disp.char '~' PP.<> DP.pretty pn <-> DP.pretty v { versionRevision = 0 } PP.<> dispDAttr dattr
 
 showDepend (DependIfUse u td fd)  = valign $ vcat [td_doc, fd_doc]
     where td_doc
               | is_empty_dependency td = Disp.empty
-              | otherwise =                  DT.disp u PP.<> Disp.char '?' PP.<> sp PP.<> sparens (showDepend td)
+              | otherwise =                  DP.pretty u PP.<> Disp.char '?' PP.<> sp PP.<> sparens (showDepend td)
           fd_doc
               | is_empty_dependency fd = Disp.empty
-              | otherwise = Disp.char '!' PP.<> DT.disp u PP.<> Disp.char '?' PP.<> sp PP.<> sparens (showDepend fd)
+              | otherwise = Disp.char '!' PP.<> DP.pretty u PP.<> Disp.char '?' PP.<> sp PP.<> sparens (showDepend fd)
 showDepend (DependAnyOf deps)   = Disp.text "||" PP.<> sp PP.<> sparens (vcat $ map showDependInAnyOf deps)
 showDepend (DependAllOf deps)   = valign $ vcat $ map showDepend deps
 

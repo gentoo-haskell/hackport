@@ -21,9 +21,10 @@ module Portage.Version (
 
 import qualified Distribution.Version as Cabal
 
-import Distribution.Text (Text(..))
+import Distribution.Pretty (Pretty(..))
 
-import qualified Distribution.Compat.ReadP as Parse
+import Distribution.Parsec.Class (Parsec(..))
+import qualified Distribution.Compat.CharParsing as P
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlpha, isDigit)
@@ -39,6 +40,24 @@ data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
                        }
   deriving (Eq, Ord, Show, Read)
 
+instance Pretty Version where
+  pretty (Version ver c suf rev) =
+    dispVer ver <> dispC c <> dispSuf suf <> dispRev rev
+    where
+      dispVer   = Disp.hcat . Disp.punctuate (Disp.char '.') . map Disp.int
+      dispC     = maybe Disp.empty Disp.char
+      dispSuf   = Disp.hcat . map pretty
+      dispRev 0 = Disp.empty
+      dispRev n = Disp.text "-r" <> Disp.int n
+
+instance Parsec Version where
+  parsec = do
+    ver <- P.sepBy1 digits (P.char '.')
+    c   <- P.option Nothing $ fmap Just $ P.satisfy Char.isAlpha
+    suf <- P.many parsec
+    rev <- P.option 0 $ P.string "-r" >> digits
+    return $ Version ver c suf rev
+  
 -- foo-9999* is treated as live ebuild
 -- Cabal-1.17.9999* as well
 is_live :: Version -> Bool
@@ -55,32 +74,8 @@ is_live v =
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
 
-fromCabalVersion :: Cabal.Version -> Version
-fromCabalVersion cabal_version = Version (Cabal.versionNumbers cabal_version) Nothing [] 0
-
-toCabalVersion :: Version -> Maybe Cabal.Version
-toCabalVersion (Version nums Nothing [] _) = Just (Cabal.mkVersion nums)
-toCabalVersion _                           = Nothing
-
-instance Text Version where
-  disp (Version ver c suf rev) =
-    dispVer ver <> dispC c <> dispSuf suf <> dispRev rev
-    where
-      dispVer   = Disp.hcat . Disp.punctuate (Disp.char '.') . map Disp.int
-      dispC     = maybe Disp.empty Disp.char
-      dispSuf   = Disp.hcat . map disp
-      dispRev 0 = Disp.empty
-      dispRev n = Disp.text "-r" <> Disp.int n
-
-  parse = do
-    ver <- Parse.sepBy1 digits (Parse.char '.')
-    c   <- Parse.option Nothing (fmap Just (Parse.satisfy Char.isAlpha))
-    suf <- Parse.many parse
-    rev <- Parse.option 0 (Parse.string "-r" >> digits)
-    return (Version ver c suf rev)
-
-instance Text Suffix where
-  disp suf = case suf of
+instance Pretty Suffix where
+  pretty suf = case suf of
     Alpha n -> Disp.text "_alpha" <> dispPos n
     Beta n  -> Disp.text "_beta"  <> dispPos n
     Pre n   -> Disp.text "_pre"   <> dispPos n
@@ -92,16 +87,24 @@ instance Text Suffix where
       dispPos 0 = Disp.empty
       dispPos n = Disp.int n
 
-  parse = Parse.char '_'
-       >> Parse.choice
-    [ Parse.string "alpha" >> fmap Alpha maybeDigits
-    , Parse.string "beta"  >> fmap Beta  maybeDigits
-    , Parse.string "pre"   >> fmap Pre   maybeDigits
-    , Parse.string "rc"    >> fmap RC    maybeDigits
-    , Parse.string "p"     >> fmap P     maybeDigits
+instance Parsec Suffix where
+  parsec = P.char '_'
+       >> P.choice
+    [ P.string "alpha" >> fmap Alpha maybeDigits
+    , P.string "beta"  >> fmap Beta  maybeDigits
+    , P.string "pre"   >> fmap Pre   maybeDigits
+    , P.string "rc"    >> fmap RC    maybeDigits
+    , P.string "p"     >> fmap P     maybeDigits
     ]
     where
-      maybeDigits = Parse.option 0 digits
+      maybeDigits = P.option 0 digits
 
-digits :: Parse.ReadP r Int
-digits = fmap read (Parse.munch1 Char.isDigit)
+fromCabalVersion :: Cabal.Version -> Version
+fromCabalVersion cabal_version = Version (Cabal.versionNumbers cabal_version) Nothing [] 0
+
+toCabalVersion :: Version -> Maybe Cabal.Version
+toCabalVersion (Version nums Nothing [] _) = Just (Cabal.mkVersion nums)
+toCabalVersion _                           = Nothing
+
+digits :: P.CharParsing m => m Int
+digits = read <$> P.munch1 Char.isDigit

@@ -13,7 +13,7 @@ module Portage.Use (
 
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
-import qualified Distribution.Text as DT
+import Distribution.Pretty (Pretty(..))
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -27,6 +27,9 @@ data UseFlag = UseFlag Use           -- ^ no modificator
              | N UseFlag             -- ^ - modificator 
              deriving (Eq,Show,Ord,Read)
 
+instance Pretty UseFlag where
+  pretty = showModificator
+
 mkUse :: Use -> UseFlag
 mkUse  = UseFlag 
 
@@ -36,23 +39,22 @@ mkNotUse = N . UseFlag
 mkQUse :: Use -> UseFlag
 mkQUse = Q . UseFlag
 
-instance DT.Text UseFlag where
-  disp = showModificator
-  parse = error "instance DT.Text UseFlag: not implemented"
-
 showModificator :: UseFlag -> Disp.Doc
-showModificator (UseFlag u) = DT.disp u
-showModificator (X u)     = Disp.char '!' <> DT.disp u
-showModificator (Q u)     = DT.disp u <> Disp.char '?'
-showModificator (E u)     = DT.disp u <> Disp.char '='
-showModificator (N u)     = Disp.char '-' <> DT.disp u
+showModificator (UseFlag u) = pretty u
+showModificator (X u)     = Disp.char '!' <> pretty u
+showModificator (Q u)     = pretty u <> Disp.char '?'
+showModificator (E u)     = pretty u <> Disp.char '='
+showModificator (N u)     = Disp.char '-' <> pretty u
 
 dispUses :: [UseFlag] -> Disp.Doc
 dispUses [] = Disp.empty
-dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ", ")) $ map DT.disp  us
+dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ", ")) $ map pretty us
 
 newtype Use = Use String
     deriving (Eq, Read, Show)
+
+instance Pretty Use where
+  pretty (Use u) = Disp.text u
 
 instance Ord Use where
     compare (Use a) (Use b) = case (a,b) of
@@ -60,7 +62,3 @@ instance Ord Use where
         ("test", _)      -> LT
         (_, "test")      -> GT
         (_, _)           -> a `compare` b
-
-instance DT.Text Use where
-    disp (Use u) = Disp.text u
-    parse = error "instance DT.Text Use: not implemented"

@@ -10,7 +10,7 @@ import qualified Portage.Overlay as Overlay
 import qualified Portage.PackageId as Portage
 
 import Distribution.Verbosity
-import Distribution.Text (display)
+import Distribution.Pretty (prettyShow)
 import qualified Distribution.Package as Cabal
 import Distribution.Simple.Utils
 
@@ -31,10 +31,10 @@ resolveCategory verbosity overlay pn = do
       return devhaskell
     [cat] -> do
       info verbosity $ "Exact match of already existing package, using category: "
-                         ++ display cat
+                         ++ prettyShow cat
       return cat
     cats -> do
-      warn verbosity $ "Multiple matches of categories: " ++ unwords (map display cats)
+      warn verbosity $ "Multiple matches of categories: " ++ unwords (map prettyShow cats)
       if devhaskell `elem` cats
         then do notice verbosity "Defaulting to dev-haskell"
                 return devhaskell

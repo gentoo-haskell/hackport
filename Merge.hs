@@ -21,7 +21,7 @@ import qualified Distribution.PackageDescription.PrettyPrint as Cabal (showPacka
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
 import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
-import Distribution.Text (display)
+import Distribution.Pretty (prettyShow)
 import Distribution.Verbosity
 import Distribution.Simple.Utils
 
@@ -81,10 +81,13 @@ readPackageString args = do
       [pkg] -> return pkg
       _ -> Left (ArgumentError ("Too many arguments: " ++ unwords args))
   case Portage.parseFriendlyPackage packageString of
-    Just v@(_,_,Nothing) -> return v
+    Right v@(_,_,Nothing) -> return v
     -- we only allow versions we can convert into cabal versions
-    Just v@(_,_,Just (Portage.Version _ Nothing [] 0)) -> return v
-    _ -> Left (ArgumentError ("Could not parse [category/]package[-version]: " ++ packageString))
+    Right v@(_,_,Just (Portage.Version _ Nothing [] 0)) -> return v
+    Left e -> Left $ ArgumentError $ "Could not parse [category/]package[-version]: "
+              ++ packageString ++ "\nParsec error: " ++ e
+    _ -> Left $ ArgumentError $ "Could not parse [category/]package[-version]: "
+         ++ packageString
 
 
 
@@ -130,7 +133,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
                   notice verbosity $ "Ambiguous names: " ++ L.intercalate ", " names
                   forM_ pkgs $ \ps ->
                       do let p_name = (cabal_pkg_to_pn . L.head) ps
-                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (display . Cabal.pkgVersion . CabalInstall.packageInfoId) ps)
+                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.packageInfoId) ps)
                   return $ concat pkgs
 
   -- select a single package taking into account the user specified version
@@ -139,7 +142,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
         forM_ availablePkgs $ \ avail ->
-          putStrLn (display . CabalInstall.packageInfoId $ avail)
+          putStrLn (prettyShow . CabalInstall.packageInfoId $ avail)
         throwEx (ArgumentError "no such version for that package")
       Just avail -> return avail
 
@@ -148,7 +151,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
   forM_ availablePkgs $ \ avail -> do
     let match_text | CabalInstall.packageInfoId avail == CabalInstall.packageInfoId selectedPkg = "* "
                    | otherwise = "- "
-    info verbosity $ match_text ++ (display . CabalInstall.packageInfoId $ avail)
+    info verbosity $ match_text ++ (prettyShow . CabalInstall.packageInfoId $ avail)
 
   let cabal_pkgId = CabalInstall.packageInfoId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
@@ -254,8 +257,8 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   debug verbosity "searching for minimal suitable ghc version"
   (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc (Cabal.mkFlagAssignment user_specified_fas) of
               Just v  -> return v
-              Nothing -> let pn = display merged_cabal_pkg_name
-                             cn = display cat
+              Nothing -> let pn = prettyShow merged_cabal_pkg_name
+                             cn = prettyShow cat
                          in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ pn
                                             , "  You can try to merge the package manually:"
                                             , "  $ cabal unpack " ++ pn
@@ -385,11 +388,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compiler_info ghc_packages merged_cabal_pkg_name
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
-  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map display (Merge.exeAndLibDeps pkgDesc0))
-  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map display (Merge.buildDepends pkgDesc))
+  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
+  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map prettyShow (Merge.buildDepends pkgDesc))
 
-  notice verbosity $ "Accepted depends: " ++ show (map display accepted_deps)
-  notice verbosity $ "Skipped  depends: " ++ show (map display skipped_deps)
+  notice verbosity $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
+  notice verbosity $ "Skipped  depends: " ++ show (map prettyShow skipped_deps)
   notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
   notice verbosity $ "Dropped  flags: " ++ show (map (Cabal.unFlagName.fst) common_fa)
   notice verbosity $ "Active flags: " ++ show (map Cabal.unFlagName active_flags)
@@ -443,7 +446,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   when fetch $ do
     let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-    fetchDigestAndCheck verbosity (overlayPath </> display cat </> display norm_pkgName)
+    fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
 
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild

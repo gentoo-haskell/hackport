@@ -16,7 +16,7 @@ import qualified Portage.Metadata as Portage
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Text (simpleParse)
+import Distribution.Parsec.Class (simpleParsec)
 import Distribution.Simple.Utils ( comparing, equating )
 
 import Data.List as List
@@ -135,14 +135,14 @@ readOverlayByPackage tree =
     categories entries =
       [ (category, entries')
       | Directory dir entries' <- entries
-      , Just category <- [simpleParse dir] ]
+      , Just category <- [simpleParsec dir] ]
 
     packages :: Portage.Category -> DirectoryTree
              -> [(Portage.PackageName, DirectoryTree)]
     packages category entries =
       [ (Portage.PackageName category name, entries')
       | Directory dir entries' <- entries
-      , Just name <- [simpleParse dir] ]
+      , Just name <- [simpleParsec dir] ]
 
     versions :: Portage.PackageName -> DirectoryTree -> [Portage.Version]
     versions name@(Portage.PackageName (Portage.Category category) _) entries =
@@ -151,7 +151,7 @@ readOverlayByPackage tree =
       , let (baseName, ext) = splitExtension fileName
       , ext == ".ebuild"
       , let fullName = category ++ '/' : baseName
-      , Just (Portage.PackageId name' version) <- [simpleParse fullName]
+      , Just (Portage.PackageId name' version) <- [simpleParsec fullName]
       , name == name' ]
 
 readOverlay :: DirectoryTree -> [Portage.PackageId]
