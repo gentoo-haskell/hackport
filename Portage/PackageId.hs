@@ -20,7 +20,7 @@ module Portage.PackageId (
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec, simpleParsec)
+import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec)
 import qualified Distribution.Compat.CharParsing as P
 
 import qualified Portage.Version as Portage
@@ -30,7 +30,7 @@ import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlphaNum, toLower)
 
 import Distribution.Pretty (Pretty(..), prettyShow)
-import System.FilePath ((</>), dropExtension)
+import System.FilePath ((</>))
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -82,28 +82,24 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
--- | Attempt to generate a PackageId from a FilePath. If not, return
--- the provided PackageId as-is.
---
--- TODO: rewrite this function using Parsec.
-filePathToPackageId :: PackageId -> FilePath -> PackageId
-filePathToPackageId pkgId fp = do
-      -- take package name from provided FilePath
-  let pn = take (length
-                 $ Cabal.unPackageName . cabalPkgName . packageId
-                 $ pkgId) fp
-      -- drop .ebuild file extension
-      p = dropExtension fp
-      -- drop package name and the following dash
-      v = drop ((length pn) +1) p
-      c = unCategory . category . packageId $ pkgId
-      -- parse and extract version
-      parsed_v = case simpleParsec v of
-                   Just my_v -> my_v
-                   _ -> pkgVersion pkgId
-  -- Construct PackageId
-  PackageId (mkPackageName c pn) parsed_v
-  
+-- TODO: fix the parser such that it can tolerate malformed package strings,
+-- strings with ".ebuild" extensions and strings which are not in fact package
+-- strings at all (e.g. metadata.xml). Then we can eliminate the string manipulation
+-- present in Merge.getPreviousPackageId, which ensures this function is only fed
+-- well-formed package strings, i.e <name>-<version>.
+-- | Maybe generate a PackageId from a FilePath.
+filePathToPackageId :: Category -> FilePath -> Maybe PackageId
+filePathToPackageId cat fp =
+  case explicitEitherParsec parser fp of
+    Right x -> Just x
+    _ -> Nothing
+  where
+    parser = do
+      pn <- parseCabalPackageName
+      _ <- P.char '-'
+      v <- parsec
+      return $ PackageId (PackageName cat pn) v
+
 mkPackageName :: String -> String -> PackageName
 mkPackageName cat package = PackageName (Category cat) (Cabal.mkPackageName package)
 

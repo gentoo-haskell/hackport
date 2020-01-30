@@ -89,8 +89,6 @@ readPackageString args = do
     _ -> Left $ ArgumentError $ "Could not parse [category/]package[-version]: "
          ++ packageString
 
-
-
 -- | Given a list of available packages, and maybe a preferred version,
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
@@ -175,10 +173,7 @@ diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
                         exitSuccess
 
 -- | Maybe return a PackageId of the next highest version for a given
---   package, relative to the provided PackageId of the new version.
---   We achieve this by mapping Portage.filePathToPackageId over the
---   provided package directory, whose contents are filtered for files
---   with the '.ebuild' file extension
+--   package, relative to the provided PackageId.
 getPreviousPackageId :: [FilePath] -- ^ list of ebuilds for given package
                      -> Portage.PackageId -- ^ new PackageId
                      -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version
@@ -186,8 +181,8 @@ getPreviousPackageId pkgDir newPkgId = do
   let pkgIds = reverse 
                . L.sortOn (Portage.pkgVersion)
                . filter (<newPkgId)
-               $ Portage.filePathToPackageId newPkgId
-               <$> filter (\fp -> SF.takeExtension fp == ".ebuild") pkgDir
+               $ mapMaybe (Portage.filePathToPackageId (Portage.category . Portage.packageId $ newPkgId))
+               $ SF.dropExtension <$> filter (\fp -> SF.takeExtension fp == ".ebuild") pkgDir
   case pkgIds of
     x:_ -> Just x
     _ -> Nothing
