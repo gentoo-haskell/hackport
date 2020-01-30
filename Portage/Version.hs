@@ -53,9 +53,9 @@ instance Pretty Version where
 instance Parsec Version where
   parsec = do
     ver <- P.sepBy1 digits (P.char '.')
-    c   <- P.option Nothing $ fmap Just $ P.satisfy Char.isAlpha
+    c   <- P.optional $ P.satisfy Char.isAlpha
     suf <- P.many parsec
-    rev <- P.option 0 $ P.string "-r" >> digits
+    rev <- P.option 0 $ P.string "-r" *> digits
     return $ Version ver c suf rev
   
 -- foo-9999* is treated as live ebuild
