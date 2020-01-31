@@ -22,7 +22,7 @@ import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.System
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
 
-import Distribution.Text
+import Distribution.Pretty (prettyShow)
 
 import Data.Maybe
 import Data.List ( nub )
@@ -88,8 +88,8 @@ packageBuildableWithGHCVersion pkg user_specified_fas (compiler_info, pkgIndex) 
               _           -> trace (unwords ["accepting dep:" , show_compiler compiler_info
                                             ]
                                    ) v
-          show_deps = show . map display
-          show_compiler (DC.CompilerInfo { DC.compilerInfoId = CompilerId GHC v }) = "ghc-" ++ display v
+          show_deps = show . map prettyShow
+          show_compiler (DC.CompilerInfo { DC.compilerInfoId = CompilerId GHC v }) = "ghc-" ++ prettyShow v
           show_compiler c = show c
 
 -- | Given a 'GenericPackageDescription' it returns the miminum GHC version
