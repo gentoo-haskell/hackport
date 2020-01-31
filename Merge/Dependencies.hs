@@ -219,7 +219,7 @@ cabalDependency overlay pkg ~(Cabal.CompilerInfo {
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.mkPackageName "Cabal")
-                                                 finalCabalDep)
+                                                 finalCabalDep (S.singleton Cabal.defaultLibName))
   where
     versionNumbers = Cabal.versionNumbers cabal_version
     userCabalVersion = Cabal.orLaterVersion (Cabal.specVersion pkg)
@@ -429,7 +429,7 @@ buildToolsProvided = ["hsc2hs"]
 hackageBuildToolsDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Portage.Dependency]
 hackageBuildToolsDependencies overlay (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) =
   haskellDependencies overlay $ L.nub $
-    [ Cabal.Dependency pn versionRange
+    [ Cabal.Dependency pn versionRange $ S.singleton Cabal.defaultLibName
     | Cabal.ExeDependency pn _component versionRange <- cabalDeps
     ]
   where
