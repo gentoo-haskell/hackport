@@ -82,7 +82,7 @@ convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [D
 convertDependencies overlay category = map (convertDependency overlay category)
 
 convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> Dependency
-convertDependency overlay category (Cabal.Dependency pname versionRange)
+convertDependency overlay category (Cabal.Dependency pname versionRange _lib)
   = convert versionRange
   where
     pn = case Portage.resolveFullPortageName overlay pname of
