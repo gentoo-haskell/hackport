@@ -20,7 +20,7 @@ module Portage.PackageId (
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Parsec.Class (CabalParsing(..), Parsec(..), explicitEitherParsec)
+import Distribution.Parsec (CabalParsing(..), Parsec(..), explicitEitherParsec)
 import qualified Distribution.Compat.CharParsing as P
 
 import qualified Portage.Version as Portage

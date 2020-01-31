@@ -32,7 +32,7 @@ import qualified Distribution.Verbosity as Cabal
 import qualified Distribution.Package as Cabal (pkgName)
 import qualified Distribution.Simple.Utils as Cabal (comparing, die', equating)
 import Distribution.Pretty (prettyShow)
-import Distribution.Parsec.Class (simpleParsec)
+import Distribution.Parsec (simpleParsec)
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall

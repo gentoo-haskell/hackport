@@ -16,7 +16,7 @@ import qualified Portage.Metadata as Portage
 
 import qualified Distribution.Package as Cabal
 
-import Distribution.Parsec.Class (simpleParsec)
+import Distribution.Parsec (simpleParsec)
 import Distribution.Simple.Utils ( comparing, equating )
 
 import Data.List as List

@@ -23,7 +23,7 @@ import qualified Distribution.Version as Cabal
 
 import Distribution.Pretty (Pretty(..))
 
-import Distribution.Parsec.Class (Parsec(..))
+import Distribution.Parsec (Parsec(..))
 import qualified Distribution.Compat.CharParsing as P
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))

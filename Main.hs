@@ -25,7 +25,7 @@ import Distribution.Verbosity (Verbosity, normal)
 
 import Data.Version (showVersion)
 import Distribution.Pretty (prettyShow)
-import Distribution.Parsec.Class (simpleParsec)
+import Distribution.Parsec (simpleParsec)
 
 import qualified Distribution.Client.Setup as CabalInstall
 import qualified Distribution.Client.Types as CabalInstall
