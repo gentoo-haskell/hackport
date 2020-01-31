@@ -34,6 +34,6 @@ convertLicense l =
 
 partition_depends :: [Cabal.PackageName] -> Cabal.PackageName -> [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency])
 partition_depends ghc_package_names merged_cabal_pkg_name = L.partition (not . is_internal_depend)
-    where is_internal_depend (Cabal.Dependency pn _vr) = is_itself || is_ghc_package
+    where is_internal_depend (Cabal.Dependency pn _vr _lib) = is_itself || is_ghc_package
               where is_itself = pn == merged_cabal_pkg_name
                     is_ghc_package = pn `elem` ghc_package_names
