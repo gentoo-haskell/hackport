@@ -25,7 +25,9 @@ import qualified Distribution.PackageDescription as Cabal
                                                 (PackageDescription(..), license)
 import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
                                                 , Dependency(..))
-import qualified Distribution.Version as Cabal  (VersionRange, foldVersionRange')
+import qualified Distribution.Version as Cabal  (VersionRange, cataVersionRange, normaliseVersionRange
+                                                , wildcardUpperBound, majorUpperBound)
+import Distribution.Version (VersionRangeF(..))
 import Distribution.Pretty (prettyShow)
 
 import Data.Char          (isUpper)
@@ -91,16 +93,18 @@ convertDependency overlay category (Cabal.Dependency pname versionRange)
     p_v v   = fromCabalVersion v
 
     convert :: Cabal.VersionRange -> Dependency
-    convert =  Cabal.foldVersionRange'
-             (          mk_p (DRange ZeroB                 InfinityB)          -- ^ @\"-any\"@ version
-            )(\v     -> mk_p (DExact (p_v v))                                  -- ^ @\"== v\"@
-            )(\v     -> mk_p (DRange (StrictLB (p_v v))    InfinityB)          -- ^ @\"> v\"@
-            )(\v     -> mk_p (DRange ZeroB                 (StrictUB (p_v v))) -- ^ @\"< v\"@
-            )(\v     -> mk_p (DRange (NonstrictLB (p_v v)) InfinityB)         -- ^ @\">= v\"@
-            )(\v     -> mk_p (DRange ZeroB                (NonstrictUB (p_v v))) -- ^ @\"<= v\"@
-            )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"== v.*\"@ wildcard. (incl lower, excl upper)
-            )(\v1 v2 -> mk_p (DRange (NonstrictLB (p_v v1)) (StrictUB (p_v v2))) -- ^ @\"^>= v\"@ major upper bound
-            )(\g1 g2 -> DependAnyOf [g1, g2]                                  -- ^ @\"_ || _\"@ union
-            )(\r1 r2 -> DependAllOf [r1, r2]                                  -- ^ @\"_ && _\"@ intersection
-            )(\dp    -> dp                                                    -- ^ @\"(_)\"@ parentheses
-            )
+    convert = Cabal.cataVersionRange alg . Cabal.normaliseVersionRange
+              where
+                alg AnyVersionF                     = mk_p $ DRange ZeroB InfinityB
+                alg (ThisVersionF v)                = mk_p $ DExact $ p_v v
+                alg (LaterVersionF v)               = mk_p $ DRange (StrictLB $ p_v v) InfinityB
+                alg (EarlierVersionF v)             = mk_p $ DRange ZeroB $ StrictUB $ p_v v
+                alg (OrLaterVersionF v)             = mk_p $ DRange (NonstrictLB $ p_v v) InfinityB
+                alg (OrEarlierVersionF v)           = mk_p $ DRange ZeroB $ NonstrictUB $ p_v v
+                alg (WildcardVersionF v)            = mk_p $ DRange (NonstrictLB $ p_v v)
+                                                      $ StrictUB $ p_v $ Cabal.wildcardUpperBound v
+                alg (MajorBoundVersionF v)          = mk_p $ DRange (NonstrictLB $ p_v v)
+                                                      $ StrictUB $ p_v $ Cabal.majorUpperBound v
+                alg (UnionVersionRangesF v1 v2)     = DependAnyOf [v1, v2]
+                alg (IntersectVersionRangesF v1 v2) = DependAllOf [v1, v2]
+                alg (VersionRangeParensF v)         = v
