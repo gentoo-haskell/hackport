@@ -59,6 +59,7 @@ Executable    hackport
     ed25519,
     ghc-prim,
     hashable,
+    lukko == 0.1.*,
     mtl,
     template-haskell,
     transformers
