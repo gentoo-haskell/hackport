@@ -28,15 +28,16 @@ import qualified Distribution.Compat.CharParsing as P
 import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import qualified Data.Char as Char (isAlpha, isDigit)
+import qualified Data.List.NonEmpty as NonEmpty
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
 #endif
 
-data Version = Version { versionNumber   :: [Int]         -- [1,42,3] ~= 1.42.3
-                       , versionChar     :: (Maybe Char)  -- optional letter
+data Version = Version { versionNumber   :: [Int]        -- [1,42,3] ~= 1.42.3
+                       , versionChar     :: (Maybe Char) -- optional letter
                        , versionSuffix   :: [Suffix]
-                       , versionRevision :: Int           -- revision, 0 means none
+                       , versionRevision :: Int          -- revision, 0 means none
                        }
   deriving (Eq, Ord, Show, Read)
 
@@ -52,11 +53,11 @@ instance Pretty Version where
 
 instance Parsec Version where
   parsec = do
-    ver <- P.sepBy1 digits (P.char '.')
+    ver <- P.sepByNonEmpty digits (P.char '.')
     c   <- P.optional $ P.satisfy Char.isAlpha
     suf <- P.many parsec
     rev <- P.option 0 $ P.string "-r" *> digits
-    return $ Version ver c suf rev
+    return $ Version (NonEmpty.toList ver) c suf rev
   
 -- foo-9999* is treated as live ebuild
 -- Cabal-1.17.9999* as well
