@@ -61,7 +61,7 @@ instance Parsec PackageName where
   parsec = do
     category <- parsec
     _ <- P.char '/'
-    name <- parsec
+    name <- parseCabalPackageName
     return $ PackageName category name
 
 instance Pretty PackageId where
