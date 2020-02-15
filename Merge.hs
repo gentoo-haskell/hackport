@@ -200,14 +200,10 @@ mangle_iuse = drop_prefix . map f
 
 -- | Remove "with" or "use" prefixes from flag names.
 drop_prefix :: String -> String
-drop_prefix = \x ->
-  case splitAt 5 x of
-    ("with_", b) -> b
-    ("with-", b) -> b
-    _ -> case splitAt 4 x of
-           ("use_", b) -> b
-           ("use-", b) -> b
-           _ -> x
+drop_prefix x
+  | take 5 x `elem` ["with_","with-"] = drop 5 x
+  | take 4 x `elem` ["use_","use-"]   = drop 4 x
+  | otherwise = x
 
 -- used to be FlagAssignment in Cabal but now it's an opaque type
 type CabalFlags = [(Cabal.FlagName, Bool)]
