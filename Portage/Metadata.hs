@@ -8,7 +8,7 @@ import qualified Data.ByteString as B
 
 import Text.XML.Light
 
-data Metadata = Metadata
+newtype Metadata = Metadata
       { metadata_emails :: [String]
       -- , metadataMaintainers :: [String],
       -- , metadataUseFlags :: [(String,String)]
