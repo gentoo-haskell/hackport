@@ -11,7 +11,7 @@ module Merge.Dependencies
   ) where
 
 import Data.Maybe ( isJust, isNothing )
-import Data.Monoid ( Monoid, mempty, mappend)
+import Data.Monoid ( Monoid, mempty )
 import qualified Data.List as L
 import qualified Data.Set as S
 

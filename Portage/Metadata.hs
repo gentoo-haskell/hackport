@@ -6,8 +6,6 @@ module Portage.Metadata
 
 import qualified Data.ByteString as B
 
-import Control.Applicative
-
 import Text.XML.Light
 
 data Metadata = Metadata

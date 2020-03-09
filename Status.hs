@@ -24,7 +24,6 @@ import qualified Data.Map as Map
 import Data.Map as Map (Map)
 
 import qualified Data.Traversable as T
-import Control.Applicative
 import Control.Monad
 
 -- cabal
