@@ -11,11 +11,11 @@ import Portage.EBuild.CabalFeature
 import Portage.EBuild.Render
 import qualified Portage.Dependency.Normalize as PN
 
-import Data.String.Utils
 import qualified Data.Time.Clock as TC
 import qualified Data.Time.Format as TC
 import qualified Data.Function as F
 import qualified Data.List as L
+import qualified Data.List.Split as LS
 import Data.Version(Version(..))
 import qualified Paths_hackport(version)
 
@@ -140,6 +140,7 @@ showEBuild now ebuild =
         toHttps  = replace "http://github.com/" "https://github.com/"
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
+        replace old new = L.intercalate new . LS.splitOn old
 
 -- "+a" -> "a"
 -- "b"  -> "b"
