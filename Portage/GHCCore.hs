@@ -31,10 +31,10 @@ import Data.List ( nub )
 import Debug.Trace
 
 -- ghcs tried in specified order.
--- It means that first ghc in this list is a minmum default.
+-- It means that first ghc in this list is a minimum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
-    where modern_ghcs  = [ghc741, ghc742, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc863, ghc865, ghc881]
+    where modern_ghcs  = [ghc741, ghc742, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc863, ghc865, ghc881, ghc8101]
 
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
@@ -51,6 +51,7 @@ cabalFromGHC ver = lookup ver table
           , ([8,6,3],  Cabal.mkVersion [2,4,0,1])
           , ([8,6,5],  Cabal.mkVersion [2,4,0,1])
           , ([8,8,1],  Cabal.mkVersion [3,0,0,0])
+          , ([8,10,1], Cabal.mkVersion [3,2,0,0])
           ]
 
 platform :: Platform
@@ -120,6 +121,9 @@ ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (mkVersion nrs)
 
+ghc8101 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc8101 = (ghc [8,10,1], mkIndex ghc8101_pkgs)
+
 ghc881 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc881 = (ghc [8,8,1], mkIndex ghc881_pkgs)
 
@@ -165,6 +169,41 @@ ghc741 = (ghc [7,4,1], mkIndex ghc741_pkgs)
 --      example: https://downloads.haskell.org/~ghc/8.6.5/docs/html/users_guide/8.6.5-notes.html
 --  * our binary tarballs (package.conf.d.initial subdir)
 --  * ancient: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+ghc8101_pkgs :: [Cabal.PackageIdentifier]
+ghc8101_pkgs =
+  [ p "array" [0,5,4,0]
+  , p "base" [4,14,0,0]
+  , p "binary" [0,8,8,0] -- used by libghc
+  , p "bytestring" [0,10,10,0]
+--  , p "Cabal" [3,2,0,0]  package is upgradeable
+  , p "containers" [0,6,2,1]
+  , p "deepseq" [1,4,4,0] -- used by time
+  , p "directory" [1,3,6,0]
+  , p "filepath" [1,4,2,1]
+--  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable 
+  , p "ghc-boot" [8,10,1]
+  , p "ghc-boot-th" [8,10,1]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,6,1,0]
+  , p "ghc-heap" [8,10,1]
+  , p "ghci" [8,10,1]
+--  , p "haskeline" [0,8,0,0]  package is upgradeable
+  , p "hpc" [0,6,1,0] -- used by libghc
+  , p "integer-gmp" [1,0,3,0]
+  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,8,2]
+  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "template-haskell" [2,16,0,0] -- used by libghc
+  -- , p "terminfo" [0,4,1,4]
+  -- , p "text" [1,2,3,2] dependency of Cabal library
+  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+  , p "transformers" [0,5,6,2] -- used by libghc
+  , p "unix" [2,7,2,2]
+--  , p "xhtml" [3000,2,2,1]
+  ]
+
 
 ghc881_pkgs :: [Cabal.PackageIdentifier]
 ghc881_pkgs =
