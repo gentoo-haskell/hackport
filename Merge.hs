@@ -5,9 +5,10 @@ module Merge
 
 import Control.Monad
 import Control.Exception
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.ByteString.Builder as BL (stringUtf8, toLazyByteString)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Function (on)
+import qualified Data.Map.Strict as Map
 import Data.Maybe
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -43,6 +44,7 @@ import System.FilePath ((</>))
 import qualified System.FilePath as SF
 import System.Exit
 
+import qualified AnsiColor as A
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
 import qualified Portage.EMeta as EM
@@ -469,9 +471,9 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
--- | Generate a list of tuples containing Cabal flag names and descriptions
-metaFlags :: [Cabal.Flag] -> [(String, String)]
-metaFlags flags = zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+-- | Generate a strict map of Cabal flag names and their descriptions
+metaFlags :: [Cabal.Flag] -> Map.Map String String
+metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
 
 mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
 mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
@@ -480,9 +482,29 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-      default_meta = BL.toLazyByteString . BL.stringUtf8
-                     $ Portage.makeDefaultMetadata (E.long_desc ebuild)
-                     $ metaFlags flags
+  yet_meta <- doesFileExist mpath
+  -- If there is an existing @metadata.xml@, read it in as a @Text@.
+  -- Otherwise return an empty @Text@. We only use this once more to directly
+  -- compare to @default_meta@ before writing it.
+  current_meta <- if yet_meta
+                  then T.readFile mpath
+                  else return T.empty
+  -- Either create an object of the @Metadata@ type from a valid @current_meta@,
+  -- or supply a default minimal metadata object. Note the difference to @current_meta@:
+  -- @current_meta@ is of type @Text@, @current_meta'@ is of type @Metadata@.
+  let current_meta' = fromMaybe Portage.makeMinimalMetadata (Portage.pureMetadataFromFile current_meta)
+      -- Create the @metadata.xml@ string, adding new USE flags (if any) to those of
+      -- the existing @metadata.xml@. If an existing flag has a new and old description,
+      -- the new one takes precedence.
+      default_meta = T.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
+                     $ metaFlags flags <> Portage.metadataUseFlags current_meta'
+      -- Create a @Map@ of USE flags with updated descriptions.
+      new_flags = Map.differenceWith (\new old -> if (new /= old)
+                                                  then Just $ old ++ A.bold (" -> " ++ new)
+                                                  else Nothing)
+                  (metaFlags flags)
+                  $ Portage.metadataUseFlags current_meta'
+
   createDirectoryIfMissing True edir
   now <- TC.getCurrentTime
 
@@ -504,12 +526,14 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice verbosity $ "Writing " ++ elocal
-  length s_ebuild' `seq` BL.writeFile epath (BL.pack s_ebuild')
+  length s_ebuild' `seq` T.writeFile epath (T.pack s_ebuild')
 
-  yet_meta <- doesFileExist mpath
-  if not yet_meta -- TODO: add --force-meta-rewrite to opts
-      then do notice verbosity $ "Writing " ++ emeta
-              BL.writeFile mpath default_meta
-      else do current_meta <- BL.readFile mpath
-              when (current_meta /= default_meta) $
-                  notice verbosity $ "Default and current " ++ emeta ++ " differ."
+  when (current_meta /= default_meta) $ do
+    notice verbosity $ A.bold $ "Default and current " ++ emeta ++ " differ."
+    if (new_flags /= Map.empty)
+    then notice verbosity $ "New or updated USE flags:\n" ++
+         (unlines $ Portage.prettyPrintFlagsHuman new_flags)
+    else notice verbosity "No new USE flags."
+
+    notice verbosity $ "Writing " ++ emeta
+    T.writeFile mpath default_meta

@@ -106,7 +106,7 @@ filterByEmail p overlay = overlay
                             , overlayMap = pkgMap'
                             }
   where
-    metadataMap' = Map.filter (p . Portage.metadata_emails) (overlayMetadata overlay)
+    metadataMap' = Map.filter (p . Portage.metadataEmails) (overlayMetadata overlay)
     pkgMap' = Map.intersection (overlayMap overlay) metadataMap'
 
 
