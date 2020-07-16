@@ -9,7 +9,6 @@
     Shamelessly borrowed from exi, ported from Parsec to ReadP
 
 -}
-
 module Portage.Version (
     Version(..),
     Suffix(..),
@@ -41,6 +40,7 @@ data Version = Version { versionNumber   :: [Int]        -- ^ @[1,42,3]@ ~= 1.42
                        }
   deriving (Eq, Ord, Show, Read)
 
+-- | Prints a valid Portage 'Version' string.
 instance Pretty Version where
   pretty (Version ver c suf rev) =
     dispVer ver <> dispC c <> dispSuf suf <> dispRev rev
@@ -51,6 +51,7 @@ instance Pretty Version where
       dispRev 0 = Disp.empty
       dispRev n = Disp.text "-r" <> Disp.int n
 
+-- | 'Version' parser using 'Parsec'.
 instance Parsec Version where
   parsec = do
     ver <- P.sepByNonEmpty digits (P.char '.')
@@ -58,10 +59,24 @@ instance Parsec Version where
     suf <- P.many parsec
     rev <- P.option 0 $ P.string "-r" *> digits
     return $ Version (NonEmpty.toList ver) c suf rev
-  
+
+-- | Check if the ebuild is a live ebuild, i.e. if its 'Version' is @9999@.
+--
 -- foo-9999* is treated as live ebuild
 -- Cabal-1.17.9999* as well
--- | Check if the ebuild is a live ebuild, i.e. its 'Version' is @9999@.
+--
+-- >>> let (c,s,r) = (Nothing,[],0)
+-- >>> is_live (Version [1,0,0] c s r)
+-- False
+-- >>> is_live (Version [999] c s r)
+-- False
+-- >>> is_live (Version [1,0,0,9999] c s r)
+-- True
+-- >>> is_live (Version [9999] c s r)
+-- True
+--
+-- $
+-- prop> \verNum char rev -> is_live (Version verNum char [] rev) == if length verNum >= 1 && last verNum >= 9999 then True else False
 is_live :: Version -> Bool
 is_live v =
     case vs of
@@ -103,10 +118,14 @@ instance Parsec Suffix where
       maybeDigits = P.option 0 digits
 
 -- | Convert from a 'Cabal.Version' to a Portage 'Version'.
+-- 
+-- prop> \verNum -> fromCabalVersion (Cabal.mkVersion verNum) == Version verNum Nothing [] 0
 fromCabalVersion :: Cabal.Version -> Version
 fromCabalVersion cabal_version = Version (Cabal.versionNumbers cabal_version) Nothing [] 0
 
 -- | Convert from a Portage 'Version' to a 'Cabal.Version'.
+-- $
+-- prop> \verNum char rev -> toCabalVersion (Version verNum char [] rev) == if char == Nothing then Just (Cabal.mkVersion verNum) else Nothing
 toCabalVersion :: Version -> Maybe Cabal.Version
 toCabalVersion (Version nums Nothing [] _) = Just (Cabal.mkVersion nums)
 toCabalVersion _                           = Nothing

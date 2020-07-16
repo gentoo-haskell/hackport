@@ -26,12 +26,26 @@ import Text.XML.Light
 -- Currently defines functions for the maintainer email and
 -- USE flags and their descriptions.
 data Metadata = Metadata
-      { metadataEmails :: [String]
-      , metadataUseFlags :: Map.Map String String
-      -- , metadataMaintainers :: [String]
-      } deriving (Show)
+      { metadataEmails :: [String] -- ^ This should /always/ be [\"haskell@gentoo.org\"].
+      , metadataUseFlags :: Map.Map String String -- ^ Only /active/ USE flags, if any.
+      } deriving (Eq, Show)
 
 -- | Maybe return a 'Metadata' from a 'T.Text'.
+--
+-- Trying to parse an empty 'T.Text' should return 'Nothing':
+--
+-- prop> pureMetadataFromFile T.empty == Nothing
+--
+-- Parsing a @metadata.xml@ /without/ USE flags should /always/ be equivalent
+-- to 'makeMinimalMetadata', no matter the package description:
+--
+-- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc Map.empty)) == Just makeMinimalMetadata
+--
+-- Parsing a @metadata.xml@ /with/ USE flags should /always/ be equivalent
+-- to 'makeMinimalMetadata' /plus/ the supplied USE flags, no matter the
+-- package description:
+--
+-- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc (Map.fromList [("name","description")]))) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
 pureMetadataFromFile :: T.Text -> Maybe Metadata
 pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
 
@@ -39,7 +53,11 @@ pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
 metadataFromFile :: FilePath -> IO (Maybe Metadata)
 metadataFromFile fp = pureMetadataFromFile <$> T.readFile fp
 
--- | Extract the maintainer email and USE flags from a supplied XML Element.
+-- | Extract the maintainer email and USE flags from a supplied XML 'Element'.
+-- 
+-- If we're parsing a blank 'Element' or otherwise empty @metadata.xml@:
+-- >>> parseMetadata blank_element
+-- Just (Metadata {metadataEmails = [], metadataUseFlags = fromList []})
 parseMetadata :: Element -> Maybe Metadata
 parseMetadata xml =
   return Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
@@ -51,7 +69,7 @@ parseMetadata xml =
                       -- find the flag description
                           a = concatMap elContent y
                           b = cdData <$> onlyText a
-                        in Map.fromList $ zip z b
+                      in Map.fromList $ zip z b
                   }
 
 -- | Pretty print as valid XML a list of flags and their descriptions

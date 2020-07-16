@@ -82,6 +82,9 @@ instance Parsec PackageId where
     return $ PackageId name version
 
 -- | Transform a 'PackageId' into a 'FilePath'.
+-- 
+-- >>> packageIdToFilePath (PackageId (PackageName (Category "dev-haskell") (Cabal.mkPackageName "foo-bar2")) (Portage.Version [3,0,0] (Just 'b') [Portage.RC 2] 1 ))
+-- "dev-haskell/foo-bar2/foo-bar2-3.0.0b_rc2-r1.ebuild"
 packageIdToFilePath :: PackageId -> FilePath
 packageIdToFilePath (PackageId (PackageName cat pn) version) =
   prettyShow cat </> prettyShow pn </> prettyShow pn <-> prettyShow version <.> "ebuild"
@@ -89,7 +92,11 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
--- | Maybe generate a 'PackageId' from a 'FilePath'.
+-- | Maybe generate a 'PackageId' from a 'FilePath'. Note that the 'FilePath' must have its
+-- file extension stripped before being passed to 'filePathToPackageId'.
+-- 
+-- >>> filePathToPackageId (Category "dev-haskell") "foo-bar2-3.0.0b_rc2-r1"
+-- Just (PackageId {packageId = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,0], versionChar = Just 'b', versionSuffix = [RC 2], versionRevision = 1}})
 filePathToPackageId :: Category -> FilePath -> Maybe PackageId
 filePathToPackageId cat fp =
   case explicitEitherParsec parser fp of
@@ -112,10 +119,14 @@ fromCabalPackageId category (Cabal.PackageIdentifier name version) =
   PackageId (PackageName category (normalizeCabalPackageName name))
             (Portage.fromCabalVersion version)
 
--- | Convert a 'Cabal.PackageName' into lowercase.
+-- | Convert a 'Cabal.PackageName' into lowercase. Internally uses
+-- 'cabal_pn_to_PN'.
+--
+-- >>> normalizeCabalPackageName (Cabal.mkPackageName "FooBar1")
+-- PackageName "foobar1"
 normalizeCabalPackageName :: Cabal.PackageName -> Cabal.PackageName
 normalizeCabalPackageName =
-  Cabal.mkPackageName . map Char.toLower . Cabal.unPackageName
+  Cabal.mkPackageName . cabal_pn_to_PN
 
 -- | Apply 'normalizeCabalPackageName' to the 'Cabal.PackageName' of
 -- a supplied 'Cabal.PackageIdentifier'.
@@ -130,6 +141,9 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
            (Portage.toCabalVersion version)
 
 -- | Parse a 'String' as a package in the form of @[category\/]name[-version]@.
+-- 
+-- >>> parseFriendlyPackage "category-name/package-name1-0.0.0.1a_beta2-r4"
+-- Right (Just (Category {unCategory = "category-name"}),PackageName "package-name1",Just (Version {versionNumber = [0,0,0,1], versionChar = Just 'a', versionSuffix = [Beta 2], versionRevision = 4}))
 parseFriendlyPackage :: String -> Either String (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
 parseFriendlyPackage str = explicitEitherParsec parser str
   where
@@ -157,6 +171,11 @@ parseCabalPackageName = do
     ]
   return $ Cabal.mkPackageName pn
 
--- | Pretty-print a lowercase 'Cabal.PackageName'.
+-- | Pretty-print a lowercase 'Cabal.PackageName'. Note the difference between
+-- 'cabal_pn_to_PN' and 'normalizeCabalPackageName': the former returns
+-- a 'String', the latter a 'Cabal.PackageName'.
+--
+-- >>> cabal_pn_to_PN (Cabal.mkPackageName "FooBar1")
+-- "foobar1"
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map Char.toLower . prettyShow

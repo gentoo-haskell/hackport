@@ -89,6 +89,9 @@ ebuildTemplate = EBuild {
 
 -- | Given an EBuild, give the URI to the tarball of the source code.
 -- Assumes that the server is always hackage.haskell.org.
+-- 
+-- >>> src_uri ebuild_template
+-- "https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 src_uri :: EBuild -> String
 src_uri e =
   case my_pn e of
@@ -153,12 +156,17 @@ showEBuild now ebuild =
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
         replace old new = L.intercalate new . LS.splitOn old
 
--- "+a" -> "a"
--- "b"  -> "b"
+-- | Sort IUSE, and drop leading pluses (+)
+--
+-- >>> sort_iuse ["+a","b"]
+-- ["a","b"]
 sort_iuse :: [String] -> [String]
 sort_iuse = L.sortBy (compare `F.on` dropWhile ( `elem` "+"))
 
 -- | Drop trailing dot.
+--
+-- >>> drop_tdot "foo."
+-- "foo"
 drop_tdot :: String -> String
 drop_tdot = reverse . dropWhile (== '.') . reverse
 
@@ -206,6 +214,10 @@ dep_str var extra dep = ss var. sc '='. quote' (ss $ drop_leadings $ unlines ext
           deps_s = tabify (dep2str indent $ PN.normalize_depend dep)
           drop_leadings = dropWhile (== '\t')
 
+-- | Place a 'String' between quotes, and correctly handle special characters.
+--
+-- FIXME: special characters aren't correctly handled.
+-- See [hackport issue #36](https://github.com/gentoo-haskell/hackport/issues/36)
 quote :: String -> DString
 quote str = sc '"'. ss (esc str). sc '"'
   where

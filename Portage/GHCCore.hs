@@ -1,5 +1,10 @@
+{-|
+Module      : Portage.GHCCore
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
 
--- Guess GHC version from packages depended upon.
+Guess the appropriate GHC version from packages depended upon.
+-}
 module Portage.GHCCore
         ( minimumGHCVersionToBuildPackage
         , cabalFromGHC
@@ -30,12 +35,19 @@ import Data.List ( nub )
 
 import Debug.Trace
 
--- ghcs tried in specified order.
--- It means that first ghc in this list is a minimum default.
+-- | Try each @GHC@ version in the specified order, from left to right.
+-- The first @GHC@ version in this list is a minimum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs = modern_ghcs
     where modern_ghcs  = [ghc741, ghc742, ghc762, ghc782, ghc7101, ghc7102, ghc801, ghc802, ghc821, ghc843, ghc863, ghc865, ghc881, ghc883, ghc8101]
 
+-- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
+-- from a given @GHC@ version.
+--
+-- >>> cabalFromGHC [8,8,3]
+-- Just (mkVersion [3,0,1,0])
+-- >>> cabalFromGHC [9,9,9,9]
+-- Nothing
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
   where
@@ -58,9 +70,18 @@ cabalFromGHC ver = lookup ver table
 platform :: Platform
 platform = Platform X86_64 Linux
 
+-- | Is the package a core dependency of a specific version of @GHC@?
+--
+-- >>> packageIsCore (mkIndex ghc883_pkgs) (Cabal.mkPackageName "binary")
+-- True
+-- >>> all (== True) ((packageIsCore (mkIndex ghc883_pkgs)) <$> (packageNamesFromPackageIndex (mkIndex ghc883_pkgs)))
+-- True
 packageIsCore :: InstalledPackageIndex -> Cabal.PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
 
+-- | Is the package a core dependency of any version of @GHC@?
+-- >>> packageIsCoreInAnyGHC (Cabal.mkPackageName "array")
+-- True
 packageIsCoreInAnyGHC :: Cabal.PackageName -> Bool
 packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
 
@@ -107,6 +128,9 @@ minimumGHCVersionToBuildPackage gpd user_specified_fas =
               | g@(cinfo, pix) <- ghcs
               , Right (pkg_desc, picked_flags) <- return (packageBuildableWithGHCVersion gpd user_specified_fas g)]
 
+-- | Create an 'InstalledPackageIndex' from a ['Cabal.PackageIdentifier'].
+-- This is used to generate an index of core @GHC@ packages from the provided
+-- ['Cabal.PackageIdentifier'] functions, e.g. 'ghc883_pkgs'.
 mkIndex :: [Cabal.PackageIdentifier] -> InstalledPackageIndex
 mkIndex pids = fromList
   [ emptyInstalledPackageInfo

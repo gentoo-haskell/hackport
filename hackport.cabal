@@ -447,6 +447,16 @@ Executable    hackport
     Prelude
     Text.JSON.Canonical
 
+test-suite doctests
+  type:             exitcode-stdio-1.0
+  ghc-options:      -threaded
+  default-language: Haskell98
+  main-is:          tests/doctests.hs
+  build-depends:    base,
+                    doctest >= 0.8,
+                    template-haskell,
+                    QuickCheck
+
 Test-Suite test-resolve-category
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0

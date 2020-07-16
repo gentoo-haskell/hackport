@@ -214,12 +214,22 @@ first_just_of = msum
 -- | Gentoo allows underscore ('_') names in @IUSE@ only for
 -- @USE_EXPAND@ values. If it's not a user-specified rename mangle
 -- it into a hyphen ('-').
+-- 
+-- >>> mangle_iuse "use_remove_my_underscores"
+-- "remove-my-underscores"
 mangle_iuse :: String -> String
 mangle_iuse = drop_prefix . map f
   where f '_' = '-'
         f c   = c
 
 -- | Remove @with@ or @use@ prefixes from flag names.
+--
+-- >>> drop_prefix "with_conduit"
+-- "conduit"
+-- >>> drop_prefix "use-https"
+-- "https"
+-- >>> drop_prefix "no_examples"
+-- "no_examples"
 drop_prefix :: String -> String
 drop_prefix x
   | take 5 x `elem` ["with_","with-"] = drop 5 x
@@ -487,8 +497,14 @@ withWorkingDirectory newDir action = do
     (\_ -> action)
 
 -- | Convert all stable keywords to testing (unstable) keywords.
+-- Preserve arch masks (-).
 --
--- > to_unstable "amd64" = "~amd64"
+-- >>> to_unstable "amd64"
+-- "~amd64"
+-- >>> to_unstable "~amd64"
+-- "~amd64"
+-- >>> to_unstable "-amd64"
+-- "-amd64"
 to_unstable :: String -> String
 to_unstable kw =
     case kw of

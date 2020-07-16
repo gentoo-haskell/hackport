@@ -13,12 +13,25 @@ module Portage.Cabal
 
 import qualified Data.List as L
 
-import qualified Distribution.License             as Cabal
-import qualified Distribution.SPDX.License        as SPDX
-import qualified Distribution.Package             as Cabal
-import qualified Distribution.Pretty                as Cabal
+import qualified Distribution.License as Cabal
+import qualified Distribution.SPDX    as SPDX
+import qualified Distribution.Package as Cabal
+import qualified Distribution.Pretty  as Cabal
 
--- | Convert the Cabal 'SPDX.License' to the Gentoo license format, as a 'String'.
+-- | Convert the Cabal 'SPDX.License' into the Gentoo format, as a 'String'.
+--
+-- Generally, if the license is one of the common free-software or
+-- open-source licenses, 'convertLicense' should return the license
+-- as a 'Right' 'String':
+--
+-- >>> convertLicense (SPDX.License $ SPDX.simpleLicenseExpression SPDX.GPL_3_0_or_later)
+-- Right "GPL-3.0"
+--
+-- If it is a more obscure license, this should alert the user by returning
+-- a 'Left' 'String':
+--
+-- >>> convertLicense (SPDX.License $ SPDX.simpleLicenseExpression SPDX.EUPL_1_1)
+-- Left ...
 convertLicense :: SPDX.License -> Either String String
 convertLicense l =
     case Cabal.licenseFromSPDX l of
