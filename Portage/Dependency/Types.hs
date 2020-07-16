@@ -1,3 +1,10 @@
+{-|
+Module      : Portage.Dependency.Types
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Functions and types related to processing Portage dependencies.
+-}
 module Portage.Dependency.Types
   (
     SlotDepend(..)
@@ -16,14 +23,16 @@ module Portage.Dependency.Types
 import Portage.PackageId
 import Portage.Use
 
-data SlotDepend = AnySlot          -- nothing special
-                | AnyBuildTimeSlot -- ':='
-                | GivenSlot String -- ':slotno'
+-- | Type of SLOT dependency of a dependency.
+data SlotDepend = AnySlot          -- ^ nothing special
+                | AnyBuildTimeSlot -- ^ ':='
+                | GivenSlot String -- ^ ':slotno'
     deriving (Eq, Show, Ord)
 
-data LBound = StrictLB    Version
-            | NonstrictLB Version
-            | ZeroB
+-- | Type of lower bound of a dependency.
+data LBound = StrictLB    Version -- ^ greater than (>)
+            | NonstrictLB Version -- ^ greater than or equal to (>=)
+            | ZeroB               -- ^ no lower bound
     deriving (Eq, Show)
 
 instance Ord LBound where
@@ -38,10 +47,10 @@ instance Ord LBound where
     compare (NonstrictLB lv) (StrictLB rv)    = case compare lv rv of
                                                     EQ -> LT
                                                     r  -> r
-
-data UBound = StrictUB Version   -- <
-            | NonstrictUB Version -- <=
-            | InfinityB
+-- | Type of upper bound of a dependency.
+data UBound = StrictUB Version    -- ^ less than (<)
+            | NonstrictUB Version -- ^ less than or equal to (<=)
+            | InfinityB           -- ^ no upper bound
     deriving (Eq, Show)
 
 instance Ord UBound where
@@ -57,6 +66,10 @@ instance Ord UBound where
                                                     EQ -> GT
                                                     r  -> r
 
+-- | Type of dependency version.
+--
+-- A dependency version may either be an exact 'Version' or a
+-- version range between a given 'LBound' and 'UBound'.
 data DRange = DRange LBound UBound
             | DExact Version
     deriving (Eq, Show, Ord)
@@ -66,7 +79,7 @@ range_is_case_of (DRange llow lup) (DRange rlow rup)
    | llow >= rlow && lup <= rup = True
 range_is_case_of _ _ = False
 
--- True if 'left' "interval" covers at least as much as the 'right' "interval"
+-- | True if left 'DRange' covers at least as much as the right 'DRange'.
 range_as_broad_as :: DRange -> DRange -> Bool
 range_as_broad_as (DRange llow lup) (DRange rlow rup)
     | llow <= rlow && lup >= rup = True
@@ -83,7 +96,8 @@ data Dependency = DependAtom Atom
 
 data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)
 
--- returns 'True' if left constraint is the same as (or looser than) right
+-- | True if left 'Dependency' constraint is the same as (or looser than) right
+-- 'Dependency' constraint.
 dep_as_broad_as :: Dependency -> Dependency -> Bool
 dep_as_broad_as l r
     -- very broad (not only on atoms) special case

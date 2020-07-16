@@ -1,3 +1,11 @@
+{-|
+Module      : Portage.Cabal
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Utilities to extract and manipulate information from a package's @.cabal@ file,
+such as its license and dependencies.
+-}
 module Portage.Cabal
   ( convertLicense
   , partition_depends
@@ -10,7 +18,7 @@ import qualified Distribution.SPDX.License        as SPDX
 import qualified Distribution.Package             as Cabal
 import qualified Distribution.Pretty                as Cabal
 
--- map the cabal license type to the gentoo license string format
+-- | Convert the Cabal 'SPDX.License' to the Gentoo license format, as a 'String'.
 convertLicense :: SPDX.License -> Either String String
 convertLicense l =
     case Cabal.licenseFromSPDX l of
@@ -32,6 +40,7 @@ convertLicense l =
         Cabal.OtherLicense      -> Left "(Other) Please look at license file of package and pick it manually."
         Cabal.UnspecifiedLicense -> Left "(Unspecified) Please look at license file of package and pick it manually."
 
+-- | Extract only the dependencies which are not bundled with @GHC@.
 partition_depends :: [Cabal.PackageName] -> Cabal.PackageName -> [Cabal.Dependency] -> ([Cabal.Dependency], [Cabal.Dependency])
 partition_depends ghc_package_names merged_cabal_pkg_name = L.partition (not . is_internal_depend)
     where is_internal_depend (Cabal.Dependency pn _vr _lib) = is_itself || is_ghc_package

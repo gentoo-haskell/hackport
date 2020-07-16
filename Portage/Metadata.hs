@@ -1,3 +1,10 @@
+{-|
+Module      : Portage.Metadata
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Functions and types related to @metadata.xml@ processing
+-}
 module Portage.Metadata
         ( Metadata(..)
         , metadataFromFile
@@ -15,21 +22,24 @@ import qualified Data.Map.Strict as Map
 
 import Text.XML.Light
 
+-- | A data type for the Gentoo-specific @metadata.xml@ file.
+-- Currently defines functions for the maintainer email and
+-- USE flags and their descriptions.
 data Metadata = Metadata
       { metadataEmails :: [String]
       , metadataUseFlags :: Map.Map String String
       -- , metadataMaintainers :: [String]
       } deriving (Show)
 
--- | Maybe return a Metadata from a Text string
+-- | Maybe return a 'Metadata' from a 'T.Text'.
 pureMetadataFromFile :: T.Text -> Maybe Metadata
 pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
 
--- | Apply @pureMetadataFromFile@ to a FilePath
+-- | Apply 'pureMetadataFromFile' to a 'FilePath'.
 metadataFromFile :: FilePath -> IO (Maybe Metadata)
 metadataFromFile fp = pureMetadataFromFile <$> T.readFile fp
 
--- | Extract the maintainer email and USE flags from a supplied XML Element
+-- | Extract the maintainer email and USE flags from a supplied XML Element.
 parseMetadata :: Element -> Maybe Metadata
 parseMetadata xml =
   return Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
@@ -45,26 +55,26 @@ parseMetadata xml =
                   }
 
 -- | Pretty print as valid XML a list of flags and their descriptions
--- from a given strict map.
+-- from a given 'Map.Map'.
 prettyPrintFlags :: Map.Map String String -> [String]
 prettyPrintFlags m = (\(name,description) -> "\t\t<flag name=\"" ++ name ++
                                           "\">" ++ description ++ "</flag>")
                      <$> Map.toAscList m
 
 -- | Pretty print a human-readable list of flags and their descriptions
--- from a given strict map.
+-- from a given 'Map.Map'.
 prettyPrintFlagsHuman :: Map.Map String String -> [String]
 prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++ description)
                           <$> Map.toAscList m
                           
--- | A minimal metadata for use as a fallback value
+-- | A minimal metadata for use as a fallback value.
 makeMinimalMetadata :: Metadata
 makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
                                , metadataUseFlags = Map.empty
                                }
 
 -- don't use Text.XML.Light as we like our own pretty printer
--- | Pretty print the metadata.xml file
+-- | Pretty print the @metadata.xml@ string.
 makeDefaultMetadata :: String -> Map.Map String String -> String
 makeDefaultMetadata long_description flags =
     unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"

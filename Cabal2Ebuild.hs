@@ -1,16 +1,16 @@
--- A program for generating a Gentoo ebuild from a .cabal file
---
--- Author : Duncan Coutts <dcoutts@gentoo.org>
---
--- Created: 21 July 2005
---
--- Copyright (C) 2005 Duncan Coutts
---
+{-|
+Module      : Cabal2Ebuild
+Copyright   : (C) 2005, Duncan Coutts
+License     : GPL-2+
+Maintainer  : haskell@gentoo.org
+
+A program for generating a Gentoo ebuild from a .cabal file
+-}
 -- This library is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU General Public License
 -- as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.
---
+
 -- This library is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -43,6 +43,7 @@ import qualified Portage.EBuild as E
 import qualified Portage.Overlay as O
 import Portage.Version
 
+-- | Generate a 'Portage.EBuild' from a 'Portage.Category' and a 'Cabal.PackageDescription'.
 cabal2ebuild :: Portage.Category -> Cabal.PackageDescription -> Portage.EBuild
 cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.name        = Portage.cabal_pn_to_PN cabal_pn,
@@ -78,9 +79,11 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
                          then E.homepage E.ebuildTemplate
                          else Cabal.homepage pkg
 
+-- | Map 'convertDependency' over ['Cabal.Dependency'].
 convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [Dependency]
 convertDependencies overlay category = map (convertDependency overlay category)
 
+-- | Convert 'Cabal.Dependency' into 'Dependency'.
 convertDependency :: O.Overlay -> Portage.Category -> Cabal.Dependency -> Dependency
 convertDependency overlay category (Cabal.Dependency pname versionRange _lib)
   = convert versionRange

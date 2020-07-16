@@ -1,11 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
 
--- CABAL_FEATURES="..." in haskell-cabal .ebuild files
--- see haskell-cabal.eclass for details on each of those
+-- | Support for CABAL_FEATURES="..." in haskell-cabal .ebuild files.
+-- See haskell-cabal.eclass for details on each of those.
 module Portage.EBuild.CabalFeature (CabalFeature(..)) where
 
 import Portage.EBuild.Render
 
+-- | Type representing @CABAL_FEATURES@ in an ebuild.
 data CabalFeature = Lib
                   | Profile
                   | Haddock

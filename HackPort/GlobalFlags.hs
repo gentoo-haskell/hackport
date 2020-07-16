@@ -17,6 +17,7 @@ import System.FilePath ((</>))
 
 import qualified Overlays
 
+-- | Type containing global flags.
 data GlobalFlags =
     GlobalFlags { globalVersion :: DSS.Flag Bool
                 , globalNumericVersion :: DSS.Flag Bool
@@ -24,6 +25,7 @@ data GlobalFlags =
                 , globalPathToPortage :: DSS.Flag (Maybe FilePath)
                 }
 
+-- | Default 'GlobalFlags'.
 defaultGlobalFlags :: GlobalFlags
 defaultGlobalFlags =
     GlobalFlags { globalVersion = DSS.Flag False
@@ -32,6 +34,7 @@ defaultGlobalFlags =
                 , globalPathToPortage = DSS.Flag Nothing
                 }
 
+-- | Default remote repository. Defaults to [hackage](hackage.haskell.org).
 defaultRemoteRepo :: DCT.RemoteRepo
 defaultRemoteRepo = DCC.addInfoForKnownRepos $ (DCT.emptyRemoteRepo name) { DCT.remoteRepoURI = uri }
    where

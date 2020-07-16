@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-
 {-|
     Author      :  Andres Loeh <kosmikus@gentoo.org>
     Stability   :  provisional
@@ -34,10 +33,11 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Prelude hiding ((<>))
 #endif
 
-data Version = Version { versionNumber   :: [Int]        -- [1,42,3] ~= 1.42.3
-                       , versionChar     :: (Maybe Char) -- optional letter
+-- | Portage-style version type.
+data Version = Version { versionNumber   :: [Int]        -- ^ @[1,42,3]@ ~= 1.42.3
+                       , versionChar     :: (Maybe Char) -- ^ optional letter
                        , versionSuffix   :: [Suffix]
-                       , versionRevision :: Int          -- revision, 0 means none
+                       , versionRevision :: Int          -- ^ revision, 0 means none
                        }
   deriving (Eq, Ord, Show, Read)
 
@@ -61,6 +61,7 @@ instance Parsec Version where
   
 -- foo-9999* is treated as live ebuild
 -- Cabal-1.17.9999* as well
+-- | Check if the ebuild is a live ebuild, i.e. its 'Version' is @9999@.
 is_live :: Version -> Bool
 is_live v =
     case vs of
@@ -72,6 +73,7 @@ is_live v =
         is_big n     = n >= 9999
         all_nines n  = (all (== '9') . show) n
 
+-- | Various allowed suffixes in Portage versions.
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
 
@@ -100,12 +102,15 @@ instance Parsec Suffix where
     where
       maybeDigits = P.option 0 digits
 
+-- | Convert from a 'Cabal.Version' to a Portage 'Version'.
 fromCabalVersion :: Cabal.Version -> Version
 fromCabalVersion cabal_version = Version (Cabal.versionNumbers cabal_version) Nothing [] 0
 
+-- | Convert from a Portage 'Version' to a 'Cabal.Version'.
 toCabalVersion :: Version -> Maybe Cabal.Version
 toCabalVersion (Version nums Nothing [] _) = Just (Cabal.mkVersion nums)
 toCabalVersion _                           = Nothing
 
+-- | Parser which munches digits.
 digits :: P.CharParsing m => m Int
 digits = read <$> P.munch1 Char.isDigit
