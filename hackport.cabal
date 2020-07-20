@@ -447,17 +447,9 @@ Executable    hackport
     Prelude
     Text.JSON.Canonical
 
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  ghc-options:      -threaded
-  default-language: Haskell98
-  main-is:          tests/doctests.hs
-  build-depends:    base,
-                    doctest >= 0.8,
-                    template-haskell,
-                    QuickCheck
-
 Test-Suite test-resolve-category
+  -- requires a local Portage overlay, thus fails in a sandboxed test.
+  buildable: False
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
@@ -488,6 +480,9 @@ Test-Suite test-resolve-category
     DoAndIfThenElse
 
 Test-Suite test-print-deps
+  -- This test-suite has been incorporated into the 'spec' test-suite,
+  -- and may be removed in the future.
+  buildable: False
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
@@ -517,6 +512,9 @@ Test-Suite test-print-deps
     DoAndIfThenElse
 
 Test-Suite test-normalize-deps
+  -- This test-suite has been incorporated into the 'spec' test-suite,
+  -- and may be removed in the future.
+  buildable: False
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
@@ -541,6 +539,207 @@ Test-Suite test-normalize-deps
                         unix,
                         xml
 
+  default-extensions:
+    -- cabal
+    PatternGuards,
+    DoAndIfThenElse
+
+test-suite doctests
+  type:             exitcode-stdio-1.0
+  ghc-options:      -threaded
+  default-language: Haskell98
+  main-is:          tests/doctests.hs
+  build-depends:    base,
+                    doctest >= 0.8,
+                    template-haskell,
+                    QuickCheck
+
+test-suite spec
+  ghc-options: -Wall
+  Type:                 exitcode-stdio-1.0
+  Default-Language:     Haskell2010
+  Main-Is:              tests/Spec.hs
+  Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
+  other-modules:        Portage.CabalSpec,
+                        Portage.Dependency.PrintSpec,
+                        Portage.EBuildSpec,
+                        Portage.GHCCoreSpec,
+                        Portage.MetadataSpec,
+                        Portage.PackageIdSpec,
+                        Portage.VersionSpec,
+                        -- cabal:
+                        Distribution.Backpack
+                        Distribution.CabalSpecVersion
+                        Distribution.Compat.Async
+                        Distribution.Compat.Binary
+                        Distribution.Compat.CharParsing
+                        Distribution.Compat.CopyFile
+                        Distribution.Compat.DList
+                        Distribution.Compat.Exception
+                        Distribution.Compat.FilePath
+                        Distribution.Compat.Graph
+                        Distribution.Compat.Internal.TempFile
+                        Distribution.Compat.Lens
+                        Distribution.Compat.MonadFail
+                        Distribution.Compat.Newtype
+                        Distribution.Compat.Parsing
+                        Distribution.Compat.Prelude
+                        Distribution.Compat.Semigroup
+                        Distribution.Compat.Stack
+                        Distribution.Compiler
+                        Distribution.FieldGrammar
+                        Distribution.FieldGrammar.Class
+                        Distribution.FieldGrammar.FieldDescrs
+                        Distribution.FieldGrammar.Parsec
+                        Distribution.FieldGrammar.Pretty
+                        Distribution.Fields
+                        Distribution.Fields.Field
+                        Distribution.Fields.Lexer
+                        Distribution.Fields.LexerMonad
+                        Distribution.Fields.ParseResult
+                        Distribution.Fields.Parser
+                        Distribution.Fields.Pretty
+                        Distribution.InstalledPackageInfo
+                        Distribution.License
+                        Distribution.ModuleName
+                        Distribution.Package
+                        Distribution.PackageDescription
+                        Distribution.PackageDescription.Configuration
+                        Distribution.PackageDescription.Utils
+                        Distribution.Parsec
+                        Distribution.Parsec.Error
+                        Distribution.Parsec.FieldLineStream
+                        Distribution.Parsec.Newtypes
+                        Distribution.Parsec.Position
+                        Distribution.Parsec.Warning
+                        Distribution.Pretty
+                        Distribution.ReadE
+                        Distribution.SPDX
+                        Distribution.SPDX.License
+                        Distribution.SPDX.LicenseExceptionId
+                        Distribution.SPDX.LicenseExpression
+                        Distribution.SPDX.LicenseId
+                        Distribution.SPDX.LicenseListVersion
+                        Distribution.SPDX.LicenseReference
+                        Distribution.Simple.PackageIndex
+                        Distribution.Simple.Utils
+                        Distribution.System
+                        Distribution.Types.AbiDependency
+                        Distribution.Types.AbiHash
+                        Distribution.Types.Benchmark
+                        Distribution.Types.Benchmark.Lens
+                        Distribution.Types.BenchmarkInterface
+                        Distribution.Types.BenchmarkType
+                        Distribution.Types.BuildInfo
+                        Distribution.Types.BuildInfo.Lens
+                        Distribution.Types.BuildType
+                        Distribution.Types.Component
+                        Distribution.Types.ComponentId
+                        Distribution.Types.ComponentName
+                        Distribution.Types.ComponentRequestedSpec
+                        Distribution.Types.CondTree
+                        Distribution.Types.Condition
+                        Distribution.Types.ConfVar
+                        Distribution.Types.Dependency
+                        Distribution.Types.DependencyMap
+                        Distribution.Types.ExeDependency
+                        Distribution.Types.Executable
+                        Distribution.Types.Executable.Lens
+                        Distribution.Types.ExecutableScope
+                        Distribution.Types.ExposedModule
+                        Distribution.Types.Flag
+                        Distribution.Types.ForeignLib
+                        Distribution.Types.ForeignLib.Lens
+                        Distribution.Types.ForeignLibOption
+                        Distribution.Types.ForeignLibType
+                        Distribution.Types.GenericPackageDescription
+                        Distribution.Types.GenericPackageDescription.Lens
+                        Distribution.Types.HookedBuildInfo
+                        Distribution.Types.IncludeRenaming
+                        Distribution.Types.InstalledPackageInfo
+                        Distribution.Types.InstalledPackageInfo.FieldGrammar
+                        Distribution.Types.InstalledPackageInfo.Lens
+                        Distribution.Types.LegacyExeDependency
+                        Distribution.Types.Library
+                        Distribution.Types.Library.Lens
+                        Distribution.Types.LibraryName
+                        Distribution.Types.LibraryVisibility
+                        Distribution.Types.Mixin
+                        Distribution.Types.Module
+                        Distribution.Types.ModuleReexport
+                        Distribution.Types.ModuleRenaming
+                        Distribution.Types.MungedPackageId
+                        Distribution.Types.MungedPackageName
+                        Distribution.Types.PackageDescription
+                        Distribution.Types.PackageDescription.Lens
+                        Distribution.Types.PackageId
+                        Distribution.Types.PackageId.Lens
+                        Distribution.Types.PackageName
+                        Distribution.Types.PkgconfigDependency
+                        Distribution.Types.PkgconfigName
+                        Distribution.Types.PkgconfigVersion
+                        Distribution.Types.PkgconfigVersionRange
+                        Distribution.Types.SetupBuildInfo
+                        Distribution.Types.SetupBuildInfo.Lens
+                        Distribution.Types.SourceRepo
+                        Distribution.Types.TestSuite
+                        Distribution.Types.TestSuite.Lens
+                        Distribution.Types.TestSuiteInterface
+                        Distribution.Types.TestType
+                        Distribution.Types.UnitId
+                        Distribution.Types.UnqualComponentName
+                        Distribution.Types.Version
+                        Distribution.Types.VersionInterval
+                        Distribution.Types.VersionRange
+                        Distribution.Types.VersionRange.Internal
+                        Distribution.Utils.Base62
+                        Distribution.Utils.Generic
+                        Distribution.Utils.IOData
+                        Distribution.Utils.ShortText
+                        Distribution.Utils.String
+                        Distribution.Verbosity
+                        Distribution.Verbosity.Internal
+                        Distribution.Version
+                        Language.Haskell.Extension
+                        -- hackport:
+                        AnsiColor
+                        Paths_hackport
+                        Portage.Cabal
+                        Portage.Dependency
+                        Portage.Dependency.Builder
+                        Portage.Dependency.Normalize
+                        Portage.Dependency.Print
+                        Portage.Dependency.Types
+                        Portage.EBuild
+                        Portage.EBuild.CabalFeature
+                        Portage.EBuild.Render
+                        Portage.GHCCore
+                        Portage.Metadata
+                        Portage.PackageId
+                        Portage.Use
+                        Portage.Version
+  build-tool-depends:   hspec-discover:hspec-discover == 2.*
+  Build-Depends:        array,
+                        base,
+                        binary,
+                        deepseq,
+                        bytestring,
+                        containers,
+                        directory,
+                        extensible-exceptions,
+                        filepath,
+                        hspec >= 2.0,
+                        mtl,
+                        parsec,
+                        pretty,
+                        process,
+                        QuickCheck >= 2.0,
+                        split,
+                        text,
+                        time,
+                        transformers,
+                        unix,
+                        xml
   default-extensions:
     -- cabal
     PatternGuards,

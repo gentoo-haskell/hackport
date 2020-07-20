@@ -12,6 +12,8 @@ module Portage.GHCCore
         , finalizePD
         , platform
         , dependencySatisfiable
+        -- hspec exports
+        , packageIsCoreInAnyGHC
         ) where
 
 import qualified Distribution.Compiler as DC

@@ -140,10 +140,15 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
   fmap (Cabal.PackageIdentifier name)
            (Portage.toCabalVersion version)
 
--- | Parse a 'String' as a package in the form of @[category\/]name[-version]@.
+-- | Parse a 'String' as a package in the form of @[category\/]name[-version]@:
 -- 
 -- >>> parseFriendlyPackage "category-name/package-name1-0.0.0.1a_beta2-r4"
 -- Right (Just (Category {unCategory = "category-name"}),PackageName "package-name1",Just (Version {versionNumber = [0,0,0,1], versionChar = Just 'a', versionSuffix = [Beta 2], versionRevision = 4}))
+--
+-- If malformed, return an error string:
+--
+-- >>> parseFriendlyPackage "category-name/package-name-1-0.0.0.1a_beta2-r4"
+-- Left ...
 parseFriendlyPackage :: String -> Either String (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
 parseFriendlyPackage str = explicitEitherParsec parser str
   where

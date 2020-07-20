@@ -12,6 +12,10 @@ module Portage.EBuild
         , ebuildTemplate
         , showEBuild
         , src_uri
+        -- hspec exports
+        , sort_iuse
+        , drop_tdot
+        , quote
         ) where
 
 import Portage.Dependency
@@ -156,16 +160,18 @@ showEBuild now ebuild =
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
         replace old new = L.intercalate new . LS.splitOn old
 
--- | Sort IUSE, and drop leading pluses (+)
+-- | Sort IUSE alphabetically
 --
 -- >>> sort_iuse ["+a","b"]
--- ["a","b"]
+-- ["+a","b"]
 sort_iuse :: [String] -> [String]
 sort_iuse = L.sortBy (compare `F.on` dropWhile ( `elem` "+"))
 
--- | Drop trailing dot.
+-- | Drop trailing dot(s).
 --
 -- >>> drop_tdot "foo."
+-- "foo"
+-- >>> drop_tdot "foo..."
 -- "foo"
 drop_tdot :: String -> String
 drop_tdot = reverse . dropWhile (== '.') . reverse
@@ -215,9 +221,6 @@ dep_str var extra dep = ss var. sc '='. quote' (ss $ drop_leadings $ unlines ext
           drop_leadings = dropWhile (== '\t')
 
 -- | Place a 'String' between quotes, and correctly handle special characters.
---
--- FIXME: special characters aren't correctly handled.
--- See [hackport issue #36](https://github.com/gentoo-haskell/hackport/issues/36)
 quote :: String -> DString
 quote str = sc '"'. ss (esc str). sc '"'
   where
