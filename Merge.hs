@@ -1,3 +1,10 @@
+{-|
+Module      : Merge
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Core functionality of the @merge@ command of @HackPort@.
+-}
 module Merge
   ( merge
   , mergeGenericPackageDescription
@@ -5,9 +12,10 @@ module Merge
 
 import Control.Monad
 import Control.Exception
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.ByteString.Builder as BL (stringUtf8, toLazyByteString)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Function (on)
+import qualified Data.Map.Strict as Map
 import Data.Maybe
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -43,6 +51,7 @@ import System.FilePath ((</>))
 import qualified System.FilePath as SF
 import System.Exit
 
+import qualified AnsiColor as A
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
 import qualified Portage.EMeta as EM
@@ -68,7 +77,8 @@ a <.> b = a ++ '.':b
 Requested features:
   * Add files to git?
 -}
-
+-- | Parse a ['String'] as a valid package string. E.g. @category\/name-1.0.0@.
+-- Return 'HackPortError' if the string to parse is invalid.
 readPackageString :: [String]
                   -> Either HackPortError ( Maybe Portage.Category
                                           , Cabal.PackageName
@@ -98,6 +108,16 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (CabalInstall.packageInfoId avail)
 
+-- | This function is executed by the @merge@ command of @HackPort@.
+-- Its functionality is as follows:
+--
+-- 1. Feed user input to 'readPackageString'
+-- 2. Look for a matching package on the @hackage@ database
+-- 3. Run 'mergeGenericPackageDescription' with the supplied information
+-- 4. Generate a coloured diff between the old and new ebuilds.
+--
+-- Various information is printed in between these steps depending on the
+-- 'Verbosity'.
 merge :: Verbosity -> CabalInstall.RepoContext -> [String] -> FilePath -> Maybe String -> IO ()
 merge verbosity repoContext args overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
@@ -165,15 +185,15 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
                         diffEbuilds overlayPath validPkg newPkgId
     _ -> info verbosity "Nothing to diff!"
   
--- | Call diff between two ebuilds.
+-- | Call @diff@ between two ebuilds.
 diffEbuilds :: FilePath -> Portage.PackageId -> Portage.PackageId -> IO ()
 diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
                              ++ fp </> Portage.packageIdToFilePath a ++ " "
                              ++ fp </> Portage.packageIdToFilePath b
                         exitSuccess
 
--- | Maybe return a PackageId of the next highest version for a given
---   package, relative to the provided PackageId.
+-- | Maybe return a 'Portage.PackageId' of the next highest version for a given
+--   package, relative to the provided 'Portage.PackageId'.
 getPreviousPackageId :: [FilePath] -- ^ list of ebuilds for given package
                      -> Portage.PackageId -- ^ new PackageId
                      -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version
@@ -187,18 +207,29 @@ getPreviousPackageId pkgDir newPkgId = do
     x:_ -> Just x
     _ -> Nothing
 
+-- | Alias for 'msum'.
 first_just_of :: [Maybe a] -> Maybe a
 first_just_of = msum
 
--- Gentoo allows underscore ('_') names in IUSE only for
--- USE_EXPAND values. If it's not a user-specified rename mangle
+-- | Gentoo allows underscore ('_') names in @IUSE@ only for
+-- @USE_EXPAND@ values. If it's not a user-specified rename mangle
 -- it into a hyphen ('-').
+-- 
+-- >>> mangle_iuse "use_remove_my_underscores"
+-- "remove-my-underscores"
 mangle_iuse :: String -> String
 mangle_iuse = drop_prefix . map f
   where f '_' = '-'
         f c   = c
 
--- | Remove "with" or "use" prefixes from flag names.
+-- | Remove @with@ or @use@ prefixes from flag names.
+--
+-- >>> drop_prefix "with_conduit"
+-- "conduit"
+-- >>> drop_prefix "use-https"
+-- "https"
+-- >>> drop_prefix "no_examples"
+-- "no_examples"
 drop_prefix :: String -> String
 drop_prefix x
   | take 5 x `elem` ["with_","with-"] = drop 5 x
@@ -208,6 +239,7 @@ drop_prefix x
 -- used to be FlagAssignment in Cabal but now it's an opaque type
 type CabalFlags = [(Cabal.FlagName, Bool)]
 
+-- | Generate an ebuild from a 'Cabal.GenericPackageDescription'.
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
@@ -439,6 +471,9 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
 
+-- | Run various @repoman@ commands in the directory of the newly-generated ebuild.
+-- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
+-- the @Manifest@ file.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
                     -> IO ()
@@ -461,7 +496,15 @@ withWorkingDirectory newDir action = do
     (\_ -> setCurrentDirectory oldDir)
     (\_ -> action)
 
--- "amd64" -> "~amd64"
+-- | Convert all stable keywords to testing (unstable) keywords.
+-- Preserve arch masks (-).
+--
+-- >>> to_unstable "amd64"
+-- "~amd64"
+-- >>> to_unstable "~amd64"
+-- "~amd64"
+-- >>> to_unstable "-amd64"
+-- "-amd64"
 to_unstable :: String -> String
 to_unstable kw =
     case kw of
@@ -469,10 +512,11 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
--- | Generate a list of tuples containing Cabal flag names and descriptions
-metaFlags :: [Cabal.Flag] -> [(String, String)]
-metaFlags flags = zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+-- | Generate a 'Map.Map' of 'Cabal.Flag' names and their descriptions.
+metaFlags :: [Cabal.Flag] -> Map.Map String String
+metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
 
+-- | Write the ebuild (and sometimes a new @metadata.xml@) to its directory.
 mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
 mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   let edir = pkgdir
@@ -480,9 +524,29 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-      default_meta = BL.toLazyByteString . BL.stringUtf8
-                     $ Portage.makeDefaultMetadata (E.long_desc ebuild)
-                     $ metaFlags flags
+  yet_meta <- doesFileExist mpath
+  -- If there is an existing @metadata.xml@, read it in as a 'T.Text'.
+  -- Otherwise return 'T.empty'. We only use this once more to directly
+  -- compare to @default_meta@ before writing it.
+  current_meta <- if yet_meta
+                  then T.readFile mpath
+                  else return T.empty
+  -- Either create an object of the 'Portage.Metadata' type from a valid @current_meta@,
+  -- or supply a default minimal metadata object. Note the difference to @current_meta@:
+  -- @current_meta@ is of type 'T.Text', @current_meta'@ is of type 'Portage.Metadata'.
+  let current_meta' = fromMaybe Portage.makeMinimalMetadata (Portage.pureMetadataFromFile current_meta)
+      -- Create the @metadata.xml@ string, adding new USE flags (if any) to those of
+      -- the existing @metadata.xml@. If an existing flag has a new and old description,
+      -- the new one takes precedence.
+      default_meta = T.pack $ Portage.makeDefaultMetadata (E.long_desc ebuild)
+                     $ metaFlags flags <> Portage.metadataUseFlags current_meta'
+      -- Create a 'Map.Map' of USE flags with updated descriptions.
+      new_flags = Map.differenceWith (\new old -> if (new /= old)
+                                                  then Just $ old ++ A.bold (" -> " ++ new)
+                                                  else Nothing)
+                  (metaFlags flags)
+                  $ Portage.metadataUseFlags current_meta'
+
   createDirectoryIfMissing True edir
   now <- TC.getCurrentTime
 
@@ -504,12 +568,14 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice verbosity $ "Writing " ++ elocal
-  length s_ebuild' `seq` BL.writeFile epath (BL.pack s_ebuild')
+  length s_ebuild' `seq` T.writeFile epath (T.pack s_ebuild')
 
-  yet_meta <- doesFileExist mpath
-  if not yet_meta -- TODO: add --force-meta-rewrite to opts
-      then do notice verbosity $ "Writing " ++ emeta
-              BL.writeFile mpath default_meta
-      else do current_meta <- BL.readFile mpath
-              when (current_meta /= default_meta) $
-                  notice verbosity $ "Default and current " ++ emeta ++ " differ."
+  when (current_meta /= default_meta) $ do
+    notice verbosity $ A.bold $ "Default and current " ++ emeta ++ " differ."
+    if (new_flags /= Map.empty)
+    then notice verbosity $ "New or updated USE flags:\n" ++
+         (unlines $ Portage.prettyPrintFlagsHuman new_flags)
+    else notice verbosity "No new USE flags."
+
+    notice verbosity $ "Writing " ++ emeta
+    T.writeFile mpath default_meta

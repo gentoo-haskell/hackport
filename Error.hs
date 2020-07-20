@@ -5,6 +5,7 @@ module Error (HackPortError(..), throwEx, catchEx, hackPortShowError) where
 import Data.Typeable
 import Control.Exception.Extensible as EE
 
+-- | Type holding all of the 'HackPortError' constructors.
 data HackPortError
     = ArgumentError String
     | ConnectionFailed String String
@@ -30,12 +31,15 @@ data HackPortError
 
 instance Exception HackPortError where
 
+-- | Throw a 'HackPortError'.
 throwEx :: HackPortError -> IO a
 throwEx = EE.throw
 
+-- | Catch a 'HackPortError'.
 catchEx :: IO a -> (HackPortError -> IO a) -> IO a
 catchEx = EE.catch
 
+-- | Show the error string for a given 'HackPortError'.
 hackPortShowError :: HackPortError -> String
 hackPortShowError err = case err of
     ArgumentError str -> "Argument error: "++str

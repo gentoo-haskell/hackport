@@ -1,4 +1,10 @@
--- | Tables of portage specific convertations
+{-|
+Module      : Portage.Tables
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Tables of Portage-specific conversions.
+-}
 module Portage.Tables
   ( set_build_slot
   ) where
@@ -9,6 +15,7 @@ import Portage.PackageId
 
 import Data.Monoid
 
+-- | Set the @SLOT@ for a given 'Dependency'.
 set_build_slot :: Dependency -> Dependency
 set_build_slot = 
   overAtom $ \a@(Atom pn dr (DAttr _ u)) -> 
@@ -20,6 +27,9 @@ set_build_slot =
         | pn == nm  = Just s
         | otherwise = Nothing
 
+-- | List of 'PackageName's with their corresponding default 'SlotDepend's.
+--
+-- For example, dependency @QuickCheck@ has its @SLOT@ always set to @2@.
 slottedPkgs :: [(PackageName, SlotDepend)]
 slottedPkgs =
   [ (mkPackageName "dev-haskell" "quickcheck", GivenSlot "2=")

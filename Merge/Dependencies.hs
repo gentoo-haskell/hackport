@@ -1,7 +1,11 @@
-{-# LANGUAGE CPP #-}
+{-|
+Module      : Merge.Dependencies
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
 
-{- | Merge a package from hackage to an ebuild.
- -}
+Merge a package from @hackage@ to an ebuild.
+-}
+{-# LANGUAGE CPP #-}
 module Merge.Dependencies
   ( EDep(..)
   , RetroPackageDescription(..)
@@ -42,7 +46,7 @@ import Debug.Trace ( trace )
 import Data.Semigroup (Semigroup(..))
 #endif
 
--- | Dependencies of an ebuild
+-- | Dependencies of an ebuild.
 data EDep = EDep
   {
     rdep :: Portage.Dependency,
@@ -52,17 +56,17 @@ data EDep = EDep
   }
   deriving (Show, Eq, Ord)
 
--- | Cabal-1 style PackageDescription, with a top-level buildDepends function
+-- | Cabal-1 style 'Cabal.PackageDescription', with a top-level 'buildDepends' function.
 data RetroPackageDescription = RetroPackageDescription {
   packageDescription :: Cabal.PackageDescription,
   buildDepends :: [Cabal.Dependency]
   } deriving (Show)
 
--- | Construct a RetroPackageDescription using exeAndLibDeps for the buildDepends.
+-- | Construct a 'RetroPackageDescription' using 'exeAndLibDeps' for the 'buildDepends'.
 mkRetroPD :: Cabal.PackageDescription -> RetroPackageDescription
 mkRetroPD pd = RetroPackageDescription { packageDescription = pd, buildDepends = exeAndLibDeps pd }
 
--- | extract only the build dependencies for libraries and executables for a given package.
+-- | Extract only the build dependencies for libraries and executables for a given package.
 exeAndLibDeps :: Cabal.PackageDescription -> [Cabal.Dependency]
 exeAndLibDeps pkg = L.union
                     (concat
@@ -99,6 +103,7 @@ instance Monoid EDep where
     }
 #endif
 
+-- | Resolve package dependencies from a 'RetroPackageDescription' into an 'EDep'.
 resolveDependencies :: Portage.Overlay -> RetroPackageDescription -> Cabal.CompilerInfo
                     -> [Cabal.PackageName] -> Cabal.PackageName
                     -> EDep

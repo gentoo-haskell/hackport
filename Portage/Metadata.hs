@@ -1,34 +1,99 @@
+{-|
+Module      : Portage.Metadata
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Functions and types related to @metadata.xml@ processing
+-}
 module Portage.Metadata
         ( Metadata(..)
         , metadataFromFile
+        , pureMetadataFromFile
+        , prettyPrintFlagsHuman
         , makeDefaultMetadata
+        , makeMinimalMetadata
         ) where
 
-import qualified Data.ByteString as B
+import qualified AnsiColor as A
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import qualified Data.Map.Strict as Map
 
 import Text.XML.Light
 
-newtype Metadata = Metadata
-      { metadata_emails :: [String]
-      -- , metadataMaintainers :: [String],
-      -- , metadataUseFlags :: [(String,String)]
-      } deriving (Show)
+-- | A data type for the Gentoo-specific @metadata.xml@ file.
+-- Currently defines functions for the maintainer email and
+-- USE flags and their descriptions.
+data Metadata = Metadata
+      { metadataEmails :: [String] -- ^ This should /always/ be [\"haskell@gentoo.org\"].
+      , metadataUseFlags :: Map.Map String String -- ^ Only /active/ USE flags, if any.
+      } deriving (Eq, Show)
 
+-- | Maybe return a 'Metadata' from a 'T.Text'.
+--
+-- Trying to parse an empty 'T.Text' should return 'Nothing':
+--
+-- prop> pureMetadataFromFile T.empty == Nothing
+--
+-- Parsing a @metadata.xml@ /without/ USE flags should /always/ be equivalent
+-- to 'makeMinimalMetadata', no matter the package description:
+--
+-- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc Map.empty)) == Just makeMinimalMetadata
+--
+-- Parsing a @metadata.xml@ /with/ USE flags should /always/ be equivalent
+-- to 'makeMinimalMetadata' /plus/ the supplied USE flags, no matter the
+-- package description:
+--
+-- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc (Map.fromList [("name","description")]))) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
+pureMetadataFromFile :: T.Text -> Maybe Metadata
+pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
+
+-- | Apply 'pureMetadataFromFile' to a 'FilePath'.
 metadataFromFile :: FilePath -> IO (Maybe Metadata)
-metadataFromFile fp = do
-  doc <- parseXMLDoc <$> B.readFile fp
-  return (doc >>= parseMetadata)
+metadataFromFile fp = pureMetadataFromFile <$> T.readFile fp
 
+-- | Extract the maintainer email and USE flags from a supplied XML 'Element'.
+-- 
+-- If we're parsing a blank 'Element' or otherwise empty @metadata.xml@:
+-- >>> parseMetadata blank_element
+-- Just (Metadata {metadataEmails = [], metadataUseFlags = fromList []})
 parseMetadata :: Element -> Maybe Metadata
 parseMetadata xml =
-  return Metadata { metadata_emails = map strContent (findElements (unqual "email") xml) }
+  return Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
+                  , metadataUseFlags =
+                      -- find the flag name
+                      let x = findElement (unqual "use") xml
+                          y = onlyElems $ concatMap elContent x
+                          z = attrVal <$> concatMap elAttribs y
+                      -- find the flag description
+                          a = concatMap elContent y
+                          b = cdData <$> onlyText a
+                      in Map.fromList $ zip z b
+                  }
 
-formatFlags :: (String, String) -> String
-formatFlags (name, description) = "\t\t<flag name=\"" ++ name ++
-                                  "\">" ++ description ++ "</flag>"
+-- | Pretty print as valid XML a list of flags and their descriptions
+-- from a given 'Map.Map'.
+prettyPrintFlags :: Map.Map String String -> [String]
+prettyPrintFlags m = (\(name,description) -> "\t\t<flag name=\"" ++ name ++
+                                          "\">" ++ description ++ "</flag>")
+                     <$> Map.toAscList m
+
+-- | Pretty print a human-readable list of flags and their descriptions
+-- from a given 'Map.Map'.
+prettyPrintFlagsHuman :: Map.Map String String -> [String]
+prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++ description)
+                          <$> Map.toAscList m
+                          
+-- | A minimal metadata for use as a fallback value.
+makeMinimalMetadata :: Metadata
+makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
+                               , metadataUseFlags = Map.empty
+                               }
 
 -- don't use Text.XML.Light as we like our own pretty printer
-makeDefaultMetadata :: String -> [(String, String)] -> String
+-- | Pretty print the @metadata.xml@ string.
+makeDefaultMetadata :: String -> Map.Map String String -> String
 makeDefaultMetadata long_description flags =
     unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
@@ -37,10 +102,7 @@ makeDefaultMetadata long_description flags =
             , "\t\t<email>haskell@gentoo.org</email>"
             , "\t\t<name>Gentoo Haskell</name>"
             , "\t</maintainer>"
-            , if (formatFlags <$> flags) == [""]
-              then "\t<use>\n\t</use>"
-              else "\t<use>\n" ++ (unlines $ formatFlags <$> flags) ++
-                   "\t</use>"
+            , "\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
             , (init {- strip trailing newline-}
               . unlines
               . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]

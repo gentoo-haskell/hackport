@@ -1,3 +1,12 @@
+{-|
+Module      : Portage.EMeta
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
+
+Functions to propagate existing ebuild information
+(such as its licence, description, switched flags etc.) to
+a new ebuild.
+-}
 module Portage.EMeta
   ( EMeta(..)
   , findExistingMeta
@@ -11,15 +20,15 @@ import System.Directory (doesDirectoryExist, getDirectoryContents)
 import System.FilePath ((</>))
 import Text.Printf
 
--- tries to extract value of variable in 'var="val"' format
--- There should be exactly one variable assignment in ebuild
--- It's a bit artificial limitation, but it's common for 'if / else' blocks
+-- | Extract a value of variable in \'var=\"val\"\' format.
+-- There should be exactly one variable assignment in the ebuild.
+-- It's a bit of an artificial limitation, but it's common for \'if / else\' blocks.
 extract_quoted_string :: FilePath -> String -> String -> Maybe String
 extract_quoted_string ebuild_path s_ebuild var_name =
     case filter (L.isPrefixOf var_prefix . ltrim) $ lines s_ebuild of
         []        -> Nothing
         [kw_line] -> up_to_quote $ skip_prefix $ ltrim kw_line
-        other     -> bail_out $ printf "strange '%s' assignmets:\n%s" var_name (unlines other)
+        other     -> bail_out $ printf "strange '%s' assignments:\n%s" var_name (unlines other)
 
     where ltrim :: String -> String
           ltrim = dropWhile isSpace
@@ -32,8 +41,8 @@ extract_quoted_string ebuild_path s_ebuild var_name =
           bail_out :: String -> e
           bail_out msg = error $ printf "%s:extract_quoted_string %s" ebuild_path msg
 
--- tries to extract value of variable in '#hackport: var: val' format
--- There should be exactly one variable assignment in ebuild.
+-- | Extract a value of variable in \'#hackport: var: val\' format.
+-- There should be exactly one variable assignment in the ebuild.
 extract_hackport_var :: FilePath -> String -> String -> Maybe String
 extract_hackport_var ebuild_path s_ebuild var_name =
     case filter (L.isPrefixOf var_prefix) $ lines s_ebuild of
@@ -46,29 +55,35 @@ extract_hackport_var ebuild_path s_ebuild var_name =
           bail_out :: String -> e
           bail_out msg = error $ printf "%s:extract_hackport_var %s" ebuild_path msg
 
+-- | Extract the existing keywords from an ebuild.
 extractKeywords :: FilePath -> String -> Maybe [String]
 extractKeywords ebuild_path s_ebuild =
     words `fmap ` extract_quoted_string ebuild_path s_ebuild "KEYWORDS"
 
+-- | Extract the existing license from an ebuild.
 extractLicense :: FilePath -> String -> Maybe String
 extractLicense ebuild_path s_ebuild =
     extract_quoted_string ebuild_path s_ebuild "LICENSE"
 
+-- | Extract the existing Cabal flags from an ebuild.
 extractCabalFlags :: FilePath -> String -> Maybe String
 extractCabalFlags ebuild_path s_ebuild =
     extract_hackport_var ebuild_path s_ebuild "flags"
 
+-- | Extract the existing description from an ebuild.
 extractDescription :: FilePath -> String -> Maybe String
 extractDescription ebuild_path s_ebuild =
     extract_quoted_string ebuild_path s_ebuild "DESCRIPTION"
 
--- aggregated (best inferred) metadata for a new ebuild of package
+-- | Type representing the aggregated (best inferred) metadata for a
+-- new ebuild of a package.
 data EMeta = EMeta { keywords :: Maybe [String]
                    , license  :: Maybe String
                    , cabal_flags :: Maybe String
                    , description :: Maybe String
                    }
 
+-- | Find the existing package metadata from the last available ebuild.
 findExistingMeta :: FilePath -> IO EMeta
 findExistingMeta pkgdir =
     do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` do b <- doesDirectoryExist pkgdir

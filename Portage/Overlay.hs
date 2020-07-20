@@ -40,12 +40,14 @@ instance Cabal.Package ExistingEbuild where
 instance Cabal.HasUnitId ExistingEbuild where
     installedUnitId _ = error "Portage.Cabal.installedUnitId: FIXME: should not be used"
 
+-- | Type describing an overlay.
 data Overlay = Overlay {
     overlayPath  :: FilePath,
     overlayMap :: Map Portage.PackageName [ExistingEbuild],
     overlayMetadata :: Map Portage.PackageName Portage.Metadata
   } deriving Show
 
+-- | Is 'Cabal.PackageId' found in 'Overlay'?
 inOverlay :: Overlay -> Cabal.PackageId -> Bool
 inOverlay overlay pkgId = not (Map.null packages)
   where
@@ -106,11 +108,11 @@ filterByEmail p overlay = overlay
                             , overlayMap = pkgMap'
                             }
   where
-    metadataMap' = Map.filter (p . Portage.metadata_emails) (overlayMetadata overlay)
+    metadataMap' = Map.filter (p . Portage.metadataEmails) (overlayMetadata overlay)
     pkgMap' = Map.intersection (overlayMap overlay) metadataMap'
 
 
--- make sure there is only one ebuild for each version number (by selecting
+-- | Make sure there is only one ebuild for each version number (by selecting
 -- the highest ebuild version revision)
 reduceOverlay :: Overlay -> Overlay
 reduceOverlay overlay = overlay { overlayMap = Map.map reduceVersions (overlayMap overlay) }

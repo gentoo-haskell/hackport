@@ -1,7 +1,11 @@
 {-# LANGUAGE CPP #-}
+{-|
+Module      : Portage.PackageId
+License     : GPL-3+
+Maintainer  : haskell@gentoo.org
 
--- | Portage package identifiers, which unlike Cabal ones include a category.
---
+Portage package identifiers, which unlike Cabal ones include a category.
+-}
 module Portage.PackageId (
     Category(..),
     PackageName(..),
@@ -39,9 +43,11 @@ import Prelude hiding ((<>))
 newtype Category = Category { unCategory :: String }
   deriving (Eq, Ord, Show, Read)
 
+-- | Portage-style 'PackageName', containing a 'Category' and a 'Cabal.PackageName'.
 data PackageName = PackageName { category :: Category, cabalPkgName :: Cabal.PackageName }
   deriving (Eq, Ord, Show, Read)
 
+-- | Portage-style 'PackageId', containing a 'PackageName' and a 'Portage.Version'.
 data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
@@ -75,6 +81,10 @@ instance Parsec PackageId where
     version <- parsec
     return $ PackageId name version
 
+-- | Transform a 'PackageId' into a 'FilePath'.
+-- 
+-- >>> packageIdToFilePath (PackageId (PackageName (Category "dev-haskell") (Cabal.mkPackageName "foo-bar2")) (Portage.Version [3,0,0] (Just 'b') [Portage.RC 2] 1 ))
+-- "dev-haskell/foo-bar2/foo-bar2-3.0.0b_rc2-r1.ebuild"
 packageIdToFilePath :: PackageId -> FilePath
 packageIdToFilePath (PackageId (PackageName cat pn) version) =
   prettyShow cat </> prettyShow pn </> prettyShow pn <-> prettyShow version <.> "ebuild"
@@ -82,12 +92,11 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
 
--- TODO: fix the parser such that it can tolerate malformed package strings,
--- strings with ".ebuild" extensions and strings which are not in fact package
--- strings at all (e.g. metadata.xml). Then we can eliminate the string manipulation
--- present in Merge.getPreviousPackageId, which ensures this function is only fed
--- well-formed package strings, i.e <name>-<version>.
--- | Maybe generate a PackageId from a FilePath.
+-- | Maybe generate a 'PackageId' from a 'FilePath'. Note that the 'FilePath' must have its
+-- file extension stripped before being passed to 'filePathToPackageId'.
+-- 
+-- >>> filePathToPackageId (Category "dev-haskell") "foo-bar2-3.0.0b_rc2-r1"
+-- Just (PackageId {packageId = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,0], versionChar = Just 'b', versionSuffix = [RC 2], versionRevision = 1}})
 filePathToPackageId :: Category -> FilePath -> Maybe PackageId
 filePathToPackageId cat fp =
   case explicitEitherParsec parser fp of
@@ -100,27 +109,41 @@ filePathToPackageId cat fp =
       v <- parsec
       return $ PackageId (PackageName cat pn) v
 
+-- | Create a 'PackageName' from supplied category and package name 'String's.
 mkPackageName :: String -> String -> PackageName
 mkPackageName cat package = PackageName (Category cat) (Cabal.mkPackageName package)
 
+-- | Create a 'PackageId' from a 'Category' and 'Cabal.PackageIdentifier'.
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
 fromCabalPackageId category (Cabal.PackageIdentifier name version) =
   PackageId (PackageName category (normalizeCabalPackageName name))
             (Portage.fromCabalVersion version)
 
+-- | Convert a 'Cabal.PackageName' into lowercase. Internally uses
+-- 'cabal_pn_to_PN'.
+--
+-- >>> normalizeCabalPackageName (Cabal.mkPackageName "FooBar1")
+-- PackageName "foobar1"
 normalizeCabalPackageName :: Cabal.PackageName -> Cabal.PackageName
 normalizeCabalPackageName =
-  Cabal.mkPackageName . map Char.toLower . Cabal.unPackageName
+  Cabal.mkPackageName . cabal_pn_to_PN
 
+-- | Apply 'normalizeCabalPackageName' to the 'Cabal.PackageName' of
+-- a supplied 'Cabal.PackageIdentifier'.
 normalizeCabalPackageId :: Cabal.PackageIdentifier -> Cabal.PackageIdentifier
 normalizeCabalPackageId (Cabal.PackageIdentifier name version) =
   Cabal.PackageIdentifier (normalizeCabalPackageName name) version
 
+-- | Convert a 'PackageId' into a 'Maybe' 'Cabal.PackageIdentifier'.
 toCabalPackageId :: PackageId -> Maybe Cabal.PackageIdentifier
 toCabalPackageId (PackageId (PackageName _cat name) version) =
   fmap (Cabal.PackageIdentifier name)
            (Portage.toCabalVersion version)
 
+-- | Parse a 'String' as a package in the form of @[category\/]name[-version]@.
+-- 
+-- >>> parseFriendlyPackage "category-name/package-name1-0.0.0.1a_beta2-r4"
+-- Right (Just (Category {unCategory = "category-name"}),PackageName "package-name1",Just (Version {versionNumber = [0,0,0,1], versionChar = Just 'a', versionSuffix = [Beta 2], versionRevision = 4}))
 parseFriendlyPackage :: String -> Either String (Maybe Category, Cabal.PackageName, Maybe Portage.Version)
 parseFriendlyPackage str = explicitEitherParsec parser str
   where
@@ -136,10 +159,9 @@ parseFriendlyPackage str = explicitEitherParsec parser str
       return v
     return (mc, p, mv)
 
--- | Parse a Cabal PackageName. Note that we cannot use the @parsec@
--- method as defined in the @Parsec PackageName@ instance, since it
--- fails the entire PackageName parse if it tries to parse a version
--- number.
+-- | Parse a 'Cabal.PackageName'. Note that we cannot use the 'parsec' function
+-- from "Distribution.Parsec" here, since it fails the entire 'Cabal.PackageName' parse
+-- if it tries to parse a version number.
 parseCabalPackageName :: CabalParsing m => m Cabal.PackageName
 parseCabalPackageName = do
   pn <- P.some . P.try $
@@ -149,5 +171,11 @@ parseCabalPackageName = do
     ]
   return $ Cabal.mkPackageName pn
 
+-- | Pretty-print a lowercase 'Cabal.PackageName'. Note the difference between
+-- 'cabal_pn_to_PN' and 'normalizeCabalPackageName': the former returns
+-- a 'String', the latter a 'Cabal.PackageName'.
+--
+-- >>> cabal_pn_to_PN (Cabal.mkPackageName "FooBar1")
+-- "foobar1"
 cabal_pn_to_PN :: Cabal.PackageName -> String
 cabal_pn_to_PN = map Char.toLower . prettyShow
