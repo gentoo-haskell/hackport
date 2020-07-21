@@ -733,7 +733,6 @@ test-suite spec
                         parsec,
                         pretty,
                         process,
-                        QuickCheck >= 2.0,
                         split,
                         text,
                         time,
