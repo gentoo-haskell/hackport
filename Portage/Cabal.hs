@@ -25,7 +25,7 @@ import qualified Distribution.Pretty  as Cabal
 -- as a 'Right' 'String':
 --
 -- >>> convertLicense (SPDX.License $ SPDX.simpleLicenseExpression SPDX.GPL_3_0_or_later)
--- Right "GPL-3.0"
+-- Right "GPL-3"
 --
 -- If it is a more obscure license, this should alert the user by returning
 -- a 'Left' 'String':
@@ -37,7 +37,10 @@ convertLicense l =
     case Cabal.licenseFromSPDX l of
         --  good ones
         Cabal.AGPL mv      -> Right $ "AGPL-" ++ (maybe "3" Cabal.prettyShow mv)  -- almost certainly version 3
-        Cabal.GPL mv       -> Right $ "GPL-" ++ (maybe "2" Cabal.prettyShow mv)  -- almost certainly version 2
+        Cabal.GPL mv       -> Right $ "GPL-" ++ case (Cabal.prettyShow <$> mv) of
+                                                  Just "2.0" -> "2"
+                                                  Just "3.0" -> "3"
+                                                  _     -> "2"
         Cabal.LGPL mv      -> Right $ "LGPL-" ++ (maybe "2.1" Cabal.prettyShow mv) -- probably version 2.1
         Cabal.BSD2         -> Right "BSD-2"
         Cabal.BSD3         -> Right "BSD"
