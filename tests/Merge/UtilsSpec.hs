@@ -94,7 +94,7 @@ spec = do
           _ -> '~':a
 
   describe "metaFlags" $ do
-    prop "converts a [Cabal.Flag] into a Map.Map String String" $ do
+    prop "converts a [Cabal.PackageFlag] into a Map.Map String String" $ do
       \name desc -> metaFlags [(Cabal.emptyFlag (Cabal.mkFlagName name))
                                 { Cabal.flagDescription = desc }] ==
                     Map.fromList [(mangle_iuse name,desc)]
