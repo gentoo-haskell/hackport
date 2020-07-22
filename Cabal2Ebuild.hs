@@ -22,13 +22,16 @@ module Cabal2Ebuild
         ,convertDependency) where
 
 import qualified Distribution.PackageDescription as Cabal
-                                                (PackageDescription(..), license)
-import qualified Distribution.Package as Cabal  (PackageIdentifier(..)
+                                                ( PackageDescription(..), license)
+import qualified Distribution.Package as Cabal  ( PackageIdentifier(..)
                                                 , Dependency(..))
-import qualified Distribution.Version as Cabal  (VersionRange, cataVersionRange, normaliseVersionRange
-                                                , wildcardUpperBound, majorUpperBound)
+import qualified Distribution.Version as Cabal  ( VersionRange
+                                                , cataVersionRange, normaliseVersionRange
+                                                , majorUpperBound, mkVersion )
 import Distribution.Version (VersionRangeF(..))
 import Distribution.Pretty (prettyShow)
+
+import qualified Distribution.Utils.ShortText as ST
 
 import Data.Char          (isUpper)
 import Data.Maybe
@@ -50,10 +53,12 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.category    = prettyShow cat,
     E.hackage_name= cabalPkgName,
     E.version     = prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
-    E.description = if null (Cabal.synopsis pkg) then Cabal.description pkg
-                                               else Cabal.synopsis pkg,
-    E.long_desc       = if null (Cabal.description pkg) then Cabal.synopsis pkg
-                                               else Cabal.description pkg,
+    E.description = ST.fromShortText $ if ST.null (Cabal.synopsis pkg)
+                                          then Cabal.description pkg
+                                          else Cabal.synopsis pkg,
+    E.long_desc       = ST.fromShortText $ if ST.null (Cabal.description pkg)
+                                              then Cabal.synopsis pkg
+                                              else Cabal.description pkg,
     E.homepage        = thisHomepage,
     E.license         = Portage.convertLicense $ Cabal.license pkg,
     E.slot            = (E.slot E.ebuildTemplate) ++ (if hasLibs then "/${PV}" else ""),
@@ -75,9 +80,9 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
         cabalPkgName = prettyShow cabal_pn
         hasLibs = isJust (Cabal.library pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
-        thisHomepage = if (null $ Cabal.homepage pkg)
+        thisHomepage = if (ST.null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
-                         else Cabal.homepage pkg
+                         else ST.fromShortText $ Cabal.homepage pkg
 
 -- | Map 'convertDependency' over ['Cabal.Dependency'].
 convertDependencies :: O.Overlay -> Portage.Category -> [Cabal.Dependency] -> [Dependency]
@@ -98,16 +103,15 @@ convertDependency overlay category (Cabal.Dependency pname versionRange _lib)
     convert :: Cabal.VersionRange -> Dependency
     convert = Cabal.cataVersionRange alg . Cabal.normaliseVersionRange
               where
-                alg AnyVersionF                     = mk_p $ DRange ZeroB InfinityB
                 alg (ThisVersionF v)                = mk_p $ DExact $ p_v v
                 alg (LaterVersionF v)               = mk_p $ DRange (StrictLB $ p_v v) InfinityB
                 alg (EarlierVersionF v)             = mk_p $ DRange ZeroB $ StrictUB $ p_v v
-                alg (OrLaterVersionF v)             = mk_p $ DRange (NonstrictLB $ p_v v) InfinityB
+                alg (OrLaterVersionF v)             = if v == Cabal.mkVersion [0] -- any version
+                                                      then mk_p $ DRange ZeroB InfinityB
+                                                      else mk_p $ DRange (NonstrictLB $ p_v v)
+                                                           InfinityB
                 alg (OrEarlierVersionF v)           = mk_p $ DRange ZeroB $ NonstrictUB $ p_v v
-                alg (WildcardVersionF v)            = mk_p $ DRange (NonstrictLB $ p_v v)
-                                                      $ StrictUB $ p_v $ Cabal.wildcardUpperBound v
                 alg (MajorBoundVersionF v)          = mk_p $ DRange (NonstrictLB $ p_v v)
                                                       $ StrictUB $ p_v $ Cabal.majorUpperBound v
                 alg (UnionVersionRangesF v1 v2)     = DependAnyOf [v1, v2]
                 alg (IntersectVersionRangesF v1 v2) = DependAllOf [v1, v2]
-                alg (VersionRangeParensF v)         = v

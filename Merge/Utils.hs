@@ -129,14 +129,14 @@ to_unstable kw =
         '-':_ -> kw
         _     -> '~':kw
 
--- | Generate a 'Map.Map' of 'Cabal.Flag' names and their descriptions.
+-- | Generate a 'Map.Map' of 'Cabal.PackageFlag' names and their descriptions.
 --
--- For example, if we construct a singleton list holding a 'Cabal.Flag' with
--- 'FlagName' @foo@ and 'FlagDescription' @bar@, we should get a 'Map.Map' containing
--- those values:
+-- For example, if we construct a singleton list holding a 'Cabal.PackageFlag' with
+-- 'Cabal.FlagName' @foo@ and 'Cabal.FlagDescription' @bar@, we should get
+-- a 'Map.Map' containing those values:
 --
 -- >>> let flags = [(Cabal.emptyFlag (Cabal.mkFlagName "foo")) {Cabal.flagDescription = "bar"}]
 -- >>> metaFlags flags
 -- fromList [("foo","bar")]
-metaFlags :: [Cabal.Flag] -> Map.Map String String
+metaFlags :: [Cabal.PackageFlag] -> Map.Map String String
 metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)

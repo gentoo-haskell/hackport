@@ -135,7 +135,7 @@ Executable    hackport
     Portage.Version
     Status
     Util
-    -- cabal modules
+    -- cabal modules 
     Distribution.Backpack
     Distribution.Backpack.ComponentsGraph
     Distribution.Backpack.Configure
@@ -156,6 +156,7 @@ Executable    hackport
     Distribution.Client.BuildReports.Types
     Distribution.Client.CmdInstall.ClientInstallFlags
     Distribution.Client.Compat.Directory
+    Distribution.Client.Compat.Orphans
     Distribution.Client.Compat.Prelude
     Distribution.Client.Compat.Semaphore
     Distribution.Client.Config
@@ -163,22 +164,39 @@ Executable    hackport
     Distribution.Client.FetchUtils
     Distribution.Client.GZipUtils
     Distribution.Client.GlobalFlags
+    Distribution.Client.HashValue
     Distribution.Client.HttpUtils
     Distribution.Client.IndexUtils
+    Distribution.Client.IndexUtils.ActiveRepos
+    Distribution.Client.IndexUtils.IndexState
     Distribution.Client.IndexUtils.Timestamp
+    Distribution.Client.Init.Defaults
     Distribution.Client.Init.Types
-    Distribution.Client.InstallPlan
-    Distribution.Client.InstallSymlink
     Distribution.Client.JobControl
+    Distribution.Client.ManpageFlags
     Distribution.Client.ParseUtils
+    Distribution.Client.ProjectFlags
     Distribution.Client.Security.DNS
     Distribution.Client.Security.HTTP
     Distribution.Client.Setup
-    Distribution.Client.SolverInstallPlan
-    Distribution.Client.SourceRepo
     Distribution.Client.Tar
     Distribution.Client.Targets
     Distribution.Client.Types
+    Distribution.Client.Types.AllowNewer
+    Distribution.Client.Types.BuildResults
+    Distribution.Client.Types.ConfiguredId
+    Distribution.Client.Types.ConfiguredPackage
+    Distribution.Client.Types.Credentials
+    Distribution.Client.Types.InstallMethod
+    Distribution.Client.Types.OverwritePolicy
+    Distribution.Client.Types.PackageLocation
+    Distribution.Client.Types.PackageSpecifier
+    Distribution.Client.Types.ReadyPackage
+    Distribution.Client.Types.Repo
+    Distribution.Client.Types.RepoName
+    Distribution.Client.Types.SourcePackageDb
+    Distribution.Client.Types.SourceRepo
+    Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
     Distribution.Client.Update
     Distribution.Client.Utils
     Distribution.Client.World
@@ -195,23 +213,25 @@ Executable    hackport
     Distribution.Compat.Graph
     Distribution.Compat.Internal.TempFile
     Distribution.Compat.Lens
-    Distribution.Compat.MD5
     Distribution.Compat.MonadFail
     Distribution.Compat.Newtype
+    Distribution.Compat.NonEmptySet
     Distribution.Compat.Parsing
     Distribution.Compat.Prelude
     Distribution.Compat.Prelude.Internal
+    Distribution.Compat.Process
     Distribution.Compat.Semigroup
     Distribution.Compat.Stack
     Distribution.Compat.Time
+    Distribution.Compat.Typeable
     Distribution.Compiler
     Distribution.Deprecated.ParseUtils
     Distribution.Deprecated.ReadP
-    Distribution.Deprecated.Text
     Distribution.Deprecated.ViewAsFieldDescr
     Distribution.FieldGrammar
     Distribution.FieldGrammar.Class
     Distribution.FieldGrammar.FieldDescrs
+    Distribution.FieldGrammar.Newtypes
     Distribution.FieldGrammar.Parsec
     Distribution.FieldGrammar.Pretty
     Distribution.Fields
@@ -239,7 +259,6 @@ Executable    hackport
     Distribution.Parsec
     Distribution.Parsec.Error
     Distribution.Parsec.FieldLineStream
-    Distribution.Parsec.Newtypes
     Distribution.Parsec.Position
     Distribution.Parsec.Warning
     Distribution.Pretty
@@ -296,17 +315,13 @@ Executable    hackport
     Distribution.Solver.Compat.Prelude
     Distribution.Solver.Types.ComponentDeps
     Distribution.Solver.Types.ConstraintSource
-    Distribution.Solver.Types.InstSolverPackage
     Distribution.Solver.Types.LabeledPackageConstraint
     Distribution.Solver.Types.OptionalStanza
     Distribution.Solver.Types.PackageConstraint
     Distribution.Solver.Types.PackageFixedDeps
     Distribution.Solver.Types.PackageIndex
     Distribution.Solver.Types.PackagePath
-    Distribution.Solver.Types.ResolverPackage
     Distribution.Solver.Types.Settings
-    Distribution.Solver.Types.SolverId
-    Distribution.Solver.Types.SolverPackage
     Distribution.Solver.Types.SourcePackage
     Distribution.System
     Distribution.TestSuite
@@ -393,11 +408,13 @@ Executable    hackport
     Distribution.Utils.Generic
     Distribution.Utils.IOData
     Distribution.Utils.LogProgress
+    Distribution.Utils.MD5
     Distribution.Utils.MapAccum
     Distribution.Utils.NubList
     Distribution.Utils.Progress
     Distribution.Utils.ShortText
     Distribution.Utils.String
+    Distribution.Utils.Structured
     Distribution.Utils.UnionFind
     Distribution.Verbosity
     Distribution.Verbosity.Internal
@@ -561,14 +578,14 @@ test-suite spec
   Default-Language:     Haskell2010
   Main-Is:              tests/Spec.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
-  other-modules:        Merge.UtilsSpec,
-                        Portage.CabalSpec,
-                        Portage.Dependency.PrintSpec,
-                        Portage.EBuildSpec,
-                        Portage.GHCCoreSpec,
-                        Portage.MetadataSpec,
-                        Portage.PackageIdSpec,
-                        Portage.VersionSpec,
+  other-modules:        Merge.UtilsSpec
+                        Portage.CabalSpec
+                        Portage.Dependency.PrintSpec
+                        Portage.EBuildSpec
+                        Portage.GHCCoreSpec
+                        Portage.MetadataSpec
+                        Portage.PackageIdSpec
+                        Portage.VersionSpec
                         -- cabal:
                         Distribution.Backpack
                         Distribution.CabalSpecVersion
@@ -584,14 +601,18 @@ test-suite spec
                         Distribution.Compat.Lens
                         Distribution.Compat.MonadFail
                         Distribution.Compat.Newtype
+                        Distribution.Compat.NonEmptySet
                         Distribution.Compat.Parsing
                         Distribution.Compat.Prelude
+                        Distribution.Compat.Process
                         Distribution.Compat.Semigroup
                         Distribution.Compat.Stack
+                        Distribution.Compat.Typeable
                         Distribution.Compiler
                         Distribution.FieldGrammar
                         Distribution.FieldGrammar.Class
                         Distribution.FieldGrammar.FieldDescrs
+                        Distribution.FieldGrammar.Newtypes
                         Distribution.FieldGrammar.Parsec
                         Distribution.FieldGrammar.Pretty
                         Distribution.Fields
@@ -611,7 +632,6 @@ test-suite spec
                         Distribution.Parsec
                         Distribution.Parsec.Error
                         Distribution.Parsec.FieldLineStream
-                        Distribution.Parsec.Newtypes
                         Distribution.Parsec.Position
                         Distribution.Parsec.Warning
                         Distribution.Pretty
@@ -677,6 +697,7 @@ test-suite spec
                         Distribution.Types.PackageId
                         Distribution.Types.PackageId.Lens
                         Distribution.Types.PackageName
+                        Distribution.Types.PackageVersionConstraint
                         Distribution.Types.PkgconfigDependency
                         Distribution.Types.PkgconfigName
                         Distribution.Types.PkgconfigVersion
@@ -697,8 +718,10 @@ test-suite spec
                         Distribution.Utils.Base62
                         Distribution.Utils.Generic
                         Distribution.Utils.IOData
+                        Distribution.Utils.MD5
                         Distribution.Utils.ShortText
                         Distribution.Utils.String
+                        Distribution.Utils.Structured
                         Distribution.Verbosity
                         Distribution.Verbosity.Internal
                         Distribution.Version

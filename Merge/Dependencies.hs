@@ -17,15 +17,14 @@ module Merge.Dependencies
 import Data.Maybe ( isJust, isNothing )
 import Data.Monoid ( Monoid, mempty )
 import qualified Data.List as L
-import qualified Data.Set as S
+import qualified Data.Set  as S
 
+import qualified Distribution.CabalSpecVersion as Cabal
+import qualified Distribution.Compat.NonEmptySet as NES
 import qualified Distribution.Package as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.Pretty as Cabal
-import qualified Distribution.Types.ExeDependency as Cabal
-import qualified Distribution.Types.LegacyExeDependency as Cabal
-import qualified Distribution.Types.PkgconfigDependency as Cabal
 
 import qualified Distribution.Compiler as Cabal
 
@@ -224,10 +223,11 @@ cabalDependency overlay pkg ~(Cabal.CompilerInfo {
          C2E.convertDependency overlay
                                (Portage.Category "dev-haskell")
                                (Cabal.Dependency (Cabal.mkPackageName "Cabal")
-                                                 finalCabalDep (S.singleton Cabal.defaultLibName))
+                                                 finalCabalDep (NES.singleton Cabal.defaultLibName))
   where
     versionNumbers = Cabal.versionNumbers cabal_version
-    userCabalVersion = Cabal.orLaterVersion (Cabal.specVersion pkg)
+    userCabalVersion = Cabal.orLaterVersion $ Cabal.mkVersion
+                       $ Cabal.cabalSpecToVersionDigits $ Cabal.specVersion pkg
     shippedCabalVersion = GHCCore.cabalFromGHC versionNumbers
     shippedCabalDep = maybe Cabal.anyVersion Cabal.orLaterVersion shippedCabalVersion
     finalCabalDep = Cabal.simplifyVersionRange
@@ -434,7 +434,7 @@ buildToolsProvided = ["hsc2hs"]
 hackageBuildToolsDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Portage.Dependency]
 hackageBuildToolsDependencies overlay (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) =
   haskellDependencies overlay $ L.nub $
-    [ Cabal.Dependency pn versionRange $ S.singleton Cabal.defaultLibName
+    [ Cabal.Dependency pn versionRange $ NES.singleton Cabal.defaultLibName
     | Cabal.ExeDependency pn _component versionRange <- cabalDeps
     ]
   where

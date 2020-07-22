@@ -85,7 +85,7 @@ loadHackage verbosity repoContext overlay = do
                                 _     -> {- ambig -} Category "dev-haskell"
         pkg_infos = map ( reverse . take 3 . reverse -- hackage usually has a ton of older versions
                         . map ((\p -> fromCabalPackageId (get_cat p) p)
-                              . CabalInstall.packageInfoId))
+                              . CabalInstall.srcpkgPackageId))
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
 

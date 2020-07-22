@@ -36,7 +36,7 @@ defaultGlobalFlags =
 
 -- | Default remote repository. Defaults to [hackage](hackage.haskell.org).
 defaultRemoteRepo :: DCT.RemoteRepo
-defaultRemoteRepo = DCC.addInfoForKnownRepos $ (DCT.emptyRemoteRepo name) { DCT.remoteRepoURI = uri }
+defaultRemoteRepo = DCC.addInfoForKnownRepos $ (DCT.emptyRemoteRepo (DCT.RepoName name)) { DCT.remoteRepoURI = uri }
    where
     Just uri = NU.parseURI "https://hackage.haskell.org/"
     name     = "hackage.haskell.org"

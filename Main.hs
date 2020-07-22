@@ -116,7 +116,7 @@ listAction flags extraArgs globalFlags = do
   overlay <- Overlay.loadLazy overlayPath
   let pkgs | null extraArgs = CabalInstall.allPackages index
            | otherwise = concatMap (concatMap snd . CabalInstall.searchByNameSubstring index) extraArgs
-      normalized = map (normalizeCabalPackageId . CabalInstall.packageInfoId) pkgs
+      normalized = map (normalizeCabalPackageId . CabalInstall.srcpkgPackageId) pkgs
   let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
   mapM_ (putStrLn . pretty) decorated
   where

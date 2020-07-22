@@ -85,10 +85,10 @@ diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
 resolveVersion :: [UnresolvedSourcePackage] -> Maybe Cabal.Version -> Maybe UnresolvedSourcePackage
-resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . CabalInstall.packageInfoId)) avails
+resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . CabalInstall.srcpkgPackageId)) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
-    match avail = ver == Cabal.pkgVersion (CabalInstall.packageInfoId avail)
+    match avail = ver == Cabal.pkgVersion (CabalInstall.srcpkgPackageId avail)
 
 -- | This function is executed by the @merge@ command of @HackPort@.
 -- Its functionality is as follows:
@@ -128,12 +128,12 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
     case map snd (CabalInstall.searchByName index user_pname_str) of
       [] -> throwEx (PackageNotFound user_pname_str)
       [pkg] -> return pkg
-      pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.packageInfoId pkg)
+      pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.srcpkgPackageId pkg)
                       names      = map (cabal_pkg_to_pn . L.head) pkgs
                   notice verbosity $ "Ambiguous names: " ++ L.intercalate ", " names
                   forM_ pkgs $ \ps ->
                       do let p_name = (cabal_pkg_to_pn . L.head) ps
-                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.packageInfoId) ps)
+                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId) ps)
                   return $ concat pkgs
 
   -- select a single package taking into account the user specified version
@@ -142,21 +142,21 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
         forM_ availablePkgs $ \ avail ->
-          putStrLn (prettyShow . CabalInstall.packageInfoId $ avail)
+          putStrLn (prettyShow . CabalInstall.srcpkgPackageId $ avail)
         throwEx (ArgumentError "no such version for that package")
       Just avail -> return avail
 
   -- print some info
   info verbosity "Selecting package:"
   forM_ availablePkgs $ \ avail -> do
-    let match_text | CabalInstall.packageInfoId avail == CabalInstall.packageInfoId selectedPkg = "* "
+    let match_text | CabalInstall.srcpkgPackageId avail == CabalInstall.srcpkgPackageId selectedPkg = "* "
                    | otherwise = "- "
-    info verbosity $ match_text ++ (prettyShow . CabalInstall.packageInfoId $ avail)
+    info verbosity $ match_text ++ (prettyShow . CabalInstall.srcpkgPackageId $ avail)
 
-  let cabal_pkgId = CabalInstall.packageInfoId selectedPkg
+  let cabal_pkgId = CabalInstall.srcpkgPackageId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
   cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
-  mergeGenericPackageDescription verbosity overlayPath cat (CabalInstall.packageDescription selectedPkg) True users_cabal_flags
+  mergeGenericPackageDescription verbosity overlayPath cat (CabalInstall.srcpkgDescription selectedPkg) True users_cabal_flags
 
   -- Maybe generate a diff
   let pkgPath = overlayPath </> (Portage.unCategory cat) </> (Cabal.unPackageName norm_pkgName)
@@ -227,7 +227,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
       pkgDesc = Merge.RetroPackageDescription pkgDesc0 accepted_deps
       cabal_flag_descs = Cabal.genPackageFlags pkgGenericDesc
       all_flags = map Cabal.flagName cabal_flag_descs
-      make_fas  :: [Cabal.Flag] -> [CabalFlags]
+      make_fas  :: [Cabal.PackageFlag] -> [CabalFlags]
       make_fas  [] = [[]]
       make_fas  (f:rest) = [ (fn, is_enabled) : fas
                            | fas <- make_fas rest
@@ -428,7 +428,7 @@ withWorkingDirectory newDir action = do
     (\_ -> action)
 
 -- | Write the ebuild (and sometimes a new @metadata.xml@) to its directory.
-mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.Flag] -> IO ()
+mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.PackageFlag] -> IO ()
 mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"

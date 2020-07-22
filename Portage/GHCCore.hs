@@ -28,7 +28,6 @@ import Distribution.PackageDescription.Configuration
 import Distribution.Compiler (CompilerId(..), CompilerFlavor(GHC))
 import Distribution.System
 import Distribution.Types.ComponentRequestedSpec (defaultComponentRequestedSpec)
-import Distribution.Types.Dependency (depPkgName, depVerRange)
 
 import Distribution.Pretty (prettyShow)
 
@@ -94,7 +93,7 @@ packageIsCoreInAnyGHC pn = any (flip packageIsCore pn) (map snd ghcs)
 dependencySatisfiable :: InstalledPackageIndex -> Cabal.Dependency -> Bool
 dependencySatisfiable pindex dep@(Cabal.Dependency pn _rang _lib)
   | Cabal.unPackageName pn == "Win32" = False -- only exists on windows, not in linux
-  | not . null $ lookupDependency pindex (depPkgName dep) (depVerRange dep) = True -- the package index satisfies the dep
+  | not . null $ lookupDependency pindex (Cabal.depPkgName dep) (Cabal.depVerRange dep) = True -- the package index satisfies the dep
   | packageIsCoreInAnyGHC pn = False -- some other ghcs support the dependency
   | otherwise = True -- the dep is not related with core packages, accept the dep
 
