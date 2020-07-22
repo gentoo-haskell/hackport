@@ -17,6 +17,7 @@ spec = do
                               [Version.RC 2] 1 ))
         `shouldBe`
         "dev-haskell/foo-bar2/foo-bar2-3.0.0b_rc2-r1.ebuild"
+
   describe "filePathToPackageId" $ do
     it "generates a Just PackageId from a FilePath" $ do
       filePathToPackageId (Category "dev-haskell") "foo-bar2-3.0.0b_rc2-r1"
@@ -28,10 +29,12 @@ spec = do
       filePathToPackageId (Category "dev-haskell") "foo-bar-2-3.0.0b_rc2-r1"
         `shouldBe`
         Nothing
+
   describe "normalizeCabalPackageName" $ do
     it "converts a Cabal.PackageName into lowercase" $ do
       normalizeCabalPackageName (Cabal.mkPackageName "FooBar1")
       `shouldBe` Cabal.mkPackageName "foobar1"
+
   describe "parseFriendlyPackage" $ do
     it "parses a package string as [category/]name[-version]" $ do
       parseFriendlyPackage "category-name/package-name1-0.0.0.1a_beta2-r4"
@@ -43,6 +46,7 @@ spec = do
       parseFriendlyPackage "category-name/package-name-1-0.0.0.1a_beta2-r4"
         `shouldBe`
         Left "\"<eitherParsec>\" (line 1, column 29):\nunexpected \"0\"\nexpecting \"-r\""
+
   describe "cabal_pn_to_PN" $ do
     it "pretty-prints a Cabal PackageName as a lowercase String" $ do
       cabal_pn_to_PN (Cabal.mkPackageName "FooBar1") `shouldBe` "foobar1"

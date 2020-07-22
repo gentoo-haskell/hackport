@@ -27,7 +27,10 @@ data HackPortError
     -- | WrongCacheVersion
     -- | InvalidCache
     | InvalidServer String
-    deriving (Typeable, Show)
+    deriving (Typeable
+             , Show
+             , Eq -- ^ needed for spec test-suite
+             )
 
 instance Exception HackPortError where
 

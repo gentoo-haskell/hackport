@@ -111,6 +111,7 @@ Executable    hackport
     HackPort.GlobalFlags
     Merge
     Merge.Dependencies
+    Merge.Utils
     Overlays
     Paths_hackport
     Portage.Cabal
@@ -560,7 +561,8 @@ test-suite spec
   Default-Language:     Haskell2010
   Main-Is:              tests/Spec.hs
   Hs-Source-Dirs:       ., cabal, cabal/Cabal, cabal/cabal-install, tests
-  other-modules:        Portage.CabalSpec,
+  other-modules:        Merge.UtilsSpec,
+                        Portage.CabalSpec,
                         Portage.Dependency.PrintSpec,
                         Portage.EBuildSpec,
                         Portage.GHCCoreSpec,
@@ -703,6 +705,8 @@ test-suite spec
                         Language.Haskell.Extension
                         -- hackport:
                         AnsiColor
+                        Error
+                        Merge.Utils
                         Paths_hackport
                         Portage.Cabal
                         Portage.Dependency
