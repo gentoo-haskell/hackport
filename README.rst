@@ -1,6 +1,9 @@
 Hackport
 ========
 
+.. image:: https://github.com/gentoo-haskell/hackport/workflows/Haskell%20CI/badge.svg
+   :target: https://github.com/gentoo-haskell/hackport/actions?query=workflow%3A%22Haskell+CI%22
+
 About
 -----
 
