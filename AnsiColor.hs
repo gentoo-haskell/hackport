@@ -26,7 +26,7 @@ data Color  =  Black
 
 esc :: [String] -> String
 esc []  =  ""
-esc xs  =  "\ESC[" ++ (concat . intersperse ";" $ xs) ++ "m"
+esc xs  =  "\ESC[" ++ (intercalate ";" xs) ++ "m"
 
 col :: Color -> Bool -> Color -> [String]
 col fg bf bg = show (fromEnum fg + 30) : bf' [show (fromEnum bg + 40)]
