@@ -13,17 +13,25 @@ import Portage.PackageId
 
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.Version            as Cabal
+import           Distribution.Pretty             (prettyShow)
 
 spec :: Spec
 spec = do
   describe "readPackageString" $ do
     context "when the package string is valid" $ do
-      it "returns a Right tuple containing the parsed information" $ do
-        readPackageString ["dev-haskell/packagename1-1.0.0"]
-          `shouldBe` Right ( Just (Category "dev-haskell")
-                           , Cabal.mkPackageName "packagename1"
-                           , Just (Version [1,0,0] Nothing [] 0)
-                           )
+      prop "returns a Right tuple containing the parsed information" $ do
+        \ver -> readPackageString ["dev-haskell/packagename1" ++
+                                   if ver == []
+                                   then ""
+                                   -- abs prevents negative version numbers in this test
+                                   else "-" ++ prettyShow (Cabal.mkVersion (abs <$> ver))]
+                == Right ( Just (Category "dev-haskell")
+                         , Cabal.mkPackageName "packagename1"
+                         , if ver == []
+                           then Nothing
+                           else Just (Version (abs <$> ver) Nothing [] 0)
+                         )
     context "when the package string is empty" $ do
       it "returns a Left HackPortError" $ do
         readPackageString []
