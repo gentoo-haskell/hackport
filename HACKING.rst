@@ -140,8 +140,9 @@ First, create a tag of your new ``HackPort`` version:
 The ``-s`` option signs the tag with your GnuPG key, if you wish to do
 this.
 
-Next, run the ‘mk_release_tarball.bash’ script. ``cabal sdist`` does not
-build the submodules, which is why we need to use this script instead.
+Next, run the ‘mk_release_tarball.bash’ script. This is similar to ``cabal sdist``
+except that it also strips out unnecessary files and creates a tarball
+from the latest tag rather than ``HEAD``.
 
 Assuming everything builds correctly and you are a designated
 ``HackPort`` maintainer on Hackage, you can publish the ``HackPort``
@@ -163,6 +164,3 @@ TODO
 
 - Include section explaining how to determine and add the list of bundled
   libraries for a given GHC version to ``HackPort``.
-
-  
-  
