@@ -119,11 +119,10 @@ reduceOverlay overlay = overlay { overlayMap = Map.map reduceVersions (overlayMa
   where
   versionNumbers (Portage.Version nums _ _ _) = nums
   reduceVersions :: [ExistingEbuild] -> [ExistingEbuild]
-  reduceVersions ebuilds = -- gah!
+  reduceVersions = -- gah!
           map (maximumBy (comparing (Portage.pkgVersion . ebuildId)))
           . groupBy (equating (versionNumbers . Portage.pkgVersion . ebuildId))
-          . sortBy (comparing (Portage.pkgVersion . ebuildId))
-          $ ebuilds
+          . sortOn (Portage.pkgVersion . ebuildId)
 
 readOverlayByPackage :: DirectoryTree -> [(Portage.PackageName, [Portage.Version])]
 readOverlayByPackage tree =
