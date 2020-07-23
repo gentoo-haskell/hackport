@@ -19,7 +19,7 @@ import Data.Monoid
 set_build_slot :: Dependency -> Dependency
 set_build_slot = 
   overAtom $ \a@(Atom pn dr (DAttr _ u)) -> 
-      case mconcat $ map First $ map (matches a) slottedPkgs of
+      case mconcat $ map (First . matches a) slottedPkgs of
           First (Just s) -> Atom pn dr (DAttr s u)
           First Nothing  -> Atom pn dr (DAttr AnyBuildTimeSlot u)
     where
