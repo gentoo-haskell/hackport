@@ -3,6 +3,8 @@ Hackport
 
 .. image:: https://github.com/gentoo-haskell/hackport/workflows/Haskell%20CI/badge.svg
    :target: https://github.com/gentoo-haskell/hackport/actions?query=workflow%3A%22Haskell+CI%22
+.. image:: https://matrix.hackage.haskell.org/api/v2/packages/hackport/badge
+   :target: https://matrix.hackage.haskell.org/#/package/hackport
 
 About
 -----
