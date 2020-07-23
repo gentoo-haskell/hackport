@@ -67,13 +67,11 @@ mkRetroPD pd = RetroPackageDescription { packageDescription = pd, buildDepends =
 
 -- | Extract only the build dependencies for libraries and executables for a given package.
 exeAndLibDeps :: Cabal.PackageDescription -> [Cabal.Dependency]
-exeAndLibDeps pkg = L.union
-                    (concat
-                     $ map Cabal.targetBuildDepends
-                     $ map Cabal.buildInfo (Cabal.executables pkg))
-                    (concat
-                     $ map Cabal.targetBuildDepends
-                     $ map Cabal.libBuildInfo (Cabal.allLibraries pkg))
+exeAndLibDeps pkg = concatMap (Cabal.targetBuildDepends . Cabal.buildInfo)
+                    (Cabal.executables pkg)
+                    `L.union`
+                    concatMap (Cabal.targetBuildDepends . Cabal.libBuildInfo)
+                    (Cabal.allLibraries pkg)
 
 #if MIN_VERSION_base(4,9,0)
 instance Semigroup EDep where
@@ -197,7 +195,7 @@ setupDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
 
 testDependencies :: Portage.Overlay -> Cabal.PackageDescription -> [Cabal.PackageName] -> Cabal.PackageName -> [Portage.Dependency]
 testDependencies overlay pkg ghc_package_names merged_cabal_pkg_name = deps
-    where cabalDeps = concat $ map Cabal.targetBuildDepends $ map Cabal.testBuildInfo (Cabal.testSuites pkg)
+    where cabalDeps = concatMap (Cabal.targetBuildDepends . Cabal.testBuildInfo) (Cabal.testSuites pkg)
           cabalDeps' = fst $ Portage.partition_depends ghc_package_names merged_cabal_pkg_name cabalDeps
           deps = C2E.convertDependencies overlay (Portage.Category "dev-haskell") cabalDeps'
 
