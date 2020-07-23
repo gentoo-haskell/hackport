@@ -9,6 +9,7 @@ module Portage.Metadata
         ( Metadata(..)
         , metadataFromFile
         , pureMetadataFromFile
+        , prettyPrintFlags -- exported for hspec
         , prettyPrintFlagsHuman
         , makeDefaultMetadata
         , makeMinimalMetadata
@@ -39,13 +40,13 @@ data Metadata = Metadata
 -- Parsing a @metadata.xml@ /without/ USE flags should /always/ be equivalent
 -- to 'makeMinimalMetadata', no matter the package description:
 --
--- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc Map.empty)) == Just makeMinimalMetadata
+-- prop> \desc -> pureMetadataFromFile (makeDefaultMetadata desc Map.empty) == Just makeMinimalMetadata
 --
 -- Parsing a @metadata.xml@ /with/ USE flags should /always/ be equivalent
 -- to 'makeMinimalMetadata' /plus/ the supplied USE flags, no matter the
 -- package description:
 --
--- prop> \desc -> pureMetadataFromFile (T.pack (makeDefaultMetadata desc (Map.fromList [("name","description")]))) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
+-- prop> \desc -> pureMetadataFromFile (makeDefaultMetadata desc (Map.fromList [("name","description")])) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
 pureMetadataFromFile :: T.Text -> Maybe Metadata
 pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
 
@@ -93,9 +94,9 @@ makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
 
 -- don't use Text.XML.Light as we like our own pretty printer
 -- | Pretty print the @metadata.xml@ string.
-makeDefaultMetadata :: String -> Map.Map String String -> String
+makeDefaultMetadata :: String -> Map.Map String String -> T.Text
 makeDefaultMetadata long_description flags =
-    unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    T.pack $ unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
             , "<pkgmetadata>"
             , "\t<maintainer type=\"project\">"
