@@ -19,14 +19,13 @@ module Portage.Version (
 
 import qualified Distribution.Version as Cabal
 
-import Distribution.Pretty (Pretty(..))
+import           Distribution.Pretty (Pretty(..))
 
-import Distribution.Parsec (Parsec(..))
+import           Distribution.Parsec (Parsec(..))
 import qualified Distribution.Compat.CharParsing as P
 import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlpha, isDigit)
-import qualified Data.List.NonEmpty as NonEmpty
+import           Text.PrettyPrint ((<>))
+import qualified Data.List.NonEmpty as NE
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -55,10 +54,10 @@ instance Pretty Version where
 instance Parsec Version where
   parsec = do
     ver <- P.sepByNonEmpty digits (P.char '.')
-    c   <- P.optional $ P.satisfy Char.isAlpha
+    c   <- P.optional P.lower
     suf <- P.many parsec
     rev <- P.option 0 $ P.string "-r" *> digits
-    return $ Version (NonEmpty.toList ver) c suf rev
+    return $ Version (NE.toList ver) c suf rev
 
 -- | Check if the ebuild is a live ebuild, i.e. if its 'Version' is @9999@.
 --
@@ -107,12 +106,12 @@ instance Pretty Suffix where
 
 instance Parsec Suffix where
   parsec = P.char '_'
-       >> P.choice
-    [ P.string "alpha" >> fmap Alpha maybeDigits
-    , P.string "beta"  >> fmap Beta  maybeDigits
-    , P.string "pre"   >> fmap Pre   maybeDigits
-    , P.string "rc"    >> fmap RC    maybeDigits
-    , P.string "p"     >> fmap P     maybeDigits
+       *> P.choice
+    [ P.string "alpha"       >> fmap Alpha maybeDigits
+    , P.string "beta"        >> fmap Beta  maybeDigits
+    , P.try (P.string "pre") >> fmap Pre   maybeDigits
+    , P.string "rc"          >> fmap RC    maybeDigits
+    , P.string "p"           >> fmap P     maybeDigits
     ]
     where
       maybeDigits = P.option 0 digits
@@ -132,4 +131,4 @@ toCabalVersion _                           = Nothing
 
 -- | Parser which munches digits.
 digits :: P.CharParsing m => m Int
-digits = read <$> P.munch1 Char.isDigit
+digits = read <$> P.some P.digit
