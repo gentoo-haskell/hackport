@@ -1,42 +1,12 @@
-module Portage.VersionSpec ( spec
-                           , AnySuffix(..)
-                           , ComplexVersion(..)
-                           ) where
+module Portage.VersionSpec (spec) where
 
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
+import           Test.Hspec
+import           Test.Hspec.QuickCheck
 
+import           QuickCheck.Instances
 import qualified Distribution.Version as Cabal
 
-import Portage.Version
-
---------------------------------------------------------------------------------
--- Instances
---------------------------------------------------------------------------------
-newtype AnySuffix = AnySuffix { getSuffix :: Suffix }
-  deriving (Eq,Ord,Show)
-
--- TODO: arbitrarily generate suffix Ints.
-instance Arbitrary AnySuffix where
-  arbitrary = elements $ AnySuffix <$> [ Alpha 1
-                                       , Beta  1
-                                       , Pre   1
-                                       , RC    1
-                                       , P     1
-                                       ]
-    
-newtype ComplexVersion = ComplexVersion { getVersion :: Version }
-  deriving (Eq,Ord,Show)
-
-instance Arbitrary ComplexVersion where
-  arbitrary = do
-    v <- listOf $ getNonNegative <$> (arbitrary :: Gen (NonNegative Int))
-    c <- Just <$> choose ('a','z')
-    s <- listOf $ getSuffix <$> (arbitrary :: Gen AnySuffix)
-    (NonNegative r) <- arbitrary
-    return $ ComplexVersion $ Version v c s r
---------------------------------------------------------------------------------
+import           Portage.Version
 
 spec :: Spec
 spec = do

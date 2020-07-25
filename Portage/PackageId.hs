@@ -22,19 +22,17 @@ module Portage.PackageId (
     cabal_pn_to_PN
   ) where
 
-import qualified Distribution.Package as Cabal
-
-import Distribution.Parsec (CabalParsing(..), Parsec(..), explicitEitherParsec)
 import qualified Distribution.Compat.CharParsing as P
+import qualified Distribution.Package as Cabal
+import           Distribution.Parsec (CabalParsing(..), Parsec(..), explicitEitherParsec)
+import           Distribution.Pretty (Pretty(..), prettyShow)
 
 import qualified Portage.Version as Portage
 
+import qualified Data.Char as Char
 import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ((<>))
-import qualified Data.Char as Char (isAlphaNum, toLower)
-
-import Distribution.Pretty (Pretty(..), prettyShow)
-import System.FilePath ((</>))
+import           Text.PrettyPrint ((<>))
+import           System.FilePath ((</>))
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -141,6 +139,12 @@ toCabalPackageId (PackageId (PackageName _cat name) version) =
            (Portage.toCabalVersion version)
 
 -- | Parse a 'String' as a package in the form of @[category\/]name[-version]@:
+--
+-- Note that we /cannot/ use the 'parsec' function to parse the 'Cabal.PackageName',
+-- since it fails the entire parse if it tries to parse a 'Version'.
+-- See 'parseCabalPackageName' below.
+--
+-- If parsing a valid package string:
 -- 
 -- >>> parseFriendlyPackage "category-name/package-name1-0.0.0.1a_beta2-r4"
 -- Right (Just (Category {unCategory = "category-name"}),PackageName "package-name1",Just (Version {versionNumber = [0,0,0,1], versionChar = Just 'a', versionSuffix = [Beta 2], versionRevision = 4}))
@@ -164,9 +168,21 @@ parseFriendlyPackage str = explicitEitherParsec parser str
       return v
     return (mc, p, mv)
 
--- | Parse a 'Cabal.PackageName'. Note that we cannot use the 'parsec' function
--- from "Distribution.Parsec" here, since it fails the entire 'Cabal.PackageName' parse
--- if it tries to parse a version number.
+-- | Parse a 'Cabal.PackageName'.
+--
+-- This parser is a replacement for 'parsecUnqualComponentName' which fails when
+-- trying to parse a 'Version'.
+--
+-- However, this parser also fails if given a 'Version' of the form
+-- @'Version' [x] (Just 'y') _ _@, where x is a single 'Int' and y a lowercase char,
+-- irrespective of the suffixes and revision numbers. Any other combination,
+-- including a version number with more than one digit, works as expected.
+--
+-- I suspect that this may be related to an underlying Parsec parser combinator.
+-- See [Parsec issue #8](https://github.com/haskell/parsec/issues/8).
+--
+-- Given the small chance of this happening it is hardly a major problem,
+-- but it is nonetheless incorrect behaviour.
 parseCabalPackageName :: CabalParsing m => m Cabal.PackageName
 parseCabalPackageName = do
   pn <- P.some . P.try $
@@ -176,9 +192,10 @@ parseCabalPackageName = do
     ]
   return $ Cabal.mkPackageName pn
 
--- | Pretty-print a lowercase 'Cabal.PackageName'. Note the difference between
--- 'cabal_pn_to_PN' and 'normalizeCabalPackageName': the former returns
--- a 'String', the latter a 'Cabal.PackageName'.
+-- | Pretty-print a lowercase 'Cabal.PackageName'.
+--
+-- Note the difference between this function and 'normalizeCabalPackageName':
+-- this function returns a 'String', the other a 'Cabal.PackageName'.
 --
 -- >>> cabal_pn_to_PN (Cabal.mkPackageName "FooBar1")
 -- "foobar1"

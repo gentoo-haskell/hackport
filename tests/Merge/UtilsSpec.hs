@@ -1,48 +1,59 @@
 module Merge.UtilsSpec (spec) where
 
-import Test.Hspec
-import Test.Hspec.QuickCheck
+import           Test.Hspec
+import           Test.Hspec.QuickCheck
 
+import           QuickCheck.Instances
+
+import           Control.Applicative (liftA2)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as L
-import Control.Applicative
 
-import Error
-import Merge.Utils
-import Portage.PackageId
+import           Error
+import           Merge.Utils
+import           Portage.PackageId
 
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
-import qualified Distribution.Version            as Cabal
-import           Distribution.Pretty             (prettyShow)
+import           Distribution.Pretty (prettyShow)
 
 spec :: Spec
 spec = do
   describe "readPackageString" $ do
-    context "when the package string is valid" $ do
-      prop "returns a Right tuple containing the parsed information" $ do
-        \ver -> readPackageString ["dev-haskell/packagename1" ++
-                                   if ver == []
-                                   then ""
-                                   -- abs prevents negative version numbers in this test
-                                   else "-" ++ prettyShow (Cabal.mkVersion (abs <$> ver))]
-                == Right ( Just (Category "dev-haskell")
-                         , Cabal.mkPackageName "packagename1"
-                         , if ver == []
-                           then Nothing
-                           else Just (Version (abs <$> ver) Nothing [] 0)
-                         )
-    context "when the package string is empty" $ do
-      it "returns a Left HackPortError" $ do
-        readPackageString []
-          `shouldBe`
-          Left (ArgumentError "Need an argument, [category/]package[-version]")
-    context "when the package string contains too many arguments" $ do
-      it "returns a Left HackPortError" $ do
-        let args = ["dev-haskell/packagename1-1.0.0", "dev-haskell/packagename2-1.0.0"]
-        readPackageString args
-          `shouldBe`
-          Left (ArgumentError ("Too many arguments: " ++ unwords args))
+    prop "returns a Right tuple containing the parsed information or a Left ArgumentError" $ do
+      let cat = Category "dev-haskell"
+          name = Cabal.mkPackageName "package-name1"
+        in \(ComplexVersion version) ->
+             readPackageString [prettyShow cat ++ "/" ++ prettyShow name ++
+                                 if (versionNumber version) == []
+                                 then ""
+                                 else "-" ++ prettyShow version]
+             `shouldBe`
+             if (versionChar     version) /= Nothing ||
+                (versionSuffix   version) /= []      ||
+                (versionRevision version) /= 0
+             then Left (ArgumentError ("Could not parse [category/]package[-version]: "
+                                        ++ prettyShow cat ++ "/" ++
+                                        prettyShow name ++
+                                        if (versionNumber version) == []
+                                        then ""
+                                        else "-" ++ prettyShow version))
+             else Right ( Just cat
+                        , name
+                        , if (versionNumber version) == []
+                          then Nothing
+                          else Just version
+                        )
+    it "returns a Left HackPortError if the package string is empty" $ do
+      readPackageString []
+        `shouldBe`
+        Left (ArgumentError "Need an argument, [category/]package[-version]")
+    prop "returns a Left HackPortError if fed too many arguments" $ do
+      \name1 name2 ->
+        let args = [name1, name2]
+        in readPackageString args
+           `shouldBe`
+           Left (ArgumentError ("Too many arguments: " ++ unwords args))
           
   describe "getPreviousPackageId" $ do
     context "when there is a previous version available" $ do
@@ -106,5 +117,3 @@ spec = do
       \name desc -> metaFlags [(Cabal.emptyFlag (Cabal.mkFlagName name))
                                 { Cabal.flagDescription = desc }] ==
                     Map.fromList [(mangle_iuse name,desc)]
-
-  
