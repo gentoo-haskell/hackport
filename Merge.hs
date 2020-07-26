@@ -451,7 +451,8 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
       -- the existing @metadata.xml@. If an existing flag has a new and old description,
       -- the new one takes precedence.
       default_meta = Portage.makeDefaultMetadata (E.long_desc ebuild)
-                     $ Merge.metaFlags flags <> Portage.metadataUseFlags current_meta'
+                     $ Merge.metaFlags flags `Map.union`
+                     Portage.metadataUseFlags current_meta'
       -- Create a 'Map.Map' of USE flags with updated descriptions.
       new_flags = Map.differenceWith (\new old -> if (new /= old)
                                                   then Just $ old ++ A.bold (" -> " ++ new)
