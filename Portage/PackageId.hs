@@ -58,15 +58,15 @@ instance Parsec Category where
       categoryChar c = Char.isAlphaNum c || c == '-'
 
 instance Pretty PackageName where
-  pretty (PackageName category name) =
-    pretty category <> Disp.char '/' <> pretty name
+  pretty (PackageName cat name) =
+    pretty cat <> Disp.char '/' <> pretty name
 
 instance Parsec PackageName where
   parsec = do
-    category <- parsec
+    cat <- parsec
     _ <- P.char '/'
     name <- parseCabalPackageName
-    return $ PackageName category name
+    return $ PackageName cat name
 
 instance Pretty PackageId where
   pretty (PackageId name version) =
@@ -113,8 +113,8 @@ mkPackageName cat package = PackageName (Category cat) (Cabal.mkPackageName pack
 
 -- | Create a 'PackageId' from a 'Category' and 'Cabal.PackageIdentifier'.
 fromCabalPackageId :: Category -> Cabal.PackageIdentifier -> PackageId
-fromCabalPackageId category (Cabal.PackageIdentifier name version) =
-  PackageId (PackageName category (normalizeCabalPackageName name))
+fromCabalPackageId cat (Cabal.PackageIdentifier name version) =
+  PackageId (PackageName cat (normalizeCabalPackageName name))
             (Portage.fromCabalVersion version)
 
 -- | Convert a 'Cabal.PackageName' into lowercase. Internally uses
@@ -172,22 +172,12 @@ parseFriendlyPackage str = explicitEitherParsec parser str
 --
 -- This parser is a replacement for 'parsecUnqualComponentName' which fails when
 -- trying to parse a 'Version'.
---
--- However, this parser also fails if given a 'Version' of the form
--- @'Version' [x] (Just 'y') _ _@, where x is a single 'Int' and y a lowercase char,
--- irrespective of the suffixes and revision numbers. Any other combination,
--- including a version number with more than one digit, works as expected.
---
--- I suspect that this may be related to an underlying Parsec parser combinator.
--- See [Parsec issue #8](https://github.com/haskell/parsec/issues/8).
---
--- Given the small chance of this happening it is hardly a major problem,
--- but it is nonetheless incorrect behaviour.
 parseCabalPackageName :: CabalParsing m => m Cabal.PackageName
 parseCabalPackageName = do
   pn <- P.some . P.try $
     P.choice
     [ P.alphaNum
+    , P.char '+'
     , P.char '-' <* P.notFollowedBy (P.some P.digit <* P.notFollowedBy P.letter)
     ]
   return $ Cabal.mkPackageName pn
