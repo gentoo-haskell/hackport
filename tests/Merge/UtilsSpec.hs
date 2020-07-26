@@ -2,7 +2,7 @@ module Merge.UtilsSpec (spec) where
 
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
-
+import           Test.QuickCheck
 import           QuickCheck.Instances
 
 import           Control.Applicative (liftA2)
@@ -49,11 +49,12 @@ spec = do
         `shouldBe`
         Left (ArgumentError "Need an argument, [category/]package[-version]")
     prop "returns a Left HackPortError if fed too many arguments" $ do
-      \name1 name2 ->
-        let args = [name1, name2]
-        in readPackageString args
-           `shouldBe`
-           Left (ArgumentError ("Too many arguments: " ++ unwords args))
+      \(NonEmpty args) ->
+        if length args > 1
+        then readPackageString args `shouldBe`
+             Left (ArgumentError ("Too many arguments: " ++ unwords args))
+        else readPackageString args `shouldNotBe`
+             Left (ArgumentError ("Too many arguments: " ++ unwords args))
           
   describe "getPreviousPackageId" $ do
     context "when there is a previous version available" $ do
