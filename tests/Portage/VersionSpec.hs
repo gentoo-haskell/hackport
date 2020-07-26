@@ -22,6 +22,6 @@ spec = do
       
   describe "toCabalVersion" $ do
     prop "converts from a Portage version to a Cabal version" $ do
-      \(ComplexVersion v) -> toCabalVersion v ==
-        if versionChar v == Nothing
+      \(ComplexVersion v) -> toCabalVersion v `shouldBe`
+        if versionChar v == Nothing && versionSuffix v == []
         then Just (Cabal.mkVersion (versionNumber v)) else Nothing

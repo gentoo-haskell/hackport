@@ -36,20 +36,10 @@ instance Arbitrary AnySuffix where
 --
 -- This is used to generate 'Version's of high complexity to
 -- stress-test our parsers for a range of valid inputs.
---
--- Note that this instance currently works around a bug in 'parseCabalPackageName'
--- from "Portage.PackageId" which may be related to an underlying @Parsec@
--- bug. See "Portage.PackageId" for more information. Essentially this work around
--- ensures that the version number has at least two elements to
--- avoid triggering that bug.
---
--- If that bug becomes fixed, remove the below workaround.
 instance Arbitrary ComplexVersion where
   arbitrary = do
-    v1 <- listOf1 $ getNonNegative <$> arbitrary
-    v2 <- listOf1 $ getNonNegative <$> arbitrary
-    let v = concat [v1,v2]
+    v <- listOf1 $ getNonNegative <$> arbitrary
     c <- Just <$> choose ('a','z')
     s <- listOf $ getSuffix <$> (arbitrary :: Gen AnySuffix)
     (NonNegative r) <- arbitrary
-    return $ ComplexVersion $ Version v c s r
+    return $ ComplexVersion $ Version v (if length v == 1 then Nothing else c) s r

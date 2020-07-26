@@ -16,7 +16,7 @@ spec = do
   describe "packageIdToFilePath" $ do
     prop "transforms a PackageId into a FilePath" $ do
       let cat = Category "dev-haskell"
-          name = Cabal.mkPackageName "foo-bar2"
+          name = Cabal.mkPackageName "foo-bar2+"
         in \(ComplexVersion version) ->
              packageIdToFilePath (PackageId (PackageName cat name) version)
              `shouldBe`
@@ -25,18 +25,20 @@ spec = do
 
   describe "filePathToPackageId" $ do
     prop "returns a Just PackageId from a valid FilePath" $ do
-      \(ComplexVersion version) ->
-        filePathToPackageId (Category "dev-haskell")
-        ("foo-bar2-" ++ prettyShow version)
-        `shouldBe`
-        Just (PackageId (PackageName (Category "dev-haskell")
-                         (Cabal.mkPackageName "foo-bar2"))
-              version)
+      let cat = Category "dev-haskell"
+          name = Cabal.mkPackageName "foo-bar2+"
+        in \(ComplexVersion version) ->
+             filePathToPackageId cat
+             (prettyShow name ++ "-" ++ prettyShow version)
+             `shouldBe`
+             Just (PackageId (PackageName cat name) version)
     prop "returns Nothing on a malformed FilePath" $ do
-      \(ComplexVersion version) ->
-        filePathToPackageId (Category "dev-haskell") ("foo-bar-2-" ++ prettyShow version)
-        `shouldBe`
-        Nothing
+      let cat = Category "dev-haskell"
+          name = Cabal.mkPackageName "foo-bar-2+"
+        in \(ComplexVersion version) ->
+             filePathToPackageId cat (prettyShow name ++ "-" ++ prettyShow version)
+             `shouldBe`
+             Nothing
 
   describe "normalizeCabalPackageName" $ do
     prop "converts a Cabal.PackageName into lowercase" $ do
@@ -46,7 +48,7 @@ spec = do
   describe "parseFriendlyPackage" $ do
     prop "parses a package string as [category/]name[-version]" $ do
       let cat = Category "dev-haskell"
-          name = Cabal.mkPackageName "package-name1"
+          name = Cabal.mkPackageName "package-name1+"
         in \(ComplexVersion version) ->
              parseFriendlyPackage (prettyShow cat ++ "/" ++ prettyShow name
                                     ++ "-" ++ prettyShow version)
@@ -54,7 +56,7 @@ spec = do
              Right (Just cat, name, Just version)
     prop "returns an error string if parsing a malformed package string" $ do
       let cat = Category "dev-haskell"
-          name = Cabal.mkPackageName "package-name-1"
+          name = Cabal.mkPackageName "package-name-1+"
         in \(ComplexVersion version) ->
              parseFriendlyPackage (prettyShow cat ++ "/" ++ prettyShow name
                                    ++ "-" ++ prettyShow version)
