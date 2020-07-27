@@ -5,7 +5,7 @@ module Portage.Host
 
 import Util (run_cmd)
 import qualified Data.List.Split as DLS
-import Data.Maybe (fromJust, isJust, catMaybes)
+import Data.Maybe (fromJust, isJust, mapMaybe)
 
 import qualified System.Directory as D
 import           System.FilePath ((</>))
@@ -60,9 +60,7 @@ readConfig =
     do home_dir <- D.getHomeDirectory
        let config_path  = home_dir </> hackport_config
        exists <- D.doesFileExist config_path
-       case exists of
-           True  -> read <$> readFile config_path
-           False -> return Nothing
+       if exists then read <$> readFile config_path else return Nothing
 
 ----------
 -- Paludis
@@ -74,7 +72,7 @@ getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "cave info"
 parsePaludisInfo :: String -> LocalInfo
 parsePaludisInfo text =
   let chunks = DLS.splitOn [""] . lines $ text
-      repositories = catMaybes (map parseRepository chunks)
+      repositories = mapMaybe parseRepository chunks
   in  fromJust (mkLocalInfo repositories)
   where
   parseRepository :: [String] -> Maybe (String, (String, String))
@@ -109,7 +107,7 @@ askPortageq = do
     hsRepo  <- run_cmd "portageq get_repo_path / haskell"
     --There really ought to be both distdir and portdir,
     --but maybe no hsRepo defined yet.
-    let info = if any (==Nothing) [distdir,portdir]
+    let info = if Nothing `elem` [distdir,portdir]
                then Nothing
                else Just LocalInfo
                       { distfiles_dir = grab distdir
