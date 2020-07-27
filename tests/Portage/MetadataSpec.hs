@@ -3,6 +3,7 @@ module Portage.MetadataSpec (spec) where
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
+import qualified Data.List       as L
 import qualified Data.Text       as T
 import qualified Data.Map.Strict as Map
 
@@ -25,7 +26,8 @@ spec = do
     prop "should correctly format a single USE flag name with its description" $ do
       \name description -> prettyPrintFlags (Map.singleton name description) ==
                            ["\t\t<flag name=\"" ++ name ++
-                           "\">" ++ description ++ "</flag>"]
+                           "\">" ++ (L.intercalate " " . lines $ description)
+                           ++ "</flag>"]
     prop "should have a length equal to the number of USE flags" $ do
       \flags -> length (prettyPrintFlags flags) == Map.size flags
       

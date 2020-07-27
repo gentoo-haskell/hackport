@@ -17,9 +17,10 @@ module Portage.Metadata
 
 import qualified AnsiColor as A
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.List       as L
 import qualified Data.Map.Strict as Map
+import qualified Data.Text       as T
+import qualified Data.Text.IO    as T
 
 import Text.XML.Light
 
@@ -76,14 +77,16 @@ parseMetadata xml =
 -- | Pretty print as valid XML a list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlags :: Map.Map String String -> [String]
-prettyPrintFlags m = (\(name,description) -> "\t\t<flag name=\"" ++ name ++
-                                          "\">" ++ description ++ "</flag>")
+prettyPrintFlags m = (\(name,description) ->
+                        "\t\t<flag name=\"" ++ name ++ "\">" ++
+                        (L.intercalate " " . lines $ description) ++ "</flag>")
                      <$> Map.toAscList m
 
 -- | Pretty print a human-readable list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlagsHuman :: Map.Map String String -> [String]
-prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++ description)
+prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++
+                            (L.intercalate " " . lines $ description))
                           <$> Map.toAscList m
                           
 -- | A minimal metadata for use as a fallback value.
