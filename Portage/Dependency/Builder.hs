@@ -23,9 +23,7 @@ setSlotDep n = overAtom (\(Atom pn dr (DAttr _s u)) -> Atom pn dr (DAttr n u))
 
 mkUseDependency :: (Bool, Use) -> Dependency -> Dependency
 mkUseDependency (b, u) d =
-    case b of
-        True  -> DependIfUse u d empty_dependency
-        False -> DependIfUse u empty_dependency d
+  if b then DependIfUse u d empty_dependency else DependIfUse u empty_dependency d
 
 overAtom :: (Atom -> Atom) -> Dependency -> Dependency
 overAtom f (DependAllOf d) = DependAllOf $ map (overAtom f) d
