@@ -15,8 +15,10 @@ module Merge.Dependencies
   ) where
 
 import Data.Maybe ( isJust, isNothing )
-import Data.Monoid ( Monoid, mempty )
 import qualified Data.List as L
+#if !MIN_VERSION_base(4,11,0)
+import           Data.Semigroup (Semigroup(..))
+#endif
 import qualified Data.Set  as S
 
 import qualified Distribution.CabalSpecVersion as Cabal
@@ -40,10 +42,6 @@ import qualified Cabal2Ebuild as C2E
 import qualified Portage.GHCCore as GHCCore
 
 import Debug.Trace ( trace )
-
-#if MIN_VERSION_base(4,9,0)
-import Data.Semigroup (Semigroup(..))
-#endif
 
 -- | Dependencies of an ebuild.
 data EDep = EDep
@@ -73,7 +71,6 @@ exeAndLibDeps pkg = concatMap (Cabal.targetBuildDepends . Cabal.buildInfo)
                     concatMap (Cabal.targetBuildDepends . Cabal.libBuildInfo)
                     (Cabal.allLibraries pkg)
 
-#if MIN_VERSION_base(4,9,0)
 instance Semigroup EDep where
   (EDep rdepA rdep_eA depA dep_eA) <> (EDep rdepB rdep_eB depB dep_eB) = EDep
     { rdep   = Portage.DependAllOf [rdepA, rdepB]
@@ -81,7 +78,6 @@ instance Semigroup EDep where
     , dep    = Portage.DependAllOf [depA, depB]
     , dep_e  = dep_eA  `S.union` dep_eB
     }
-#endif  
   
 instance Monoid EDep where
   mempty = EDep

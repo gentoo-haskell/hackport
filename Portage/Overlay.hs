@@ -26,8 +26,6 @@ import System.Directory (getDirectoryContents, doesDirectoryExist)
 import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath  ((</>), splitExtension)
 
-import Data.Traversable ( traverse )
-
 data ExistingEbuild = ExistingEbuild {
     ebuildId      :: Portage.PackageId,
     ebuildCabalId :: Cabal.PackageIdentifier,
