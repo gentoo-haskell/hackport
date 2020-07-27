@@ -2,8 +2,8 @@ module Portage.VersionSpec (spec) where
 
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
-
 import           QuickCheck.Instances
+
 import qualified Distribution.Version as Cabal
 
 import           Portage.Version
@@ -12,8 +12,8 @@ spec :: Spec
 spec = do
   describe "is_live" $ do
     prop "determines if a Portage version is live" $ do
-      \(ComplexVersion v) -> is_live v ==
-        if length (versionNumber v)  >= 1 && last (versionNumber v) >= 9999
+      \(ComplexVersion v) -> is_live v `shouldBe`
+        if last (versionNumber v) >= 9999
         then True else False
         
   describe "fromCabalVersion" $ do
