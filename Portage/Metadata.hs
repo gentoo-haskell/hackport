@@ -98,26 +98,26 @@ makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
 -- don't use Text.XML.Light as we like our own pretty printer
 -- | Pretty print the @metadata.xml@ string.
 makeDefaultMetadata :: String -> Map.Map String String -> T.Text
-makeDefaultMetadata long_description flags =
-    T.pack $ unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
-            , "<pkgmetadata>"
-            , "\t<maintainer type=\"project\">"
-            , "\t\t<email>haskell@gentoo.org</email>"
-            , "\t\t<name>Gentoo Haskell</name>"
-            , "\t</maintainer>"
-            , "\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
-            , (init {- strip trailing newline-}
+makeDefaultMetadata long_description flags = T.pack $
+  unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+          , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
+          , "<pkgmetadata>"
+          , "\t<maintainer type=\"project\">"
+          , "\t\t<email>haskell@gentoo.org</email>"
+          , "\t\t<name>Gentoo Haskell</name>"
+          , "\t</maintainer>"
+          , "\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
+          , (init {- strip trailing newline-}
               . unlines
               . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]
-                               then "\t"   ++ l -- leading/trailing lines
-                               else "\t\t" ++ l -- description itself
+                           then "\t"   ++ l -- leading/trailing lines
+                           else "\t\t" ++ l -- description itself
                     )
               . lines
               . showElement
               . unode "longdescription"
               . ("\n" ++) -- prepend newline to separate form <longdescription>
               . (++ "\n") -- append newline
-              ) long_description
-            , "</pkgmetadata>"
-            ]
+            ) long_description
+          , "</pkgmetadata>"
+          ]
