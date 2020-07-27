@@ -39,17 +39,17 @@ convertLicense :: SPDX.License -> Either String String
 convertLicense l =
     case Cabal.licenseFromSPDX l of
         --  good ones
-        Cabal.AGPL mv      -> Right $ "AGPL-" ++ case (Cabal.prettyShow <$> mv) of
+        Cabal.AGPL mv      -> Right $ "AGPL-" ++ case Cabal.prettyShow <$> mv of
                                                   Just "3"   -> "3"
                                                   Just "3.0" -> "3+"
                                                   _          -> "3" -- almost certainly version 3
-        Cabal.GPL mv       -> Right $ "GPL-" ++ case (Cabal.prettyShow <$> mv) of
+        Cabal.GPL mv       -> Right $ "GPL-" ++ case Cabal.prettyShow <$> mv of
                                                   Just "2"   -> "2"
                                                   Just "2.0" -> "2+"
                                                   Just "3"   -> "3"
                                                   Just "3.0" -> "3+"
                                                   _          -> "2" -- possibly version 2
-        Cabal.LGPL mv      -> Right $ "LGPL-" ++ case (Cabal.prettyShow <$> mv) of
+        Cabal.LGPL mv      -> Right $ "LGPL-" ++ case Cabal.prettyShow <$> mv of
                                                    Just "2"   -> "2"
                                                    -- Cabal can't handle 2.0+ properly
                                                    Just "2.0" -> "2"
@@ -61,7 +61,8 @@ convertLicense l =
         Cabal.BSD4         -> Right "BSD-4"
         Cabal.PublicDomain -> Right "public-domain"
         Cabal.MIT          -> Right "MIT"
-        Cabal.Apache mv    -> Right $ "Apache-" ++ (maybe "1.1" Cabal.prettyShow mv) -- probably version 1.1
+        Cabal.Apache mv    -> Right $ "Apache-" ++
+                              maybe "1.1" Cabal.prettyShow mv -- probably version 1.1
         Cabal.ISC          -> Right "ISC"
         Cabal.MPL v        -> Right $ "MPL-" ++ Cabal.prettyShow v -- probably version 1.0
         -- bad ones
