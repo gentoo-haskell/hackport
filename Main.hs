@@ -5,8 +5,6 @@ module Main (main) where
 import Control.Monad
 import Data.Maybe
 import Data.List
-import Data.Monoid
-        ( Monoid(..) )
 import qualified Data.Semigroup as S
 
 -- cabal

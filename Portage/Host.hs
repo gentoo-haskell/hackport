@@ -6,7 +6,6 @@ module Portage.Host
 import Util (run_cmd)
 import qualified Data.List.Split as DLS
 import Data.Maybe (fromJust, isJust, catMaybes)
-import Control.Applicative ( (<$>) )
 
 import qualified System.Directory as D
 import           System.FilePath ((</>))
