@@ -140,11 +140,12 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                   {
                     dep = Portage.DependAllOf
                               [ cabal_dep
+                              , ghc_dep
                               , setup_deps
                               , build_tools
                               , test_deps
                               ],
-                    dep_e = S.singleton "${RDEPEND}",
+                    dep_e = S.empty,
                     rdep = Portage.DependAllOf
                                [ Portage.set_build_slot ghc_dep
                                , Portage.set_build_slot $ add_profile $ raw_haskell_deps
@@ -156,11 +157,12 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                   {
                     dep = Portage.DependAllOf
                               [ cabal_dep
+                              , ghc_dep
                               , setup_deps
                               , build_tools
                               , test_deps
                               ],
-                    dep_e = S.singleton "${RDEPEND}",
+                    dep_e = S.empty,
                     rdep = Portage.DependAllOf
                                [ Portage.set_build_slot ghc_dep
                                , Portage.set_build_slot $ raw_haskell_deps

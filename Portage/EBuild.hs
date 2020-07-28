@@ -136,7 +136,8 @@ showEBuild now ebuild =
   ss "IUSE=". quote' (sepBy " " . sort_iuse $ L.nub $ iuse ebuild). nl.
   nl.
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
-  dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
+  ss "DEPEND=\"${RDEPEND}\"". nl.
+  dep_str "BDEPEND"  ( depend_extra ebuild) ( depend ebuild).
   (case my_pn ebuild of
      Nothing -> id
      Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
