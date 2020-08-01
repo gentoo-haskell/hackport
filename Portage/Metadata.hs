@@ -106,7 +106,9 @@ makeDefaultMetadata long_description flags = T.pack $
           , "\t\t<email>haskell@gentoo.org</email>"
           , "\t\t<name>Gentoo Haskell</name>"
           , "\t</maintainer>"
-          , "\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
+            ++ if flags == Map.empty
+               then []
+               else "\n\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
           , (init {- strip trailing newline-}
               . unlines
               . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]

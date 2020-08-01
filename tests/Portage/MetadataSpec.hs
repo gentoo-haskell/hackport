@@ -32,11 +32,11 @@ spec = do
       \flags -> length (prettyPrintFlags flags) == Map.size flags
       
   describe "makeDefaultMetadata" $ do
-    context "when writing a minimal metadata.xml" $ do
+    context "when writing a minimal metadata.xml with no USE flags" $ do
       it "should have a certain number of lines" $ do
         -- This is the number of lines in a skeleton metadata.xml.
         -- If it does not equal this number, the formatting may be wrong.
-        length (T.lines (makeDefaultMetadata "" Map.empty)) `shouldBe` 13
+        length (T.lines (makeDefaultMetadata "" Map.empty)) `shouldBe` 11
       it "should have a certain format" $ do
         let desc = "foo"
             correctMetadata = T.pack $ unlines
@@ -47,8 +47,6 @@ spec = do
               , "\t\t<email>haskell@gentoo.org</email>"
               , "\t\t<name>Gentoo Haskell</name>"
               , "\t</maintainer>"
-              , "\t<use>"
-              , "\t</use>"
               , "\t<longdescription>"
               , "\t\t" ++ desc
               , "\t</longdescription>"
