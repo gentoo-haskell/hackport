@@ -46,7 +46,7 @@ data PackageName = PackageName { category :: Category, cabalPkgName :: Cabal.Pac
   deriving (Eq, Ord, Show, Read)
 
 -- | Portage-style 'PackageId', containing a 'PackageName' and a 'Portage.Version'.
-data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
+data PackageId = PackageId { pkgName :: PackageName, pkgVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
 instance Pretty Category where
@@ -94,7 +94,7 @@ packageIdToFilePath (PackageId (PackageName cat pn) version) =
 -- file extension stripped before being passed to 'filePathToPackageId'.
 -- 
 -- >>> filePathToPackageId (Category "dev-haskell") "foo-bar2-3.0.0b_rc2-r1"
--- Just (PackageId {packageId = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,0], versionChar = Just 'b', versionSuffix = [RC 2], versionRevision = 1}})
+-- Just (PackageId {pkgName = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,0], versionChar = Just 'b', versionSuffix = [RC 2], versionRevision = 1}})
 filePathToPackageId :: Category -> FilePath -> Maybe PackageId
 filePathToPackageId cat fp =
   case explicitEitherParsec parser fp of

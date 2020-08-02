@@ -174,6 +174,7 @@ type CabalFlags = [(Cabal.FlagName, Bool)]
 mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
 mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
   overlay <- Overlay.loadLazy overlayPath
+  repo_name <- T.readFile $ overlayPath </> "profiles" </> "repo_name"
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
       merged_PN = Portage.cabal_pn_to_PN merged_cabal_pkg_name
       pkgdir    = overlayPath </> Portage.unCategory cat </> merged_PN
@@ -397,9 +398,20 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                $ C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc)
 
   mergeEbuild verbosity existing_meta pkgdir ebuild active_flag_descs
+
+  -- If the package is an element of Merge.gentooPackages, advise the user
+  -- to also bump the package in ::gentoo.
+  let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
+      newPkgId = Portage.fromCabalPackageId cat cabal_pkgId
+  when (Portage.pkgName newPkgId `elem` Merge.gentooPackages &&
+    repo_name /= T.pack "gentoo") $
+    notice verbosity $ A.inColor A.Yellow True A.Default
+    "Please sync " ++
+    A.inColor A.Magenta True A.Default (prettyShow newPkgId) ++
+    A.inColor A.Yellow True A.Default " to ::gentoo."
+
   when fetch $ do
-    let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
-        norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
+    let norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
 
@@ -411,7 +423,7 @@ fetchDigestAndCheck :: Verbosity
                     -> Portage.PackageId -- ^ newest ebuild
                     -> IO ()
 fetchDigestAndCheck verbosity ebuildDir pkgId =
-  let ebuild = prettyShow (Portage.cabalPkgName . Portage.packageId $ pkgId)
+  let ebuild = prettyShow (Portage.cabalPkgName . Portage.pkgName $ pkgId)
                ++ "-" ++ prettyShow (Portage.pkgVersion pkgId) <.> "ebuild"
   in withWorkingDirectory ebuildDir $ do
     notice verbosity "Recalculating digests..."

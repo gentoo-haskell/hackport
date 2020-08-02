@@ -111,7 +111,7 @@ status verbosity portdir overlaydir repoContext = do
             where Just cabal_p = toCabalPackageId p -- lame doubleconv
                   ebuild_path = packageIdToFilePath p
         mk_fake_ee :: [PackageId] -> (PackageName, [ExistingEbuild])
-        mk_fake_ee ~pkgs@(p:_) = (packageId p, map p_to_ee pkgs)
+        mk_fake_ee ~pkgs@(p:_) = (pkgName p, map p_to_ee pkgs)
 
         map_diff = Map.differenceWith (\le re -> Just $ foldr (List.deleteBy (Cabal.equating ebuildId)) le re)
         hack = (( -- We merge package names as we do case-insensitive match.
@@ -135,7 +135,7 @@ type EMap = Map PackageName [ExistingEbuild]
 
 lookupEbuildWith :: EMap -> PackageId -> Maybe ExistingEbuild
 lookupEbuildWith overlay pkgid = do
-  ebuilds <- Map.lookup (packageId pkgid) overlay
+  ebuilds <- Map.lookup (pkgName pkgid) overlay
   List.find (\e -> ebuildId e == pkgid) ebuilds
 
 runStatus :: Cabal.Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> CabalInstall.RepoContext -> IO ()

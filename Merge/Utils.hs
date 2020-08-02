@@ -13,6 +13,7 @@ module Merge.Utils
   , mangle_iuse
   , to_unstable
   , metaFlags
+  , gentooPackages
   ) where
 
 import qualified Control.Monad as M
@@ -68,7 +69,7 @@ readPackageString args = do
 -- >>> let newPkgId = Portage.PackageId (Portage.PackageName (Portage.Category "dev-haskell") (Cabal.mkPackageName "foo-bar2")) (Portage.Version [3,0,2] Nothing [] 0 )
 --
 -- >>> getPreviousPackageId ebuildDir newPkgId
--- Just (PackageId {packageId = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,1], versionChar = Nothing, versionSuffix = [], versionRevision = 0}})
+-- Just (PackageId {pkgName = PackageName {category = Category {unCategory = "dev-haskell"}, cabalPkgName = PackageName "foo-bar2"}, pkgVersion = Version {versionNumber = [3,0,1], versionChar = Nothing, versionSuffix = [], versionRevision = 0}})
 getPreviousPackageId :: [FilePath] -- ^ list of ebuilds for given package
                      -> Portage.PackageId -- ^ new PackageId
                      -> Maybe Portage.PackageId -- ^ maybe PackageId of previous version
@@ -76,7 +77,7 @@ getPreviousPackageId pkgDir newPkgId = do
   let pkgIds = reverse 
                . L.sortOn (Portage.pkgVersion)
                . filter (<newPkgId)
-               $ mapMaybe (Portage.filePathToPackageId (Portage.category . Portage.packageId $ newPkgId))
+               $ mapMaybe (Portage.filePathToPackageId (Portage.category . Portage.pkgName $ newPkgId))
                $ SF.dropExtension <$> filter (\fp -> SF.takeExtension fp == ".ebuild") pkgDir
   case pkgIds of
     x:_ -> Just x
@@ -140,3 +141,42 @@ to_unstable kw =
 -- fromList [("foo","bar")]
 metaFlags :: [Cabal.PackageFlag] -> Map.Map String String
 metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+
+-- | List of packages actively maintained in @::gentoo@.
+--
+-- When merging a package, hackport checks if the package exists
+-- on this list. If it does, it advises the user to sync their
+-- package bump to ::gentoo.
+--
+-- GHC and its core libraries are currently commented out, since their
+-- management requires coordination with the rest of the haskell
+-- ecosystem and should not be bumped ad-hoc.
+gentooPackages :: [Portage.PackageName]
+gentooPackages = [ p "app-portage" "hackport"
+                 , p "app-text" "pandoc"
+                 -- , p "dev-haskell" "binary"       -- ghc core library
+                 -- , p "dev-haskell" "cabal"        -- ghc core library
+                 , p "dev-haskell" "cabal-install"
+                 -- , p "dev-haskell" "exceptions"   -- ghc-8.10 core library
+                 , p "dev-haskell" "haddock"
+                 , p "dev-haskell" "hakyll"
+                 -- , p "dev-haskell" "haskeline"    -- ghc core library
+                 , p "dev-haskell" "hlint"
+                 -- , p "dev-haskell" "mtl"          -- ghc core library
+                 -- , p "dev-haskell" "parsec"       -- ghc core library
+                 , p "dev-haskell" "stack"
+                 , p "dev-haskell" "stack-bin"
+                 -- , p "dev-haskell" "stm"          -- ghc core library
+                 -- , p "dev-haskell" "terminfo"     -- ghc core library
+                 -- , p "dev-haskell" "text"        
+                 -- , p "dev-haskell" "transformers" -- ghc core library
+                 -- , p "dev-haskell" "xhtml"        -- ghc core library
+                 , p "dev-haskell" "yesod"
+                 -- , p "dev-lang" "ghc"             -- ghc itself
+                 , p "dev-vcs" "darcs"
+                 , p "dev-vcs" "git-annex"
+                 , p "x11-misc" "xmobar"
+                 , p "x11-wm" "xmonad"
+                 ]
+  where
+    p = Portage.mkPackageName
