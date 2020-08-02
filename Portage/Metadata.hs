@@ -97,6 +97,17 @@ makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
 
 -- don't use Text.XML.Light as we like our own pretty printer
 -- | Pretty print the @metadata.xml@ string.
+--
+-- This function will additionally print the @<use>@ and @<longdescription>@
+-- xml elements if:
+--
+--   1. There are USE flags to fill the @<use>@ element, which cannot be empty;
+--      and
+--   2. The long description is greater than 150 characters long.
+--
+-- The long description also cannot be identical to the @DESCRIPTION@ field
+-- in an ebuild in order to pass Gentoo QA, but this is checked for outside
+-- of this function. See "Merge" for an example usage.
 makeDefaultMetadata :: String -> Map.Map String String -> T.Text
 makeDefaultMetadata long_description flags = T.pack $
   unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -109,17 +120,20 @@ makeDefaultMetadata long_description flags = T.pack $
             ++ if flags == Map.empty
                then []
                else "\n\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
-          , (init {- strip trailing newline-}
-              . unlines
-              . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]
-                           then "\t"   ++ l -- leading/trailing lines
-                           else "\t\t" ++ l -- description itself
-                    )
-              . lines
-              . showElement
-              . unode "longdescription"
-              . ("\n" ++) -- prepend newline to separate form <longdescription>
-              . (++ "\n") -- append newline
-            ) long_description
+            ++ if long_description == "" || length long_description <= 150
+               then []
+               else "\n" ++
+                    (init {- strip trailing newline-}
+                      . unlines
+                      . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]
+                                   then "\t"   ++ l -- leading/trailing lines
+                                   else "\t\t" ++ l -- description itself
+                            )
+                      . lines
+                      . showElement
+                      . unode "longdescription"
+                      . ("\n" ++) -- prepend newline to separate from <longdescription>
+                      . (++ "\n") -- append newline
+                    ) long_description
           , "</pkgmetadata>"
           ]
