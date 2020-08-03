@@ -422,6 +422,9 @@ fetchDigestAndCheck verbosity ebuildDir pkgId =
     ps <- system "pkgcheck scan"
     when (ps /= ExitSuccess) $ -- this should never be true, even with QA issues.
       notice verbosity "pkgcheck scan failed."
+    rf <- system "repoman full --include-dev"
+    when (rf /= ExitSuccess) $
+      notice verbosity "repoman full --include-dev found an error. Do something about it!"
     return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
