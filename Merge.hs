@@ -401,23 +401,28 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
     let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
+      $ Portage.fromCabalPackageId cat cabal_pkgId
 
--- | Run various @repoman@ commands in the directory of the newly-generated ebuild.
+-- | Run @ebuild@ and @pkgcheck@ commands in the directory of the newly-generated ebuild.
 -- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
 -- the @Manifest@ file.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
+                    -> Portage.PackageId -- ^ newest ebuild
                     -> IO ()
-fetchDigestAndCheck verbosity ebuildDir =
-  withWorkingDirectory ebuildDir $ do
-     notice verbosity "Recalculating digests (repoman manifest)..."
-     rm <- system "repoman manifest"
-     when (rm /= ExitSuccess) $
-         notice verbosity "repoman manifest failed horribly. Do something about it!"
-     rf <- system "repoman full --include-dev"
-     when (rf /= ExitSuccess) $
-         notice verbosity "repoman full --include-dev found an error. Do something about it!"
-     return ()
+fetchDigestAndCheck verbosity ebuildDir pkgId =
+  let ebuild = prettyShow (Portage.cabalPkgName . Portage.packageId $ pkgId)
+               ++ "-" ++ prettyShow (Portage.pkgVersion pkgId) <.> "ebuild"
+  in withWorkingDirectory ebuildDir $ do
+    notice verbosity "Recalculating digests..."
+    em <- system $ "ebuild " ++ ebuild ++ " manifest > /dev/null 2>&1"
+    when (em /= ExitSuccess) $
+      notice verbosity "ebuild manifest failed horribly. Do something about it!"
+    notice verbosity $ "Running pkgcheck scan..."
+    ps <- system "pkgcheck scan"
+    when (ps /= ExitSuccess) $ -- this should never be true, even with QA issues.
+      notice verbosity "pkgcheck scan failed."
+    return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
 withWorkingDirectory newDir action = do
