@@ -10,6 +10,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
+import Control.Concurrent
 import Control.Monad
 import Control.Exception
 import qualified Data.Text as T
@@ -45,7 +46,7 @@ import System.Directory ( getCurrentDirectory
                         , doesFileExist
                         , listDirectory
                         )
-import System.Process (system)
+import System.Process
 import System.FilePath ((</>),(<.>))
 import System.Exit
 
@@ -403,9 +404,21 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
     fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
 
--- | Run @ebuild@ and @pkgcheck@ commands in the directory of the newly-generated ebuild.
+-- | Run @ebuild@, @pkgcheck@ and @repoman@ commands in the directory of the
+-- newly-generated ebuild.
+--
 -- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
 -- the @Manifest@ file.
+--
+-- @pkgcheck@ and @repoman@ will run concurrently if supported by the runtime.
+--
+-- A word on variable naming: @cmdExM@ is an 'MVar' holding an 'ExitCode'
+-- from shell command @cmd@. @cmdOutM@ is the same, except it holds a 'String'
+-- of what was to be written to @STDOUT@.
+--
+-- Ordering is important: we block printing the output from @pkgcheck@ until
+-- @repoman@ terminates, so that we can print the output of both commands
+-- together. Colourised output is preserved.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
                     -> Portage.PackageId -- ^ newest ebuild
@@ -415,16 +428,35 @@ fetchDigestAndCheck verbosity ebuildDir pkgId =
                ++ "-" ++ prettyShow (Portage.pkgVersion pkgId) <.> "ebuild"
   in withWorkingDirectory ebuildDir $ do
     notice verbosity "Recalculating digests..."
-    em <- system $ "ebuild " ++ ebuild ++ " manifest > /dev/null 2>&1"
-    when (em /= ExitSuccess) $
+    emEx <- system $ "ebuild " ++ ebuild ++ " manifest > /dev/null 2>&1"
+    when (emEx /= ExitSuccess) $
       notice verbosity "ebuild manifest failed horribly. Do something about it!"
-    notice verbosity $ "Running pkgcheck scan..."
-    ps <- system "pkgcheck scan"
-    when (ps /= ExitSuccess) $ -- this should never be true, even with QA issues.
-      notice verbosity "pkgcheck scan failed."
-    rf <- system "repoman full --include-dev"
-    when (rf /= ExitSuccess) $
+
+    notice verbosity $ "Running " ++ A.bold "pkgcheck scan " ++ "and " ++
+      A.bold "repoman full --include-dev" ++ "..."
+      
+    rfExM <- newEmptyMVar
+    _ <- forkIO $ do
+      ex <- system $ "repoman full --include-dev"
+      putMVar rfExM ex
+
+    psExM  <- newEmptyMVar
+    psOutM <- newEmptyMVar
+    _ <- forkIO $ do
+      (ex,out,_) <- readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
+      putMVar psExM ex
+      putMVar psOutM out
+
+    rfEx <- takeMVar rfExM
+    when (rfEx /= ExitSuccess) $
       notice verbosity "repoman full --include-dev found an error. Do something about it!"
+
+    psEx <- takeMVar psExM
+    when (psEx /= ExitSuccess) $ -- this should never be true, even with QA issues.
+      notice verbosity $ A.inColor A.Red True A.Default "pkgcheck scan failed."
+    psOut <- takeMVar psOutM
+    notice verbosity psOut
+    
     return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
