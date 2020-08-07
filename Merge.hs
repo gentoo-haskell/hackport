@@ -10,8 +10,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Concurrent (forkIO)
-import Control.Concurrent.STM
+import Control.Concurrent.Async
 import Control.Monad
 import Control.Exception
 import qualified Data.Text as T
@@ -412,10 +411,6 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 -- the @Manifest@ file.
 --
 -- @pkgcheck@ and @repoman@ will run concurrently.
---
--- A word on variable naming: @cmdExTM@ is a 'TMVar' holding an 'ExitCode'
--- from shell command @cmd@. @cmdOutTM@ is the same, except it holds a 'String'
--- of what was to be written to @STDOUT@.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
                     -> Portage.PackageId -- ^ newest ebuild
@@ -429,29 +424,13 @@ fetchDigestAndCheck verbosity ebuildDir pkgId =
     when (emEx /= ExitSuccess) $
       notice verbosity "ebuild manifest failed horribly. Do something about it!"
 
-    notice verbosity $ "Running " ++ A.bold "pkgcheck scan " ++ "and " ++
-      A.bold "repoman full --include-dev" ++ "..."
+    notice verbosity $ "Running " ++ A.bold "repoman full --include-dev " ++
+      "and " ++ A.bold "pkgcheck scan" ++ "..."
 
-    rfExTM  <- newEmptyTMVarIO
-    psExTM  <- newEmptyTMVarIO
-    psOutTM <- newEmptyTMVarIO
-
-    _ <- forkIO $ do
-      ex <- system $ "repoman full --include-dev"
-      atomically $ putTMVar rfExTM ex
-
-    _ <- forkIO $ do
-      (ex,out,_) <- readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
-      atomically $ do
-        putTMVar psExTM ex
-        putTMVar psOutTM out
-
-    (rfEx,psEx,psOut) <- atomically $ do
-      a <- takeTMVar rfExTM
-      b <- takeTMVar psExTM
-      c <- takeTMVar psOutTM
-      return (a,b,c)
-
+    (rfEx,(psEx,psOut,_)) <- system "repoman full --include-dev"
+      `concurrently`
+      readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
+    
     when (rfEx /= ExitSuccess) $
       notice verbosity "repoman full --include-dev found an error. Do something about it!"
     when (psEx /= ExitSuccess) $ -- this should never be true, even with QA issues.
