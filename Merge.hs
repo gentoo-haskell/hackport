@@ -10,7 +10,8 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Concurrent
+import Control.Concurrent (forkIO)
+import Control.Concurrent.STM
 import Control.Monad
 import Control.Exception
 import qualified Data.Text as T
@@ -410,15 +411,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 -- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
 -- the @Manifest@ file.
 --
--- @pkgcheck@ and @repoman@ will run concurrently if supported by the runtime.
+-- @pkgcheck@ and @repoman@ will run concurrently.
 --
--- A word on variable naming: @cmdExM@ is an 'MVar' holding an 'ExitCode'
--- from shell command @cmd@. @cmdOutM@ is the same, except it holds a 'String'
+-- A word on variable naming: @cmdExTM@ is a 'TMVar' holding an 'ExitCode'
+-- from shell command @cmd@. @cmdOutTM@ is the same, except it holds a 'String'
 -- of what was to be written to @STDOUT@.
---
--- Ordering is important: we block printing the output from @pkgcheck@ until
--- @repoman@ terminates, so that we can print the output of both commands
--- together. Colourised output is preserved.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
                     -> Portage.PackageId -- ^ newest ebuild
@@ -434,29 +431,33 @@ fetchDigestAndCheck verbosity ebuildDir pkgId =
 
     notice verbosity $ "Running " ++ A.bold "pkgcheck scan " ++ "and " ++
       A.bold "repoman full --include-dev" ++ "..."
-      
-    rfExM <- newEmptyMVar
+
+    rfExTM  <- newEmptyTMVarIO
+    psExTM  <- newEmptyTMVarIO
+    psOutTM <- newEmptyTMVarIO
+
     _ <- forkIO $ do
       ex <- system $ "repoman full --include-dev"
-      putMVar rfExM ex
+      atomically $ putTMVar rfExTM ex
 
-    psExM  <- newEmptyMVar
-    psOutM <- newEmptyMVar
     _ <- forkIO $ do
       (ex,out,_) <- readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
-      putMVar psExM ex
-      putMVar psOutM out
+      atomically $ do
+        putTMVar psExTM ex
+        putTMVar psOutTM out
 
-    rfEx <- takeMVar rfExM
+    (rfEx,psEx,psOut) <- atomically $ do
+      a <- takeTMVar rfExTM
+      b <- takeTMVar psExTM
+      c <- takeTMVar psOutTM
+      return (a,b,c)
+
     when (rfEx /= ExitSuccess) $
       notice verbosity "repoman full --include-dev found an error. Do something about it!"
-
-    psEx <- takeMVar psExM
     when (psEx /= ExitSuccess) $ -- this should never be true, even with QA issues.
       notice verbosity $ A.inColor A.Red True A.Default "pkgcheck scan failed."
-    psOut <- takeMVar psOutM
     notice verbosity psOut
-    
+
     return ()
 
 withWorkingDirectory :: FilePath -> IO a -> IO a
