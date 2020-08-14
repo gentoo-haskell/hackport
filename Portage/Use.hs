@@ -15,6 +15,8 @@ import qualified Text.PrettyPrint as Disp
 import Text.PrettyPrint ((<>))
 import Distribution.Pretty (Pretty(..))
 
+import           Control.DeepSeq (NFData(..))
+
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
 #endif
@@ -26,6 +28,13 @@ data UseFlag = UseFlag Use           -- ^ no modificator
              | X UseFlag             -- ^ ! modificator (eXclamation mark)
              | N UseFlag             -- ^ - modificator 
              deriving (Eq,Show,Ord,Read)
+
+instance NFData UseFlag where
+  rnf (UseFlag u) = rnf u
+  rnf (E f) = rnf f
+  rnf (Q f) = rnf f
+  rnf (X f) = rnf f
+  rnf (N f) = rnf f
 
 instance Pretty UseFlag where
   pretty = showModificator
@@ -52,6 +61,9 @@ dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ", ")) $ ma
 
 newtype Use = Use String
     deriving (Eq, Read, Show)
+
+instance NFData Use where
+  rnf (Use s) = rnf s
 
 instance Pretty Use where
   pretty (Use u) = Disp.text u

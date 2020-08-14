@@ -20,8 +20,10 @@ module Portage.Dependency.Types
   , range_is_case_of
   ) where
 
-import Portage.PackageId
-import Portage.Use
+import           Portage.PackageId
+import           Portage.Use
+
+import           Control.DeepSeq (NFData(..))
 
 -- | Type of SLOT dependency of a dependency.
 data SlotDepend = AnySlot          -- ^ nothing special
@@ -29,11 +31,21 @@ data SlotDepend = AnySlot          -- ^ nothing special
                 | GivenSlot String -- ^ ':slotno'
     deriving (Eq, Show, Ord)
 
+instance NFData SlotDepend where
+  rnf AnySlot = ()
+  rnf AnyBuildTimeSlot = ()
+  rnf (GivenSlot s) = rnf s
+
 -- | Type of lower bound of a dependency.
 data LBound = StrictLB    Version -- ^ greater than (>)
             | NonstrictLB Version -- ^ greater than or equal to (>=)
             | ZeroB               -- ^ no lower bound
     deriving (Eq, Show)
+
+instance NFData LBound where
+  rnf (StrictLB v) = rnf v
+  rnf (NonstrictLB v) = rnf v
+  rnf ZeroB = ()
 
 instance Ord LBound where
     compare ZeroB ZeroB = EQ
@@ -52,6 +64,11 @@ data UBound = StrictUB Version    -- ^ less than (<)
             | NonstrictUB Version -- ^ less than or equal to (<=)
             | InfinityB           -- ^ no upper bound
     deriving (Eq, Show)
+
+instance NFData UBound where
+  rnf (StrictUB v) = rnf v
+  rnf (NonstrictUB v) = rnf v
+  rnf InfinityB = ()
 
 instance Ord UBound where
     compare InfinityB InfinityB = EQ
@@ -74,6 +91,10 @@ data DRange = DRange LBound UBound
             | DExact Version
     deriving (Eq, Show, Ord)
 
+instance NFData DRange where
+  rnf (DRange l u) = rnf l `seq` rnf u
+  rnf (DExact v) = rnf v
+
 range_is_case_of :: DRange -> DRange -> Bool
 range_is_case_of (DRange llow lup) (DRange rlow rup)
    | llow >= rlow && lup <= rup = True
@@ -88,13 +109,25 @@ range_as_broad_as _ _ = False
 data DAttr = DAttr SlotDepend [UseFlag]
     deriving (Eq, Show, Ord)
 
+instance NFData DAttr where
+  rnf (DAttr sd uf) = rnf sd `seq` rnf uf
+
 data Dependency = DependAtom Atom
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
                 | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
     deriving (Eq, Show, Ord)
 
+instance NFData Dependency where
+  rnf (DependAtom a) = rnf a
+  rnf (DependAnyOf ds) = rnf ds
+  rnf (DependAllOf ds) = rnf ds
+  rnf (DependIfUse u d d') = rnf u `seq` rnf d `seq` rnf d'
+
 data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)
+
+instance NFData Atom where
+  rnf (Atom pn dr da) = rnf pn `seq` rnf dr `seq` rnf da
 
 -- | True if left 'Dependency' constraint is the same as (or looser than) right
 -- 'Dependency' constraint.

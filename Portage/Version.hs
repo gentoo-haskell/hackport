@@ -27,6 +27,8 @@ import qualified Text.PrettyPrint as Disp
 import           Text.PrettyPrint ((<>))
 import qualified Data.List.NonEmpty as NE
 
+import           Control.DeepSeq (NFData(..))
+
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
 #endif
@@ -38,6 +40,9 @@ data Version = Version { versionNumber   :: [Int]        -- ^ @[1,42,3]@ ~= 1.42
                        , versionRevision :: Int          -- ^ revision, 0 means none
                        }
   deriving (Eq, Ord, Show, Read)
+
+instance NFData Version where
+  rnf (Version n c s r) = rnf n `seq` rnf c `seq` rnf s `seq` rnf r
 
 -- | Prints a valid Portage 'Version' string.
 instance Pretty Version where
@@ -90,6 +95,13 @@ is_live v =
 -- | Various allowed suffixes in Portage versions.
 data Suffix = Alpha Int | Beta Int | Pre Int | RC Int | P Int
   deriving (Eq, Ord, Show, Read)
+
+instance NFData Suffix where
+  rnf (Alpha n) = rnf n
+  rnf (Beta n)  = rnf n
+  rnf (Pre n)   = rnf n
+  rnf (RC n)    = rnf n
+  rnf (P n)     = rnf n
 
 instance Pretty Suffix where
   pretty suf = case suf of

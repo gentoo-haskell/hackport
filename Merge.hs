@@ -10,14 +10,14 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import Control.Concurrent.Async
-import Control.Monad
-import Control.Exception
+import           Control.Concurrent.Async
+import           Control.Monad
+import           Control.Exception
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Function (on)
+import           Data.Function (on)
 import qualified Data.Map.Strict as Map
-import Data.Maybe
+import           Data.Maybe
 import qualified Data.List as L
 import qualified Data.Set as S
 import qualified Data.Time.Clock as TC
@@ -30,31 +30,33 @@ import qualified Distribution.PackageDescription.PrettyPrint as Cabal (showPacka
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
 import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
-import Distribution.Pretty (prettyShow)
-import Distribution.Verbosity
-import Distribution.Simple.Utils
+import           Distribution.Pretty (prettyShow)
+import           Distribution.Verbosity
+import           Distribution.Simple.Utils
 
 -- cabal-install
-import Distribution.Client.IndexUtils ( getSourcePackages )
+import           Distribution.Client.IndexUtils ( getSourcePackages )
 import qualified Distribution.Client.GlobalFlags as CabalInstall
-import Distribution.Client.Types
+import           Distribution.Client.Types
 -- others
+import           Control.Parallel.Strategies
 import qualified Data.List.Split as DLS
-import System.Directory ( getCurrentDirectory
+import           System.Directory ( getCurrentDirectory
                         , setCurrentDirectory
                         , createDirectoryIfMissing
                         , doesFileExist
                         , listDirectory
                         )
-import System.Process
-import System.FilePath ((</>),(<.>))
-import System.Exit
+import           System.Process
+import           System.FilePath ((</>),(<.>))
+import           System.Exit
 
+-- hackport
 import qualified AnsiColor as A
 import qualified Cabal2Ebuild as C2E
 import qualified Portage.EBuild as E
 import qualified Portage.EMeta as EM
-import Error as E
+import           Error as E
 
 import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
@@ -252,6 +254,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
           case lookup cfn cf_to_iuse_rename of
               Nothing  -> Merge.mangle_iuse cfn
               Just ein -> ein
+
       -- key idea is to generate all possible list of flags
       deps1 :: [(CabalFlags, Merge.EDep)]
       deps1  = [ ( f `updateFa` Cabal.unFlagAssignment fr
@@ -270,7 +273,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                -- TODO: drop ghc libraries from tests depends as well
                -- (see deepseq in hackport-0.3.5 as an example)
                , let pkgDesc_filtered_bdeps = Merge.RetroPackageDescription pkgDesc1 ad
-               ]
+               ] `using` parList rdeepseq
           where
             updateFa :: CabalFlags -> CabalFlags -> CabalFlags
             updateFa [] _ = []
@@ -341,6 +344,18 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       cabal_to_emerge_dep :: Merge.RetroPackageDescription -> Merge.EDep
       cabal_to_emerge_dep cabal_pkg = Merge.resolveDependencies overlay cabal_pkg compiler_info ghc_packages merged_cabal_pkg_name
+
+  -- When there are lots of package flags, computation of every possible flag combination
+  -- can take a while (e.g., 12 package flags = 2^12 possible flag combinations).
+  -- Warn the user about this if there are at least 12 package flags. 'cabal_flag_descs'
+  -- is usually an overestimation since it includes flags that hackport will strip out,
+  -- but using it instead of 'active_flag_descs' avoids forcing the very computation we
+  -- are trying to warn the user about.
+  when (length cabal_flag_descs >= 12) $
+    notice verbosity $ "There are up to " ++
+    A.bold (show (2^(length cabal_flag_descs) :: Int)) ++
+    " possible flag combinations.\n" ++
+    A.inColor A.Yellow True A.Default "This may take a while."
 
   debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
   debug verbosity $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
@@ -508,11 +523,12 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
   length s_ebuild' `seq` T.writeFile epath (T.pack s_ebuild')
 
   when (current_meta /= default_meta) $ do
-    notice verbosity $ A.bold $ "Default and current " ++ emeta ++ " differ."
-    if (new_flags /= Map.empty)
-    then notice verbosity $ "New or updated USE flags:\n" ++
-         (unlines $ Portage.prettyPrintFlagsHuman new_flags)
-    else notice verbosity "No new USE flags."
+    when (current_meta /= T.empty) $ do
+      notice verbosity $ A.bold $ "Default and current " ++ emeta ++ " differ."
+      if (new_flags /= Map.empty)
+        then notice verbosity $ "New or updated USE flags:\n" ++
+             (unlines $ Portage.prettyPrintFlagsHuman new_flags)
+        else notice verbosity "No new USE flags."
 
     notice verbosity $ "Writing " ++ emeta
     T.writeFile mpath default_meta

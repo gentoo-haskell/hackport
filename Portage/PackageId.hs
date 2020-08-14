@@ -29,6 +29,7 @@ import           Distribution.Pretty (Pretty(..), prettyShow)
 
 import qualified Portage.Version as Portage
 
+import           Control.DeepSeq (NFData(..))
 import qualified Data.Char as Char
 import qualified Text.PrettyPrint as Disp
 import           Text.PrettyPrint ((<>))
@@ -49,6 +50,9 @@ data PackageName = PackageName { category :: Category, cabalPkgName :: Cabal.Pac
 data PackageId = PackageId { packageId :: PackageName, pkgVersion :: Portage.Version }
   deriving (Eq, Ord, Show, Read)
 
+instance NFData Category where
+  rnf (Category c) = rnf c
+
 instance Pretty Category where
   pretty (Category c) = Disp.text c
 
@@ -56,6 +60,9 @@ instance Parsec Category where
   parsec = Category <$> P.munch1 categoryChar
     where
       categoryChar c = Char.isAlphaNum c || c == '-'
+
+instance NFData PackageName where
+  rnf (PackageName c pn) = rnf c `seq` rnf pn
 
 instance Pretty PackageName where
   pretty (PackageName cat name) =
@@ -67,6 +74,9 @@ instance Parsec PackageName where
     _ <- P.char '/'
     name <- parseCabalPackageName
     return $ PackageName cat name
+
+instance NFData PackageId where
+  rnf (PackageId pId pv) = rnf pId `seq` rnf pv
 
 instance Pretty PackageId where
   pretty (PackageId name version) =

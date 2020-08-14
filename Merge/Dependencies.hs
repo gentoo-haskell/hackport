@@ -14,7 +14,9 @@ module Merge.Dependencies
   , resolveDependencies
   ) where
 
-import Data.Maybe ( isJust, isNothing )
+import           Control.DeepSeq (NFData(..))
+import           Control.Parallel.Strategies
+import           Data.Maybe ( isJust, isNothing )
 import qualified Data.List as L
 #if !MIN_VERSION_base(4,11,0)
 import           Data.Semigroup (Semigroup(..))
@@ -52,6 +54,9 @@ data EDep = EDep
     dep_e :: S.Set String
   }
   deriving (Show, Eq, Ord)
+
+instance NFData EDep where
+  rnf (EDep rd rde d de) = rnf rd `seq` rnf rde `seq` rnf d `seq` rnf de
 
 -- | Cabal-1 style 'Cabal.PackageDescription', with a top-level 'buildDepends' function.
 data RetroPackageDescription = RetroPackageDescription {
@@ -171,7 +176,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     add_profile    = Portage.addDepUseFlag (Portage.mkQUse (Portage.Use "profile"))
     -- remove depends present in common section
     remove_raw_common = filter (\d -> not (Portage.dep_as_broad_as d raw_haskell_deps))
-                      . map PN.normalize_depend
+                        . map PN.normalize_depend
 
 ---------------------------------------------------------------
 -- Custom-setup dependencies
