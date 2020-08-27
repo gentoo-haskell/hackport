@@ -26,4 +26,7 @@ spec = do
       quote "Reading, writing and manipulating '.tar' archives." ""
         `shouldBe`
         "\"Reading, writing and manipulating \'.tar\' archives.\""
-      
+      quote "Extras for the \"contravariant\" package" ""
+        `shouldBe`
+        "\"Extras for the \\\"contravariant\\\" package\""
+
