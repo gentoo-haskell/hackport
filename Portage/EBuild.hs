@@ -18,9 +18,9 @@ module Portage.EBuild
         , quote
         ) where
 
-import Portage.Dependency
-import Portage.EBuild.CabalFeature
-import Portage.EBuild.Render
+import           Portage.Dependency
+import           Portage.EBuild.CabalFeature
+import           Portage.EBuild.Render
 import qualified Portage.Dependency.Normalize as PN
 
 import qualified Data.Time.Clock as TC
@@ -28,7 +28,9 @@ import qualified Data.Time.Format as TC
 import qualified Data.Function as F
 import qualified Data.List as L
 import qualified Data.List.Split as LS
-import Data.Version(Version(..))
+import           Data.Version(Version(..))
+
+import           Network.URI
 import qualified Paths_hackport(version)
 
 #if ! MIN_VERSION_time(1,5,0)
@@ -75,7 +77,7 @@ ebuildTemplate = EBuild {
     hackportVersion = getHackportVersion Paths_hackport.version,
     description = "",
     long_desc = "",
-    homepage = "http://hackage.haskell.org/package/${HACKAGE_N}",
+    homepage = "https://hackage.haskell.org/package/${HACKAGE_N}",
     license = Left "unassigned license?",
     slot = "0",
     keywords = ["~amd64","~x86"],
@@ -154,11 +156,25 @@ showEBuild now ebuild =
         expandVars = replaceMultiVars [ (        name ebuild, "${PN}")
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
-        -- TODO: this needs to be more generic
-        toHttps  = replace "http://github.com/" "https://github.com/"
+
+        replace old new = L.intercalate new . LS.splitOn old
+        -- add to this list with any https-aware websites 
+        httpsHomepages = Just <$> [ "github.com"
+                                  , "hackage.haskell.org"
+                                  ]
+        toHttps :: String -> String
+        toHttps x =
+          case parseURI x of
+            Just uri -> if uriScheme uri == "http:" &&
+                           (uriRegName <$> uriAuthority uri)
+                           `elem`
+                           httpsHomepages
+                        then replace "http" "https" x
+                        else x
+            Nothing -> x
+
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
-        replace old new = L.intercalate new . LS.splitOn old
 
 -- | Sort IUSE alphabetically
 --

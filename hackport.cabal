@@ -759,6 +759,7 @@ test-suite spec
                         filepath,
                         hspec >= 2.0,
                         mtl,
+                        network-uri,
                         parsec,
                         pretty,
                         process,
