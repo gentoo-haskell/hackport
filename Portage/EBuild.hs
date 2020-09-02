@@ -161,6 +161,7 @@ showEBuild now ebuild =
         -- add to this list with any https-aware websites 
         httpsHomepages = Just <$> [ "github.com"
                                   , "hackage.haskell.org"
+                                  , "www.haskell.org"
                                   ]
         toHttps :: String -> String
         toHttps x =
