@@ -246,6 +246,13 @@ equals fp1 fp2 = do
 equal' :: BS.ByteString -> BS.ByteString -> Bool
 equal' = Cabal.equating essence
     where
-    essence = filter (not . isEmpty) . filter (not . isComment) . BS.lines
+    essence = filter (not . isEmpty)
+            . filter (not . isComment)
+            . filter (not . isHOMEPAGE)
+            . BS.lines
     isComment = BS.isPrefixOf (BS.pack "#") . BS.dropWhile isSpace
+    -- HOMEPAGE= frequently gets updated for http:// / https://.
+    -- It's to much noise usually and should really be fixed
+    -- in upstream Cabal definition.
+    isHOMEPAGE = BS.isPrefixOf (BS.pack "HOMEPAGE=") . BS.dropWhile isSpace
     isEmpty = BS.null . BS.dropWhile isSpace
