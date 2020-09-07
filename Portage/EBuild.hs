@@ -162,6 +162,7 @@ showEBuild now ebuild =
         httpsHomepages = Just <$> [ "github.com"
                                   , "hackage.haskell.org"
                                   , "www.haskell.org"
+                                  , "hledger.org"
                                   ]
         toHttps :: String -> String
         toHttps x =
