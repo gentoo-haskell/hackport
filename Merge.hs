@@ -412,8 +412,12 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
                $ C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc)
 
-  let iuse_flag_descs = (\f -> f { Cabal.flagName = Cabal.mkFlagName . cfn_to_iuse . Cabal.unFlagName . Cabal.flagName $ f }) <$> active_flag_descs
-    in mergeEbuild verbosity existing_meta pkgdir ebuild iuse_flag_descs
+  let active_flag_descs_renamed =
+        (\f -> f { Cabal.flagName = Cabal.mkFlagName . cfn_to_iuse . Cabal.unFlagName
+                   . Cabal.flagName $ f }) <$> active_flag_descs
+  iuse_flag_descs <- Merge.dropIfUseExpands active_flag_descs_renamed
+  mergeEbuild verbosity existing_meta pkgdir ebuild iuse_flag_descs
+
   when fetch $ do
     let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)

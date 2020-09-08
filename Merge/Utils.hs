@@ -13,14 +13,20 @@ module Merge.Utils
   , mangle_iuse
   , to_unstable
   , metaFlags
+  , dropIfUseExpands
+  -- hspec exports
+  , dropIfUseExpand
   ) where
 
 import qualified Control.Monad as M
-import           Data.Maybe (mapMaybe)
+import qualified Data.Char as C
+import           Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.List as L
 import qualified Data.Map.Strict as Map
+import qualified System.Directory as SD
 import qualified System.FilePath as SF
-
+import           System.FilePath ((</>))
+import           System.Process (readCreateProcess, shell)
 import           Error
 import qualified Portage.PackageId as Portage
 
@@ -140,3 +146,37 @@ to_unstable kw =
 -- fromList [("foo","bar")]
 metaFlags :: [Cabal.PackageFlag] -> Map.Map String String
 metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+
+-- | Return a list of @USE_EXPAND@s maintained by ::gentoo.
+--
+-- First, 'getUseExpands' runs @portageq@ to determine the 'FilePath' of the
+-- directory containing valid @USE_EXPAND@s. If the 'FilePath' exists,
+-- it drops the filename extensions to return a list of @USE_EXPAND@s
+-- as Portage understands them. If the 'FilePath' does not exist, 'getUseExpands'
+-- supplies a bare-bones list of @USE_EXPAND@s.
+getUseExpands :: IO [String]
+getUseExpands = do
+  portDir <- readCreateProcess (shell "portageq get_repo_path / gentoo") ""
+  let use_expands_dir = (L.dropWhileEnd C.isSpace portDir) </> "profiles" </> "desc"
+  path_exists <- SD.doesPathExist use_expands_dir
+  if path_exists
+    then do use_expands_contents <- SD.listDirectory use_expands_dir
+            return (SF.dropExtension <$> use_expands_contents)
+    -- Provide some sensible defaults if hackport cannot find ::gentoo
+    else let use_expands_contents = ["cpu_flags_arm","cpu_flags_ppc","cpu_flags_x86"]
+         in return use_expands_contents
+
+-- | Return a 'Cabal.PackageFlag' if it is not a @USE_EXPAND@.
+--
+-- If the 'Cabal.flagName' has a prefix matching any valid @USE_EXPAND@,
+-- then return 'Nothing'. Otherwise return 'Just' 'Cabal.PackageFlag'.
+dropIfUseExpand :: [String] -> Cabal.PackageFlag -> Maybe Cabal.PackageFlag
+dropIfUseExpand use_expands flag =
+  if True `elem` (L.isPrefixOf <$> use_expands <*> [Cabal.unFlagName . Cabal.flagName $ flag])
+  then Nothing else Just flag
+
+-- | Strip @USE_EXPAND@s from a ['Cabal.PackageFlag'].
+dropIfUseExpands :: [Cabal.PackageFlag] -> IO [Cabal.PackageFlag]
+dropIfUseExpands flags = do
+  use_expands <- getUseExpands
+  return $ catMaybes (dropIfUseExpand use_expands <$> flags)

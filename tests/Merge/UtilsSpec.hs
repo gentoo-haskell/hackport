@@ -7,6 +7,7 @@ import           QuickCheck.Instances
 
 import           Control.Applicative (liftA2)
 import qualified Data.Map.Strict as Map
+import           Data.Maybe (catMaybes)
 import qualified Data.List as L
 
 import           Error
@@ -118,3 +119,16 @@ spec = do
       \name desc -> metaFlags [(Cabal.emptyFlag (Cabal.mkFlagName name))
                                 { Cabal.flagDescription = desc }] ==
                     Map.fromList [(mangle_iuse name,desc)]
+
+  describe "dropIfUseExpand" $ do
+    it "drops a USE flag if it is a USE_EXPAND, otherwise preserves it" $ do
+      let use_expands = ["cpu_flags_x86","cpu_flags_arm"]
+          flags       = Cabal.emptyFlag . Cabal.mkFlagName <$>
+                        [ "cpu_flags_x86_sse4_2"
+                        , "foo"
+                        , "bar"
+                        , "baz"
+                        , "cpu_flags_arm_v8"
+                        ]
+      Cabal.unFlagName . Cabal.flagName <$> catMaybes (dropIfUseExpand use_expands <$> flags)
+        `shouldBe` ["foo","bar","baz"]
