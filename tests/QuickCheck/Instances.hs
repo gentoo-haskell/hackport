@@ -38,7 +38,7 @@ instance Arbitrary ValidSuffix where
 instance Arbitrary ComplexVersion where
   arbitrary = do
     v <- listOf1 $ getNonNegative <$> arbitrary
-    c <- Just <$> choose ('a','z')
+    c <- oneof $ [Just <$> choose ('a','z'), elements [Nothing]]
     s <- listOf $ getSuffix <$> arbitrary
     (NonNegative r) <- arbitrary
     return $ ComplexVersion $ Version v (if length v == 1 then Nothing else c) s r
