@@ -163,6 +163,7 @@ showEBuild now ebuild =
                                   , "hackage.haskell.org"
                                   , "www.haskell.org"
                                   , "hledger.org"
+                                  , "www.yesodweb.com"
                                   ]
         toHttps :: String -> String
         toHttps x =
