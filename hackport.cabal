@@ -58,7 +58,7 @@ Executable    hackport
     random >= 1.0,
     stm >= 2.0,
     --  hackage-security depends
-    base16-bytestring >= 0.1.1,
+    base16-bytestring >= 0.1.1 && < 1,
     base64-bytestring >= 1.0,
     cryptohash-sha256 >= 0.11,
     ed25519,
