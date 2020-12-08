@@ -158,11 +158,14 @@ showEBuild now ebuild =
                                       ]
 
         replace old new = L.intercalate new . LS.splitOn old
-        -- add to this list with any https-aware websites 
+        -- add to this list with any https-aware websites
+        -- TODO: perhaps convert this to a list of http-only webpages,
+        --       given the prominence of https these days (year 2020).
         httpsHomepages = Just <$> [ "github.com"
                                   , "hackage.haskell.org"
                                   , "www.haskell.org"
                                   , "hledger.org"
+                                  , "jaspervdj.be"
                                   , "www.yesodweb.com"
                                   ]
         toHttps :: String -> String
