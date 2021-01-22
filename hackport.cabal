@@ -16,7 +16,7 @@ source-repository head
   location: git://github.com/gentoo-haskell/hackport.git
 
 Executable    hackport
-  ghc-options: -Wall -threaded +RTS -N -RTS
+  ghc-options: -Wall -threaded +RTS -N -RTS -with-rtsopts=-N
   ghc-prof-options: -caf-all -auto-all -rtsopts
   Main-Is:    Main.hs
   Default-Language: Haskell2010
