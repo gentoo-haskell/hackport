@@ -135,8 +135,10 @@ showEBuild now ebuild =
                          (license ebuild)). nl.
   ss "SLOT=". quote (slot ebuild). nl.
   ss "KEYWORDS=". quote' (sepBy " " $ keywords ebuild).nl.
-  ss "IUSE=". quote' (sepBy " " . sort_iuse $ L.nub $ iuse ebuild). nl.
-  nl.
+  (if null (iuse ebuild)
+    then nl
+    else ss "IUSE=". quote' (sepBy " " . sort_iuse $ L.nub $ iuse ebuild). nl. nl
+    ) .
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
   (case my_pn ebuild of
