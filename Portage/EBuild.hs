@@ -16,6 +16,7 @@ module Portage.EBuild
         , sort_iuse
         , drop_tdot
         , quote
+        , toHttps
         ) where
 
 import           Portage.Dependency
@@ -159,30 +160,34 @@ showEBuild now ebuild =
                                       , (hackage_name ebuild, "${HACKAGE_N}")
                                       ]
 
-        replace old new = L.intercalate new . LS.splitOn old
-        -- add to this list with any https-aware websites
-        -- TODO: perhaps convert this to a list of http-only webpages,
-        --       given the prominence of https these days (year 2020).
-        httpsHomepages = Just <$> [ "github.com"
-                                  , "hackage.haskell.org"
-                                  , "www.haskell.org"
-                                  , "hledger.org"
-                                  , "jaspervdj.be"
-                                  , "www.yesodweb.com"
-                                  ]
-        toHttps :: String -> String
-        toHttps x =
-          case parseURI x of
-            Just uri -> if uriScheme uri == "http:" &&
-                           (uriRegName <$> uriAuthority uri)
-                           `elem`
-                           httpsHomepages
-                        then replace "http" "https" x
-                        else x
-            Nothing -> x
 
         this_year :: String
         this_year = TC.formatTime TC.defaultTimeLocale "%Y" now
+
+-- | Convert http urls into https urls, unless whitelisted as http-only.
+--
+-- >>> toHttps "http://darcs.net"
+-- "http://darcs.net"
+-- >>> toHttps "http://pandoc.org"
+-- "https://pandoc.org"
+-- >>> toHttps "https://github.com"
+-- "https://github.com"
+toHttps :: String -> String
+toHttps x =
+  case parseURI x of
+    Just uri -> if uriScheme uri == "http:" &&
+                   (uriRegName <$> uriAuthority uri)
+                   `notElem`
+                   httpOnlyHomepages
+                then replace "http" "https" x
+                else x
+    Nothing -> x
+  where
+    replace old new = L.intercalate new . LS.splitOn old
+    -- add to this list with any non https-aware websites
+    httpOnlyHomepages = Just <$> [ "leksah.org"
+                                 , "darcs.net"
+                                 ]
 
 -- | Sort IUSE alphabetically
 --
