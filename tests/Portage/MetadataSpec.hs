@@ -14,13 +14,11 @@ spec = do
   describe "pureMetadataFromFile" $ do
     it "returns Nothing from an empty Text" $ do
       pureMetadataFromFile T.empty `shouldBe` Nothing
-    prop "equals makeMinimalMetadata with no USE flags, no matter the description" $ do
-      \desc -> pureMetadataFromFile (makeDefaultMetadata desc Map.empty) ==
-               Just makeMinimalMetadata
-    prop "equals makeMinimalMetadata plus the supplied USE flags, no matter the description" $
-      do let flags = Map.singleton "name" "description"
-           in \desc -> pureMetadataFromFile (makeDefaultMetadata desc flags)
-                       == Just (makeMinimalMetadata { metadataUseFlags = flags } )
+    it "equals makeMinimalMetadata with no USE flags" $ do
+      pureMetadataFromFile (makeDefaultMetadata Map.empty) `shouldBe` Just makeMinimalMetadata
+    it "equals makeMinimalMetadata plus the supplied USE flags" $ do
+      let flags = Map.singleton "name" "description"
+      pureMetadataFromFile (makeDefaultMetadata flags) `shouldBe` Just (makeMinimalMetadata { metadataUseFlags = flags })
 
   describe "prettyPrintFlags" $ do
     prop "should correctly format a single USE flag name with its description" $ do
@@ -36,10 +34,9 @@ spec = do
       it "should have a certain number of lines" $ do
         -- This is the number of lines in a skeleton metadata.xml.
         -- If it does not equal this number, the formatting may be wrong.
-        length (T.lines (makeDefaultMetadata "" Map.empty)) `shouldBe` 8
+        length (T.lines (makeDefaultMetadata Map.empty)) `shouldBe` 8
       it "should have a certain format" $ do
-        let desc = "foo"
-            correctMetadata = T.pack $ unlines
+        let correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
               , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
               , "<pkgmetadata>"
@@ -49,15 +46,14 @@ spec = do
               , "\t</maintainer>"
               , "</pkgmetadata>"
               ]
-          in makeDefaultMetadata desc Map.empty `shouldBe` correctMetadata
+          in makeDefaultMetadata Map.empty `shouldBe` correctMetadata
     context "when writing a metadata.xml with USE flags" $ do
       it "should have a certain number of lines" $ do
         let flags = Map.singleton "name" "description"
-          in length (T.lines (makeDefaultMetadata "" flags))
+          in length (T.lines (makeDefaultMetadata flags))
              `shouldBe` 10 + (Map.size flags)
       it "should have a certain format, including the <use> element" $ do
-        let desc = "foo"
-            flags = Map.singleton "name" "description"
+        let flags = Map.singleton "name" "description"
             correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
               , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
@@ -71,30 +67,4 @@ spec = do
               , "\t</use>"
               , "</pkgmetadata>"
               ]
-          in makeDefaultMetadata desc flags `shouldBe` correctMetadata
-    context "when writing a metadata.xml with a valid long description and USE flags" $ do
-      it "has a certain number of lines" $ do
-        let desc = replicate 151 'a'
-            flags = Map.singleton "name" "description"
-          in length (T.lines (makeDefaultMetadata desc flags))
-             `shouldBe` 13 + (Map.size flags)
-      it "writes the <longdescription> and <use> elements into the metadata.xml" $ do
-        let desc = replicate 151 'a'
-            flags = Map.singleton "name" "description"
-            correctMetadata = T.pack $ unlines
-              [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-              , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
-              , "<pkgmetadata>"
-              , "\t<maintainer type=\"project\">"
-              , "\t\t<email>haskell@gentoo.org</email>"
-              , "\t\t<name>Gentoo Haskell</name>"
-              , "\t</maintainer>"
-              , "\t<use>"
-              , "\t\t<flag name=\"name\">description</flag>"
-              , "\t</use>"
-              , "\t<longdescription>"
-              , "\t\t" ++ desc
-              , "\t</longdescription>"
-              , "</pkgmetadata>"
-              ]
-          in makeDefaultMetadata desc flags `shouldBe` correctMetadata
+          in makeDefaultMetadata flags `shouldBe` correctMetadata

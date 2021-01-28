@@ -491,10 +491,6 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
       -- the existing @metadata.xml@. If an existing flag has a new and old description,
       -- the new one takes precedence.
       default_meta = Portage.makeDefaultMetadata
-                     -- Ensure that the long description does not equal the
-                     -- ebuild description, which fails Gentoo QA.
-                     (if E.long_desc ebuild == E.description ebuild
-                      then "" else E.long_desc ebuild)
                      $ Merge.metaFlags flags `Map.union`
                      Portage.metadataUseFlags current_meta'
       -- Create a 'Map.Map' of USE flags with updated descriptions.

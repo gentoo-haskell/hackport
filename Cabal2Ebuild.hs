@@ -56,9 +56,6 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.description = ST.fromShortText $ if ST.null (Cabal.synopsis pkg)
                                           then Cabal.description pkg
                                           else Cabal.synopsis pkg,
-    E.long_desc       = ST.fromShortText $ if ST.null (Cabal.description pkg)
-                                              then Cabal.synopsis pkg
-                                              else Cabal.description pkg,
     E.homepage        = thisHomepage,
     E.license         = Portage.convertLicense $ Cabal.license pkg,
     E.slot            = (E.slot E.ebuildTemplate) ++ (if hasLibs then "/${PV}" else ""),

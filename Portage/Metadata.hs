@@ -36,18 +36,20 @@ data Metadata = Metadata
 --
 -- Trying to parse an empty 'T.Text' should return 'Nothing':
 --
--- prop> pureMetadataFromFile T.empty == Nothing
+-- >>> pureMetadataFromFile T.empty
+-- Nothing
 --
 -- Parsing a @metadata.xml@ /without/ USE flags should /always/ be equivalent
--- to 'makeMinimalMetadata', no matter the package description:
+-- to 'makeMinimalMetadata':
 --
--- prop> \desc -> pureMetadataFromFile (makeDefaultMetadata desc Map.empty) == Just makeMinimalMetadata
+-- >>> pureMetadataFromFile (makeDefaultMetadata Map.empty) == Just makeMinimalMetadata
+-- True
 --
 -- Parsing a @metadata.xml@ /with/ USE flags should /always/ be equivalent
--- to 'makeMinimalMetadata' /plus/ the supplied USE flags, no matter the
--- package description:
+-- to 'makeMinimalMetadata' /plus/ the supplied USE flags:
 --
--- prop> \desc -> pureMetadataFromFile (makeDefaultMetadata desc (Map.fromList [("name","description")])) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
+-- >>> pureMetadataFromFile (makeDefaultMetadata (Map.fromList [("name","description")])) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
+-- True
 pureMetadataFromFile :: T.Text -> Maybe Metadata
 pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
 
@@ -97,19 +99,8 @@ makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
 
 -- don't use Text.XML.Light as we like our own pretty printer
 -- | Pretty print the @metadata.xml@ string.
---
--- This function will additionally print the @<use>@ and @<longdescription>@
--- xml elements if:
---
---   1. There are USE flags to fill the @<use>@ element, which cannot be empty;
---      and
---   2. The long description is greater than 150 characters long.
---
--- The long description also cannot be identical to the @DESCRIPTION@ field
--- in an ebuild in order to pass Gentoo QA, but this is checked for outside
--- of this function. See "Merge" for an example usage.
-makeDefaultMetadata :: String -> Map.Map String String -> T.Text
-makeDefaultMetadata long_description flags = T.pack $
+makeDefaultMetadata :: Map.Map String String -> T.Text
+makeDefaultMetadata flags = T.pack $
   unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
           , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
           , "<pkgmetadata>"
@@ -118,22 +109,7 @@ makeDefaultMetadata long_description flags = T.pack $
           , "\t\t<name>Gentoo Haskell</name>"
           , "\t</maintainer>"
             ++ if flags == Map.empty
-               then []
+               then ""
                else "\n\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
-            ++ if long_description == "" || length long_description <= 150
-               then []
-               else "\n" ++
-                    (init {- strip trailing newline-}
-                      . unlines
-                      . map (\l -> if l `elem` ["<longdescription>", "</longdescription>"]
-                                   then "\t"   ++ l -- leading/trailing lines
-                                   else "\t\t" ++ l -- description itself
-                            )
-                      . lines
-                      . showElement
-                      . unode "longdescription"
-                      . ("\n" ++) -- prepend newline to separate from <longdescription>
-                      . (++ "\n") -- append newline
-                    ) long_description
           , "</pkgmetadata>"
           ]
