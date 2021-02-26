@@ -124,7 +124,8 @@ showEBuild now ebuild =
   (case my_pn ebuild of
      Nothing -> id
      Just pn -> ss "MY_PN=". quote pn. nl.
-                ss "MY_P=". quote "${MY_PN}-${PV}". nl. nl).
+                ss "MY_P=". quote "${MY_PN}-${PV}". nl.
+                ss "S=". quote ("${WORKDIR}/${MY_P}"). nl. nl).
   ss "DESCRIPTION=". quote (drop_tdot $ description ebuild). nl.
   ss "HOMEPAGE=". quote (toHttps $ expandVars (homepage ebuild)). nl.
   ss "SRC_URI=". quote (src_uri ebuild). nl.
@@ -140,9 +141,6 @@ showEBuild now ebuild =
     ) .
   dep_str "RDEPEND" (rdepend_extra ebuild) (rdepend ebuild).
   dep_str "DEPEND"  ( depend_extra ebuild) ( depend ebuild).
-  (case my_pn ebuild of
-     Nothing -> id
-     Just _ -> nl. ss "S=". quote ("${WORKDIR}/${MY_P}"). nl).
 
   verbatim (nl . ss "src_prepare() {" . nl)
                (src_prepare ebuild)
