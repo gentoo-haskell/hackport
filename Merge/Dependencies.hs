@@ -579,4 +579,5 @@ pkgconfig_table =
   ,("sdl2",                        ("media-libs", "libsdl2", Portage.AnySlot))
   ,("SDL2_image",                  ("media-libs", "sdl2-image", Portage.AnySlot))
   ,("SDL2_mixer",                  ("media-libs", "sdl2-mixer", Portage.AnySlot))
+  ,("zlib",                        ("sys-libs", "zlib", Portage.AnySlot))
   ]
