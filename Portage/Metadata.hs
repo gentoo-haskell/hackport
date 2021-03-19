@@ -76,12 +76,16 @@ parseMetadata xml =
                       in Map.fromList $ zip z b
                   }
 
+-- | Escape XML tag body content text
+xmlEscapeContent :: String -> String
+xmlEscapeContent str = showCData $ CData CDataText str Nothing
+
 -- | Pretty print as valid XML a list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlags :: Map.Map String String -> [String]
 prettyPrintFlags m = (\(name,description) ->
                         "\t\t<flag name=\"" ++ name ++ "\">" ++
-                        (L.intercalate " " . lines $ description) ++ "</flag>")
+                        (L.intercalate " " . lines $ xmlEscapeContent description) ++ "</flag>")
                      <$> Map.toAscList m
 
 -- | Pretty print a human-readable list of flags and their descriptions
