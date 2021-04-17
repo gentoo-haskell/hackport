@@ -102,6 +102,14 @@ spec = do
           then [flag]
           else [prefix ++ '-':flag]
 
+  describe "squash_debug" $ do
+    it "squashes debug-related flags under the debug global USE flag" $ do
+      squash_debug "use-debug-foo" `shouldBe` "debug"
+      squash_debug "debug-foo" `shouldBe` "debug"
+      squash_debug "foo-debugger" `shouldBe` "debug"
+    it "ignores debug-unrelated flags" $ do
+      squash_debug "foo-bar" `shouldBe` "foo-bar"
+
   describe "mangle_iuse" $ do
     prop "converts underscores (_) into hyphens (-) and drops with/use prefixes" $ do
         \a -> mangle_iuse a == drop_prefix (map (\f -> if f == '_' then '-' else f) a)

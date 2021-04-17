@@ -10,6 +10,7 @@ module Merge.Utils
   , getPreviousPackageId
   , first_just_of
   , drop_prefix
+  , squash_debug
   , mangle_iuse
   , to_unstable
   , metaFlags
@@ -108,16 +109,37 @@ drop_prefix x
   | take 4 x `elem` ["use_","use-"]   = drop 4 x
   | otherwise = x
 
+-- | Squash debug-related @USE@ flags under the @debug@ global
+--   @USE@ flag.
+--
+-- >>> squash_debug "use-debug-foo"
+-- "debug"
+-- >>> squash_debug "foo-bar"
+-- "foo-bar"
+squash_debug :: String -> String
+squash_debug flag = if "debug" `L.isInfixOf` (C.toLower <$> flag)
+                         then "debug"
+                         else flag
+
 -- | Gentoo allows underscore ('_') names in @IUSE@ only for
 -- @USE_EXPAND@ values. If it's not a user-specified rename mangle
 -- it into a hyphen ('-').
 -- 
--- >>> mangle_iuse "use_remove_my_underscores"
+-- >>> drop_underscores "use_remove_my_underscores"
 -- "remove-my-underscores"
-mangle_iuse :: String -> String
-mangle_iuse = drop_prefix . map f
+drop_underscores :: String -> String
+drop_underscores = map f
   where f '_' = '-'
         f c   = c
+
+-- | Perform all @IUSE@ mangling.
+--
+-- >>> mangle_iuse "use_foo-bar_debug"
+-- "debug"
+-- >>> mangle_iuse "with-bar_quux"
+-- "bar-quux"
+mangle_iuse :: String -> String
+mangle_iuse = squash_debug . drop_prefix . drop_underscores
 
 -- | Convert all stable keywords to testing (unstable) keywords.
 -- Preserve arch masks (-).
@@ -145,7 +167,10 @@ to_unstable kw =
 -- >>> metaFlags flags
 -- fromList [("foo","bar")]
 metaFlags :: [Cabal.PackageFlag] -> Map.Map String String
-metaFlags flags = Map.fromList $ zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags) (Cabal.flagDescription <$> flags)
+metaFlags flags =
+  Map.fromList $
+  zip (mangle_iuse . Cabal.unFlagName . Cabal.flagName <$> flags)
+  (Cabal.flagDescription <$> flags)
 
 -- | Return a list of @USE_EXPAND@s maintained by ::gentoo.
 --
