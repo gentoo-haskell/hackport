@@ -9,6 +9,7 @@ module Portage.Metadata
         ( Metadata(..)
         , metadataFromFile
         , pureMetadataFromFile
+        , stripGlobalUseFlags -- exported for hspec
         , prettyPrintFlags -- exported for hspec
         , prettyPrintFlagsHuman
         , makeDefaultMetadata
@@ -76,20 +77,30 @@ parseMetadata xml =
                       in Map.fromList $ zip z b
                   }
 
+-- | Remove global @USE@ flags from the flags 'Map.Map', as these should not be
+-- within the local @metadata.xml@. For now, this is manually specified rather than
+-- parsing @use.desc@.
+stripGlobalUseFlags :: Map.Map String String -> Map.Map String String
+stripGlobalUseFlags m = foldr1 Map.intersection (Map.delete <$> globals <*> [m])
+  where
+    globals = [ "debug"
+              , "static"
+              ]
+
 -- | Pretty print as valid XML a list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlags :: Map.Map String String -> [String]
 prettyPrintFlags m = (\(name,description) ->
                         "\t\t<flag name=\"" ++ name ++ "\">" ++
                         (L.intercalate " " . lines $ description) ++ "</flag>")
-                     <$> Map.toAscList m
+                     <$> (Map.toAscList . stripGlobalUseFlags $ m)
 
 -- | Pretty print a human-readable list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlagsHuman :: Map.Map String String -> [String]
 prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++
                             (L.intercalate " " . lines $ description))
-                          <$> Map.toAscList m
+                          <$> (Map.toAscList . stripGlobalUseFlags $ m)
                           
 -- | A minimal metadata for use as a fallback value.
 makeMinimalMetadata :: Metadata

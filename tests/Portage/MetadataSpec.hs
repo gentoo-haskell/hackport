@@ -20,6 +20,16 @@ spec = do
       let flags = Map.singleton "name" "description"
       pureMetadataFromFile (makeDefaultMetadata flags) `shouldBe` Just (makeMinimalMetadata { metadataUseFlags = flags })
 
+  describe "stripGlobalUseFlags" $ do
+    it "should remove specified global USE flags from the metadata.xml" $ do
+      stripGlobalUseFlags (Map.singleton "debug" "description") `shouldBe` Map.empty
+      stripGlobalUseFlags (Map.singleton "static" "description") `shouldBe` Map.empty
+    prop "should ignore USE flags that are not specified as global" $ do
+      \name description -> stripGlobalUseFlags (Map.singleton name description) ==
+                           if name `elem` ["debug","static"]
+                           then Map.empty
+                           else Map.singleton name description
+
   describe "prettyPrintFlags" $ do
     prop "should correctly format a single USE flag name with its description" $ do
       \name description -> prettyPrintFlags (Map.singleton name description) ==
