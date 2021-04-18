@@ -11,6 +11,7 @@ module Merge.Utils
   , first_just_of
   , drop_prefix
   , squash_debug
+  , convert_underscores
   , mangle_iuse
   , to_unstable
   , metaFlags
@@ -19,6 +20,7 @@ module Merge.Utils
   , dropIfUseExpand
   ) where
 
+import qualified Control.Applicative as A
 import qualified Control.Monad as M
 import qualified Data.Char as C
 import           Data.Maybe (catMaybes, mapMaybe)
@@ -104,10 +106,13 @@ first_just_of = M.msum
 -- >>> drop_prefix "no_examples"
 -- "no_examples"
 drop_prefix :: String -> String
-drop_prefix x
-  | take 5 x `elem` ["with_","with-"] = drop 5 x
-  | take 4 x `elem` ["use_","use-"]   = drop 4 x
-  | otherwise = x
+drop_prefix x =
+  let prefixes = ["with","use"]
+      separators = ["-","_"]
+      combinations = A.liftA2 (++) prefixes separators
+  in case catMaybes (A.liftA2 L.stripPrefix combinations [x]) of
+    [z] -> z
+    _ -> x
 
 -- | Squash debug-related @USE@ flags under the @debug@ global
 --   @USE@ flag.
@@ -125,10 +130,10 @@ squash_debug flag = if "debug" `L.isInfixOf` (C.toLower <$> flag)
 -- @USE_EXPAND@ values. If it's not a user-specified rename mangle
 -- it into a hyphen ('-').
 -- 
--- >>> drop_underscores "use_remove_my_underscores"
+-- >>> convert_underscores "remove_my_underscores"
 -- "remove-my-underscores"
-drop_underscores :: String -> String
-drop_underscores = map f
+convert_underscores :: String -> String
+convert_underscores = map f
   where f '_' = '-'
         f c   = c
 
@@ -139,7 +144,7 @@ drop_underscores = map f
 -- >>> mangle_iuse "with-bar_quux"
 -- "bar-quux"
 mangle_iuse :: String -> String
-mangle_iuse = squash_debug . drop_prefix . drop_underscores
+mangle_iuse = squash_debug . drop_prefix . convert_underscores
 
 -- | Convert all stable keywords to testing (unstable) keywords.
 -- Preserve arch masks (-).
