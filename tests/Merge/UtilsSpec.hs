@@ -110,9 +110,20 @@ spec = do
     it "ignores debug-unrelated flags" $ do
       squash_debug "foo-bar" `shouldBe` "foo-bar"
 
+  describe "convert_underscores" $ do
+    it "converts underscores (_) into hyphens (-)" $ do
+      convert_underscores "foo_bar" `shouldBe` "foo-bar"
+    it "ignores mangling of separators other than underscores" $ do
+      convert_underscores "foo-bar" `shouldBe` "foo-bar"
+    it "ignores mangling of characters which are not separators" $ do
+      convert_underscores "foobar" `shouldBe` "foobar"
+
   describe "mangle_iuse" $ do
-    prop "converts underscores (_) into hyphens (-) and drops with/use prefixes" $ do
-        \a -> mangle_iuse a == drop_prefix (map (\f -> if f == '_' then '-' else f) a)
+    it "performs all IUSE mangling" $ do
+      mangle_iuse "use_foo_bar" `shouldBe` "foo-bar"
+      mangle_iuse "with-baz-quux" `shouldBe` "baz-quux"
+      mangle_iuse "use_debugging-symbols" `shouldBe` "debug"
+      mangle_iuse "foo-bar-baz_quux" `shouldBe` "foo-bar-baz-quux"
 
   describe "to_unstable" $ do
     prop "creates an unstable keyword from a stable keyword, or preserves a mask" $ do
