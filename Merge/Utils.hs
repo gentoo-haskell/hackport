@@ -202,7 +202,7 @@ getUseExpands = do
 -- then return 'Nothing'. Otherwise return 'Just' 'Cabal.PackageFlag'.
 dropIfUseExpand :: [String] -> Cabal.PackageFlag -> Maybe Cabal.PackageFlag
 dropIfUseExpand use_expands flag =
-  if True `elem` (L.isPrefixOf <$> use_expands <*> [Cabal.unFlagName . Cabal.flagName $ flag])
+  if or (A.liftA2 L.isPrefixOf use_expands [Cabal.unFlagName . Cabal.flagName $ flag])
   then Nothing else Just flag
 
 -- | Strip @USE_EXPAND@s from a ['Cabal.PackageFlag'].
