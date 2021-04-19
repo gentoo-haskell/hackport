@@ -32,11 +32,33 @@ spec = do
                            else Map.singleton name description
 
   describe "prettyPrintFlags" $ do
-    prop "should correctly format a single USE flag name with its description" $ do
-      \name description -> prettyPrintFlags (Map.singleton name description) ==
+    it "correctly handles special XML characters contained in strings" $ do
+      let name = "foo"
+          desc = "bar < 1.1.0"
+        in prettyPrintFlags (Map.singleton name desc) `shouldBe`
+        ["\t\t<flag name=\"" ++ name ++ "\">"
+         ++ "bar &lt; 1.1.0" ++ "</flag>"]
+    it "correctly formats a single USE flag name with its description" $ do
+      let name = "foo"
+          description = "bar"
+        in prettyPrintFlags (Map.singleton name description) `shouldBe`
                            ["\t\t<flag name=\"" ++ name ++
                            "\">" ++ (L.intercalate " " . lines $ description)
                            ++ "</flag>"]
+    it "correctly formats multiple USE flag names with their descriptions" $ do
+      let f1 = "flag1"
+          f2 = "flag2"
+          d1 = "foo_desc"
+          d2 = "bar_desc"
+        in prettyPrintFlags (Map.fromList [(f1,d1),(f2,d2)]) `shouldBe`
+           ["\t\t<flag name=\"" ++ f1
+           ++ "\">" ++ (L.intercalate " " . lines $ d1)
+           ++ "</flag>"
+           ,
+           "\t\t<flag name=\"" ++ f2
+           ++ "\">" ++ (L.intercalate " " . lines $ d2)
+           ++ "</flag>"]
+
     prop "should have a length equal to the number of USE flags" $ do
       \flags -> length (prettyPrintFlags flags) == Map.size flags
       
@@ -64,7 +86,7 @@ spec = do
           in length (T.lines (makeDefaultMetadata flags))
              `shouldBe` 10 + (Map.size flags)
       it "should have a certain format, including the <use> element" $ do
-        let flags = Map.singleton "name" "description"
+        let flags = Map.fromList [("flag1","desc1"),("flag2","desc2")]
             correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
               , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
@@ -74,7 +96,8 @@ spec = do
               , "\t\t<name>Gentoo Haskell</name>"
               , "\t</maintainer>"
               , "\t<use>"
-              , "\t\t<flag name=\"name\">description</flag>"
+              , "\t\t<flag name=\"flag1\">desc1</flag>"
+              , "\t\t<flag name=\"flag2\">desc2</flag>"
               , "\t</use>"
               , "</pkgmetadata>"
               ]

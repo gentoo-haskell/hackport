@@ -92,8 +92,10 @@ stripGlobalUseFlags m = foldr1 Map.intersection (Map.delete <$> globals <*> [m])
 -- from a given 'Map.Map'.
 prettyPrintFlags :: Map.Map String String -> [String]
 prettyPrintFlags m = (\(name,description) ->
-                        "\t\t<flag name=\"" ++ name ++ "\">" ++
-                        (L.intercalate " " . lines $ description) ++ "</flag>")
+                        "\t\t" ++
+                        (showElement
+                         . add_attr (Attr (blank_name { qName = "name" }) name)
+                         . unode "flag" $ description))
                      <$> (Map.toAscList . stripGlobalUseFlags $ m)
 
 -- | Pretty print a human-readable list of flags and their descriptions
