@@ -364,7 +364,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("Xss",    any_c_p "x11-libs" "libXScrnSaver")
       , ("tag_c",  any_c_p "media-libs" "taglib")
       , ("magic",  any_c_p "sys-apps" "file")
-      , ("crypt",  any_c_p "virtual" "libc")
+      , ("crypt",  any_c_p_s_u "virtual" "libcrypt" Portage.AnyBuildTimeSlot [])
       , ("Xrender", any_c_p "x11-libs" "libXrender")
       , ("Xcursor", any_c_p "x11-libs" "libXcursor")
       , ("Xinerama", any_c_p "x11-libs" "libXinerama")
