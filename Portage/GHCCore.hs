@@ -186,7 +186,8 @@ ghc902_pkgs =
   , p "deepseq" [1,4,5,0] -- used by time
   , p "directory" [1,3,6,2]
   , p "filepath" [1,4,2,1]
---  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable 
+--  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable
+  , p "ghc-bignum" [1,1]
   , p "ghc-boot" [9,0,2]
   , p "ghc-boot-th" [9,0,2]
   , p "ghc-compact" [0,1,0,0]
