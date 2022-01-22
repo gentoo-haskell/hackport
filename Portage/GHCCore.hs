@@ -186,7 +186,7 @@ ghc902_pkgs =
   , p "deepseq" [1,4,5,0] -- used by time
   , p "directory" [1,3,6,2]
   , p "filepath" [1,4,2,1]
---  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable
+  , p "exceptions" [0,10,4] -- used by libghc
   , p "ghc-bignum" [1,1]
   , p "ghc-boot" [9,0,2]
   , p "ghc-boot-th" [9,0,2]
@@ -197,14 +197,14 @@ ghc902_pkgs =
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
-  --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
+  , p "mtl" [2,2,2]  -- used by exceptions
+  , p "parsec" [3,1,14,0]  -- used by exceptions
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,13,2]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,17,0,0] -- used by libghc
-  -- , p "terminfo" [0,4,1,5]
-  -- , p "text" [1,2,5,0] dependency of Cabal library
+  , p "terminfo" [0,4,1,5] -- used by libghc
+  , p "text" [1,2,5,0] -- used by libghc
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
