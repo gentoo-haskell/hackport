@@ -17,7 +17,7 @@ spec = do
   describe "packageIsCoreInAnyGHC" $ do
     it "returns True for the binary package" $ do
       packageIsCoreInAnyGHC (Cabal.mkPackageName "binary") `shouldBe` True
-    it "returns False for the exceptions package (because it is upgradeable)" $ do
-      packageIsCoreInAnyGHC (Cabal.mkPackageName "exceptions") `shouldBe` False
+    it "returns False for the haskeline package (because it is upgradeable)" $ do
+      packageIsCoreInAnyGHC (Cabal.mkPackageName "haskeline") `shouldBe` False
     it "returns False for the yesod package" $ do
       packageIsCoreInAnyGHC (Cabal.mkPackageName "yesod") `shouldBe` False
