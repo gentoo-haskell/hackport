@@ -222,7 +222,7 @@ ghc8104_pkgs =
   , p "deepseq" [1,4,4,0] -- used by time
   , p "directory" [1,3,6,0]
   , p "filepath" [1,4,2,1]
---  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable 
+  , p "exceptions" [0,10,4] -- used by haskeline, package is upgradeable
   , p "ghc-boot" [8,10,4]
   , p "ghc-boot-th" [8,10,4]
   , p "ghc-compact" [0,1,0,0]
@@ -232,14 +232,14 @@ ghc8104_pkgs =
 --  , p "haskeline" [0,8,0,1]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,0,3,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,16,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,4]
-  -- , p "text" [1,2,4,1] dependency of Cabal library
+  , p "text" [1,2,4,1] -- dependency of Cabal library
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -257,7 +257,7 @@ ghc8101_pkgs =
   , p "deepseq" [1,4,4,0] -- used by time
   , p "directory" [1,3,6,0]
   , p "filepath" [1,4,2,1]
---  , p "exceptions [0,10,4] -- used by haskeline, package is upgradeable 
+  , p "exceptions" [0,10,4] -- used by haskeline, package is upgradeable
   , p "ghc-boot" [8,10,1]
   , p "ghc-boot-th" [8,10,1]
   , p "ghc-compact" [0,1,0,0]
@@ -267,14 +267,14 @@ ghc8101_pkgs =
 --  , p "haskeline" [0,8,0,0]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,0,3,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,2]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,16,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,4]
-  -- , p "text" [1,2,3,2] dependency of Cabal library
+  , p "text" [1,2,3,2] -- dependency of Cabal library
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -300,14 +300,14 @@ ghc884_pkgs =
 --  , p "haskeline" [0,7,5,0]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,4]
-  -- , p "text" [1,2,4,0] dependency of Cabal library
+  , p "text" [1,2,4,0] -- dependency of Cabal library
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -333,14 +333,14 @@ ghc883_pkgs =
 --  , p "haskeline" [0,7,5,0]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,0]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,4]
-  -- , p "text" [1,2,4,0] dependency of Cabal library
+  , p "text" [1,2,4,0] -- dependency of Cabal library
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -366,14 +366,14 @@ ghc881_pkgs =
 --  , p "haskeline" [0,7,4,3]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,14,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,5,1]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,4]
-  -- , p "text" [1,2,4,0] dependency of Cabal library
+  , p "text" [1,2,4,0] -- dependency of Cabal library
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -399,14 +399,14 @@ ghc865_pkgs =
 --  , p "haskeline" [0,7,4,3]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,5,0]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,14,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,2]
-  -- , p "text" [1,2,3,1] dependency of Cabal library
+  , p "text" [1,2,3,1] -- dependency of Cabal library
   , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -432,14 +432,14 @@ ghc863_pkgs =
 --  , p "haskeline" [0,7,4,3]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,3,0]
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,14,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,2]
-  -- , p "text" [1,2,3,1] dependency of Cabal library
+  , p "text" [1,2,3,1] -- dependency of Cabal library
   , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,5,0] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -465,14 +465,14 @@ ghc843_pkgs =
 --  , p "haskeline" [0,7,4,2]  package is upgradeable
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
-  --  , p "mtl" [2,2,2]  package is upgradeable(?)
+  , p "mtl" [2,2,2] -- package is upgradeable(?)
   --  , p "parsec" [3,1,13,0]  package is upgradeable(?)
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,3,0]
   --  , p "stm" [2,4,5,0]  package is upgradeable(?)
   , p "template-haskell" [2,13,0,0] -- used by libghc
   -- , p "terminfo" [0,4,1,1]
-  -- , p "text" [1,2,3,0]
+  , p "text" [1,2,3,0]
   , p "time" [1,8,0,2] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,5,0] -- used by libghc
   , p "unix" [2,7,2,2]
