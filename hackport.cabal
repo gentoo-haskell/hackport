@@ -1,6 +1,7 @@
+Cabal-Version:  2.2
 Name:           hackport
-Version:        0.7
-License:        GPL
+Version:        0.7.1
+License:        GPL-3.0-or-later
 License-file:   LICENSE
 Author:         Henning Günther, Duncan Coutts, Lennart Kolmodin
 Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
@@ -9,7 +10,6 @@ Synopsis:       Hackage and Portage integration tool
 Description:    A command line tool to manage an overlay of Gentoo ebuilds
                 that are generated from a hackage repo of Cabal packages.
 Build-Type:     Simple
-Cabal-Version:  >=1.10
 
 source-repository head
   type: git
@@ -58,7 +58,7 @@ Executable    hackport
     random >= 1.0,
     stm >= 2.0,
     --  hackage-security depends
-    base16-bytestring >= 0.1.1 && < 1,
+    base16-bytestring >= 0.1.1 && < 1.1,
     base64-bytestring >= 1.0,
     cryptohash-sha256 >= 0.11,
     ed25519,
