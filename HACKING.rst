@@ -157,7 +157,7 @@ Further help and information
 ----------------------------
 
 There will usually be a ``HackPort`` developer hanging about in
-``#gentoo-haskell`` on FreeNode. Join the channel and ask away!
+``#gentoo-haskell`` on Libera.Chat. Join the channel and ask away!
 
 TODO
 ----
