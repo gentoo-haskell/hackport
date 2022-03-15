@@ -154,53 +154,6 @@ Executable    hackport
     Distribution.Backpack.ReadyComponent
     Distribution.Backpack.UnifyM
     Distribution.CabalSpecVersion
-    Distribution.Client.BuildReports.Types
-    Distribution.Client.CmdInstall.ClientInstallFlags
-    Distribution.Client.Compat.Directory
-    Distribution.Client.Compat.Orphans
-    Distribution.Client.Compat.Prelude
-    Distribution.Client.Compat.Semaphore
-    Distribution.Client.Config
-    Distribution.Client.Dependency.Types
-    Distribution.Client.FetchUtils
-    Distribution.Client.GZipUtils
-    Distribution.Client.GlobalFlags
-    Distribution.Client.HashValue
-    Distribution.Client.HttpUtils
-    Distribution.Client.IndexUtils
-    Distribution.Client.IndexUtils.ActiveRepos
-    Distribution.Client.IndexUtils.IndexState
-    Distribution.Client.IndexUtils.Timestamp
-    Distribution.Client.Init.Defaults
-    Distribution.Client.Init.Types
-    Distribution.Client.JobControl
-    Distribution.Client.ManpageFlags
-    Distribution.Client.ParseUtils
-    Distribution.Client.ProjectFlags
-    Distribution.Client.Security.DNS
-    Distribution.Client.Security.HTTP
-    Distribution.Client.Setup
-    Distribution.Client.Tar
-    Distribution.Client.Targets
-    Distribution.Client.Types
-    Distribution.Client.Types.AllowNewer
-    Distribution.Client.Types.BuildResults
-    Distribution.Client.Types.ConfiguredId
-    Distribution.Client.Types.ConfiguredPackage
-    Distribution.Client.Types.Credentials
-    Distribution.Client.Types.InstallMethod
-    Distribution.Client.Types.OverwritePolicy
-    Distribution.Client.Types.PackageLocation
-    Distribution.Client.Types.PackageSpecifier
-    Distribution.Client.Types.ReadyPackage
-    Distribution.Client.Types.Repo
-    Distribution.Client.Types.RepoName
-    Distribution.Client.Types.SourcePackageDb
-    Distribution.Client.Types.SourceRepo
-    Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
-    Distribution.Client.Update
-    Distribution.Client.Utils
-    Distribution.Client.World
     Distribution.Compat.Async
     Distribution.Compat.Binary
     Distribution.Compat.CharParsing
@@ -226,9 +179,6 @@ Executable    hackport
     Distribution.Compat.Time
     Distribution.Compat.Typeable
     Distribution.Compiler
-    Distribution.Deprecated.ParseUtils
-    Distribution.Deprecated.ReadP
-    Distribution.Deprecated.ViewAsFieldDescr
     Distribution.FieldGrammar
     Distribution.FieldGrammar.Class
     Distribution.FieldGrammar.FieldDescrs
@@ -313,17 +263,6 @@ Executable    hackport
     Distribution.Simple.Test.Log
     Distribution.Simple.UHC
     Distribution.Simple.Utils
-    Distribution.Solver.Compat.Prelude
-    Distribution.Solver.Types.ComponentDeps
-    Distribution.Solver.Types.ConstraintSource
-    Distribution.Solver.Types.LabeledPackageConstraint
-    Distribution.Solver.Types.OptionalStanza
-    Distribution.Solver.Types.PackageConstraint
-    Distribution.Solver.Types.PackageFixedDeps
-    Distribution.Solver.Types.PackageIndex
-    Distribution.Solver.Types.PackagePath
-    Distribution.Solver.Types.Settings
-    Distribution.Solver.Types.SourcePackage
     Distribution.System
     Distribution.TestSuite
     Distribution.Text
@@ -421,6 +360,68 @@ Executable    hackport
     Distribution.Verbosity.Internal
     Distribution.Version
     Language.Haskell.Extension
+    -- cabal-install modules
+    Distribution.Client.BuildReports.Types
+    Distribution.Client.CmdInstall.ClientInstallFlags
+    Distribution.Client.Compat.Directory
+    Distribution.Client.Compat.Orphans
+    Distribution.Client.Compat.Prelude
+    Distribution.Client.Compat.Semaphore
+    Distribution.Client.Config
+    Distribution.Client.Dependency.Types
+    Distribution.Client.FetchUtils
+    Distribution.Client.GZipUtils
+    Distribution.Client.GlobalFlags
+    Distribution.Client.HashValue
+    Distribution.Client.HttpUtils
+    Distribution.Client.IndexUtils
+    Distribution.Client.IndexUtils.ActiveRepos
+    Distribution.Client.IndexUtils.IndexState
+    Distribution.Client.IndexUtils.Timestamp
+    Distribution.Client.Init.Defaults
+    Distribution.Client.Init.Types
+    Distribution.Client.JobControl
+    Distribution.Client.ManpageFlags
+    Distribution.Client.ParseUtils
+    Distribution.Client.ProjectFlags
+    Distribution.Client.Security.DNS
+    Distribution.Client.Security.HTTP
+    Distribution.Client.Setup
+    Distribution.Client.Tar
+    Distribution.Client.Targets
+    Distribution.Client.Types
+    Distribution.Client.Types.AllowNewer
+    Distribution.Client.Types.BuildResults
+    Distribution.Client.Types.ConfiguredId
+    Distribution.Client.Types.ConfiguredPackage
+    Distribution.Client.Types.Credentials
+    Distribution.Client.Types.InstallMethod
+    Distribution.Client.Types.OverwritePolicy
+    Distribution.Client.Types.PackageLocation
+    Distribution.Client.Types.PackageSpecifier
+    Distribution.Client.Types.ReadyPackage
+    Distribution.Client.Types.Repo
+    Distribution.Client.Types.RepoName
+    Distribution.Client.Types.SourcePackageDb
+    Distribution.Client.Types.SourceRepo
+    Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
+    Distribution.Client.Update
+    Distribution.Client.Utils
+    Distribution.Client.World
+    Distribution.Deprecated.ParseUtils
+    Distribution.Deprecated.ReadP
+    Distribution.Deprecated.ViewAsFieldDescr
+    Distribution.Solver.Compat.Prelude
+    Distribution.Solver.Types.ComponentDeps
+    Distribution.Solver.Types.ConstraintSource
+    Distribution.Solver.Types.LabeledPackageConstraint
+    Distribution.Solver.Types.OptionalStanza
+    Distribution.Solver.Types.PackageConstraint
+    Distribution.Solver.Types.PackageFixedDeps
+    Distribution.Solver.Types.PackageIndex
+    Distribution.Solver.Types.PackagePath
+    Distribution.Solver.Types.Settings
+    Distribution.Solver.Types.SourcePackage
     Paths_cabal_install
     -- hackage-security modules
     Hackage.Security.Client
