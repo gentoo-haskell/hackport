@@ -5,6 +5,9 @@ Maintainer  : haskell@gentoo.org
 
 Internal helper functions for "Merge".
 -}
+
+{-# LANGUAGE ApplicativeDo #-}
+
 module Merge.Utils
   ( readPackageString
   , getPreviousPackageId
@@ -18,23 +21,36 @@ module Merge.Utils
   , dropIfUseExpands
   -- hspec exports
   , dropIfUseExpand
+  -- hackage revisions
+  , HackageRevision (getHackageRevision)
+  , parseHackageRevision
   ) where
 
 import qualified Control.Applicative as A
 import qualified Control.Monad as M
+import           Control.Monad.Fail
 import qualified Data.Char as C
 import           Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.List as L
 import qualified Data.Map.Strict as Map
+import qualified Data.Text.Lazy as Lazy
+import qualified Data.Text.Lazy.Encoding as Lazy
+import qualified Data.Text.Encoding.Error as Lazy
 import qualified System.Directory as SD
 import qualified System.FilePath as SF
 import           System.FilePath ((</>))
 import           System.Process (readCreateProcess, shell)
 import           Error
 import qualified Portage.PackageId as Portage
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Language as Parsec
+import qualified Text.Parsec.Token as Parsec
+import qualified Text.Parsec.String as Parsec
+import qualified Text.Parsec.Error as Parsec
 
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
 
 -- | Parse a ['String'] as a valid package string. E.g. @category\/name-1.0.0@.
 -- Return 'HackPortError' if the string to parse is invalid.
@@ -210,3 +226,54 @@ dropIfUseExpands :: [Cabal.PackageFlag] -> IO [Cabal.PackageFlag]
 dropIfUseExpands flags = do
   use_expands <- getUseExpands
   return $ catMaybes (dropIfUseExpand use_expands <$> flags)
+
+-- | Represents a Hackage revision number
+-- | see <https://github.com/haskell-infra/hackage-trustees/blob/master/revisions-information.md>
+newtype HackageRevision = HackageRevision { getHackageRevision :: Int }
+  deriving (Show, Eq, Ord)
+
+-- | Parse a Hackage revision number
+parseHackageRevision
+  :: MonadFail m
+  => Cabal.PackageName                         -- ^ For error messages
+  -> CabalInstall.PackageDescriptionOverride   -- ^ Input to parse
+  -> m (Maybe HackageRevision)
+parseHackageRevision pkgName =
+    failWithMessages
+    . traverse (
+        Parsec.parse (parseLines >>= parseRev) source
+        . Lazy.unpack
+        . Lazy.decodeUtf8With Lazy.lenientDecode
+      )
+  where
+    -- | Ensure 'x-revision' value string parses to a sane number
+    parseRev :: Int -> Parsec.Parser HackageRevision
+    parseRev r
+      | r >= 1    = pure (HackageRevision r)
+      | otherwise = fail "integer of 'x-revision' is less than 1"
+
+    -- | Extract the first 'x-revision' value string
+    parseLines :: Parsec.Parser Int
+    parseLines = do
+      ls <- Parsec.sepEndBy parseLine Parsec.endOfLine
+      case M.msum ls of
+        Just s -> pure s
+        Nothing -> fail "Could not find 'x-revision' line"
+
+    -- | Parse 'x-revision' or Nothing
+    parseLine :: Parsec.Parser (Maybe Int)
+    parseLine = do
+      revKey <- Parsec.optionMaybe $ do
+                  Parsec.spaces
+                  Parsec.string "x-revision:"
+                  Parsec.spaces
+      M.forM revKey $ \_ -> fromIntegral <$> Parsec.natural Parsec.haskell
+
+    -- | Fail with all messages in the event of 'Parsec.ParseError'
+    failWithMessages :: MonadFail m => Either Parsec.ParseError a -> m a
+    failWithMessages = either
+        (fail . unlines . map Parsec.messageString . Parsec.errorMessages)
+        pure
+
+    source :: Parsec.SourceName
+    source = "PackageDescriptionOverride input from " ++ show pkgName
