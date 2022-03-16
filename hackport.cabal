@@ -136,7 +136,7 @@ Executable    hackport
     Portage.Version
     Status
     Util
-    -- cabal modules 
+    -- cabal modules
     Distribution.Backpack
     Distribution.Backpack.ComponentsGraph
     Distribution.Backpack.Configure
