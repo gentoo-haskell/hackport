@@ -7,6 +7,7 @@ Internal helper functions for "Merge".
 -}
 
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 
 module Merge.Utils
   ( readPackageString
@@ -45,7 +46,6 @@ import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Language as Parsec
 import qualified Text.Parsec.Token as Parsec
 import qualified Text.Parsec.String as Parsec
-import qualified Text.Parsec.Error as Parsec
 
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
@@ -233,17 +233,14 @@ newtype HackageRevision = HackageRevision { getHackageRevision :: Int }
 
 -- | Parse a Hackage revision number
 parseHackageRevision
-  :: MonadFail m
-  => Cabal.PackageName                         -- ^ For error messages
+  :: Cabal.PackageName                         -- ^ For error messages
   -> CabalInstall.PackageDescriptionOverride   -- ^ Input to parse
-  -> m (Maybe HackageRevision)
+  -> Either Parsec.ParseError (Maybe HackageRevision)
 parseHackageRevision pkgName =
-    failWithMessages
-    . traverse (
+    traverse $
         Parsec.parse (parseLines >>= parseRev) source
         . Lazy.unpack
         . Lazy.decodeUtf8With Lazy.lenientDecode
-      )
   where
     -- | Ensure 'x-revision' value string parses to a sane number
     parseRev :: Int -> Parsec.Parser HackageRevision
@@ -268,11 +265,11 @@ parseHackageRevision pkgName =
                   Parsec.spaces
       M.forM revKey $ \_ -> fromIntegral <$> Parsec.natural Parsec.haskell
 
-    -- | Fail with all messages in the event of 'Parsec.ParseError'
-    failWithMessages :: MonadFail m => Either Parsec.ParseError a -> m a
-    failWithMessages = either
-        (fail . unlines . map Parsec.messageString . Parsec.errorMessages)
-        pure
+--     -- | Fail with all messages in the event of 'Parsec.ParseError'
+--     failWithMessages :: MonadFail m => Either Parsec.ParseError a -> m a
+--     failWithMessages = either
+--         (fail . unlines . map Parsec.messageString . Parsec.errorMessages)
+--         pure
 
     source :: Parsec.SourceName
     source = "PackageDescriptionOverride input from " ++ show pkgName
