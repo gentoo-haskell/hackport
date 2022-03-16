@@ -43,6 +43,7 @@ import           System.Process (readCreateProcess, shell)
 import           Error
 import qualified Portage.PackageId as Portage
 import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Error as Parsec
 import qualified Text.Parsec.Language as Parsec
 import qualified Text.Parsec.Token as Parsec
 import qualified Text.Parsec.String as Parsec
@@ -235,10 +236,11 @@ newtype HackageRevision = HackageRevision { getHackageRevision :: Int }
 parseHackageRevision
   :: Cabal.PackageName                         -- ^ For error messages
   -> CabalInstall.PackageDescriptionOverride   -- ^ Input to parse
-  -> Either Parsec.ParseError (Maybe HackageRevision)
+  -> Either [String] (Maybe HackageRevision)
 parseHackageRevision pkgName =
     traverse $
-        Parsec.parse (parseLines >>= parseRev) source
+        either (Left . map Parsec.messageString . Parsec.errorMessages) Right
+        . Parsec.parse (parseLines >>= parseRev) source
         . Lazy.unpack
         . Lazy.decodeUtf8With Lazy.lenientDecode
   where
@@ -264,12 +266,6 @@ parseHackageRevision pkgName =
                   Parsec.string "x-revision:"
                   Parsec.spaces
       M.forM revKey $ \_ -> fromIntegral <$> Parsec.natural Parsec.haskell
-
---     -- | Fail with all messages in the event of 'Parsec.ParseError'
---     failWithMessages :: MonadFail m => Either Parsec.ParseError a -> m a
---     failWithMessages = either
---         (fail . unlines . map Parsec.messageString . Parsec.errorMessages)
---         pure
 
     source :: Parsec.SourceName
     source = "PackageDescriptionOverride input from " ++ show pkgName
