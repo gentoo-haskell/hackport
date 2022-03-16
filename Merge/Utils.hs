@@ -28,7 +28,7 @@ module Merge.Utils
 
 import qualified Control.Applicative as A
 import qualified Control.Monad as M
-import           Control.Monad.Fail
+import           Control.Monad.Fail (MonadFail, fail)
 import qualified Data.Char as C
 import           Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.List as L
@@ -51,6 +51,8 @@ import qualified Text.Parsec.Error as Parsec
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
+
+import Prelude hiding (MonadFail, fail)
 
 -- | Parse a ['String'] as a valid package string. E.g. @category\/name-1.0.0@.
 -- Return 'HackPortError' if the string to parse is invalid.
