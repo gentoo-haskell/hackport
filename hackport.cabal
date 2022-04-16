@@ -15,6 +15,11 @@ source-repository head
   type: git
   location: git://github.com/gentoo-haskell/hackport.git
 
+flag cabal-v1
+  description: Build for cabal-v1 (Setup.hs/gentoo-haskell) compatibility
+  manual: True
+  default: False
+
 library hackport-external-libs-Cabal
   Default-Language: Haskell2010
   Hs-Source-Dirs: cabal, cabal/Cabal
@@ -519,7 +524,10 @@ library hackport-internal
     split,
     text,
     time,
-    xml
+    xml,
+    -- Needed for doctests-v2 to work
+    QuickCheck,
+    template-haskell
 
   other-extensions:
     DeriveDataTypeable
@@ -693,6 +701,23 @@ test-suite doctests
                     base-compat,
                     Glob
   other-modules:    Paths_hackport
+  if !flag(cabal-v1)
+    buildable: False
+
+test-suite doctests-v2
+  type:             exitcode-stdio-1.0
+  default-language: Haskell98
+  main-is:          tests/doctests-v2.hs
+  build-depends:    base, process
+  build-tool-depends:
+    cabal-install:cabal >= 3.2,
+    doctest:doctest >= 0.8
+
+  other-extensions:
+    CPP
+
+  if flag(cabal-v1)
+    buildable: False
 
 test-suite spec
   ghc-options: -Wall
