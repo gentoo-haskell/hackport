@@ -78,7 +78,7 @@ fromStatus fs =
 
 loadHackage :: Cabal.Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
 loadHackage verbosity repoContext overlay = do
-    CabalInstall.SourcePackageDb { packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
+    CabalInstall.SourcePackageDb { CabalInstall.packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
     let get_cat cabal_pkg = case resolveCategories overlay (Cabal.pkgName cabal_pkg) of
                                 []    -> Category "dev-haskell"
                                 [cat] -> cat
