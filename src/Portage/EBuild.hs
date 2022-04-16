@@ -95,7 +95,7 @@ ebuildTemplate = EBuild {
 -- | Given an EBuild, give the URI to the tarball of the source code.
 -- Assumes that the server is always hackage.haskell.org.
 -- 
--- >>> src_uri ebuild_template
+-- >>> src_uri ebuildTemplate
 -- "https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 src_uri :: EBuild -> String
 src_uri e =
