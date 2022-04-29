@@ -11,7 +11,6 @@ module Portage.EBuild
         ( EBuild(..)
         , ebuildTemplate
         , showEBuild
-        , src_uri
         -- hspec exports
         , sort_iuse
         , drop_tdot
@@ -92,21 +91,6 @@ ebuildTemplate = EBuild {
     , used_options = []
   }
 
--- | Given an EBuild, give the URI to the tarball of the source code.
--- Assumes that the server is always hackage.haskell.org.
--- 
--- >>> src_uri ebuildTemplate
--- "https://hackage.haskell.org/package/${P}/${P}.tar.gz"
-src_uri :: EBuild -> String
-src_uri e =
-  case my_pn e of
-    -- use standard address given that the package name has no upper
-    -- characters
-    Nothing -> "https://hackage.haskell.org/package/${P}/${P}.tar.gz"
-    -- use MY_X variables (defined in showEBuild) as we've renamed the
-    -- package
-    Just _  -> "https://hackage.haskell.org/package/${MY_P}/${MY_P}.tar.gz"
-
 -- | Pretty-print an 'EBuild' as a 'String'.
 showEBuild :: TC.UTCTime -> EBuild -> String
 showEBuild now ebuild =
@@ -128,7 +112,6 @@ showEBuild now ebuild =
                 ss "S=". quote ("${WORKDIR}/${MY_P}"). nl. nl).
   ss "DESCRIPTION=". quote (drop_tdot $ description ebuild). nl.
   ss "HOMEPAGE=". quote (toHttps $ expandVars (homepage ebuild)). nl.
-  ss "SRC_URI=". quote (src_uri ebuild). nl.
   nl.
   ss "LICENSE=". (either (\err -> quote "" . ss ("\t# FIXME: " ++ err))
                          quote
