@@ -424,13 +424,11 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
     fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
 
--- | Run @ebuild@, @pkgcheck@ and @repoman@ commands in the directory of the
+-- | Run @ebuild@ and @pkgcheck@ commands in the directory of the
 -- newly-generated ebuild.
 --
 -- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
 -- the @Manifest@ file.
---
--- @pkgcheck@ and @repoman@ will run concurrently.
 fetchDigestAndCheck :: Verbosity
                     -> FilePath -- ^ directory of ebuild
                     -> Portage.PackageId -- ^ newest ebuild
@@ -444,15 +442,10 @@ fetchDigestAndCheck verbosity ebuildDir pkgId =
     when (emEx /= ExitSuccess) $
       notice verbosity "ebuild manifest failed horribly. Do something about it!"
 
-    notice verbosity $ "Running " ++ A.bold "repoman full --include-dev " ++
-      "and " ++ A.bold "pkgcheck scan" ++ "..."
+    notice verbosity $ "Running " ++ A.bold "pkgcheck scan..."
 
-    (rfEx,(psEx,psOut,_)) <- system "repoman full --include-dev"
-      `concurrently`
-      readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
+    (psEx,psOut,_) <- readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
     
-    when (rfEx /= ExitSuccess) $
-      notice verbosity "repoman full --include-dev found an error. Do something about it!"
     when (psEx /= ExitSuccess) $ -- this should never be true, even with QA issues.
       notice verbosity $ A.inColor A.Red True A.Default "pkgcheck scan failed."
     notice verbosity psOut
