@@ -10,7 +10,6 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
-import           Control.Concurrent.Async
 import           Control.Monad
 import           Control.Exception
 import qualified Data.Text as T
