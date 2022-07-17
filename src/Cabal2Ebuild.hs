@@ -59,7 +59,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.homepage        = thisHomepage,
     E.license         = Portage.convertLicense $ Cabal.license pkg,
     E.slot            = (E.slot E.ebuildTemplate) ++ (if hasLibs then "/${PV}" else ""),
-    E.my_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
+    E.cabal_pn           = if any isUpper cabalPkgName then Just cabalPkgName else Nothing,
     E.features        = E.features E.ebuildTemplate
                    ++ (if hasLibs then ([ Portage.Lib
                                         , Portage.Profile
