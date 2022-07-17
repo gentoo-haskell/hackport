@@ -707,7 +707,8 @@ test-suite doctests
 test-suite doctests-v2
   type:             exitcode-stdio-1.0
   default-language: Haskell98
-  main-is:          tests/doctests-v2.hs
+  Hs-Source-Dirs:   tests
+  main-is:          doctests-v2.hs
   build-depends:    base, process
   build-tool-depends:
     cabal-install:cabal >= 3.2,
