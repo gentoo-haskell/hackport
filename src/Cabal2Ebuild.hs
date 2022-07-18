@@ -34,6 +34,7 @@ import Distribution.Pretty (prettyShow)
 import qualified Distribution.Utils.ShortText as ST
 
 import Data.Char          (isUpper)
+import qualified Data.Map.Lazy as Map
 import Data.Maybe
 
 import Portage.Dependency
@@ -53,6 +54,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.category    = prettyShow cat,
     E.hackage_name= cabalPkgName,
     E.version     = prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
+    E.revision    = getHackageRevision,
     E.description = ST.fromShortText $ if ST.null (Cabal.synopsis pkg)
                                           then Cabal.description pkg
                                           else Cabal.synopsis pkg,
@@ -77,6 +79,10 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
         cabalPkgName = prettyShow cabal_pn
         hasLibs = isJust (Cabal.library pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
+        getHackageRevision =
+          case Map.lookup "x-revision" (Map.fromList (Cabal.customFieldsPD pkg)) of
+            Just rev -> rev
+            _ -> "0"
         thisHomepage = if (ST.null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
                          else ST.fromShortText $ Cabal.homepage pkg
