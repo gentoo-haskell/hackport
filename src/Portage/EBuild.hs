@@ -105,7 +105,6 @@ showEBuild now ebuild =
   sconcat (map (\(k, v) -> ss "#hackport: " . ss k . ss ": " . ss v . nl) $ used_options ebuild).
   nl.
   beforeInherit.
-  nl.
   ss "CABAL_FEATURES=". quote' (sepBy " " $ map render (features ebuild)). nl.
   ss "inherit haskell-cabal". nl.
   nl.
