@@ -116,7 +116,7 @@ makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
 makeDefaultMetadata :: Map.Map String String -> T.Text
 makeDefaultMetadata flags = T.pack $
   unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-          , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
+          , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
           , "<pkgmetadata>"
           , "\t<maintainer type=\"project\">"
           , "\t\t<email>haskell@gentoo.org</email>"

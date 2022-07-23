@@ -71,7 +71,7 @@ spec = do
       it "should have a certain format" $ do
         let correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-              , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
+              , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
               , "<pkgmetadata>"
               , "\t<maintainer type=\"project\">"
               , "\t\t<email>haskell@gentoo.org</email>"
@@ -89,7 +89,7 @@ spec = do
         let flags = Map.fromList [("flag1","desc1"),("flag2","desc2")]
             correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-              , "<!DOCTYPE pkgmetadata SYSTEM \"http://www.gentoo.org/dtd/metadata.dtd\">"
+              , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
               , "<pkgmetadata>"
               , "\t<maintainer type=\"project\">"
               , "\t\t<email>haskell@gentoo.org</email>"
