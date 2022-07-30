@@ -48,8 +48,5 @@ cradle:
     - path: "tests"
       component: "hackport:test:doctests-v2"
 
-    - path: "src"
-      component: "hackport:test:spec"
-
     - path: "tests"
       component: "hackport:test:spec"

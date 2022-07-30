@@ -543,7 +543,6 @@ library hackport-internal
     Portage.PackageId
     Paths_hackport
 
-  other-modules:
     AnsiColor
     Cabal2Ebuild
     Merge.Dependencies
@@ -709,10 +708,16 @@ test-suite doctests-v2
   default-language: Haskell98
   Hs-Source-Dirs:   tests
   main-is:          doctests-v2.hs
-  build-depends:    base, process
-  build-tool-depends:
-    cabal-install:cabal >= 3.2,
-    doctest:doctest >= 0.8
+  build-depends:    base,
+                    process,
+                    -- Force doctests-v2 to be built last.
+                    -- This should reduce duplicated work: this test runs
+                    -- `cabal repl` which will try to compile the whole project.
+                    hackport-internal
+  build-tool-depends:  cabal-install:cabal >= 3.2,
+                       doctest:doctest >= 0.8,
+                       -- Force doctests-v2 to be built last
+                       hackport:hackport
 
   other-extensions:
     CPP
@@ -725,7 +730,7 @@ test-suite spec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Main-Is:              Spec.hs
-  Hs-Source-Dirs:       src, tests
+  Hs-Source-Dirs:       tests
   other-modules:
     Merge.UtilsSpec
     Portage.CabalSpec
@@ -737,41 +742,10 @@ test-suite spec
     Portage.VersionSpec
     QuickCheck.Instances
 
-    -- hackport-internal
-    Error
-    Merge
-    Overlays
-    Status
-    HackPort.GlobalFlags
-    Portage.Host
-    Portage.Overlay
-    Portage.PackageId
-    Paths_hackport
-    AnsiColor
-    Cabal2Ebuild
-    Merge.Dependencies
-    Merge.Utils
-    Portage.Cabal
-    Portage.Dependency
-    Portage.Dependency.Builder
-    Portage.Dependency.Normalize
-    Portage.Dependency.Print
-    Portage.Dependency.Types
-    Portage.EBuild
-    Portage.EBuild.CabalFeature
-    Portage.EBuild.Render
-    Portage.EMeta
-    Portage.GHCCore
-    Portage.Metadata
-    Portage.Resolve
-    Portage.Tables
-    Portage.Use
-    Portage.Version
-    Util
-
   Build-Depends:
     hackport-external-libs-Cabal,
     hackport-external-libs-cabal-install,
+    hackport-internal,
     async,
     base,
     bytestring,
