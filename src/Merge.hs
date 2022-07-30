@@ -5,13 +5,16 @@ Maintainer  : haskell@gentoo.org
 
 Core functionality of the @merge@ command of @HackPort@.
 -}
+
+{-# LANGUAGE ViewPatterns #-}
+
 module Merge
   ( merge
   , mergeGenericPackageDescription
   ) where
 
 import           Control.Monad
-import           Control.Exception
+import           Control.Exception.Lifted
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Function (on)
@@ -25,13 +28,13 @@ import qualified Data.Time.Clock as TC
 import qualified Distribution.Package as Cabal
 import qualified Distribution.Version as Cabal
 import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.Simple.Utils as Cabal
 import qualified Distribution.PackageDescription.PrettyPrint as Cabal (showPackageDescription)
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
 import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
 import           Distribution.Pretty (prettyShow)
-import           Distribution.Verbosity
-import           Distribution.Simple.Utils
+
 
 -- cabal-install
 import           Distribution.Client.IndexUtils ( getSourcePackages )
@@ -61,6 +64,7 @@ import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
+import qualified Portage.Metadata.RemoteId as Portage
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
 import qualified Portage.Dependency as Portage
@@ -70,6 +74,11 @@ import qualified Portage.GHCCore as GHCCore
 
 import qualified Merge.Dependencies as Merge
 import qualified Merge.Utils        as Merge
+
+import Util
+import Overlays (getOverlayPath)
+
+import Hackport.Env
 
 {-
 Requested features:
@@ -87,7 +96,7 @@ diffEbuilds fp a b = do _ <- system $ "diff -u --color=auto "
 -- return the available package with that version. Latest version is chosen
 -- if no preference.
 resolveVersion :: [UnresolvedSourcePackage] -> Maybe Cabal.Version -> Maybe UnresolvedSourcePackage
-resolveVersion avails Nothing = Just $ L.maximumBy (comparing (Cabal.pkgVersion . CabalInstall.srcpkgPackageId)) avails
+resolveVersion avails Nothing = Just $ L.maximumBy (Cabal.comparing (Cabal.pkgVersion . CabalInstall.srcpkgPackageId)) avails
 resolveVersion avails (Just ver) = listToMaybe (filter match avails)
   where
     match avail = ver == Cabal.pkgVersion (CabalInstall.srcpkgPackageId avail)
@@ -102,8 +111,15 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
 --
 -- Various information is printed in between these steps depending on the
 -- 'Verbosity'.
-merge :: Verbosity -> CabalInstall.RepoContext -> String -> FilePath -> Maybe String -> IO ()
-merge verbosity repoContext packageString overlayPath users_cabal_flags = do
+merge
+  :: WritesMetadata env
+  => CabalInstall.RepoContext
+  -> String
+  -> Maybe String
+  -> Env env ()
+merge repoContext packageString users_cabal_flags
+  = askGlobalEnv >>= \(GlobalEnv verbosity _ _) -> do
+  overlayPath <- getOverlayPath
   (m_category, user_pName, m_version) <-
     case Merge.readPackageString packageString of
       Left err -> throw err
@@ -114,16 +130,16 @@ merge verbosity repoContext packageString overlayPath users_cabal_flags = do
                       Nothing -> throw (ArgumentError "illegal version")
                       Just ver -> return (c,p,Just ver)
 
-  debug verbosity $ "Category: " ++ show m_category
-  debug verbosity $ "Package: " ++ show user_pName
-  debug verbosity $ "Version: " ++ show m_version
+  debug $ "Category: " ++ show m_category
+  debug $ "Package: " ++ show user_pName
+  debug $ "Version: " ++ show m_version
 
   let user_pname_str = Cabal.unPackageName user_pName
 
-  overlay <- Overlay.loadLazy overlayPath
+  overlay <- liftIO $ Overlay.loadLazy overlayPath
   -- portage_path <- Host.portage_dir `fmap` Host.getInfo
   -- portage <- Overlay.loadLazy portage_path
-  index <- fmap packageIndex $ getSourcePackages verbosity repoContext
+  index <- fmap packageIndex $ liftIO $ getSourcePackages verbosity repoContext
 
   -- find all packages that maches the user specified package name
   availablePkgs <-
@@ -132,14 +148,15 @@ merge verbosity repoContext packageString overlayPath users_cabal_flags = do
       [pkg] -> return pkg
       pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.srcpkgPackageId pkg)
                       names      = map (cabal_pkg_to_pn . L.head) pkgs
-                  notice verbosity $ "Ambiguous names: " ++ L.intercalate ", " names
+                  notice $ "Ambiguous names: " ++ L.intercalate ", " names
                   forM_ pkgs $ \ps ->
                       do let p_name = (cabal_pkg_to_pn . L.head) ps
-                         notice verbosity $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId) ps)
+                         notice $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId) ps)
                   return $ concat pkgs
 
+
   -- select a single package taking into account the user specified version
-  selectedPkg <-
+  selectedPkg <- liftIO $
     case resolveVersion availablePkgs m_version of
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
@@ -148,38 +165,52 @@ merge verbosity repoContext packageString overlayPath users_cabal_flags = do
         throw (ArgumentError "no such version for that package")
       Just avail -> return avail
 
+
+
   -- print some info
-  info verbosity "Selecting package:"
+  info "Selecting package:"
   forM_ availablePkgs $ \ avail -> do
     let match_text | CabalInstall.srcpkgPackageId avail == CabalInstall.srcpkgPackageId selectedPkg = "* "
-                   | otherwise = "- "
-    info verbosity $ match_text ++ (prettyShow . CabalInstall.srcpkgPackageId $ avail)
+                  | otherwise = "- "
+    info $ match_text ++ (prettyShow . CabalInstall.srcpkgPackageId $ avail)
 
   let cabal_pkgId = CabalInstall.srcpkgPackageId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-  cat <- maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
-  mergeGenericPackageDescription verbosity overlayPath cat (CabalInstall.srcpkgDescription selectedPkg) True users_cabal_flags
+  cat <- liftIO $ maybe (Portage.resolveCategory verbosity overlay norm_pkgName) return m_category
+  mergeGenericPackageDescription
+    cat
+    (CabalInstall.srcpkgDescription selectedPkg)
+    True
+    users_cabal_flags
+
 
   -- Maybe generate a diff
   let pkgPath = overlayPath </> (Portage.unCategory cat) </> (Cabal.unPackageName norm_pkgName)
       newPkgId = Portage.fromCabalPackageId cat cabal_pkgId
-  pkgDir <- listDirectory pkgPath
+  pkgDir <- liftIO $ listDirectory pkgPath
   case Merge.getPreviousPackageId pkgDir newPkgId of
-    Just validPkg -> do info verbosity "Generating a diff..."
-                        diffEbuilds overlayPath validPkg newPkgId
-    _ -> info verbosity "Nothing to diff!"
+    Just validPkg -> do info "Generating a diff..."
+                        liftIO $ diffEbuilds overlayPath validPkg newPkgId
+    _ -> info "Nothing to diff!"
 
 -- used to be FlagAssignment in Cabal but now it's an opaque type
 type CabalFlags = [(Cabal.FlagName, Bool)]
 
 -- | Generate an ebuild from a 'Cabal.GenericPackageDescription'.
-mergeGenericPackageDescription :: Verbosity -> FilePath -> Portage.Category -> Cabal.GenericPackageDescription -> Bool -> Maybe String -> IO ()
-mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch users_cabal_flags = do
-  overlay <- Overlay.loadLazy overlayPath
+mergeGenericPackageDescription
+  :: WritesMetadata env
+  => Portage.Category
+  -> Cabal.GenericPackageDescription
+  -> Bool
+  -> Maybe String
+  -> Env env ()
+mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
+  overlayPath <- getOverlayPath
+  overlay <- liftIO $ Overlay.loadLazy overlayPath
   let merged_cabal_pkg_name = Cabal.pkgName (Cabal.package (Cabal.packageDescription pkgGenericDesc))
       merged_PN = Portage.cabal_pn_to_PN merged_cabal_pkg_name
       pkgdir    = overlayPath </> Portage.unCategory cat </> merged_PN
-  existing_meta <- EM.findExistingMeta pkgdir
+  existing_meta <- liftIO $ EM.findExistingMeta pkgdir
   let requested_cabal_flags = Merge.first_just_of [users_cabal_flags, EM.cabal_flags existing_meta]
 
       -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
@@ -210,7 +241,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 
       (user_specified_fas, cf_to_iuse_rename) = read_fas requested_cabal_flags
 
-  debug verbosity "searching for minimal suitable ghc version"
+  debug "searching for minimal suitable ghc version"
   (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc (Cabal.mkFlagAssignment user_specified_fas) of
               Just v  -> return v
               Nothing -> let pn = prettyShow merged_cabal_pkg_name
@@ -222,7 +253,7 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
                                             , "  # fix " ++ pn ++ ".cabal"
                                             , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
                                             ]
-
+--
   let (accepted_deps, skipped_deps) = Portage.partition_depends ghc_packages merged_cabal_pkg_name
                                       (Merge.exeAndLibDeps pkgDesc0)
 
@@ -351,25 +382,25 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   -- but using it instead of 'active_flag_descs' avoids forcing the very computation we
   -- are trying to warn the user about.
   when (length cabal_flag_descs >= 12) $
-    notice verbosity $ "There are up to " ++
+    notice $ "There are up to " ++
     A.bold (show (2^(length cabal_flag_descs) :: Int)) ++
     " possible flag combinations.\n" ++
     A.inColor A.Yellow True A.Default "This may take a while."
 
-  debug verbosity $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
-  debug verbosity $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
-  debug verbosity $ "buildDepends pkgDesc:  " ++ show (map prettyShow (Merge.buildDepends pkgDesc))
+  debug $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
+  debug $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
+  debug $ "buildDepends pkgDesc:  " ++ show (map prettyShow (Merge.buildDepends pkgDesc))
 
-  notice verbosity $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
-  notice verbosity $ "Skipped  depends: " ++ show (map prettyShow skipped_deps)
-  notice verbosity $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
-  notice verbosity $ "Dropped  flags: " ++ show (map (Cabal.unFlagName.fst) common_fa)
-  notice verbosity $ "Active flags: " ++ show (map Cabal.unFlagName active_flags)
-  notice verbosity $ "Irrelevant flags: " ++ show (map Cabal.unFlagName irrelevant_flags)
+  notice $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
+  notice $ "Skipped  depends: " ++ show (map prettyShow skipped_deps)
+  notice $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
+  notice $ "Dropped  flags: " ++ show (map (Cabal.unFlagName.fst) common_fa)
+  notice $ "Active flags: " ++ show (map Cabal.unFlagName active_flags)
+  notice $ "Irrelevant flags: " ++ show (map Cabal.unFlagName irrelevant_flags)
   -- mapM_ print tdeps
 
   forM_ ghc_packages $
-      \name -> info verbosity $ "Excluded packages (comes with ghc): " ++ Cabal.unPackageName name
+      \name -> info $ "Excluded packages (comes with ghc): " ++ Cabal.unPackageName name
 
   let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
           where b True  = ""
@@ -414,13 +445,13 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
   let active_flag_descs_renamed =
         (\f -> f { Cabal.flagName = Cabal.mkFlagName . cfn_to_iuse . Cabal.unFlagName
                    . Cabal.flagName $ f }) <$> active_flag_descs
-  iuse_flag_descs <- Merge.dropIfUseExpands active_flag_descs_renamed
-  mergeEbuild verbosity existing_meta pkgdir ebuild iuse_flag_descs
+  iuse_flag_descs <- liftIO $ Merge.dropIfUseExpands active_flag_descs_renamed
+  mergeEbuild existing_meta pkgdir ebuild iuse_flag_descs
 
   when fetch $ do
     let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-    fetchDigestAndCheck verbosity (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
+    fetchDigestAndCheck (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
 
 -- | Run @ebuild@ and @pkgcheck@ commands in the directory of the
@@ -428,63 +459,76 @@ mergeGenericPackageDescription verbosity overlayPath cat pkgGenericDesc fetch us
 --
 -- This will ensure well-formed ebuilds and @metadata.xml@, and will update (if possible)
 -- the @Manifest@ file.
-fetchDigestAndCheck :: Verbosity
-                    -> FilePath -- ^ directory of ebuild
-                    -> Portage.PackageId -- ^ newest ebuild
-                    -> IO ()
-fetchDigestAndCheck verbosity ebuildDir pkgId =
+fetchDigestAndCheck
+  :: FilePath -- ^ directory of ebuild
+  -> Portage.PackageId -- ^ newest ebuild
+  -> Env env ()
+fetchDigestAndCheck ebuildDir pkgId = do
   let ebuild = prettyShow (Portage.cabalPkgName . Portage.packageId $ pkgId)
                ++ "-" ++ prettyShow (Portage.pkgVersion pkgId) <.> "ebuild"
-  in withWorkingDirectory ebuildDir $ do
-    notice verbosity "Recalculating digests..."
-    emEx <- system $ "ebuild " ++ ebuild ++ " manifest > /dev/null 2>&1"
+  withWorkingDirectory ebuildDir $ do
+    notice "Recalculating digests..."
+    emEx <- liftIO $ system $ "ebuild " ++ ebuild ++ " manifest > /dev/null 2>&1"
     when (emEx /= ExitSuccess) $
-      notice verbosity "ebuild manifest failed horribly. Do something about it!"
+      notice "ebuild manifest failed horribly. Do something about it!"
 
-    notice verbosity $ "Running " ++ A.bold "pkgcheck scan..."
+    notice $ "Running " ++ A.bold "pkgcheck scan..."
 
-    (psEx,psOut,_) <- readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
-    
+    (psEx,psOut,_) <- liftIO $ readCreateProcessWithExitCode (shell "pkgcheck scan --color True") ""
+
     when (psEx /= ExitSuccess) $ -- this should never be true, even with QA issues.
-      notice verbosity $ A.inColor A.Red True A.Default "pkgcheck scan failed."
-    notice verbosity psOut
+      notice $ A.inColor A.Red True A.Default "pkgcheck scan failed."
+    notice psOut
 
-    return ()
-
-withWorkingDirectory :: FilePath -> IO a -> IO a
+withWorkingDirectory :: FilePath -> Env env a -> Env env a
 withWorkingDirectory newDir action = do
-  oldDir <- getCurrentDirectory
+  oldDir <- liftIO $ getCurrentDirectory
   bracket
-    (setCurrentDirectory newDir)
-    (\_ -> setCurrentDirectory oldDir)
+    (liftIO $ setCurrentDirectory newDir)
+    (\_ -> liftIO $ setCurrentDirectory oldDir)
     (\_ -> action)
 
 -- | Write the ebuild (and sometimes a new @metadata.xml@) to its directory.
-mergeEbuild :: Verbosity -> EM.EMeta -> FilePath -> E.EBuild -> [Cabal.PackageFlag] -> IO ()
-mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
+mergeEbuild
+  :: WritesMetadata env
+  => EM.EMeta
+  -> FilePath
+  -> E.EBuild
+  -> [Cabal.PackageFlag]
+  -> Env env ()
+mergeEbuild existing_meta pkgdir ebuild flags
+  = ask >>= \(_, useHackageRemote -> useHackageRemoteId) -> do
+
   let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
       epath = edir </> elocal
       emeta = "metadata.xml"
       mpath = edir </> emeta
-  yet_meta <- doesFileExist mpath
+  yet_meta <- liftIO $ doesFileExist mpath
   -- If there is an existing @metadata.xml@, read it in as a 'T.Text'.
   -- Otherwise return 'T.empty'. We only use this once more to directly
   -- compare to @default_meta@ before writing it.
   current_meta <- if yet_meta
-                  then T.readFile mpath
+                  then liftIO $ T.readFile mpath
                   else return T.empty
   -- Either create an object of the 'Portage.Metadata' type from a valid @current_meta@,
   -- or supply a default minimal metadata object. Note the difference to @current_meta@:
   -- @current_meta@ is of type 'T.Text', @current_meta'@ is of type 'Portage.Metadata'.
-  let current_meta' = fromMaybe Portage.makeMinimalMetadata
-                      (Portage.pureMetadataFromFile current_meta)
+  let current_meta' = fromMaybe (Portage.minimalMetadata useHackageRemoteId ebuild)
+                      (Portage.parseMetadataXML current_meta)
+      hackageRemoteId =
+        if useHackageRemoteId
+          then S.singleton $ Portage.RemoteIdHackage $ E.hackage_name ebuild
+          else S.empty
       -- Create the @metadata.xml@ string, adding new USE flags (if any) to those of
       -- the existing @metadata.xml@. If an existing flag has a new and old description,
       -- the new one takes precedence.
-      default_meta = Portage.makeDefaultMetadata
-                     $ Merge.metaFlags flags `Map.union`
-                     Portage.metadataUseFlags current_meta'
+      default_meta = Portage.printMetadata $
+                      current_meta' <> mempty
+                        { Portage.metadataUseFlags = Merge.metaFlags flags
+                        , Portage.metadataRemoteIds =
+                            Portage.matchURIs (E.sourceURIs ebuild) <> hackageRemoteId
+                        }
       -- Create a 'Map.Map' of USE flags with updated descriptions.
       new_flags = Map.differenceWith (\new old -> if (new /= old)
                                                   then Just $ old ++ A.bold (" -> " ++ new)
@@ -492,8 +536,8 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
                   (Merge.metaFlags flags)
                   $ Portage.metadataUseFlags current_meta'
 
-  createDirectoryIfMissing True edir
-  now <- TC.getCurrentTime
+  liftIO $ createDirectoryIfMissing True edir
+  now <- liftIO $ TC.getCurrentTime
 
   let (existing_keywords, existing_license) = (EM.keywords existing_meta, EM.license existing_meta)
       new_keywords = maybe (E.keywords ebuild) (map Merge.to_unstable) existing_keywords
@@ -507,19 +551,19 @@ mergeEbuild verbosity existing_meta pkgdir ebuild flags = do
                             }
       s_ebuild'    = E.showEBuild now ebuild'
 
-  notice verbosity $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
-  notice verbosity $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
+  notice $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
+  notice $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
-  notice verbosity $ "Writing " ++ elocal
-  length s_ebuild' `seq` T.writeFile epath (T.pack s_ebuild')
+  notice $ "Writing " ++ elocal
+  length s_ebuild' `seq` liftIO (T.writeFile epath (T.pack s_ebuild'))
 
   when (current_meta /= default_meta) $ do
     when (current_meta /= T.empty) $ do
-      notice verbosity $ A.bold $ "Default and current " ++ emeta ++ " differ."
+      notice $ A.bold $ "Default and current " ++ emeta ++ " differ."
       if (new_flags /= Map.empty)
-        then notice verbosity $ "New or updated USE flags:\n" ++
+        then notice $ "New or updated USE flags:\n" ++
              (unlines $ Portage.prettyPrintFlagsHuman new_flags)
-        else notice verbosity "No new USE flags."
+        else notice "No new USE flags."
 
-    notice verbosity $ "Writing " ++ emeta
-    T.writeFile mpath default_meta
+    notice $ "Writing " ++ emeta
+    liftIO $ T.writeFile mpath default_meta

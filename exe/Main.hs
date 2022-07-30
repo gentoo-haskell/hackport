@@ -1,5 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE CPP #-}
 
 module Main (main) where
 
@@ -14,7 +13,7 @@ import qualified Text.Parsec as P
 import qualified Text.Parsec.String as P
 import qualified Distribution.Verbosity as V
 
-import qualified Status
+import Status.Types (StatusDirection(..))
 
 import Hackport.Env
 import Hackport.Command.List
@@ -152,7 +151,7 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
                   . P.runParser verbosityString () "command line option"
 
                 err :: P.ParseError -> String
-                err _ = ($[]) $ Opt.displayS $ Opt.renderCompact $ Opt.extractChunk $ Opt.vsepChunks
+                err _ = ($ "") $ Opt.displayS $ Opt.renderCompact $ Opt.extractChunk $ Opt.vsepChunks
                   [ Opt.stringChunk "Takes a number (0-3) or one of the following values:"
                   , Opt.tabulate =<< traverse (bitraverse Opt.stringChunk Opt.stringChunk)
                       [ ("silent", "No output")
@@ -191,8 +190,11 @@ makeEbuildParser = Opt.info parser infoMod
       cat <- Opt.strArgument $ Opt.metavar "<CATEGORY>"
       cabalFiles <- CNE.some $ Opt.strArgument $ Opt.metavar "[EBUILD FILE]"
       flags <- optional cabalFlagsParser
+      notOnHackage <- Opt.switch
+        $  Opt.long "not-on-hackage"
+        <> Opt.help "Skip writing the hackage remote-id to metadata.xml"
 
-      pure $ MakeEbuildEnv cat cabalFiles flags
+      pure $ MakeEbuildEnv cat cabalFiles flags (not notOnHackage)
 
     infoMod :: Opt.InfoMod MakeEbuildEnv
     infoMod = Opt.progDesc "Make an ebuild from a .cabal file"
@@ -220,13 +222,13 @@ statusParser = Opt.info parser infoMod
     parser :: Opt.Parser StatusEnv
     parser = do
       dir <- choice
-        [ Opt.flag' Status.OverlayToPortage
+        [ Opt.flag' OverlayToPortage
             $  Opt.long "to-portage"
             <> Opt.help "Print only packages likely to be interesting to move to the portage tree."
-        , Opt.flag' Status.HackageToOverlay
+        , Opt.flag' HackageToOverlay
             $  Opt.long "from-hackage"
             <> Opt.help "Print only packages likely to be interesting to move from hackage tree."
-        , pure Status.PortagePlusOverlay
+        , pure PortagePlusOverlay
         ]
 
       pkgs <- many $ Opt.strArgument $ Opt.metavar "PACKAGE"

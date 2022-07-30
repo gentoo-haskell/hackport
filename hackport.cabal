@@ -540,9 +540,12 @@ library hackport-internal
     directory,
     extensible-exceptions,
     filepath,
+    lifted-base,
+    monad-control,
     mtl,
     network-uri,
     parallel >= 3.2.1.0,
+    parsec,
     pretty,
     process,
     split,
@@ -555,6 +558,7 @@ library hackport-internal
 
   default-extensions:
     FlexibleContexts
+    MultiParamTypeClasses
 
   other-extensions:
     CPP
@@ -568,6 +572,7 @@ library hackport-internal
     Merge
     Overlays
     Status
+    Status.Types
     Hackport.Command.List
     Hackport.Command.MakeEbuild
     Hackport.Command.Update
@@ -596,6 +601,7 @@ library hackport-internal
     Portage.EMeta
     Portage.GHCCore
     Portage.Metadata
+    Portage.Metadata.RemoteId
     Portage.Resolve
     Portage.Tables
     Portage.Use
@@ -785,10 +791,10 @@ test-suite spec
     Portage.EBuildSpec
     Portage.GHCCoreSpec
     Portage.MetadataSpec
+    Portage.Metadata.RemoteIdSpec
     Portage.PackageIdSpec
     Portage.VersionSpec
     QuickCheck.Instances
-
   Build-Depends:
     hackport-external-libs-Cabal,
     hackport-external-libs-cabal-install,
@@ -804,6 +810,7 @@ test-suite spec
     hspec >= 2.0,
     network-uri,
     parallel,
+    parsec,
     pretty,
     process,
     QuickCheck >= 2.0,

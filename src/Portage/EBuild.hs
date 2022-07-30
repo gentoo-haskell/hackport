@@ -38,30 +38,31 @@ import qualified System.Locale as TC
 #endif
 
 -- | Type representing the information contained in an @.ebuild@.
-data EBuild = EBuild {
-    name :: String,
-    category :: String,
-    hackage_name :: String, -- might differ a bit (we mangle case)
-    version :: String,
-    revision :: String,
-    hackportVersion :: String,
-    description :: String,
-    homepage :: String,
-    license :: Either String String,
-    slot :: String,
-    keywords :: [String],
-    iuse :: [String],
-    depend :: Dependency,
-    depend_extra :: [String],
-    rdepend :: Dependency,
-    rdepend_extra :: [String]
+data EBuild = EBuild
+    { name :: String
+    , category :: String
+    , hackage_name :: String -- might differ a bit (we mangle case)
+    , version :: String
+    , revision :: String
+    , hackportVersion :: String
+    , sourceURIs :: [String]
+    , description :: String
+    , homepage :: String
+    , license :: Either String String
+    , slot :: String
+    , keywords :: [String]
+    , iuse :: [String]
+    , depend :: Dependency
+    , depend_extra :: [String]
+    , rdepend :: Dependency
+    , rdepend_extra :: [String]
     , features :: [CabalFeature]
     , cabal_pn :: Maybe String -- ^ Just 'myOldName' if the package name contains upper characters
     , src_prepare :: [String] -- ^ raw block for src_prepare() contents
     , src_configure :: [String] -- ^ raw block for src_configure() contents
     , used_options :: [(String, String)] -- ^ hints to ebuild writers/readers
                                          --   on what hackport options were used to produce an ebuild
-  }
+    }
 
 getHackportVersion :: Version -> String
 getHackportVersion Version {versionBranch=(x:s)} = foldl (\y z -> y ++ "." ++ (show z)) (show x) s
@@ -75,6 +76,7 @@ ebuildTemplate = EBuild {
     hackage_name = "FooBar",
     version = "0.1",
     revision = "0",
+    sourceURIs = [],
     hackportVersion = getHackportVersion Paths_hackport.version,
     description = "",
     homepage = "https://hackage.haskell.org/package/${HACKAGE_N}",

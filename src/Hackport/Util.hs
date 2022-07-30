@@ -4,6 +4,7 @@ module Hackport.Util
   , defaultRemoteRepo
   ) where
 
+import Control.Monad.Trans.Control
 import Data.Maybe (fromJust)
 import qualified Network.URI as NU
 import System.Directory ( doesDirectoryExist )
@@ -21,7 +22,7 @@ import Overlays (getOverlayPath)
 
 import Hackport.Env
 
-getPortageDir :: MonadEnv env m => m FilePath
+getPortageDir :: Env env FilePath
 getPortageDir = do
   (GlobalEnv verbosity _ portagePathM, _) <- ask
   portagePath <- case portagePathM of
@@ -32,15 +33,17 @@ getPortageDir = do
     warn verbosity $ "Looks like an invalid portage directory: " ++ portagePath
   return portagePath
 
-withHackportContext :: MonadEnv env m => (DCG.RepoContext -> IO a) -> m a
+withHackportContext :: (DCG.RepoContext -> Env env a) -> Env env a
 withHackportContext callback = do
-    (GlobalEnv verbosity path _, _) <- ask
-    overlayPath <- liftIO $ getOverlayPath verbosity path
+    (GlobalEnv verbosity _ _, _) <- ask
+    overlayPath <- getOverlayPath
     let flags = DCG.defaultGlobalFlags {
                     DCG.globalRemoteRepos = DUN.toNubList [defaultRemoteRepo]
                   , DCG.globalCacheDir    = DSS.Flag $ overlayPath </> ".hackport"
                 }
-    liftIO $ DCG.withRepoContext verbosity flags callback
+    control
+      $ \runInIO -> DCG.withRepoContext verbosity flags
+      $ runInIO . (callback <=< restoreM)
 
 -- | Default remote repository. Defaults to [hackage](hackage.haskell.org).
 defaultRemoteRepo :: DCT.RemoteRepo

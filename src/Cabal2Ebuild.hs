@@ -25,6 +25,7 @@ import qualified Distribution.PackageDescription as Cabal
                                                 ( PackageDescription(..), license)
 import qualified Distribution.Package as Cabal  ( PackageIdentifier(..)
                                                 , Dependency(..))
+import qualified Distribution.Types.SourceRepo as Cabal
 import qualified Distribution.Version as Cabal  ( VersionRange
                                                 , cataVersionRange, normaliseVersionRange
                                                 , majorUpperBound, mkVersion )
@@ -55,6 +56,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.hackage_name= cabalPkgName,
     E.version     = prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
     E.revision    = getHackageRevision,
+    E.sourceURIs  = getSourceURIs,
     E.description = ST.fromShortText $ if ST.null (Cabal.synopsis pkg)
                                           then Cabal.description pkg
                                           else Cabal.synopsis pkg,
@@ -83,6 +85,8 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
           case Map.lookup "x-revision" (Map.fromList (Cabal.customFieldsPD pkg)) of
             Just rev -> rev
             _ -> "0"
+        getSourceURIs = catMaybes
+          $ Cabal.repoLocation <$> Cabal.sourceRepos pkg
         thisHomepage = if (ST.null $ Cabal.homepage pkg)
                          then E.homepage E.ebuildTemplate
                          else ST.fromShortText $ Cabal.homepage pkg

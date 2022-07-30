@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Overlays
     ( getOverlayPath
     ) where
@@ -10,15 +12,14 @@ import System.FilePath ((</>), splitPath, joinPath)
 
 import Error
 import Portage.Host
+import Util (info)
+import Hackport.Env hiding (local)
 
--- cabal
-import Distribution.Verbosity
-import Distribution.Simple.Utils ( info )
-
-getOverlayPath :: Verbosity -> Maybe FilePath -> IO String
-getOverlayPath verbosity override_overlay = do
+-- getOverlayPath :: forall m. (HasGlobalEnv m, MonadIO m) => m String
+getOverlayPath :: Env env String
+getOverlayPath = askGlobalEnv >>= \(GlobalEnv _ override_overlay _) -> do
   overlays <- if isJust override_overlay
-                  then do info verbosity $ "Forced " ++ fromJust override_overlay
+                  then do info $ "Forced " ++ fromJust override_overlay
                           return [fromJust override_overlay]
                   else getOverlays
   case overlays of
@@ -26,31 +27,31 @@ getOverlayPath verbosity override_overlay = do
     [x] -> return x
     mul -> search mul
   where
-  search :: [String] -> IO String
+  search :: [String] -> Env env String
   search mul = do
     let loop [] = throw (MultipleOverlays mul)
         loop (x:xs) = do
-          info verbosity $ "Checking '" ++ x ++ "'..."
-          found <- SD.doesDirectoryExist (x </> ".hackport")
+          info $ "Checking '" ++ x ++ "'..."
+          found <- liftIO $ SD.doesDirectoryExist (x </> ".hackport")
           if found
             then do
-              info verbosity "OK!"
+              info "OK!"
               return x
             else do
-              info verbosity "Not ok."
+              info "Not ok."
               loop xs
-    info verbosity "There are several overlays in your configuration."
-    mapM_ (info verbosity . (" * " ++)) mul
-    info verbosity "Looking for one with a HackPort cache..."
+    info "There are several overlays in your configuration."
+    mapM_ (info . (" * " ++)) mul
+    info "Looking for one with a HackPort cache..."
     overlay <- loop mul
-    info verbosity $ "I choose " ++ overlay
-    info verbosity "Override my decision with hackport --overlay /my/overlay"
+    info $ "I choose " ++ overlay
+    info "Override my decision with hackport --overlay /my/overlay"
     return overlay
 
-getOverlays :: IO [String]
+getOverlays :: MonadIO m => m [String]
 getOverlays = do
   local    <- getLocalOverlay
-  overlays <- overlay_list `fmap` getInfo
+  overlays <- liftIO $ overlay_list `fmap` getInfo
   return $ nub $ map clean $
                  maybeToList local
               ++ overlays
@@ -59,11 +60,11 @@ getOverlays = do
                 '/':p -> reverse p
                 _ -> path
 
-getLocalOverlay :: IO (Maybe FilePath)
+getLocalOverlay :: MonadIO m => m (Maybe FilePath)
 getLocalOverlay = do
-  curDir <- SD.getCurrentDirectory
+  curDir <- liftIO $ SD.getCurrentDirectory
   let lookIn = map joinPath . reverse . inits . splitPath $ curDir
   fmap listToMaybe (filterM probe lookIn)
 
   where
-    probe dir = SD.doesDirectoryExist (dir </> "dev-haskell")
+    probe dir = liftIO $ SD.doesDirectoryExist (dir </> "dev-haskell")

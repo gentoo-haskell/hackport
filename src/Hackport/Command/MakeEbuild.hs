@@ -8,17 +8,15 @@ import qualified Distribution.Verbosity as V
 
 import Error
 import Merge
-import Overlays
 
 import Hackport.Env
 
-makeEbuildAction :: MonadEnv MakeEbuildEnv m => m ()
+makeEbuildAction :: Env MakeEbuildEnv ()
 makeEbuildAction = do
-  (GlobalEnv verbosity op _, MakeEbuildEnv catstr cabals flags) <- ask
+  (_, MakeEbuildEnv catstr cabals flags _) <- ask
   cat <- case simpleParsec catstr of
             Just c -> return c
             Nothing -> throw (ArgumentError ("could not parse category: " ++ catstr))
-  overlayPath <- liftIO $ getOverlayPath verbosity op
   forM_ cabals $ \cabalFileName -> do
     pkg <- liftIO $ Cabal.readGenericPackageDescription V.normal cabalFileName
-    liftIO $ mergeGenericPackageDescription verbosity overlayPath cat pkg False flags
+    mergeGenericPackageDescription cat pkg False flags
