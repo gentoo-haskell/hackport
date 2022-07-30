@@ -19,6 +19,7 @@ import qualified Distribution.Package as Cabal
 import Distribution.Parsec (simpleParsec)
 import Distribution.Simple.Utils ( comparing, equating )
 
+import Control.Monad.IO.Class
 import Data.List as List
 import qualified Data.Map as Map
 import Data.Map (Map)
@@ -60,10 +61,10 @@ inOverlay overlay pkgId = not (Map.null packages)
                     in cabal_pn == overlay_pn && (not (null ebs))) om
     om = overlayMap overlay
 
-loadLazy :: FilePath -> IO Overlay
+loadLazy :: MonadIO m => FilePath -> m Overlay
 loadLazy path = do
   dir <- getDirectoryTree path
-  metadata <- unsafeInterleaveIO $ mkMetadataMap path dir
+  metadata <- liftIO $ unsafeInterleaveIO $ mkMetadataMap path dir
   return $ mkOverlay metadata $ readOverlayByPackage dir
   where
     allowed v = case v of
@@ -92,7 +93,7 @@ loadLazy path = do
 mkMetadataMap :: FilePath -> DirectoryTree -> IO (Map Portage.PackageName Portage.Metadata)
 mkMetadataMap root dir =
   fmap (Map.mapMaybe id) $
-    traverse Portage.metadataFromFile $
+    traverse Portage.readMetadataFile $
       Map.fromList
         [ (Portage.mkPackageName category package, root </> category </> package </> "metadata.xml")
         | Directory category packages <- dir
@@ -162,8 +163,8 @@ readOverlay tree = [ Portage.PackageId pkgId version
 type DirectoryTree  = [DirectoryEntry]
 data DirectoryEntry = File FilePath | Directory FilePath [DirectoryEntry]
 
-getDirectoryTree :: FilePath -> IO DirectoryTree
-getDirectoryTree = dirEntries
+getDirectoryTree :: MonadIO m => FilePath -> m DirectoryTree
+getDirectoryTree = liftIO . dirEntries
 
   where
     dirEntries :: FilePath -> IO [DirectoryEntry]

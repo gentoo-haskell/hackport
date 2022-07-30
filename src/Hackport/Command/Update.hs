@@ -9,10 +9,8 @@ import qualified Distribution.Client.Update as CabalInstall
 import Hackport.Util (withHackportContext)
 import Hackport.Env
 
-updateAction :: MonadEnv env m => m ()
-updateAction  = do
-  (GlobalEnv verbosity _ _, _) <- ask
-
+updateAction :: Env env ()
+updateAction  = askGlobalEnv >>= \(GlobalEnv verbosity _ _) ->
   withHackportContext $ \repoContext -> do
     let updateFlags = commandDefaultFlags CabalInstall.updateCommand
-    CabalInstall.update verbosity updateFlags repoContext
+    liftIO $ CabalInstall.update verbosity updateFlags repoContext

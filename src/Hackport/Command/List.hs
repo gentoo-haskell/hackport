@@ -17,18 +17,19 @@ import Overlays
 import Hackport.Util (withHackportContext)
 import Hackport.Env
 
-listAction :: MonadEnv ListEnv m => m ()
+listAction :: Env ListEnv ()
 listAction = do
-  (GlobalEnv verbosity op _, ListEnv pkgList) <- ask
+  (GlobalEnv verbosity _ _, ListEnv pkgList) <- ask
   withHackportContext $ \repoContext -> do
-    overlayPath <- getOverlayPath verbosity op
-    index <- fmap CabalInstall.packageIndex (CabalInstall.getSourcePackages verbosity repoContext)
+    overlayPath <- getOverlayPath
+    index <- fmap CabalInstall.packageIndex
+      $ liftIO $ CabalInstall.getSourcePackages verbosity repoContext
     overlay <- Overlay.loadLazy overlayPath
     let pkgs | null pkgList = CabalInstall.allPackages index
              | otherwise = concatMap (concatMap snd . CabalInstall.searchByNameSubstring index) pkgList
         normalized = map (normalizeCabalPackageId . CabalInstall.srcpkgPackageId) pkgs
     let decorated = map (\p -> (Overlay.inOverlay overlay p, p)) normalized
-    mapM_ (putStrLn . pretty) decorated
+    mapM_ (liftIO . putStrLn . pretty) decorated
   where
     pretty :: (Bool, Cabal.PackageIdentifier) -> String
     pretty (isInOverlay, pkgId) =

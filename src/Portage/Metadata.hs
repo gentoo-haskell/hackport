@@ -7,62 +7,66 @@ Functions and types related to @metadata.xml@ processing
 -}
 module Portage.Metadata
         ( Metadata(..)
-        , metadataFromFile
-        , pureMetadataFromFile
+        , UseFlags
+        , readMetadataFile
+        , parseMetadataXML
         , stripGlobalUseFlags -- exported for hspec
         , prettyPrintFlags -- exported for hspec
         , prettyPrintFlagsHuman
-        , makeDefaultMetadata
-        , makeMinimalMetadata
+        , printMetadata
+        , minimalMetadata
         ) where
 
 import qualified AnsiColor as A
 
-import qualified Data.List       as L
+import Control.Monad
 import qualified Data.Map.Strict as Map
+import qualified Data.Set        as S
 import qualified Data.Text       as T
 import qualified Data.Text.IO    as T
 
 import Text.XML.Light
+
+import Portage.EBuild as EBuild
+import Portage.Metadata.RemoteId
+
+import Hackport.Env
+
+type UseFlags = Map.Map String String
 
 -- | A data type for the Gentoo-specific @metadata.xml@ file.
 -- Currently defines functions for the maintainer email and
 -- USE flags and their descriptions.
 data Metadata = Metadata
       { metadataEmails :: [String] -- ^ This should /always/ be [\"haskell@gentoo.org\"].
-      , metadataUseFlags :: Map.Map String String -- ^ Only /active/ USE flags, if any.
-      } deriving (Eq, Show)
+      , metadataUseFlags :: UseFlags -- ^ Only /active/ USE flags, if any.
+      , metadataRemoteIds :: S.Set RemoteId
+      } deriving (Eq, Show, Ord)
+
+instance Semigroup Metadata where
+  Metadata e1 u1 r1 <> Metadata e2 u2 r2 = Metadata (e1<>e2) (u1<>u2) (r1<>r2)
+
+instance Monoid Metadata where
+  mempty = Metadata mempty mempty mempty
 
 -- | Maybe return a 'Metadata' from a 'T.Text'.
 --
 -- Trying to parse an empty 'T.Text' should return 'Nothing':
 --
--- >>> pureMetadataFromFile T.empty
+-- >>> parseMetadataXML T.empty
 -- Nothing
---
--- Parsing a @metadata.xml@ /without/ USE flags should /always/ be equivalent
--- to 'makeMinimalMetadata':
---
--- >>> pureMetadataFromFile (makeDefaultMetadata Map.empty) == Just makeMinimalMetadata
--- True
---
--- Parsing a @metadata.xml@ /with/ USE flags should /always/ be equivalent
--- to 'makeMinimalMetadata' /plus/ the supplied USE flags:
---
--- >>> pureMetadataFromFile (makeDefaultMetadata (Map.fromList [("name","description")])) == Just (makeMinimalMetadata {metadataUseFlags = Map.fromList [("name","description")] } )
--- True
-pureMetadataFromFile :: T.Text -> Maybe Metadata
-pureMetadataFromFile file = parseXMLDoc file >>= \doc -> parseMetadata doc
+parseMetadataXML :: T.Text -> Maybe Metadata
+parseMetadataXML = parseMetadata <=< parseXMLDoc
 
--- | Apply 'pureMetadataFromFile' to a 'FilePath'.
-metadataFromFile :: FilePath -> IO (Maybe Metadata)
-metadataFromFile fp = pureMetadataFromFile <$> T.readFile fp
+-- | Apply 'parseMetadataXML' to a 'FilePath'.
+readMetadataFile :: FilePath -> IO (Maybe Metadata)
+readMetadataFile fp = parseMetadataXML <$> T.readFile fp
 
 -- | Extract the maintainer email and USE flags from a supplied XML 'Element'.
 -- 
 -- If we're parsing a blank 'Element' or otherwise empty @metadata.xml@:
 -- >>> parseMetadata blank_element
--- Just (Metadata {metadataEmails = [], metadataUseFlags = fromList []})
+-- Just (Metadata {metadataEmails = [], metadataUseFlags = fromList [], metadataRemoteIds = fromList []})
 parseMetadata :: Element -> Maybe Metadata
 parseMetadata xml =
   return Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
@@ -75,13 +79,15 @@ parseMetadata xml =
                           a = concatMap elContent y
                           b = cdData <$> onlyText a
                       in Map.fromList $ zip z b
+                  -- TODO: Read remote-ids from existing metadata.xml
+                  , metadataRemoteIds = S.empty
                   }
 
 -- | Remove global @USE@ flags from the flags 'Map.Map', as these should not be
 -- within the local @metadata.xml@. For now, this is manually specified rather than
 -- parsing @use.desc@.
-stripGlobalUseFlags :: Map.Map String String -> Map.Map String String
-stripGlobalUseFlags m = foldr1 Map.intersection (Map.delete <$> globals <*> [m])
+stripGlobalUseFlags :: UseFlags -> UseFlags
+stripGlobalUseFlags m = foldr Map.delete m globals
   where
     globals = [ "debug"
               , "examples"
@@ -89,41 +95,56 @@ stripGlobalUseFlags m = foldr1 Map.intersection (Map.delete <$> globals <*> [m])
               ]
 
 -- | Pretty print as valid XML a list of flags and their descriptions
--- from a given 'Map.Map'.
-prettyPrintFlags :: Map.Map String String -> [String]
-prettyPrintFlags m = (\(name,description) ->
-                        "\t\t" ++
-                        (showElement
-                         . add_attr (Attr (blank_name { qName = "name" }) name)
-                         . unode "flag" $ description))
-                     <$> (Map.toAscList . stripGlobalUseFlags $ m)
+-- from a given 'Map.Map'. This wraps the flags in "<use>...</use>" and is
+-- meant to be passed to 'unlines'. If the Map is empty, it will return no
+-- output.
+prettyPrintFlags :: UseFlags -> [String]
+prettyPrintFlags m
+  | Map.null m = []
+  | otherwise = ["\t<use>"] ++ go ++ ["\t</use>"]
+  where
+    go = printFlag <$> Map.toAscList (stripGlobalUseFlags m)
+    printFlag (n, d) =
+      "\t\t" ++
+      showElement
+        (add_attr
+          (Attr (blank_name { qName = "name" }) n)
+          (unode "flag" d)
+        )
 
 -- | Pretty print a human-readable list of flags and their descriptions
 -- from a given 'Map.Map'.
-prettyPrintFlagsHuman :: Map.Map String String -> [String]
-prettyPrintFlagsHuman m = (\(name,description) -> A.bold (name ++ ": ") ++
-                            (L.intercalate " " . lines $ description))
+prettyPrintFlagsHuman :: UseFlags -> [String]
+prettyPrintFlagsHuman m = (\(n,d) -> A.bold (n ++ ": ") ++
+                            (unwords . lines $ d))
                           <$> (Map.toAscList . stripGlobalUseFlags $ m)
-                          
+
 -- | A minimal metadata for use as a fallback value.
-makeMinimalMetadata :: Metadata
-makeMinimalMetadata = Metadata { metadataEmails = ["haskell@gentoo.org"]
-                               , metadataUseFlags = Map.empty
-                               }
+minimalMetadata :: UseHackageRemote -> EBuild.EBuild -> Metadata
+minimalMetadata useHackage ebuild =
+  mempty
+  { metadataEmails = ["haskell@gentoo.org"]
+  , metadataRemoteIds =
+      if useHackage
+        then S.singleton $ RemoteIdHackage $ EBuild.hackage_name ebuild
+        else S.empty
+  }
 
 -- don't use Text.XML.Light as we like our own pretty printer
 -- | Pretty print the @metadata.xml@ string.
-makeDefaultMetadata :: Map.Map String String -> T.Text
-makeDefaultMetadata flags = T.pack $
-  unlines [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-          , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
-          , "<pkgmetadata>"
-          , "\t<maintainer type=\"project\">"
-          , "\t\t<email>haskell@gentoo.org</email>"
-          , "\t\t<name>Gentoo Haskell</name>"
-          , "\t</maintainer>"
-            ++ if flags == Map.empty
-               then ""
-               else "\n\t<use>\n" ++ (unlines $ prettyPrintFlags flags) ++ "\t</use>"
-          , "</pkgmetadata>"
-          ]
+printMetadata :: Metadata -> T.Text
+printMetadata (Metadata _ flags rids) = T.pack $
+  unlines $
+    [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
+    , "<pkgmetadata>"
+    , "\t<maintainer type=\"project\">"
+    , "\t\t<email>haskell@gentoo.org</email>"
+    , "\t\t<name>Gentoo Haskell</name>"
+    , "\t</maintainer>"
+    ]
+    ++ prettyPrintFlags flags
+    ++ prettyPrintRemoteIds rids
+    ++
+    [ "</pkgmetadata>"
+    ]

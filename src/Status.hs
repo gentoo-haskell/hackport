@@ -1,8 +1,5 @@
 module Status
-    ( FileStatus(..)
-    , StatusDirection(..)
-    , fromStatus
-    , status
+    ( status
     , runStatus
     ) where
 
@@ -27,9 +24,8 @@ import qualified Data.Traversable as T
 import Control.Monad
 
 -- cabal
-import qualified Distribution.Verbosity as Cabal
 import qualified Distribution.Package as Cabal (pkgName)
-import qualified Distribution.Simple.Utils as Cabal (comparing, die', equating)
+import qualified Distribution.Simple.Utils as Cabal (die', equating)
 import Distribution.Pretty (prettyShow)
 import Distribution.Parsec (simpleParsec)
 
@@ -39,46 +35,20 @@ import qualified Distribution.Client.Types as CabalInstall ( SourcePackageDb(..)
 import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall ( SourcePackage(..) )
 
-data StatusDirection
-    = PortagePlusOverlay
-    | OverlayToPortage
-    | HackageToOverlay
-    deriving Eq
-
-data FileStatus a
-        = Same a
-        | Differs a a
-        | OverlayOnly a
-        | PortageOnly a
-        | HackageOnly a
-        deriving (Show,Eq)
-
-instance Ord a => Ord (FileStatus a) where
-    compare = Cabal.comparing fromStatus
-
-instance Functor FileStatus where
-    fmap f st =
-        case st of
-            Same a -> Same (f a)
-            Differs a b -> Differs (f a) (f b)
-            OverlayOnly a -> OverlayOnly (f a)
-            PortageOnly a -> PortageOnly (f a)
-            HackageOnly a -> HackageOnly (f a)
-
-fromStatus :: FileStatus a -> a
-fromStatus fs =
-    case fs of
-        Same a -> a
-        Differs a _ -> a -- second status is lost
-        OverlayOnly a -> a
-        PortageOnly a -> a
-        HackageOnly a -> a
+import Overlays
+import Status.Types
+import Hackport.Env
+import Hackport.Util
 
 
 
-loadHackage :: Cabal.Verbosity -> CabalInstall.RepoContext -> Overlay -> IO [[PackageId]]
-loadHackage verbosity repoContext overlay = do
-    CabalInstall.SourcePackageDb { CabalInstall.packageIndex = pindex } <- CabalInstall.getSourcePackages verbosity repoContext
+loadHackage
+  :: CabalInstall.RepoContext
+  -> Overlay
+  -> Env env [[PackageId]]
+loadHackage repoContext overlay = askGlobalEnv >>= \(GlobalEnv verbosity _ _) -> do
+    CabalInstall.SourcePackageDb { CabalInstall.packageIndex = pindex } <-
+      liftIO $ CabalInstall.getSourcePackages verbosity repoContext
     let get_cat cabal_pkg = case resolveCategories overlay (Cabal.pkgName cabal_pkg) of
                                 []    -> Category "dev-haskell"
                                 [cat] -> cat
@@ -89,10 +59,12 @@ loadHackage verbosity repoContext overlay = do
                         (CabalInstall.allPackagesByName pindex)
     return pkg_infos
 
-status :: Cabal.Verbosity -> FilePath -> FilePath -> CabalInstall.RepoContext -> IO (Map PackageName [FileStatus ExistingEbuild])
-status verbosity portdir overlaydir repoContext = do
+status :: CabalInstall.RepoContext -> Env StatusEnv (Map PackageName [FileStatus ExistingEbuild])
+status repoContext = do
+    portdir <- getPortageDir
+    overlaydir <- getOverlayPath
     overlay <- loadLazy overlaydir
-    hackage <- loadHackage verbosity repoContext overlay
+    hackage <- loadHackage repoContext overlay
     portage <- filterByEmail ("haskell@gentoo.org" `elem`) <$> loadLazy portdir
     let (over, both, port) = portageDiff (overlayMap overlay) (overlayMap portage)
 
@@ -138,17 +110,18 @@ lookupEbuildWith overlay pkgid = do
   ebuilds <- Map.lookup (packageId pkgid) overlay
   List.find (\e -> ebuildId e == pkgid) ebuilds
 
-runStatus :: Cabal.Verbosity -> FilePath -> FilePath -> StatusDirection -> [String] -> CabalInstall.RepoContext -> IO ()
-runStatus verbosity portdir overlaydir direction pkgs repoContext = do
+runStatus :: CabalInstall.RepoContext -> Env StatusEnv ()
+runStatus repoContext =
+  ask >>= \(GlobalEnv verbosity _ _, StatusEnv direction pkgs) -> do
   let pkgFilter = case direction of
                       OverlayToPortage   -> toPortageFilter
                       PortagePlusOverlay -> id
                       HackageToOverlay   -> fromHackageFilter
   pkgs' <- forM pkgs $ \p ->
             case simpleParsec p of
-              Nothing -> Cabal.die' verbosity ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
+              Nothing -> liftIO $ Cabal.die' verbosity ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
-  tree0 <- status verbosity portdir overlaydir repoContext
+  tree0 <- status repoContext
   let tree = pkgFilter tree0
   if (null pkgs')
     then statusPrinter tree
@@ -193,8 +166,8 @@ fromHackageFilter = Map.mapMaybe $ \ sts ->
             HackageOnly _ | not (null inEbuilds) -> Just sts
             _                                    -> Nothing
 
-statusPrinter :: Map PackageName [FileStatus ExistingEbuild] -> IO ()
-statusPrinter packages = do
+statusPrinter :: MonadIO m => Map PackageName [FileStatus ExistingEbuild] -> m ()
+statusPrinter packages = liftIO $ do
     putStrLn $ toColor (Same "Green") ++ ": package in portage and overlay are the same"
     putStrLn $ toColor (Differs "Yellow" "") ++ ": package in portage and overlay differs"
     putStrLn $ toColor (OverlayOnly "Red") ++ ": package only exist in the overlay"
@@ -236,8 +209,8 @@ portageDiff p1 p2 = (in1, ins, in2)
 
 -- | Compares two ebuilds, returns True if they are equal.
 --   Disregards comments.
-equals :: FilePath -> FilePath -> IO Bool
-equals fp1 fp2 = do
+equals :: MonadIO m => FilePath -> FilePath -> m Bool
+equals fp1 fp2 = liftIO $ do
     -- don't leave halfopenfiles
     f1 <- BS.readFile fp1
     f2 <- BS.readFile fp2
