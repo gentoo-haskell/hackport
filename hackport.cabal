@@ -589,8 +589,8 @@ Test-Suite test-resolve-category
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
-  Main-Is:              resolveCat.hs
-  Hs-Source-Dirs:       src, tests
+  Main-Is:              Main.hs
+  Hs-Source-Dirs:       tests/resolveCat
   Build-Depends:        hackport-external-libs,
                         array,
                         base,
@@ -623,8 +623,8 @@ Test-Suite test-print-deps
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
-  Main-Is:              print_deps.hs
-  Hs-Source-Dirs:       src, tests
+  Main-Is:              Main.hs
+  Hs-Source-Dirs:       tests/print_deps
   Build-Depends:        hackport-external-libs,
                         array,
                         base,
@@ -656,8 +656,8 @@ Test-Suite test-normalize-deps
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
-  Main-Is:              normalize_deps.hs
-  Hs-Source-Dirs:       src, tests
+  Main-Is:              Main.hs
+  Hs-Source-Dirs:       tests/normalize_deps
   Build-Depends:        hackport-external-libs,
                         array,
                         base,
@@ -686,10 +686,10 @@ Test-Suite test-normalize-deps
 test-suite doctests
   x-doctest-components: lib:hackport-internal exe:hackport
   type:             exitcode-stdio-1.0
-  Hs-Source-Dirs:   tests
+  Hs-Source-Dirs:   tests/doctests
   ghc-options:      -threaded
   default-language: Haskell98
-  main-is:          doctests.hs
+  main-is:          Main.hs
   build-depends:    base,
                     doctest >= 0.8,
                     cabal-doctest,
@@ -706,8 +706,8 @@ test-suite doctests
 test-suite doctests-v2
   type:             exitcode-stdio-1.0
   default-language: Haskell98
-  Hs-Source-Dirs:   tests
-  main-is:          doctests-v2.hs
+  Hs-Source-Dirs:   tests/doctests-v2
+  main-is:          Main.hs
   build-depends:    base,
                     process,
                     -- Force doctests-v2 to be built last.
@@ -729,8 +729,8 @@ test-suite spec
   ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
-  Main-Is:              Spec.hs
-  Hs-Source-Dirs:       tests
+  Main-Is:              Main.hs
+  Hs-Source-Dirs:       tests/spec
   other-modules:
     Merge.UtilsSpec
     Portage.CabalSpec
