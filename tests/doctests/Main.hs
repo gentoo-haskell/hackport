@@ -30,7 +30,8 @@ main = do
                 "Please edit tests/doctests.hs to add sources for this component."
 
         for_ maybeSources $ \sources -> do
-            let args = flags ++ pkgs ++ sources
+            let noWarnFlags = ["-Wwarn", "-Wno-default"]
+            let args = flags ++ noWarnFlags ++ pkgs ++ sources
             putStrLn "Flags passed:"
             for_ args $ \a -> putStr "    " *> print a
             doctest args

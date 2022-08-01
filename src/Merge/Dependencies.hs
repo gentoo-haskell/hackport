@@ -15,7 +15,6 @@ module Merge.Dependencies
   ) where
 
 import           Control.DeepSeq (NFData(..))
-import           Control.Parallel.Strategies
 import           Data.Maybe ( isJust, isNothing )
 import qualified Data.List as L
 #if !MIN_VERSION_base(4,11,0)

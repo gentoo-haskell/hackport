@@ -35,11 +35,14 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Install dependencies
+    - name: Configure
       run: |
         cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
+        cabal configure --enable-tests --enable-benchmarks --flag=pedantic
+    - name: Install dependencies
+      run: |
+        cabal build --only-dependencies
     - name: Build
-      run: cabal v2-build --enable-tests all
+      run: cabal build
     - name: Run all enabled tests
       run: cabal test --test-option=--color --test-show-details=streaming

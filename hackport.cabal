@@ -20,6 +20,16 @@ flag cabal-v1
   manual: True
   default: False
 
+flag pedantic
+    description: Enable -Werror
+    default:     False
+    manual:      True
+
+common warnings
+  ghc-options:        -Wall
+  if flag(pedantic)
+      ghc-options:    -Werror
+
 library hackport-external-libs-Cabal
   Default-Language: Haskell2010
   Hs-Source-Dirs: cabal, cabal/Cabal
@@ -504,6 +514,7 @@ library hackport-external-libs-cabal-install
     Distribution.Solver.Types.Settings
 
 library hackport-internal
+  import: warnings
   Default-Language: Haskell2010
   Hs-Source-Dirs: src
   Build-Depends:
@@ -569,7 +580,8 @@ library hackport-internal
     Paths_hackport
 
 Executable hackport
-  ghc-options: -Wall -threaded +RTS -N -RTS -with-rtsopts=-N
+  import: warnings
+  ghc-options: -threaded +RTS -N -RTS -with-rtsopts=-N
   ghc-prof-options: -caf-all -auto-all -rtsopts
   Main-Is:    Main.hs
   Default-Language: Haskell2010
@@ -584,9 +596,9 @@ Executable hackport
   other-modules: Paths_hackport
 
 Test-Suite test-resolve-category
+  import: warnings
   -- requires a local Portage overlay, thus fails in a sandboxed test.
   buildable: False
-  ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              Main.hs
@@ -617,10 +629,10 @@ Test-Suite test-resolve-category
     DoAndIfThenElse
 
 Test-Suite test-print-deps
+  import: warnings
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
   buildable: False
-  ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              Main.hs
@@ -650,10 +662,10 @@ Test-Suite test-print-deps
     DoAndIfThenElse
 
 Test-Suite test-normalize-deps
+  import: warnings
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
   buildable: False
-  ghc-options: -Wall
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              Main.hs
@@ -684,6 +696,7 @@ Test-Suite test-normalize-deps
     DoAndIfThenElse
 
 test-suite doctests
+  import: warnings
   x-doctest-components: lib:hackport-internal exe:hackport
   type:             exitcode-stdio-1.0
   Hs-Source-Dirs:   tests/doctests
@@ -704,6 +717,7 @@ test-suite doctests
     buildable: False
 
 test-suite doctests-v2
+  import:           warnings
   type:             exitcode-stdio-1.0
   default-language: Haskell98
   Hs-Source-Dirs:   tests/doctests-v2
@@ -714,19 +728,16 @@ test-suite doctests-v2
                     -- This should reduce duplicated work: this test runs
                     -- `cabal repl` which will try to compile the whole project.
                     hackport-internal
-  build-tool-depends:  cabal-install:cabal >= 3.2,
+  build-tool-depends:  cabal-install:cabal >= 3.4,
                        doctest:doctest >= 0.8,
                        -- Force doctests-v2 to be built last
                        hackport:hackport
-
-  other-extensions:
-    CPP
 
   if flag(cabal-v1)
     buildable: False
 
 test-suite spec
-  ghc-options: -Wall
+  import: warnings
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Main-Is:              Main.hs
