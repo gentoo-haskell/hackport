@@ -25,12 +25,17 @@ flag pedantic
     default:     False
     manual:      True
 
+-- Turn off all warnings (for external libs and doctests-v2)
+common no-warnings
+  ghc-options:        -Wno-default
+
 common warnings
   ghc-options:        -Wall
   if flag(pedantic)
       ghc-options:    -Werror
 
 library hackport-external-libs-Cabal
+  import: no-warnings
   Default-Language: Haskell2010
   Hs-Source-Dirs: cabal, cabal/Cabal
 
@@ -309,6 +314,7 @@ library hackport-external-libs-Cabal
     Paths_Cabal
 
 library hackport-external-libs-hackage-security
+  import: no-warnings
   Default-Language: Haskell2010
   Hs-Source-Dirs: hackage-security/hackage-security/src
 
@@ -409,6 +415,7 @@ library hackport-external-libs-hackage-security
     Text.JSON.Canonical
 
 library hackport-external-libs-cabal-install
+  import: no-warnings
   Default-Language: Haskell2010
   Hs-Source-Dirs: cabal, cabal/cabal-install
 
@@ -596,7 +603,7 @@ Executable hackport
   other-modules: Paths_hackport
 
 Test-Suite test-resolve-category
-  import: warnings
+  import:               warnings
   -- requires a local Portage overlay, thus fails in a sandboxed test.
   buildable: False
   Type:                 exitcode-stdio-1.0
@@ -629,7 +636,7 @@ Test-Suite test-resolve-category
     DoAndIfThenElse
 
 Test-Suite test-print-deps
-  import: warnings
+  import:               warnings
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
   buildable: False
@@ -662,7 +669,7 @@ Test-Suite test-print-deps
     DoAndIfThenElse
 
 Test-Suite test-normalize-deps
-  import: warnings
+  import:               warnings
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
   buildable: False
@@ -696,7 +703,7 @@ Test-Suite test-normalize-deps
     DoAndIfThenElse
 
 test-suite doctests
-  import: warnings
+  import:           warnings
   x-doctest-components: lib:hackport-internal exe:hackport
   type:             exitcode-stdio-1.0
   Hs-Source-Dirs:   tests/doctests
@@ -737,7 +744,7 @@ test-suite doctests-v2
     buildable: False
 
 test-suite spec
-  import: warnings
+  import:               warnings
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Main-Is:              Main.hs
