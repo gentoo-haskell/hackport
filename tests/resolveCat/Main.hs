@@ -7,8 +7,6 @@ import qualified Portage.Host as Portage
 
 import Test.HUnit
 
-import qualified RunTests as RT
-
 tests :: Test
 tests = TestList [ TestLabel "resolve cabal" (test_resolveCategory "dev-haskell" "cabal")
                  , TestLabel "resolve ghc" (test_resolveCategory "dev-lang" "ghc")
@@ -26,4 +24,4 @@ test_resolveCategory cat pkg = TestCase $ do
   assertEqual ("expecting to find package " ++ pkg) expected hits
 
 main :: IO ()
-main = RT.run_tests tests
+main = runTestTTAndExit tests

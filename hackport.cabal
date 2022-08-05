@@ -20,6 +20,11 @@ flag cabal-v1
   manual: True
   default: False
 
+flag gentoo-tests
+  description: Build tests that require a running Gentoo system
+  manual: True
+  default: False
+
 flag pedantic
     description: Enable -Werror
     default:     False
@@ -605,12 +610,14 @@ Executable hackport
 Test-Suite test-resolve-category
   import:               warnings
   -- requires a local Portage overlay, thus fails in a sandboxed test.
-  buildable: False
+  if !flag(gentoo-tests)
+    buildable: False
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell98
   Main-Is:              Main.hs
   Hs-Source-Dirs:       tests/resolveCat
-  Build-Depends:        hackport-external-libs,
+  Build-Depends:        hackport-external-libs-Cabal,
+                        hackport-internal,
                         array,
                         base,
                         binary,
