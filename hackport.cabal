@@ -742,10 +742,11 @@ test-suite doctests-v2
                     -- This should reduce duplicated work: this test runs
                     -- `cabal repl` which will try to compile the whole project.
                     hackport-internal
-  build-tool-depends:  cabal-install:cabal >= 3.4,
-                       doctest:doctest >= 0.8,
-                       -- Force doctests-v2 to be built last
-                       hackport:hackport
+  build-tool-depends:
+--    , cabal-install:cabal >= 3.4
+    , doctest:doctest >= 0.8
+    -- Force doctests-v2 to be built last
+    , hackport:hackport
 
   if flag(cabal-v1)
     buildable: False
