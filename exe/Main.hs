@@ -162,10 +162,10 @@ makeEbuildAction :: MakeEbuildFlags -> [String] -> H.GlobalFlags -> IO ()
 makeEbuildAction flags args globalFlags = do
   (catstr,cabals) <- case args of
                       (category:cabal1:cabaln) -> return (category, cabal1:cabaln)
-                      _ -> throwEx (ArgumentError "make-ebuild needs at least two arguments. <category> <cabal-1> <cabal-n>")
+                      _ -> throw (ArgumentError "make-ebuild needs at least two arguments. <category> <cabal-1> <cabal-n>")
   cat <- case simpleParsec catstr of
             Just c -> return c
-            Nothing -> throwEx (ArgumentError ("could not parse category: " ++ catstr))
+            Nothing -> throw (ArgumentError ("could not parse category: " ++ catstr))
   let verbosity = fromFlag (makeEbuildVerbosity flags)
   overlayPath <- getOverlayPath verbosity (fromFlag $ H.globalPathToOverlay globalFlags)
   forM_ cabals $ \cabalFileName -> do
@@ -460,7 +460,7 @@ mainWorker args =
         CommandHelp help        -> printHelp help
         CommandList opts        -> printOptionsList opts
         CommandErrors errs      -> printErrors errs
-        CommandReadyToGo action -> catchEx (action globalflags) errorHandler
+        CommandReadyToGo action -> catch (action globalflags) errorHandler
     where
     printHelp help = getProgName >>= putStr . help
     printOptionsList = putStr . unlines

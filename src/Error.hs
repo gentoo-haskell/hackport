@@ -1,9 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Error (HackPortError(..), throwEx, catchEx, hackPortShowError) where
+module Error
+    ( HackPortError(..)
+    , hackPortShowError
+    , throw
+    , catch
+    ) where
 
 import Data.Typeable
-import Control.Exception.Extensible as EE
+import Control.Exception
 
 -- | Type holding all of the 'HackPortError' constructors.
 data HackPortError
@@ -34,13 +39,6 @@ data HackPortError
 
 instance Exception HackPortError where
 
--- | Throw a 'HackPortError'.
-throwEx :: HackPortError -> IO a
-throwEx = EE.throw
-
--- | Catch a 'HackPortError'.
-catchEx :: IO a -> (HackPortError -> IO a) -> IO a
-catchEx = EE.catch
 
 -- | Show the error string for a given 'HackPortError'.
 hackPortShowError :: HackPortError -> String

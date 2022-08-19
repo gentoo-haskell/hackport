@@ -40,7 +40,7 @@ resolveCategory verbosity overlay pn = do
                 return devhaskell
         else do warn verbosity "Multiple matches and no known default. Override by specifying "
                 warn verbosity "package category like so  'hackport merge categoryname/package[-version]."
-                throwEx (ArgumentError "Specify package category and try again.")
+                throw (ArgumentError "Specify package category and try again.")
   where
   devhaskell = Portage.Category "dev-haskell"
 

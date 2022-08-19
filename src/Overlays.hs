@@ -22,13 +22,13 @@ getOverlayPath verbosity override_overlay = do
                           return [fromJust override_overlay]
                   else getOverlays
   case overlays of
-    [] -> throwEx NoOverlay
+    [] -> throw NoOverlay
     [x] -> return x
     mul -> search mul
   where
   search :: [String] -> IO String
   search mul = do
-    let loop [] = throwEx (MultipleOverlays mul)
+    let loop [] = throw (MultipleOverlays mul)
         loop (x:xs) = do
           info verbosity $ "Checking '" ++ x ++ "'..."
           found <- SD.doesDirectoryExist (x </> ".hackport")

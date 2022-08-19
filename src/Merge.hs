@@ -106,12 +106,12 @@ merge :: Verbosity -> CabalInstall.RepoContext -> [String] -> FilePath -> Maybe 
 merge verbosity repoContext args overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
     case Merge.readPackageString args of
-      Left err -> throwEx err
+      Left err -> throw err
       Right (c,p,m_v) ->
         case m_v of
           Nothing -> return (c,p,Nothing)
           Just v -> case Portage.toCabalVersion v of
-                      Nothing -> throwEx (ArgumentError "illegal version")
+                      Nothing -> throw (ArgumentError "illegal version")
                       Just ver -> return (c,p,Just ver)
 
   debug verbosity $ "Category: " ++ show m_category
@@ -128,7 +128,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
   -- find all packages that maches the user specified package name
   availablePkgs <-
     case map snd (CabalInstall.searchByName index user_pname_str) of
-      [] -> throwEx (PackageNotFound user_pname_str)
+      [] -> throw (PackageNotFound user_pname_str)
       [pkg] -> return pkg
       pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.srcpkgPackageId pkg)
                       names      = map (cabal_pkg_to_pn . L.head) pkgs
@@ -145,7 +145,7 @@ merge verbosity repoContext args overlayPath users_cabal_flags = do
         putStrLn "No such version for that package, available versions:"
         forM_ availablePkgs $ \ avail ->
           putStrLn (prettyShow . CabalInstall.srcpkgPackageId $ avail)
-        throwEx (ArgumentError "no such version for that package")
+        throw (ArgumentError "no such version for that package")
       Just avail -> return avail
 
   -- print some info
