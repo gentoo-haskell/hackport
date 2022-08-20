@@ -102,10 +102,10 @@ resolveVersion avails (Just ver) = listToMaybe (filter match avails)
 --
 -- Various information is printed in between these steps depending on the
 -- 'Verbosity'.
-merge :: Verbosity -> CabalInstall.RepoContext -> [String] -> FilePath -> Maybe String -> IO ()
-merge verbosity repoContext args overlayPath users_cabal_flags = do
+merge :: Verbosity -> CabalInstall.RepoContext -> String -> FilePath -> Maybe String -> IO ()
+merge verbosity repoContext packageString overlayPath users_cabal_flags = do
   (m_category, user_pName, m_version) <-
-    case Merge.readPackageString args of
+    case Merge.readPackageString packageString of
       Left err -> throw err
       Right (c,p,m_v) ->
         case m_v of

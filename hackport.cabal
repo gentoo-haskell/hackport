@@ -540,6 +540,7 @@ library hackport-internal
     directory,
     extensible-exceptions,
     filepath,
+    mtl,
     network-uri,
     parallel >= 3.2.1.0,
     pretty,
@@ -552,15 +553,28 @@ library hackport-internal
     QuickCheck,
     template-haskell
 
+  default-extensions:
+    FlexibleContexts
+
   other-extensions:
+    CPP
+    ConstraintKinds
     DeriveDataTypeable
+    LambdaCase
+    PatternGuards
 
   exposed-modules:
     Error
     Merge
     Overlays
     Status
-    HackPort.GlobalFlags
+    Hackport.Command.List
+    Hackport.Command.MakeEbuild
+    Hackport.Command.Update
+    Hackport.Command.Status
+    Hackport.Command.Merge
+    Hackport.Env
+    Hackport.Util
     Portage.Host
     Portage.Overlay
     Portage.PackageId
@@ -604,8 +618,15 @@ Executable hackport
     hackport-internal,
     base,
     directory,
-    filepath
+    filepath,
+    optparse-applicative <0.17,
+    parsec,
+    parser-combinators
   other-modules: Paths_hackport
+
+  other-extensions:
+    ApplicativeDo
+    CPP
 
 Test-Suite test-resolve-category
   import:               warnings
