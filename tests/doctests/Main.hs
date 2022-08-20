@@ -3,7 +3,6 @@ module Main where
 import Build_doctests (Component (..), Name (..), components)
 import Test.DocTest (doctest)
 import Data.Foldable (for_)
-import qualified Data.List as L
 import GHC.IO.Encoding (setLocaleEncoding)
 import System.Directory (getCurrentDirectory, makeAbsolute)
 import System.Environment.Compat (unsetEnv)
