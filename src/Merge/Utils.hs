@@ -36,29 +36,19 @@ import qualified Portage.PackageId as Portage
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
 
--- | Parse a ['String'] as a valid package string. E.g. @category\/name-1.0.0@.
+-- | Parse a 'String' as a valid package string. E.g. @category\/name-1.0.0@.
 -- Return 'HackPortError' if the string to parse is invalid.
 --
--- When the ['String'] is valid:
+-- When the 'String' is valid:
 --
--- >>> readPackageString ["dev-haskell/packagename1-1.0.0"]
+-- >>> readPackageString "dev-haskell/packagename1-1.0.0"
 -- Right (Just (Category {unCategory = "dev-haskell"}),PackageName "packagename1",Just (Version {versionNumber = [1,0,0], versionChar = Nothing, versionSuffix = [], versionRevision = 0}))
---
--- When the ['String'] is empty:
---
--- >>> readPackageString []
--- Left ...
-readPackageString :: [String]
+readPackageString :: String
                   -> Either HackPortError ( Maybe Portage.Category
                                           , Cabal.PackageName
                                           , Maybe Portage.Version
                                           )
-readPackageString args = do
-  packageString <-
-    case args of
-      [] -> Left (ArgumentError "Need an argument, [category/]package[-version]")
-      [pkg] -> return pkg
-      _ -> Left (ArgumentError ("Too many arguments: " ++ unwords args))
+readPackageString packageString = do
   case Portage.parseFriendlyPackage packageString of
     Right v@(_,_,Nothing) -> return v
     -- we only allow versions we can convert into cabal versions

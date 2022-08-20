@@ -2,7 +2,6 @@ module Merge.UtilsSpec (spec) where
 
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
-import           Test.QuickCheck
 import           QuickCheck.Instances
 
 import           Control.Applicative (liftA2)
@@ -25,10 +24,10 @@ spec = do
       let cat = Category "dev-haskell"
           name = Cabal.mkPackageName "package-name1"
         in \(ComplexVersion version) ->
-             readPackageString [prettyShow cat ++ "/" ++ prettyShow name ++
+             readPackageString (prettyShow cat ++ "/" ++ prettyShow name ++
                                  if (versionNumber version) == []
                                  then ""
-                                 else "-" ++ prettyShow version]
+                                 else "-" ++ prettyShow version)
              `shouldBe`
              if (versionChar     version) /= Nothing ||
                 (versionSuffix   version) /= []      ||
@@ -45,18 +44,7 @@ spec = do
                           then Nothing
                           else Just version
                         )
-    it "returns a Left HackPortError if the package string is empty" $ do
-      readPackageString []
-        `shouldBe`
-        Left (ArgumentError "Need an argument, [category/]package[-version]")
-    prop "returns a Left HackPortError if fed too many arguments" $ do
-      \(NonEmpty args) ->
-        if length args > 1
-        then readPackageString args `shouldBe`
-             Left (ArgumentError ("Too many arguments: " ++ unwords args))
-        else readPackageString args `shouldNotBe`
-             Left (ArgumentError ("Too many arguments: " ++ unwords args))
-          
+
   describe "getPreviousPackageId" $ do
     context "when there is a previous version available" $ do
       it "returns the PackageId of the previous version" $ do
