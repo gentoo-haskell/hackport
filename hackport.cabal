@@ -1,6 +1,6 @@
 Cabal-Version:  3.0
 Name:           hackport
-Version:        0.7.2.2
+Version:        0.7.3.0
 License:        GPL-3.0-or-later
 License-file:   LICENSE
 Author:         Henning Günther, Duncan Coutts, Lennart Kolmodin
