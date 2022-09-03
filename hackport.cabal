@@ -11,6 +11,12 @@ Description:    A command line tool to manage an overlay of Gentoo ebuilds
                 that are generated from a hackage repo of Cabal packages.
 Build-Type:     Simple
 
+tested-with:
+  , GHC == 8.6.5
+  , GHC == 8.8.4
+  , GHC == 8.10.7
+  , GHC == 9.0.2
+
 source-repository head
   type: git
   location: git://github.com/gentoo-haskell/hackport.git

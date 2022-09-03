@@ -12,12 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cabal: ["3.4.1.0"]
-        ghc: ["8.6", "8.8", "8.10", "9.0"]
+        cabal:
+          [ "3.4"
+          , "3.6"
+          ]
+        ghc:
+          [ "8.6"
+          , "8.8"
+          , "8.10"
+          , "9.0"
+          ]
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: 'recursive'  
+        submodules: 'recursive'
     - uses: haskell/actions/setup@v1
       with:
         ghc-version: ${{ matrix.ghc }}
