@@ -534,7 +534,7 @@ mergeEbuild existing_meta pkgdir ebuild flags
                                                   then Just $ old ++ A.bold (" -> " ++ new)
                                                   else Nothing)
                   (Merge.metaFlags flags)
-                  $ Portage.metadataUseFlags current_meta'
+                  (Portage.metadataUseFlags current_meta')
 
   liftIO $ createDirectoryIfMissing True edir
   now <- liftIO $ TC.getCurrentTime
@@ -562,7 +562,7 @@ mergeEbuild existing_meta pkgdir ebuild flags
       notice $ A.bold $ "Default and current " ++ emeta ++ " differ."
       if (new_flags /= Map.empty)
         then notice $ "New or updated USE flags:\n" ++
-             (unlines $ Portage.prettyPrintFlagsHuman new_flags)
+             unlines (Portage.prettyPrintFlagsHuman (Portage.stripGlobalUseFlags new_flags))
         else notice "No new USE flags."
 
     notice $ "Writing " ++ emeta

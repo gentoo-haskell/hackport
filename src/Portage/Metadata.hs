@@ -92,6 +92,7 @@ stripGlobalUseFlags m = foldr Map.delete m globals
     globals = [ "debug"
               , "examples"
               , "static"
+              , "test"
               ]
 
 -- | Pretty print as valid XML a list of flags and their descriptions
@@ -103,7 +104,7 @@ prettyPrintFlags m
   | Map.null m = []
   | otherwise = ["\t<use>"] ++ go ++ ["\t</use>"]
   where
-    go = printFlag <$> Map.toAscList (stripGlobalUseFlags m)
+    go = printFlag <$> Map.toAscList m
     printFlag (n, d) =
       "\t\t" ++
       showElement
@@ -115,9 +116,9 @@ prettyPrintFlags m
 -- | Pretty print a human-readable list of flags and their descriptions
 -- from a given 'Map.Map'.
 prettyPrintFlagsHuman :: UseFlags -> [String]
-prettyPrintFlagsHuman m = (\(n,d) -> A.bold (n ++ ": ") ++
-                            (unwords . lines $ d))
-                          <$> (Map.toAscList . stripGlobalUseFlags $ m)
+prettyPrintFlagsHuman m
+  = (\(n,d) -> A.bold (n ++ ": ") ++ (unwords . lines $ d))
+    <$> Map.toAscList m
 
 -- | A minimal metadata for use as a fallback value.
 minimalMetadata :: UseHackageRemote -> EBuild.EBuild -> Metadata
@@ -143,7 +144,7 @@ printMetadata (Metadata _ flags rids) = T.pack $
     , "\t\t<name>Gentoo Haskell</name>"
     , "\t</maintainer>"
     ]
-    ++ prettyPrintFlags flags
+    ++ prettyPrintFlags (stripGlobalUseFlags flags)
     ++ prettyPrintRemoteIds rids
     ++
     [ "</pkgmetadata>"

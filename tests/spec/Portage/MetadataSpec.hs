@@ -28,9 +28,10 @@ spec = do
       stripGlobalUseFlags (Map.singleton "debug" "description") `shouldBe` Map.empty
       stripGlobalUseFlags (Map.singleton "examples" "description") `shouldBe` Map.empty
       stripGlobalUseFlags (Map.singleton "static" "description") `shouldBe` Map.empty
+      stripGlobalUseFlags (Map.singleton "test" "description") `shouldBe` Map.empty
     prop "should ignore USE flags that are not specified as global" $ do
       \name description -> stripGlobalUseFlags (Map.singleton name description) ==
-                           if name `elem` ["debug","examples","static"]
+                           if name `elem` ["debug","examples","static","test"]
                            then Map.empty
                            else Map.singleton name description
 
@@ -87,7 +88,7 @@ spec = do
               , "</pkgmetadata>"
               ]
         in printMetadata (minimalMetadata True E.ebuildTemplate) `shouldBe` correctMetadata
-    context "when writing a minimal metadata.xml with no USE flags and --no-hackage-remote-id" $ do
+    context "when writing a minimal metadata.xml with no USE flags and --not-on-hackage" $ do
       it "should have a certain format" $
         let correctMetadata = T.pack $ unlines
               [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -121,6 +122,30 @@ spec = do
               , "\t<upstream>"
               , "\t\t<remote-id type=\"hackage\">FooBar</remote-id>"
               , "\t\t<remote-id type=\"github\">foo/bar</remote-id>"
+              , "\t</upstream>"
+              , "</pkgmetadata>"
+              ]
+          in printMetadata meta `shouldBe` correctMetadata
+    context "when writing a minimal metadata.xml with global USE flags" $ do
+      it "should not leave an empty <use> element" $ do
+        let meta = minimalMetadata True E.ebuildTemplate <> mempty
+              { metadataUseFlags = Map.fromList
+                [("debug","it debugs")
+                ,("examples","some examples")
+                ,("static","not dynamic")
+                ,("test","it tests")
+                ]
+              }
+            correctMetadata = T.pack $ unlines
+              [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+              , "<!DOCTYPE pkgmetadata SYSTEM \"https://www.gentoo.org/dtd/metadata.dtd\">"
+              , "<pkgmetadata>"
+              , "\t<maintainer type=\"project\">"
+              , "\t\t<email>haskell@gentoo.org</email>"
+              , "\t\t<name>Gentoo Haskell</name>"
+              , "\t</maintainer>"
+              , "\t<upstream>"
+              , "\t\t<remote-id type=\"hackage\">FooBar</remote-id>"
               , "\t</upstream>"
               , "</pkgmetadata>"
               ]
