@@ -1,15 +1,15 @@
-Cabal-Version:  3.0
-Name:           hackport
-Version:        0.7.3.0
-License:        GPL-3.0-or-later
-License-file:   LICENSE
-Author:         Henning Günther, Duncan Coutts, Lennart Kolmodin
-Maintainer:     Gentoo Haskell team <haskell@gentoo.org>
-Category:       Distribution
-Synopsis:       Hackage and Portage integration tool
-Description:    A command line tool to manage an overlay of Gentoo ebuilds
-                that are generated from a hackage repo of Cabal packages.
-Build-Type:     Simple
+cabal-version: 3.0
+name:          hackport
+version:       0.7.3.0
+license:       GPL-3.0-or-later
+license-file:  LICENSE
+author:        Henning Günther, Duncan Coutts, Lennart Kolmodin
+maintainer:    Gentoo Haskell team <haskell@gentoo.org>
+category:      Distribution
+synopsis:      Hackage and Portage integration tool
+description:
+  A command line tool to manage an overlay of Gentoo ebuilds
+  that are generated from a hackage repo of Cabal packages.
 
 tested-with:
   , GHC == 8.6.5
@@ -18,55 +18,55 @@ tested-with:
   , GHC == 9.0.2
 
 source-repository head
-  type: git
+  type:     git
   location: git://github.com/gentoo-haskell/hackport.git
 
 flag cabal-v1
   description: Build for cabal-v1 (Setup.hs/gentoo-haskell) compatibility
-  manual: True
-  default: False
+  manual:      True
+  default:     False
 
 flag gentoo-tests
   description: Build tests that require a running Gentoo system
-  manual: True
-  default: False
+  manual:      True
+  default:     False
 
 flag pedantic
-    description: Enable -Werror
-    default:     False
-    manual:      True
+  description: Enable -Werror
+  default:     False
+  manual:      True
 
 -- Turn off all warnings (for external libs and doctests-v2)
 common no-warnings
-  ghc-options:        -Wno-default
+  ghc-options: -Wno-default
 
 common warnings
-  ghc-options:        -Wall
+  ghc-options: -Wall
+
   if flag(pedantic)
-      ghc-options:    -Werror
+    ghc-options: -Werror
 
 library hackport-external-libs-Cabal
-  import: no-warnings
-  Default-Language: Haskell2010
-  Hs-Source-Dirs: cabal, cabal/Cabal
-
-  Build-Depends:
-    array         >= 0.4.0.1,
-    base          >= 4.6 && <5,
-    bytestring    >= 0.10.0.0,
-    containers    >= 0.5.0.0,
-    deepseq       >= 1.3.0.1,
-    directory     >= 1.2,
-    filepath      >= 1.3.0.1,
-    pretty        >= 1.1.1,
-    process       >= 1.1.0.2,
-    time          >= 1.4.0.1,
-    binary        >= 0.7,
-    unix          >= 2.6,
-    transformers  >=0.4.1.0,
-    mtl           >= 2.1,
-    text          >= 1.2.3.0,
-    parsec        >= 3.1.13.0
+  import:           no-warnings
+  default-language: Haskell2010
+  hs-source-dirs:   cabal cabal/Cabal
+  build-depends:
+    , array         >=0.4.0.1
+    , base          >=4.6      && <5
+    , binary        >=0.7
+    , bytestring    >=0.10.0.0
+    , containers    >=0.5.0.0
+    , deepseq       >=1.3.0.1
+    , directory     >=1.2
+    , filepath      >=1.3.0.1
+    , mtl           >=2.1
+    , parsec        >=3.1.13.0
+    , pretty        >=1.1.1
+    , process       >=1.1.0.2
+    , text          >=1.2.3.0
+    , time          >=1.4.0.1
+    , transformers  >=0.4.1.0
+    , unix          >=2.6
 
   other-extensions:
     BangPatterns
@@ -127,7 +127,6 @@ library hackport-external-libs-Cabal
     Distribution.Parsec.Warning
     Distribution.Pretty
     Distribution.ReadE
-    Distribution.SPDX
     Distribution.Simple.Command
     Distribution.Simple.Compiler
     Distribution.Simple.Configure
@@ -139,13 +138,14 @@ library hackport-external-libs-Cabal
     Distribution.Simple.Program.Run
     Distribution.Simple.Setup
     Distribution.Simple.Utils
+    Distribution.SPDX
     Distribution.SPDX.License
     Distribution.System
     Distribution.Text
     Distribution.Types.AnnotatedId
     Distribution.Types.ComponentId
-    Distribution.Types.ComponentRequestedSpec
     Distribution.Types.ComponentName
+    Distribution.Types.ComponentRequestedSpec
     Distribution.Types.Dependency
     Distribution.Types.Flag
     Distribution.Types.GivenComponent
@@ -216,11 +216,6 @@ library hackport-external-libs-Cabal
     Distribution.PackageDescription.Quirks
     Distribution.PackageDescription.Utils
     Distribution.Parsec.FieldLineStream
-    Distribution.SPDX.LicenseExceptionId
-    Distribution.SPDX.LicenseExpression
-    Distribution.SPDX.LicenseId
-    Distribution.SPDX.LicenseListVersion
-    Distribution.SPDX.LicenseReference
     Distribution.Simple.Build.PathsModule
     Distribution.Simple.BuildPaths
     Distribution.Simple.BuildTarget
@@ -252,6 +247,11 @@ library hackport-external-libs-Cabal
     Distribution.Simple.Test.LibV09
     Distribution.Simple.Test.Log
     Distribution.Simple.UHC
+    Distribution.SPDX.LicenseExceptionId
+    Distribution.SPDX.LicenseExpression
+    Distribution.SPDX.LicenseId
+    Distribution.SPDX.LicenseListVersion
+    Distribution.SPDX.LicenseReference
     Distribution.TestSuite
     Distribution.Types.AbiDependency
     Distribution.Types.AbiHash
@@ -265,14 +265,14 @@ library hackport-external-libs-Cabal
     Distribution.Types.Component
     Distribution.Types.ComponentInclude
     Distribution.Types.ComponentLocalBuildInfo
-    Distribution.Types.CondTree
     Distribution.Types.Condition
+    Distribution.Types.CondTree
     Distribution.Types.ConfVar
     Distribution.Types.DependencyMap
-    Distribution.Types.ExeDependency
     Distribution.Types.Executable
     Distribution.Types.Executable.Lens
     Distribution.Types.ExecutableScope
+    Distribution.Types.ExeDependency
     Distribution.Types.ExposedModule
     Distribution.Types.ForeignLib
     Distribution.Types.ForeignLib.Lens
@@ -316,8 +316,8 @@ library hackport-external-libs-Cabal
     Distribution.Utils.Base62
     Distribution.Utils.IOData
     Distribution.Utils.LogProgress
-    Distribution.Utils.MD5
     Distribution.Utils.MapAccum
+    Distribution.Utils.MD5
     Distribution.Utils.Progress
     Distribution.Utils.String
     Distribution.Utils.UnionFind
@@ -325,34 +325,34 @@ library hackport-external-libs-Cabal
     Paths_Cabal
 
 library hackport-external-libs-hackage-security
-  import: no-warnings
-  Default-Language: Haskell2010
-  Hs-Source-Dirs: hackage-security/hackage-security/src
-
+  import:             no-warnings
+  default-language:   Haskell2010
+  hs-source-dirs:     hackage-security/hackage-security/src
   build-depends:
-    hackport-external-libs-Cabal,
-    base              >= 4.10,
-    base16-bytestring >= 0.1.1,
-    base64-bytestring >= 1.0,
-    bytestring        >= 0.9,
-    containers        >= 0.4,
-    directory         >= 1.2,
-    ed25519           >= 0.0,
-    filepath          >= 1.2,
-    mtl               >= 2.2,
-    network           >= 3.0,
-    network-uri       >= 2.5,
-    parsec            >= 3.1,
-    pretty            >= 1.0,
-    cryptohash-sha256 >= 0.11,
-    tar               >= 0.5,
-    template-haskell  >= 2.7,
-    time              >= 1.2,
-    transformers      >= 0.3,
-    zlib              >= 0.5,
-    ghc-prim
+    , base                          >=4.10
+    , base16-bytestring             >=0.1.1
+    , base64-bytestring             >=1.0
+    , bytestring                    >=0.9
+    , containers                    >=0.4
+    , cryptohash-sha256             >=0.11
+    , directory                     >=1.2
+    , ed25519                       >=0.0
+    , filepath                      >=1.2
+    , ghc-prim
+    , hackport-external-libs-Cabal
+    , mtl                           >=2.2
+    , network                       >=3.0
+    , network-uri                   >=2.5
+    , parsec                        >=3.1
+    , pretty                        >=1.0
+    , tar                           >=0.5
+    , template-haskell              >=2.7
+    , time                          >=1.2
+    , transformers                  >=0.3
+    , zlib                          >=0.5
 
   default-extensions:
+    NoMonomorphismRestriction
     DefaultSignatures
     DeriveDataTypeable
     DeriveFunctor
@@ -363,7 +363,6 @@ library hackport-external-libs-hackage-security
     KindSignatures
     MultiParamTypeClasses
     NamedFieldPuns
-    NoMonomorphismRestriction
     RankNTypes
     RecordWildCards
     ScopedTypeVariables
@@ -372,6 +371,7 @@ library hackport-external-libs-hackage-security
     TypeFamilies
     TypeOperators
     ViewPatterns
+
   other-extensions:
     BangPatterns
     CPP
@@ -397,6 +397,8 @@ library hackport-external-libs-hackage-security
     Hackage.Security.JSON
     Hackage.Security.Key
     Hackage.Security.Key.Env
+    Hackage.Security.Trusted
+    Hackage.Security.Trusted.TCB
     Hackage.Security.TUF
     Hackage.Security.TUF.Common
     Hackage.Security.TUF.FileInfo
@@ -413,8 +415,6 @@ library hackport-external-libs-hackage-security
     Hackage.Security.TUF.Snapshot
     Hackage.Security.TUF.Targets
     Hackage.Security.TUF.Timestamp
-    Hackage.Security.Trusted
-    Hackage.Security.Trusted.TCB
     Hackage.Security.Util.Base64
     Hackage.Security.Util.Exit
     Hackage.Security.Util.IO
@@ -426,44 +426,43 @@ library hackport-external-libs-hackage-security
     Text.JSON.Canonical
 
 library hackport-external-libs-cabal-install
-  import: no-warnings
-  Default-Language: Haskell2010
-  Hs-Source-Dirs: cabal, cabal/cabal-install
-
+  import:           no-warnings
+  default-language: Haskell2010
+  hs-source-dirs:   cabal cabal/cabal-install
   build-depends:
-    hackport-external-libs-Cabal,
-    hackport-external-libs-hackage-security,
-    async             >= 2.0,
-    array             >= 0.4,
-    base              >= 4.8,
-    base16-bytestring >= 0.1.1,
-    binary            >= 0.7.3,
-    bytestring        >= 0.10.6.0,
-    containers        >= 0.5.6.2,
-    cryptohash-sha256 >= 0.11,
-    deepseq           >= 1.4.1.1,
-    directory         >= 1.2.2.0,
-    echo              >= 0.1.3,
-    edit-distance     >= 0.2.2,
-    filepath          >= 1.4.0.0,
-    hashable          >= 1.0,
-    HTTP              >= 4000.1.5,
-    mtl               >= 2.0,
-    network-uri       >= 2.6.0.2,
-    network           >= 2.6,
-    pretty            >= 1.1,
-    process           >= 1.2.3.0,
-    random            >= 1,
-    stm               >= 2.0,
-    tar               >= 0.5.0.3,
-    time              >= 1.5.0.1,
-    transformers      >= 0.4.2.0,
-    zlib              >= 0.5.3,
-    text              >= 1.2.3,
-    parsec            >= 3.1.13.0,
-    regex-base        >= 0.94.0.0,
-    regex-posix       >= 0.96.0.0,
-    resolv            >= 0.1.1
+    , array                                    >=0.4
+    , async                                    >=2.0
+    , base                                     >=4.8
+    , base16-bytestring                        >=0.1.1
+    , binary                                   >=0.7.3
+    , bytestring                               >=0.10.6.0
+    , containers                               >=0.5.6.2
+    , cryptohash-sha256                        >=0.11
+    , deepseq                                  >=1.4.1.1
+    , directory                                >=1.2.2.0
+    , echo                                     >=0.1.3
+    , edit-distance                            >=0.2.2
+    , filepath                                 >=1.4.0.0
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-hackage-security
+    , hashable                                 >=1.0
+    , HTTP                                     >=4000.1.5
+    , mtl                                      >=2.0
+    , network                                  >=2.6
+    , network-uri                              >=2.6.0.2
+    , parsec                                   >=3.1.13.0
+    , pretty                                   >=1.1
+    , process                                  >=1.2.3.0
+    , random                                   >=1
+    , regex-base                               >=0.94.0.0
+    , regex-posix                              >=0.96.0.0
+    , resolv                                   >=0.1.1
+    , stm                                      >=2.0
+    , tar                                      >=0.5.0.3
+    , text                                     >=1.2.3
+    , time                                     >=1.5.0.1
+    , transformers                             >=0.4.2.0
+    , zlib                                     >=0.5.3
 
   exposed-modules:
     Distribution.Client.Config
@@ -532,36 +531,36 @@ library hackport-external-libs-cabal-install
     Distribution.Solver.Types.Settings
 
 library hackport-internal
-  import: warnings
-  Default-Language: Haskell2010
-  Hs-Source-Dirs: src
-  Build-Depends:
-    hackport-external-libs-Cabal,
-    hackport-external-libs-cabal-install,
-    async,
-    base,
-    bytestring,
-    containers,
-    deepseq,
-    directory,
-    extensible-exceptions,
-    filepath,
-    lifted-base,
-    monad-control,
-    mtl,
-    network-uri,
-    parallel >= 3.2.1.0,
-    parsec,
-    pretty,
-    process,
-    split,
-    text,
-    time,
-    xml,
-    -- Needed for doctests-v2 to work
-    QuickCheck,
-    template-haskell
+  import:             warnings
+  default-language:   Haskell2010
+  hs-source-dirs:     src
+  build-depends:
+    , async
+    , base
+    , bytestring
+    , containers
+    , deepseq
+    , directory
+    , extensible-exceptions
+    , filepath
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-cabal-install
+    , lifted-base
+    , monad-control
+    , mtl
+    , network-uri
+    , parallel                              >=3.2.1.0
+    , parsec
+    , pretty
+    , process
+    , QuickCheck
+    , split
+    , template-haskell
+    , text
+    , time
+    , xml
 
+  -- Needed for doctests-v2 to work
   default-extensions:
     FlexibleContexts
     MultiParamTypeClasses
@@ -574,27 +573,21 @@ library hackport-internal
     PatternGuards
 
   exposed-modules:
-    Error
-    Merge
-    Overlays
-    Status
-    Status.Types
-    Hackport.Command.List
-    Hackport.Command.MakeEbuild
-    Hackport.Command.Update
-    Hackport.Command.Status
-    Hackport.Command.Merge
-    Hackport.Env
-    Hackport.Util
-    Portage.Host
-    Portage.Overlay
-    Portage.PackageId
-    Paths_hackport
-
     AnsiColor
     Cabal2Ebuild
+    Error
+    Hackport.Command.List
+    Hackport.Command.MakeEbuild
+    Hackport.Command.Merge
+    Hackport.Command.Status
+    Hackport.Command.Update
+    Hackport.Env
+    Hackport.Util
+    Merge
     Merge.Dependencies
     Merge.Utils
+    Overlays
+    Paths_hackport
     Portage.Cabal
     Portage.Dependency
     Portage.Dependency.Builder
@@ -606,226 +599,234 @@ library hackport-internal
     Portage.EBuild.Render
     Portage.EMeta
     Portage.GHCCore
+    Portage.Host
     Portage.Metadata
     Portage.Metadata.RemoteId
+    Portage.Overlay
+    Portage.PackageId
     Portage.Resolve
     Portage.Tables
     Portage.Use
     Portage.Version
+    Status
+    Status.Types
     Util
 
-  autogen-modules:
-    Paths_hackport
+  autogen-modules:    Paths_hackport
 
-Executable hackport
-  import: warnings
-  ghc-options: -threaded +RTS -N -RTS -with-rtsopts=-N
+executable hackport
+  import:           warnings
+  ghc-options:      -threaded +RTS -N -RTS -with-rtsopts=-N
   ghc-prof-options: -caf-all -auto-all -rtsopts
-  Main-Is:    Main.hs
-  Default-Language: Haskell2010
-  Hs-Source-Dirs: exe
-  Build-Depends:
-    hackport-external-libs-Cabal,
-    hackport-external-libs-cabal-install,
-    hackport-internal,
-    base,
-    directory,
-    filepath,
-    optparse-applicative <0.17,
-    parsec,
-    parser-combinators
-  other-modules: Paths_hackport
+  main-is:          Main.hs
+  default-language: Haskell2010
+  hs-source-dirs:   exe
+  build-depends:
+    , base
+    , directory
+    , filepath
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-cabal-install
+    , hackport-internal
+    , optparse-applicative                  <0.17
+    , parsec
+    , parser-combinators
 
+  other-modules:    Paths_hackport
   other-extensions:
     ApplicativeDo
     CPP
 
-Test-Suite test-resolve-category
-  import:               warnings
+test-suite test-resolve-category
+  import:             warnings
+
   -- requires a local Portage overlay, thus fails in a sandboxed test.
   if !flag(gentoo-tests)
     buildable: False
-  Type:                 exitcode-stdio-1.0
-  Default-Language:     Haskell98
-  Main-Is:              Main.hs
-  Hs-Source-Dirs:       tests/resolveCat
-  Build-Depends:        hackport-external-libs-Cabal,
-                        hackport-internal,
-                        array,
-                        base,
-                        binary,
-                        deepseq,
-                        bytestring,
-                        containers,
-                        directory,
-                        extensible-exceptions,
-                        filepath,
-                        HUnit,
-                        parsec,
-                        pretty,
-                        process,
-                        split,
-                        text,
-                        time,
-                        transformers,
-                        unix,
-                        xml
-  default-extensions:
-    -- cabal
-    PatternGuards,
-    DoAndIfThenElse
 
-Test-Suite test-print-deps
-  import:               warnings
+  type:               exitcode-stdio-1.0
+  default-language:   Haskell98
+  main-is:            Main.hs
+  hs-source-dirs:     tests/resolveCat
+  build-depends:
+    , array
+    , base
+    , binary
+    , bytestring
+    , containers
+    , deepseq
+    , directory
+    , extensible-exceptions
+    , filepath
+    , hackport-external-libs-Cabal
+    , hackport-internal
+    , HUnit
+    , parsec
+    , pretty
+    , process
+    , split
+    , text
+    , time
+    , transformers
+    , unix
+    , xml
+
+  default-extensions:
+    DoAndIfThenElse
+    PatternGuards
+
+test-suite test-print-deps
+  import:             warnings
+
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
-  buildable: False
-  Type:                 exitcode-stdio-1.0
-  Default-Language:     Haskell98
-  Main-Is:              Main.hs
-  Hs-Source-Dirs:       tests/print_deps
-  Build-Depends:        hackport-external-libs,
-                        array,
-                        base,
-                        binary,
-                        deepseq,
-                        bytestring,
-                        containers,
-                        directory,
-                        extensible-exceptions,
-                        filepath,
-                        HUnit,
-                        parsec,
-                        pretty,
-                        process,
-                        text,
-                        time,
-                        transformers,
-                        unix,
-                        xml
-  default-extensions:
-    -- cabal
-    PatternGuards,
-    DoAndIfThenElse
+  buildable:          False
+  type:               exitcode-stdio-1.0
+  default-language:   Haskell98
+  main-is:            Main.hs
+  hs-source-dirs:     tests/print_deps
+  build-depends:
+    , array
+    , base
+    , binary
+    , bytestring
+    , containers
+    , deepseq
+    , directory
+    , extensible-exceptions
+    , filepath
+    , hackport-external-libs
+    , HUnit
+    , parsec
+    , pretty
+    , process
+    , text
+    , time
+    , transformers
+    , unix
+    , xml
 
-Test-Suite test-normalize-deps
-  import:               warnings
+  default-extensions:
+    DoAndIfThenElse
+    PatternGuards
+
+test-suite test-normalize-deps
+  import:             warnings
+
   -- This test-suite has been incorporated into the 'spec' test-suite,
   -- and may be removed in the future.
-  buildable: False
-  Type:                 exitcode-stdio-1.0
-  Default-Language:     Haskell98
-  Main-Is:              Main.hs
-  Hs-Source-Dirs:       tests/normalize_deps
-  Build-Depends:        hackport-external-libs,
-                        array,
-                        base,
-                        binary,
-                        deepseq,
-                        bytestring,
-                        containers,
-                        directory,
-                        extensible-exceptions,
-                        filepath,
-                        HUnit,
-                        parsec,
-                        pretty,
-                        process,
-                        text,
-                        time,
-                        transformers,
-                        unix,
-                        xml
+  buildable:          False
+  type:               exitcode-stdio-1.0
+  default-language:   Haskell98
+  main-is:            Main.hs
+  hs-source-dirs:     tests/normalize_deps
+  build-depends:
+    , array
+    , base
+    , binary
+    , bytestring
+    , containers
+    , deepseq
+    , directory
+    , extensible-exceptions
+    , filepath
+    , hackport-external-libs
+    , HUnit
+    , parsec
+    , pretty
+    , process
+    , text
+    , time
+    , transformers
+    , unix
+    , xml
 
   default-extensions:
-    -- cabal
-    PatternGuards,
     DoAndIfThenElse
+    PatternGuards
 
 test-suite doctests
-  import:           warnings
+  import:               warnings
   x-doctest-components: lib:hackport-internal exe:hackport
-  type:             exitcode-stdio-1.0
-  Hs-Source-Dirs:   tests/doctests
-  ghc-options:      -threaded
-  default-language: Haskell98
-  main-is:          Main.hs
-  build-depends:    base,
-                    doctest >= 0.8,
-                    cabal-doctest,
-                    template-haskell,
-                    QuickCheck,
-                    directory,
-                    filepath,
-                    base-compat,
-                    Glob
-  other-modules:    Paths_hackport
+  type:                 exitcode-stdio-1.0
+  hs-source-dirs:       tests/doctests
+  ghc-options:          -threaded
+  default-language:     Haskell98
+  main-is:              Main.hs
+  build-depends:
+    , base
+    , base-compat
+    , cabal-doctest
+    , directory
+    , doctest           >=0.8
+    , filepath
+    , Glob
+    , QuickCheck
+    , template-haskell
+
+  other-modules:        Paths_hackport
+
   if !flag(cabal-v1)
     buildable: False
 
 test-suite doctests-v2
-  import:           warnings
-  type:             exitcode-stdio-1.0
-  default-language: Haskell98
-  Hs-Source-Dirs:   tests/doctests-v2
-  main-is:          Main.hs
-  build-depends:    base,
-                    process,
-                    -- Force doctests-v2 to be built last.
-                    -- This should reduce duplicated work: this test runs
-                    -- `cabal repl` which will try to compile the whole project.
-                    hackport-internal
+  import:             warnings
+  type:               exitcode-stdio-1.0
+  default-language:   Haskell98
+  hs-source-dirs:     tests/doctests-v2
+  main-is:            Main.hs
+  build-depends:
+    , base
+    , process
+
   build-tool-depends:
---    , cabal-install:cabal >= 3.4
-    , doctest:doctest >= 0.8
-    -- Force doctests-v2 to be built last
-    , hackport:hackport
+    , cabal-install:cabal  >=3.4
+    , doctest:doctest      >=0.8
 
   if flag(cabal-v1)
     buildable: False
 
 test-suite spec
-  import:               warnings
-  Type:                 exitcode-stdio-1.0
-  Default-Language:     Haskell2010
-  Main-Is:              Main.hs
-  Hs-Source-Dirs:       tests/spec
+  import:             warnings
+  type:               exitcode-stdio-1.0
+  default-language:   Haskell2010
+  main-is:            Main.hs
+  hs-source-dirs:     tests/spec
   other-modules:
     Merge.UtilsSpec
     Portage.CabalSpec
     Portage.Dependency.PrintSpec
     Portage.EBuildSpec
     Portage.GHCCoreSpec
-    Portage.MetadataSpec
     Portage.Metadata.RemoteIdSpec
+    Portage.MetadataSpec
     Portage.PackageIdSpec
     Portage.VersionSpec
     QuickCheck.Instances
-  Build-Depends:
-    hackport-external-libs-Cabal,
-    hackport-external-libs-cabal-install,
-    hackport-internal,
-    async,
-    base,
-    bytestring,
-    containers,
-    deepseq,
-    directory,
-    extensible-exceptions,
-    filepath,
-    hspec >= 2.0,
-    network-uri,
-    parallel,
-    parsec,
-    pretty,
-    process,
-    QuickCheck >= 2.0,
-    split,
-    text,
-    time,
-    xml
 
-  build-tool-depends:   hspec-discover:hspec-discover >= 2.0
+  build-depends:
+    , async
+    , base
+    , bytestring
+    , containers
+    , deepseq
+    , directory
+    , extensible-exceptions
+    , filepath
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-cabal-install
+    , hackport-internal
+    , hspec                                 >=2.0
+    , network-uri
+    , parallel
+    , parsec
+    , pretty
+    , process
+    , QuickCheck                            >=2.0
+    , split
+    , text
+    , time
+    , xml
 
-  other-extensions:
-    DeriveDataTypeable
+  build-tool-depends: hspec-discover:hspec-discover >=2.0
+  other-extensions:   DeriveDataTypeable
