@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name:          hackport
-version:       0.7.3.0
+version:       0.8.0.0
 license:       GPL-3.0-or-later
 license-file:  LICENSE
 author:        Henning Günther, Duncan Coutts, Lennart Kolmodin
@@ -49,7 +49,7 @@ common warnings
 library hackport-external-libs-Cabal
   import:           no-warnings
   default-language: Haskell2010
-  hs-source-dirs:   cabal cabal/Cabal
+  hs-source-dirs:   cabal cabal/Cabal/src cabal/Cabal-syntax/src
   build-depends:
     , array         >=0.4.0.1
     , base          >=4.6      && <5
@@ -98,6 +98,7 @@ library hackport-external-libs-Cabal
 
   exposed-modules:
     Distribution.CabalSpecVersion
+    Distribution.SPDX.LicenseId
     Distribution.Compat.Binary
     Distribution.Compat.CharParsing
     Distribution.Compat.Directory
@@ -138,84 +139,6 @@ library hackport-external-libs-Cabal
     Distribution.Simple.Program.Run
     Distribution.Simple.Setup
     Distribution.Simple.Utils
-    Distribution.SPDX
-    Distribution.SPDX.License
-    Distribution.System
-    Distribution.Text
-    Distribution.Types.AnnotatedId
-    Distribution.Types.ComponentId
-    Distribution.Types.ComponentName
-    Distribution.Types.ComponentRequestedSpec
-    Distribution.Types.Dependency
-    Distribution.Types.Flag
-    Distribution.Types.GivenComponent
-    Distribution.Types.InstalledPackageInfo
-    Distribution.Types.LibraryName
-    Distribution.Types.MungedPackageId
-    Distribution.Types.PackageId
-    Distribution.Types.PackageName
-    Distribution.Types.PackageVersionConstraint
-    Distribution.Types.SourceRepo
-    Distribution.Types.UnitId
-    Distribution.Types.UnqualComponentName
-    Distribution.Types.Version
-    Distribution.Types.VersionRange
-    Distribution.Utils.Generic
-    Distribution.Utils.NubList
-    Distribution.Utils.ShortText
-    Distribution.Utils.Structured
-    Distribution.Verbosity
-    Distribution.Version
-    Language.Haskell.Extension
-
-  other-modules:
-    Distribution.Backpack
-    Distribution.Backpack.ComponentsGraph
-    Distribution.Backpack.Configure
-    Distribution.Backpack.ConfiguredComponent
-    Distribution.Backpack.DescribeUnitId
-    Distribution.Backpack.FullUnitId
-    Distribution.Backpack.Id
-    Distribution.Backpack.LinkedComponent
-    Distribution.Backpack.MixLink
-    Distribution.Backpack.ModSubst
-    Distribution.Backpack.ModuleScope
-    Distribution.Backpack.ModuleShape
-    Distribution.Backpack.PreExistingComponent
-    Distribution.Backpack.PreModuleShape
-    Distribution.Backpack.ReadyComponent
-    Distribution.Backpack.UnifyM
-    Distribution.Compat.Async
-    Distribution.Compat.CopyFile
-    Distribution.Compat.CreatePipe
-    Distribution.Compat.DList
-    Distribution.Compat.Exception
-    Distribution.Compat.FilePath
-    Distribution.Compat.Internal.TempFile
-    Distribution.Compat.MonadFail
-    Distribution.Compat.Newtype
-    Distribution.Compat.Parsing
-    Distribution.Compat.Prelude
-    Distribution.Compat.Process
-    Distribution.Compat.Semigroup
-    Distribution.Compat.Stack
-    Distribution.FieldGrammar.Class
-    Distribution.FieldGrammar.FieldDescrs
-    Distribution.FieldGrammar.Parsec
-    Distribution.FieldGrammar.Pretty
-    Distribution.Fields.ConfVar
-    Distribution.Fields.Field
-    Distribution.Fields.Lexer
-    Distribution.Fields.LexerMonad
-    Distribution.Fields.Parser
-    Distribution.Fields.Pretty
-    Distribution.GetOpt
-    Distribution.Lex
-    Distribution.PackageDescription.Check
-    Distribution.PackageDescription.FieldGrammar
-    Distribution.PackageDescription.Quirks
-    Distribution.PackageDescription.Utils
-    Distribution.Parsec.FieldLineStream
     Distribution.Simple.Build.PathsModule
     Distribution.Simple.BuildPaths
     Distribution.Simple.BuildTarget
@@ -247,12 +170,65 @@ library hackport-external-libs-Cabal
     Distribution.Simple.Test.LibV09
     Distribution.Simple.Test.Log
     Distribution.Simple.UHC
-    Distribution.SPDX.LicenseExceptionId
-    Distribution.SPDX.LicenseExpression
-    Distribution.SPDX.LicenseId
-    Distribution.SPDX.LicenseListVersion
-    Distribution.SPDX.LicenseReference
-    Distribution.TestSuite
+    Distribution.Simple.Build.PathsModule.Z
+    Distribution.Simple.Bench
+    Distribution.Simple.Build
+    Distribution.Simple.Build.Macros
+    Distribution.Simple.Build.Macros.Z
+    Distribution.Simple.Haddock
+    Distribution.Simple.Install
+    Distribution.Simple.PackageDescription
+    Distribution.Simple.Program.Script
+    Distribution.Simple.Register
+    Distribution.Simple.ShowBuildInfo
+    Distribution.Simple.SrcDist
+    Distribution.Simple.Test
+    Distribution.Simple.Test.ExeV10
+    Distribution.Simple.UserHooks
+    Distribution.Utils.Json
+    Distribution.Simple
+    Distribution.SPDX
+    Distribution.SPDX.License
+    Distribution.System
+    Distribution.Text
+    Distribution.Types.AnnotatedId
+    Distribution.Types.ComponentId
+    Distribution.Types.ComponentName
+    Distribution.Types.ComponentRequestedSpec
+    Distribution.Types.Dependency
+    Distribution.Types.Flag
+    Distribution.Types.GivenComponent
+    Distribution.Types.InstalledPackageInfo
+    Distribution.Types.LibraryName
+    Distribution.Types.MungedPackageId
+    Distribution.Types.PackageId
+    Distribution.Types.PackageName
+    Distribution.Types.PackageVersionConstraint
+    Distribution.Types.SourceRepo
+    Distribution.Types.UnitId
+    Distribution.Types.UnqualComponentName
+    Distribution.Types.Version
+    Distribution.Types.VersionRange
+    Distribution.Utils.Generic
+    Distribution.Utils.NubList
+    Distribution.Utils.ShortText
+    Distribution.Utils.Structured
+    Distribution.Verbosity
+    Distribution.Version
+    Distribution.Compat.Stack
+    Distribution.Fields.Pretty
+    Distribution.Fields.Field
+    Distribution.FieldGrammar.Class
+    Distribution.FieldGrammar.FieldDescrs
+    Distribution.FieldGrammar.Parsec
+    Distribution.FieldGrammar.Pretty
+    Distribution.Fields.ConfVar
+    Distribution.Fields.Lexer
+    Distribution.Fields.LexerMonad
+    Distribution.Fields.Parser
+    Distribution.Utils.String
+    Distribution.Types.GenericPackageDescription
+    Distribution.Types.GenericPackageDescription.Lens
     Distribution.Types.AbiDependency
     Distribution.Types.AbiHash
     Distribution.Types.Benchmark
@@ -278,8 +254,6 @@ library hackport-external-libs-Cabal
     Distribution.Types.ForeignLib.Lens
     Distribution.Types.ForeignLibOption
     Distribution.Types.ForeignLibType
-    Distribution.Types.GenericPackageDescription
-    Distribution.Types.GenericPackageDescription.Lens
     Distribution.Types.HookedBuildInfo
     Distribution.Types.IncludeRenaming
     Distribution.Types.InstalledPackageInfo.FieldGrammar
@@ -319,9 +293,58 @@ library hackport-external-libs-Cabal
     Distribution.Utils.MapAccum
     Distribution.Utils.MD5
     Distribution.Utils.Progress
-    Distribution.Utils.String
     Distribution.Utils.UnionFind
+    Distribution.Types.DumpBuildInfo
+    Distribution.Utils.Path
+    Distribution.Backpack
+    Distribution.Backpack.ComponentsGraph
+    Distribution.Backpack.Configure
+    Distribution.Backpack.ConfiguredComponent
+    Distribution.Backpack.DescribeUnitId
+    Distribution.Backpack.FullUnitId
+    Distribution.Backpack.Id
+    Distribution.Backpack.LinkedComponent
+    Distribution.Backpack.MixLink
+    Distribution.Backpack.ModSubst
+    Distribution.Backpack.ModuleScope
+    Distribution.Backpack.ModuleShape
+    Distribution.Backpack.PreExistingComponent
+    Distribution.Backpack.PreModuleShape
+    Distribution.Backpack.ReadyComponent
+    Distribution.Backpack.UnifyM
+    Distribution.Make
+    Distribution.Compat.GetShortPathName
+    Distribution.Compat.ResponseFile
+    Distribution.Compat.Async
+    Distribution.Compat.CopyFile
+    Distribution.Compat.CreatePipe
+    Distribution.Compat.DList
+    Distribution.Compat.Exception
+    Distribution.Compat.FilePath
+    Distribution.Compat.Internal.TempFile
+    Distribution.Compat.MonadFail
+    Distribution.Compat.Newtype
+    Distribution.Compat.Parsing
+    Distribution.Compat.Prelude
+    Distribution.Compat.Process
+    Language.Haskell.Extension
+
+  other-modules:
+    Distribution.Compat.Semigroup
+    Distribution.GetOpt
+    Distribution.Lex
+    Distribution.PackageDescription.Check
+    Distribution.PackageDescription.FieldGrammar
+    Distribution.PackageDescription.Quirks
+    Distribution.PackageDescription.Utils
+    Distribution.Parsec.FieldLineStream
+    Distribution.SPDX.LicenseExceptionId
+    Distribution.SPDX.LicenseExpression
+    Distribution.SPDX.LicenseListVersion
+    Distribution.SPDX.LicenseReference
+    Distribution.TestSuite
     Distribution.Verbosity.Internal
+    Distribution.ZinzaPrelude
     Paths_Cabal
 
 library hackport-external-libs-hackage-security
@@ -353,6 +376,7 @@ library hackport-external-libs-hackage-security
 
   default-extensions:
     NoMonomorphismRestriction
+    NoImplicitPrelude
     DefaultSignatures
     DeriveDataTypeable
     DeriveFunctor
@@ -422,13 +446,13 @@ library hackport-external-libs-hackage-security
     Hackage.Security.Util.Lens
     Hackage.Security.Util.Stack
     Hackage.Security.Util.TypedEmbedded
-    Prelude
+    MyPrelude
     Text.JSON.Canonical
 
 library hackport-external-libs-cabal-install
   import:           no-warnings
   default-language: Haskell2010
-  hs-source-dirs:   cabal cabal/cabal-install
+  hs-source-dirs:   cabal cabal/cabal-install/src cabal/cabal-install-solver/src cabal/cabal-install-solver/src-assertion
   build-depends:
     , array                                    >=0.4
     , async                                    >=2.0
@@ -463,19 +487,22 @@ library hackport-external-libs-cabal-install
     , time                                     >=1.5.0.1
     , transformers                             >=0.4.2.0
     , zlib                                     >=0.5.3
+    , exceptions                               >=0.10.4
+    , safe-exceptions                          >=0.1.7.3
 
   exposed-modules:
+    Distribution.Client.CmdUpdate
     Distribution.Client.Config
     Distribution.Client.GlobalFlags
     Distribution.Client.IndexUtils
     Distribution.Client.Setup
     Distribution.Client.Types
-    Distribution.Client.Update
     Distribution.Solver.Types.PackageIndex
     Distribution.Solver.Types.SourcePackage
     Paths_cabal_install
 
   other-modules:
+    Distribution.Client.Utils.Assertion
     Distribution.Client.BuildReports.Types
     Distribution.Client.CmdInstall.ClientInstallFlags
     Distribution.Client.Compat.Directory
@@ -516,7 +543,6 @@ library hackport-external-libs-cabal-install
     Distribution.Client.Types.SourceRepo
     Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
     Distribution.Client.Utils
-    Distribution.Client.World
     Distribution.Deprecated.ParseUtils
     Distribution.Deprecated.ReadP
     Distribution.Deprecated.ViewAsFieldDescr
@@ -529,6 +555,77 @@ library hackport-external-libs-cabal-install
     Distribution.Solver.Types.PackageFixedDeps
     Distribution.Solver.Types.PackagePath
     Distribution.Solver.Types.Settings
+    Distribution.Client.Version
+    Distribution.Client.BuildReports.Anonymous
+    Distribution.Client.BuildReports.Lens
+    Distribution.Client.BuildReports.Storage
+    Distribution.Client.Compat.ExecutablePath
+    Distribution.Client.Dependency
+    Distribution.Client.DistDirLayout
+    Distribution.Client.FileMonitor
+    Distribution.Client.Glob
+    Distribution.Client.InstallPlan
+    Distribution.Client.NixStyleOptions
+    Distribution.Client.PackageHash
+    Distribution.Client.ProjectBuilding
+    Distribution.Client.ProjectBuilding.Types
+    Distribution.Client.ProjectConfig
+    Distribution.Client.ProjectConfig.Legacy
+    Distribution.Client.ProjectConfig.Types
+    Distribution.Client.ProjectOrchestration
+    Distribution.Client.ProjectPlanOutput
+    Distribution.Client.ProjectPlanning
+    Distribution.Client.ProjectPlanning.Types
+    Distribution.Client.RebuildMonad
+    Distribution.Client.SetupWrapper
+    Distribution.Client.SolverInstallPlan
+    Distribution.Client.SourceFiles
+    Distribution.Client.SrcDist
+    Distribution.Client.Store
+    Distribution.Client.TargetProblem
+    Distribution.Client.TargetSelector
+    Distribution.Client.Utils.Json
+    Distribution.Client.Utils.Parsec
+    Distribution.Client.VCS
+    Distribution.Solver.Modular
+    Distribution.Solver.Modular.Assignment
+    Distribution.Solver.Modular.Builder
+    Distribution.Solver.Modular.Configured
+    Distribution.Solver.Modular.ConfiguredConversion
+    Distribution.Solver.Modular.ConflictSet
+    Distribution.Solver.Modular.Cycles
+    Distribution.Solver.Modular.Dependency
+    Distribution.Solver.Modular.Explore
+    Distribution.Solver.Modular.Flag
+    Distribution.Solver.Modular.Index
+    Distribution.Solver.Modular.IndexConversion
+    Distribution.Solver.Modular.LabeledGraph
+    Distribution.Solver.Modular.Linking
+    Distribution.Solver.Modular.Log
+    Distribution.Solver.Modular.Message
+    Distribution.Solver.Modular.MessageUtils
+    Distribution.Solver.Modular.PSQ
+    Distribution.Solver.Modular.Package
+    Distribution.Solver.Modular.Preference
+    Distribution.Solver.Modular.RetryLog
+    Distribution.Solver.Modular.Solver
+    Distribution.Solver.Modular.Tree
+    Distribution.Solver.Modular.Validate
+    Distribution.Solver.Modular.Var
+    Distribution.Solver.Modular.Version
+    Distribution.Solver.Modular.WeightedPSQ
+    Distribution.Solver.Types.DependencyResolver
+    Distribution.Solver.Types.Flag
+    Distribution.Solver.Types.InstSolverPackage
+    Distribution.Solver.Types.InstalledPreference
+    Distribution.Solver.Types.PackagePreferences
+    Distribution.Solver.Types.PkgConfigDb
+    Distribution.Solver.Types.Progress
+    Distribution.Solver.Types.ResolverPackage
+    Distribution.Solver.Types.SolverId
+    Distribution.Solver.Types.SolverPackage
+    Distribution.Solver.Types.Variable
+
 
 library hackport-internal
   import:             warnings
