@@ -2,7 +2,7 @@ module Hackport.Command.MakeEbuild
   ( makeEbuildAction
   ) where
 
-import qualified Distribution.PackageDescription.Parsec as Cabal
+import qualified Distribution.Simple.PackageDescription as Cabal
 import Distribution.Parsec (simpleParsec)
 import qualified Distribution.Verbosity as V
 

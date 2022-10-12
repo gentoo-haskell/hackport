@@ -101,7 +101,8 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
           mode <- Opt.hsubparser
             $  subcmd "list"        listAction       listParser
             <> subcmd "make-ebuild" makeEbuildAction makeEbuildParser
-            <> subcmd "update"      updateAction     updateParser
+            -- TODO: Hackport/Command/Update.hs
+            -- <> subcmd "update"      updateAction     updateParser
             <> subcmd "status"      statusAction     statusParser
             <> subcmd "merge"       mergeAction      mergeParser
 
