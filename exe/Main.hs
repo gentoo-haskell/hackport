@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 
 module Main (main) where
 
@@ -153,7 +154,11 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
                 err :: P.ParseError -> String
                 err _ = ($ "") $ Opt.displayS $ Opt.renderCompact $ Opt.extractChunk $ Opt.vsepChunks
                   [ Opt.stringChunk "Takes a number (0-3) or one of the following values:"
-                  , Opt.tabulate =<< traverse (bitraverse Opt.stringChunk Opt.stringChunk)
+                  , Opt.tabulate
+#if MIN_VERSION_optparse_applicative(0,17,0)
+                    (Opt.prefColumns Opt.defaultPrefs)
+#endif
+                    =<< traverse (bitraverse Opt.stringChunk Opt.stringChunk)
                       [ ("silent", "No output")
                       , ("normal", "Default verbosity")
                       , ("verbose", "Increased verbosity")
