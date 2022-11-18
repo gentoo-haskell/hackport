@@ -628,7 +628,7 @@ executable hackport
     , hackport-external-libs-Cabal
     , hackport-external-libs-cabal-install
     , hackport-internal
-    , optparse-applicative                  <0.17
+    , optparse-applicative
     , parsec
     , parser-combinators
 
