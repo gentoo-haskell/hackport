@@ -6,6 +6,7 @@ Maintainer  : haskell@gentoo.org
 Core functionality of the @merge@ command of @HackPort@.
 -}
 
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Merge
@@ -64,7 +65,6 @@ import qualified Portage.Cabal as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Version as Portage
 import qualified Portage.Metadata as Portage
-import qualified Portage.Metadata.RemoteId as Portage
 import qualified Portage.Overlay as Overlay
 import qualified Portage.Resolve as Portage
 import qualified Portage.Dependency as Portage
@@ -490,14 +490,14 @@ withWorkingDirectory newDir action = do
 
 -- | Write the ebuild (and sometimes a new @metadata.xml@) to its directory.
 mergeEbuild
-  :: WritesMetadata env
+  :: forall env. WritesMetadata env
   => EM.EMeta
   -> FilePath
   -> E.EBuild
   -> [Cabal.PackageFlag]
   -> Env env ()
 mergeEbuild existing_meta pkgdir ebuild flags = do
-  (_globalEnv, localEnv) <- ask
+  cmdEnv :: env <- askEnv
 
   let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
@@ -505,51 +505,36 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
       emeta = "metadata.xml"
       mpath = edir </> emeta
   yet_meta <- liftIO $ doesFileExist mpath
-  -- If there is an existing @metadata.xml@, read it in as a 'T.Text'.
-  -- Otherwise return 'T.empty'. We only use this once more to directly
-  -- compare to @default_meta@ before writing it.
-  current_meta <- if yet_meta
-                  then liftIO $ T.readFile mpath
-                  else return T.empty
+
+  -- Get the current metadata.xml contents if it exists. If it does, try to
+  -- parse it as well.
+  currentMetaState :: Maybe (T.Text, Portage.Metadata) <-
+    if yet_meta
+      then do
+        t <- liftIO $ T.readFile mpath
+        case Portage.parseMetadataXML t of
+          Just m  -> pure $ Just (t, m)
+          Nothing -> fail "Could not parse the existing metadata.xml"
+      else pure Nothing
+
   let
-      -- Either create an object of the 'Portage.Metadata' type from a valid @current_meta@,
-      -- or supply a default minimal metadata object. Note the difference to @current_meta@:
-      -- @current_meta@ is of type 'T.Text', @current_meta'@ is of type 'Portage.Metadata'.
-      current_meta' = fromMaybe (Portage.minimalMetadata (useHackageRemote localEnv) ebuild)
-                      (Portage.parseMetadataXML current_meta)
+      -- Break the currentMetaState into it's individual components
+      currentMetaText = fst <$> currentMetaState
+      currentMeta     = snd <$> currentMetaState
 
-      -- The remote-id for hackage is always added, unless 'useHackageRemote' returns False
-      -- (generally disabled on the command line with the --not-on-hackage flag for the
-      -- make-ebuild command).
-      hackageRemoteId =
-        if useHackageRemote localEnv
-          then S.singleton $ Portage.RemoteIdHackage $ E.hackage_name ebuild
-          else S.empty
+      -- Update the current metadata with info from 'ebuild' and 'flags'. If
+      -- the current metadata doesn't exist, this will build off a template.
+      updatedMeta = Portage.updateMetadata cmdEnv ebuild flags currentMeta
 
-      -- Sometimes the .cabal file will explicitly list source repos
-      sourceRemoteIds =
-        let r = Portage.matchURIs (E.sourceURIs ebuild)
-        in 
-            if S.null r
-              -- If the list of source remote-ids is empty, we fall back to using the homepage
-              then Portage.matchURIs [E.homepage ebuild]
-              else r
+      -- Write the updated meta file to a Text buffer
+      updatedMetaText = Portage.printMetadata updatedMeta
 
-      -- Create the @metadata.xml@ string, adding new USE flags (if any) to those of
-      -- the existing @metadata.xml@. If an existing flag has a new and old description,
-      -- the new one takes precedence.
-      default_meta = Portage.printMetadata $
-                      current_meta' <> mempty
-                        { Portage.metadataUseFlags = Merge.metaFlags flags
-                        , Portage.metadataRemoteIds =
-                            hackageRemoteId <> sourceRemoteIds
-                        }
       -- Create a 'Map.Map' of USE flags with updated descriptions.
       new_flags = Map.differenceWith (\new old -> if (new /= old)
                                                   then Just $ old ++ A.bold (" -> " ++ new)
                                                   else Nothing)
                   (Merge.metaFlags flags)
-                  (Portage.metadataUseFlags current_meta')
+                  (Portage.metadataUseFlags updatedMeta)
 
   liftIO $ createDirectoryIfMissing True edir
   now <- liftIO $ TC.getCurrentTime
@@ -572,13 +557,21 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
   notice $ "Writing " ++ elocal
   length s_ebuild' `seq` liftIO (T.writeFile epath (T.pack s_ebuild'))
 
-  when (current_meta /= default_meta) $ do
-    when (current_meta /= T.empty) $ do
-      notice $ A.bold $ "Default and current " ++ emeta ++ " differ."
-      if (new_flags /= Map.empty)
-        then notice $ "New or updated USE flags:\n" ++
-             unlines (Portage.prettyPrintFlagsHuman (Portage.stripGlobalUseFlags new_flags))
-        else notice "No new USE flags."
+  metadataNeedsWriting <- 
+    case currentMetaText of
+      Just t
+        -- If the metadata.xml exists and our updated version is identical,
+        -- we don't need to write it
+        | t == updatedMetaText -> pure False
+        | otherwise            -> do
+            notice $ A.bold $ "Default and current " ++ emeta ++ " differ."
+            if (new_flags /= Map.empty)
+              then notice $ "New or updated USE flags:\n" ++
+                 unlines (Portage.prettyPrintFlagsHuman (Portage.stripGlobalUseFlags new_flags))
+            else notice "No new USE flags."
+            pure True
+      Nothing -> pure True
 
+  when metadataNeedsWriting $ do
     notice $ "Writing " ++ emeta
-    liftIO $ T.writeFile mpath default_meta
+    liftIO $ T.writeFile mpath updatedMetaText

@@ -10,6 +10,7 @@ import qualified Data.Set        as S
 import qualified Portage.EBuild as E
 import Portage.Metadata
 import Portage.Metadata.RemoteId
+import qualified Hackport.Env as Env
 
 spec :: Spec
 spec = do
@@ -128,7 +129,7 @@ spec = do
           in printMetadata meta `shouldBe` correctMetadata
     context "when writing a minimal metadata.xml with global USE flags" $ do
       it "should not leave an empty <use> element" $ do
-        let meta = minimalMetadata True E.ebuildTemplate <> mempty
+        let meta = (minimalMetadata True E.ebuildTemplate)
               { metadataUseFlags = Map.fromList
                 [("debug","it debugs")
                 ,("examples","some examples")
@@ -150,3 +151,17 @@ spec = do
               , "</pkgmetadata>"
               ]
           in printMetadata meta `shouldBe` correctMetadata
+
+  describe "updateMetadata" $ do
+    it "should default to minimalMetadata" $ do
+        let cmdEnv = Env.MergeEnv Nothing "hackport"
+            ebuild = E.ebuildTemplate
+          in updateMetadata cmdEnv ebuild [] Nothing `shouldBe` minimalMetadata True ebuild
+
+    it "should fall back to the homepage for remote-id" $ do
+        let cmdEnv = Env.MergeEnv Nothing "hackport"
+            ebuild = E.ebuildTemplate { E.homepage = "https://github.com/gentoo-haskell/hackport#readme" }
+            correctRemoteId = RemoteIdGithub "gentoo-haskell" "hackport"
+            mkCorrectMeta (Metadata e f r) = Metadata e f (S.insert correctRemoteId r)
+          in updateMetadata cmdEnv ebuild [] Nothing 
+                `shouldBe` mkCorrectMeta (minimalMetadata True E.ebuildTemplate)

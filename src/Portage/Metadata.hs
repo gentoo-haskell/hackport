@@ -8,6 +8,7 @@ Functions and types related to @metadata.xml@ processing
 module Portage.Metadata
         ( Metadata(..)
         , UseFlags
+        , updateMetadata
         , readMetadataFile
         , parseMetadataXML
         , stripGlobalUseFlags -- exported for hspec
@@ -19,14 +20,16 @@ module Portage.Metadata
 
 import qualified AnsiColor as A
 
-import Control.Monad
+import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set        as S
 import qualified Data.Text       as T
 import qualified Data.Text.IO    as T
 
+import qualified Distribution.PackageDescription as Cabal
 import Text.XML.Light
 
+import Merge.Utils as Merge
 import Portage.EBuild as EBuild
 import Portage.Metadata.RemoteId
 
@@ -49,6 +52,49 @@ instance Semigroup Metadata where
 instance Monoid Metadata where
   mempty = Metadata mempty mempty mempty
 
+
+-- | Update any existing metadata with changes to USE flags and remote-ids. If
+--   the current metadata doesn't exist, it will modify a template created by
+--   'minimalMetadata'.
+updateMetadata :: WritesMetadata env 
+    => env                 -- ^ Local environment carried by 'Env'
+    -> EBuild.EBuild       -- ^ 'EBuild.EBuild' representation we are building metadata for
+    -> [Cabal.PackageFlag] -- ^ cabal package flags
+    -> Maybe Metadata      -- ^ Current metadata, if any
+    -> Metadata
+updateMetadata cmdEnv ebuild flags currentMeta =
+  let
+    -- Supply a default minimal metadata object if current metadata doesn't exist.
+    currentMeta' = fromMaybe
+      (minimalMetadata (useHackageRemote cmdEnv) ebuild)
+      currentMeta
+
+    -- The remote-id for hackage is always added, unless 'useHackageRemote' returns False
+    -- (generally disabled on the command line with the --not-on-hackage flag for the
+    -- make-ebuild command).
+    hackageRemoteId =
+      if useHackageRemote cmdEnv
+        then S.singleton $ RemoteIdHackage $ EBuild.hackage_name ebuild
+        else S.empty
+
+    -- Sometimes the .cabal file will explicitly list source repos
+    sourceRemoteIds =
+      let r = matchURIs (EBuild.sourceURIs ebuild)
+      in 
+          if S.null r
+            -- If the list of source remote-ids is empty, we fall back to using the homepage
+            then matchURIs [EBuild.homepage ebuild]
+            else r
+
+    -- Create the new metadata, adding new USE flags (if any) to those of the
+    -- existing metadata. If an existing flag has a new and old description,
+    -- the new one takes precedence.
+    in currentMeta' <> mempty
+         { metadataUseFlags = Merge.metaFlags flags
+         , metadataRemoteIds =
+             hackageRemoteId <> sourceRemoteIds
+         }
+
 -- | Maybe return a 'Metadata' from a 'T.Text'.
 --
 -- Trying to parse an empty 'T.Text' should return 'Nothing':
@@ -56,32 +102,32 @@ instance Monoid Metadata where
 -- >>> parseMetadataXML T.empty
 -- Nothing
 parseMetadataXML :: T.Text -> Maybe Metadata
-parseMetadataXML = parseMetadata <=< parseXMLDoc
+parseMetadataXML = fmap parseMetadata . parseXMLDoc
 
 -- | Apply 'parseMetadataXML' to a 'FilePath'.
-readMetadataFile :: FilePath -> IO (Maybe Metadata)
-readMetadataFile fp = parseMetadataXML <$> T.readFile fp
+readMetadataFile :: MonadIO m => FilePath -> m (Maybe Metadata)
+readMetadataFile = liftIO . fmap parseMetadataXML . T.readFile
 
 -- | Extract the maintainer email and USE flags from a supplied XML 'Element'.
 -- 
 -- If we're parsing a blank 'Element' or otherwise empty @metadata.xml@:
 -- >>> parseMetadata blank_element
--- Just (Metadata {metadataEmails = [], metadataUseFlags = fromList [], metadataRemoteIds = fromList []})
-parseMetadata :: Element -> Maybe Metadata
+-- Metadata {metadataEmails = [], metadataUseFlags = fromList [], metadataRemoteIds = fromList []}
+parseMetadata :: Element -> Metadata
 parseMetadata xml =
-  return Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
-                  , metadataUseFlags =
-                      -- find the flag name
-                      let x = findElement (unqual "use") xml
-                          y = onlyElems $ concatMap elContent x
-                          z = attrVal <$> concatMap elAttribs y
-                      -- find the flag description
-                          a = concatMap elContent y
-                          b = cdData <$> onlyText a
-                      in Map.fromList $ zip z b
-                  -- TODO: Read remote-ids from existing metadata.xml
-                  , metadataRemoteIds = S.empty
-                  }
+  Metadata { metadataEmails = strContent <$> findElements (unqual "email") xml
+           , metadataUseFlags =
+               -- find the flag name
+               let x = findElement (unqual "use") xml
+                   y = onlyElems $ concatMap elContent x
+                   z = attrVal <$> concatMap elAttribs y
+               -- find the flag description
+                   a = concatMap elContent y
+                   b = cdData <$> onlyText a
+               in Map.fromList $ zip z b
+           -- TODO: Read remote-ids from existing metadata.xml
+           , metadataRemoteIds = S.empty
+           }
 
 -- | Remove global @USE@ flags from the flags 'Map.Map', as these should not be
 -- within the local @metadata.xml@. For now, this is manually specified rather than
