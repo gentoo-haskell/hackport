@@ -95,4 +95,8 @@ realWorldExamples =
         "https://github.com/dhall-lang/dhall-haskell/tree/master/dhall-toml"
         githubParser
         (RemoteIdGithub "dhall-lang" "dhall-haskell")
+    , Example
+        "https://github.com/gentoo-haskell/hackport#readme"
+        githubParser
+        (RemoteIdGithub "gentoo-haskell" "hackport")
     ]

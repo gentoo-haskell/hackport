@@ -55,7 +55,7 @@ import Data.Foldable (asum)
 import qualified Data.List as L
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Network.URI (URI(..), URIAuth(..), parseAbsoluteURI)
+import Network.URI (URI(..), URIAuth(..), parseURI)
 import System.FilePath.Posix
 import Text.Parsec
 import Text.Parsec.String
@@ -360,7 +360,7 @@ vimParser = URIParser
 
 -- | Run a specified 'URIParser' with a string
 --
---   Internally, uses 'parseAbsoluteURI' to create a 'URI', and then uses each
+--   Internally, uses 'parseURI' to create a 'URI', and then uses each
 --   parser specified in 'URIParser' on a specific part of the uri. These
 --   intermediate results are coalesced with the supplied 'mkRemoteId'.
 runUriParser
@@ -372,7 +372,7 @@ runUriParser (URIParser {..}) = join . parseIt go
     go :: Parser (Either ParseError RemoteId)
     go = do
         cs <- allChars
-        case parseAbsoluteURI cs of
+        case parseURI cs of
             Just (URI scheme (Just (URIAuth user regname port)) path query fragment) ->
                 pure $ mkRemoteId
                     <$> parseIt schemeParser scheme
@@ -382,7 +382,7 @@ runUriParser (URIParser {..}) = join . parseIt go
                     <*> parseIt pathParser path
                     <*> parseIt queryParser query
                     <*> parseIt fragmentParser fragment
-            _ -> fail $ "Could not parse as an absolute URI: " ++ show cs
+            _ -> fail $ "Could not parse as a URI: " ++ show cs
 
     parseIt :: Parser a -> String -> Either ParseError a
     parseIt p = parse p ""
