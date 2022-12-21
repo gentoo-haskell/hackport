@@ -46,11 +46,18 @@ common warnings
   if flag(pedantic)
     ghc-options: -Werror
 
-library hackport-external-libs-Cabal
+-------------------------------------------------------------------------------
+-- NOTE: The lists of modules for external libraries have optimized for the
+-- smallest build footprint possible. You may need to uncomment modules as new
+-- features are added to hackport.
+-------------------------------------------------------------------------------
+
+library hackport-external-libs-Cabal-syntax
   import:           no-warnings
   default-language: Haskell2010
-  hs-source-dirs:   cabal cabal/Cabal/src cabal/Cabal-syntax/src
+  hs-source-dirs:   cabal/Cabal-syntax/src
   build-depends:
+    , array         >=0.4.0.1
     , array         >=0.4.0.1
     , base          >=4.6      && <5
     , binary        >=0.7
@@ -62,11 +69,149 @@ library hackport-external-libs-Cabal
     , mtl           >=2.1
     , parsec        >=3.1.13.0
     , pretty        >=1.1.1
-    , process       >=1.1.0.2
     , text          >=1.2.3.0
     , time          >=1.4.0.1
     , transformers  >=0.4.1.0
-    , unix          >=2.6
+    , unix          >=2.6.0.0
+
+  exposed-modules:
+    Distribution.Backpack
+    Distribution.CabalSpecVersion
+    Distribution.Compat.Binary
+    Distribution.Compat.CharParsing
+    Distribution.Compat.DList
+    Distribution.Compat.Exception
+    Distribution.Compat.Graph
+    Distribution.Compat.Lens
+    Distribution.Compat.MonadFail
+    Distribution.Compat.Newtype
+    Distribution.Compat.NonEmptySet
+    Distribution.Compat.Parsing
+    Distribution.Compat.Prelude
+    Distribution.Compat.Semigroup
+    Distribution.Compat.Typeable
+    Distribution.Compiler
+    Distribution.FieldGrammar
+    Distribution.FieldGrammar.Class
+    Distribution.FieldGrammar.FieldDescrs
+    Distribution.FieldGrammar.Newtypes
+    Distribution.FieldGrammar.Parsec
+    Distribution.FieldGrammar.Pretty
+    Distribution.Fields
+    Distribution.Fields.ConfVar
+    Distribution.Fields.Field
+    Distribution.Fields.Lexer
+    Distribution.Fields.LexerMonad
+    Distribution.Fields.ParseResult
+    Distribution.Fields.Parser
+    Distribution.Fields.Pretty
+    Distribution.InstalledPackageInfo
+    Distribution.License
+    Distribution.ModuleName
+    Distribution.Package
+    Distribution.PackageDescription
+    Distribution.PackageDescription.Configuration
+    Distribution.PackageDescription.FieldGrammar
+    Distribution.PackageDescription.Parsec
+    Distribution.PackageDescription.PrettyPrint
+    Distribution.PackageDescription.Quirks
+    Distribution.PackageDescription.Utils
+    Distribution.Parsec
+    Distribution.Parsec.Error
+    Distribution.Parsec.FieldLineStream
+    Distribution.Parsec.Position
+    Distribution.Parsec.Warning
+    Distribution.Pretty
+    Distribution.SPDX
+    Distribution.SPDX.License
+    Distribution.SPDX.LicenseExceptionId
+    Distribution.SPDX.LicenseExpression
+    Distribution.SPDX.LicenseId
+    Distribution.SPDX.LicenseListVersion
+    Distribution.SPDX.LicenseReference
+    Distribution.System
+    Distribution.Text
+    Distribution.Types.AbiDependency
+    Distribution.Types.AbiHash
+    Distribution.Types.Benchmark
+    Distribution.Types.Benchmark.Lens
+    Distribution.Types.BenchmarkInterface
+    Distribution.Types.BenchmarkType
+    Distribution.Types.BuildInfo
+    Distribution.Types.BuildInfo.Lens
+    Distribution.Types.BuildType
+    Distribution.Types.Component
+    Distribution.Types.ComponentId
+    Distribution.Types.ComponentName
+    Distribution.Types.ComponentRequestedSpec
+    Distribution.Types.CondTree
+    Distribution.Types.Condition
+    Distribution.Types.ConfVar
+    Distribution.Types.Dependency
+    Distribution.Types.DependencyMap
+    Distribution.Types.ExeDependency
+    Distribution.Types.Executable
+    Distribution.Types.Executable.Lens
+    Distribution.Types.ExecutableScope
+    Distribution.Types.ExposedModule
+    Distribution.Types.Flag
+    Distribution.Types.ForeignLib
+    Distribution.Types.ForeignLib.Lens
+    Distribution.Types.ForeignLibOption
+    Distribution.Types.ForeignLibType
+    Distribution.Types.GenericPackageDescription
+    Distribution.Types.GenericPackageDescription.Lens
+    Distribution.Types.HookedBuildInfo
+    Distribution.Types.IncludeRenaming
+    Distribution.Types.InstalledPackageInfo
+    Distribution.Types.InstalledPackageInfo.FieldGrammar
+    Distribution.Types.InstalledPackageInfo.Lens
+    Distribution.Types.LegacyExeDependency
+    Distribution.Types.Lens
+    Distribution.Types.Library
+    Distribution.Types.Library.Lens
+    Distribution.Types.LibraryName
+    Distribution.Types.LibraryVisibility
+    Distribution.Types.Mixin
+    Distribution.Types.Module
+    Distribution.Types.ModuleReexport
+    Distribution.Types.ModuleRenaming
+    Distribution.Types.MungedPackageId
+    Distribution.Types.MungedPackageName
+    Distribution.Types.PackageDescription
+    Distribution.Types.PackageDescription.Lens
+    Distribution.Types.PackageId
+    Distribution.Types.PackageId.Lens
+    Distribution.Types.PackageName
+    Distribution.Types.PackageVersionConstraint
+    Distribution.Types.PkgconfigDependency
+    Distribution.Types.PkgconfigName
+    Distribution.Types.PkgconfigVersion
+    Distribution.Types.PkgconfigVersionRange
+    Distribution.Types.SetupBuildInfo
+    Distribution.Types.SetupBuildInfo.Lens
+    Distribution.Types.SourceRepo
+    Distribution.Types.SourceRepo.Lens
+    Distribution.Types.TestSuite
+    Distribution.Types.TestSuite.Lens
+    Distribution.Types.TestSuiteInterface
+    Distribution.Types.TestType
+    Distribution.Types.UnitId
+    Distribution.Types.UnqualComponentName
+    Distribution.Types.Version
+    Distribution.Types.VersionInterval
+--     Distribution.Types.VersionInterval.Legacy
+    Distribution.Types.VersionRange
+    Distribution.Types.VersionRange.Internal
+    Distribution.Utils.Base62
+    Distribution.Utils.Generic
+    Distribution.Utils.MD5
+    Distribution.Utils.Path
+    Distribution.Utils.ShortText
+    Distribution.Utils.String
+    Distribution.Utils.Structured
+    Distribution.Version
+    Language.Haskell.Extension
 
   other-extensions:
     BangPatterns
@@ -96,68 +241,82 @@ library hackport-external-libs-Cabal
     TypeSynonymInstances
     UndecidableInstances
 
+library hackport-external-libs-Cabal
+  import:           no-warnings
+  default-language: Haskell2010
+  hs-source-dirs:   cabal cabal/Cabal/src
+  build-depends:
+    , hackport-external-libs-Cabal-syntax
+    , array         >=0.4.0.1
+    , base          >=4.6      && <5
+    , bytestring    >=0.10.0.0
+    , containers    >=0.5.0.0
+    , deepseq       >=1.3.0.1
+    , directory     >=1.2
+    , filepath      >=1.3.0.1
+    , mtl           >=2.1
+    , parsec        >=3.1.13.0
+    , pretty        >=1.1.1
+    , process       >=1.2.1.0
+    , text          >=1.2.3.0
+    , time          >=1.4.0.1
+    , transformers  >=0.4.1.0
+    , unix          >=2.6.0.0
+
   exposed-modules:
-    Distribution.CabalSpecVersion
-    Distribution.SPDX.LicenseId
-    Distribution.Compat.Binary
-    Distribution.Compat.CharParsing
+    Distribution.Backpack.ComponentsGraph
+    Distribution.Backpack.Configure
+    Distribution.Backpack.ConfiguredComponent
+    Distribution.Backpack.DescribeUnitId
+    Distribution.Backpack.FullUnitId
+    Distribution.Backpack.LinkedComponent
+    Distribution.Backpack.ModSubst
+    Distribution.Backpack.ModuleShape
+    Distribution.Backpack.PreModuleShape
+--     Distribution.Compat.CreatePipe
     Distribution.Compat.Directory
     Distribution.Compat.Environment
-    Distribution.Compat.Graph
-    Distribution.Compat.Lens
-    Distribution.Compat.NonEmptySet
+    Distribution.Compat.FilePath
+    Distribution.Compat.Internal.TempFile
     Distribution.Compat.Prelude.Internal
+    Distribution.Compat.Process
+    Distribution.Compat.ResponseFile
+    Distribution.Compat.Stack
     Distribution.Compat.Time
-    Distribution.Compat.Typeable
-    Distribution.Compiler
-    Distribution.FieldGrammar
-    Distribution.FieldGrammar.Newtypes
-    Distribution.Fields
-    Distribution.Fields.ParseResult
-    Distribution.InstalledPackageInfo
-    Distribution.License
-    Distribution.ModuleName
-    Distribution.Package
-    Distribution.PackageDescription
-    Distribution.PackageDescription.Configuration
-    Distribution.PackageDescription.Parsec
-    Distribution.PackageDescription.PrettyPrint
-    Distribution.Parsec
-    Distribution.Parsec.Error
-    Distribution.Parsec.Position
-    Distribution.Parsec.Warning
-    Distribution.Pretty
+    Distribution.PackageDescription.Check
+    Distribution.Make
     Distribution.ReadE
-    Distribution.Simple.Command
-    Distribution.Simple.Compiler
-    Distribution.Simple.Configure
-    Distribution.Simple.Flag
-    Distribution.Simple.InstallDirs
-    Distribution.Simple.PackageIndex
-    Distribution.Simple.Program
-    Distribution.Simple.Program.Db
-    Distribution.Simple.Program.Run
-    Distribution.Simple.Setup
-    Distribution.Simple.Utils
+    Distribution.Simple
+    Distribution.Simple.Bench
+    Distribution.Simple.Build
+    Distribution.Simple.Build.Macros
     Distribution.Simple.Build.PathsModule
     Distribution.Simple.BuildPaths
     Distribution.Simple.BuildTarget
     Distribution.Simple.BuildToolDepends
     Distribution.Simple.CCompiler
+    Distribution.Simple.Command
+    Distribution.Simple.Compiler
+    Distribution.Simple.Configure
+    Distribution.Simple.Flag
     Distribution.Simple.GHC
-    Distribution.Simple.GHC.EnvironmentParser
-    Distribution.Simple.GHC.ImplInfo
-    Distribution.Simple.GHC.Internal
     Distribution.Simple.GHCJS
     Distribution.Simple.Glob
+    Distribution.Simple.Haddock
     Distribution.Simple.HaskellSuite
     Distribution.Simple.Hpc
+    Distribution.Simple.Install
+    Distribution.Simple.InstallDirs
     Distribution.Simple.InstallDirs.Internal
     Distribution.Simple.LocalBuildInfo
+    Distribution.Simple.PackageDescription
+    Distribution.Simple.PackageIndex
     Distribution.Simple.PreProcess
     Distribution.Simple.PreProcess.Unlit
+    Distribution.Simple.Program
     Distribution.Simple.Program.Ar
     Distribution.Simple.Program.Builtin
+    Distribution.Simple.Program.Db
     Distribution.Simple.Program.Find
     Distribution.Simple.Program.GHC
     Distribution.Simple.Program.HcPkg
@@ -165,194 +324,97 @@ library hackport-external-libs-Cabal
     Distribution.Simple.Program.Internal
     Distribution.Simple.Program.Ld
     Distribution.Simple.Program.ResponseFile
+    Distribution.Simple.Program.Run
+    Distribution.Simple.Program.Script
     Distribution.Simple.Program.Strip
     Distribution.Simple.Program.Types
-    Distribution.Simple.Test.LibV09
-    Distribution.Simple.Test.Log
-    Distribution.Simple.UHC
-    Distribution.Simple.Build.PathsModule.Z
-    Distribution.Simple.Bench
-    Distribution.Simple.Build
-    Distribution.Simple.Build.Macros
-    Distribution.Simple.Build.Macros.Z
-    Distribution.Simple.Haddock
-    Distribution.Simple.Install
-    Distribution.Simple.PackageDescription
-    Distribution.Simple.Program.Script
     Distribution.Simple.Register
+    Distribution.Simple.Setup
     Distribution.Simple.ShowBuildInfo
     Distribution.Simple.SrcDist
     Distribution.Simple.Test
     Distribution.Simple.Test.ExeV10
+    Distribution.Simple.Test.LibV09
+    Distribution.Simple.Test.Log
+    Distribution.Simple.UHC
     Distribution.Simple.UserHooks
-    Distribution.Utils.Json
-    Distribution.Simple
-    Distribution.SPDX
-    Distribution.SPDX.License
-    Distribution.System
-    Distribution.Text
+    Distribution.Simple.Utils
+    Distribution.TestSuite
     Distribution.Types.AnnotatedId
-    Distribution.Types.ComponentId
-    Distribution.Types.ComponentName
-    Distribution.Types.ComponentRequestedSpec
-    Distribution.Types.Dependency
-    Distribution.Types.Flag
-    Distribution.Types.GivenComponent
-    Distribution.Types.InstalledPackageInfo
-    Distribution.Types.LibraryName
-    Distribution.Types.MungedPackageId
-    Distribution.Types.PackageId
-    Distribution.Types.PackageName
-    Distribution.Types.PackageVersionConstraint
-    Distribution.Types.SourceRepo
-    Distribution.Types.UnitId
-    Distribution.Types.UnqualComponentName
-    Distribution.Types.Version
-    Distribution.Types.VersionRange
-    Distribution.Utils.Generic
-    Distribution.Utils.NubList
-    Distribution.Utils.ShortText
-    Distribution.Utils.Structured
-    Distribution.Verbosity
-    Distribution.Version
-    Distribution.Compat.Stack
-    Distribution.Fields.Pretty
-    Distribution.Fields.Field
-    Distribution.FieldGrammar.Class
-    Distribution.FieldGrammar.FieldDescrs
-    Distribution.FieldGrammar.Parsec
-    Distribution.FieldGrammar.Pretty
-    Distribution.Fields.ConfVar
-    Distribution.Fields.Lexer
-    Distribution.Fields.LexerMonad
-    Distribution.Fields.Parser
-    Distribution.Utils.String
-    Distribution.Types.GenericPackageDescription
-    Distribution.Types.GenericPackageDescription.Lens
-    Distribution.Types.AbiDependency
-    Distribution.Types.AbiHash
-    Distribution.Types.Benchmark
-    Distribution.Types.Benchmark.Lens
-    Distribution.Types.BenchmarkInterface
-    Distribution.Types.BenchmarkType
-    Distribution.Types.BuildInfo
-    Distribution.Types.BuildInfo.Lens
-    Distribution.Types.BuildType
-    Distribution.Types.Component
     Distribution.Types.ComponentInclude
     Distribution.Types.ComponentLocalBuildInfo
-    Distribution.Types.Condition
-    Distribution.Types.CondTree
-    Distribution.Types.ConfVar
-    Distribution.Types.DependencyMap
-    Distribution.Types.Executable
-    Distribution.Types.Executable.Lens
-    Distribution.Types.ExecutableScope
-    Distribution.Types.ExeDependency
-    Distribution.Types.ExposedModule
-    Distribution.Types.ForeignLib
-    Distribution.Types.ForeignLib.Lens
-    Distribution.Types.ForeignLibOption
-    Distribution.Types.ForeignLibType
-    Distribution.Types.HookedBuildInfo
-    Distribution.Types.IncludeRenaming
-    Distribution.Types.InstalledPackageInfo.FieldGrammar
-    Distribution.Types.InstalledPackageInfo.Lens
-    Distribution.Types.LegacyExeDependency
-    Distribution.Types.Lens
-    Distribution.Types.Library
-    Distribution.Types.Library.Lens
-    Distribution.Types.LibraryVisibility
+    Distribution.Types.DumpBuildInfo
+    Distribution.Types.GivenComponent
     Distribution.Types.LocalBuildInfo
-    Distribution.Types.Mixin
-    Distribution.Types.Module
-    Distribution.Types.ModuleReexport
-    Distribution.Types.ModuleRenaming
-    Distribution.Types.MungedPackageName
-    Distribution.Types.PackageDescription
-    Distribution.Types.PackageDescription.Lens
-    Distribution.Types.PackageId.Lens
     Distribution.Types.PackageName.Magic
-    Distribution.Types.PkgconfigDependency
-    Distribution.Types.PkgconfigName
-    Distribution.Types.PkgconfigVersion
-    Distribution.Types.PkgconfigVersionRange
-    Distribution.Types.SetupBuildInfo
-    Distribution.Types.SetupBuildInfo.Lens
-    Distribution.Types.SourceRepo.Lens
     Distribution.Types.TargetInfo
-    Distribution.Types.TestSuite
-    Distribution.Types.TestSuite.Lens
-    Distribution.Types.TestSuiteInterface
-    Distribution.Types.TestType
-    Distribution.Types.VersionInterval
-    Distribution.Types.VersionRange.Internal
-    Distribution.Utils.Base62
     Distribution.Utils.IOData
+    Distribution.Utils.Json
     Distribution.Utils.LogProgress
     Distribution.Utils.MapAccum
-    Distribution.Utils.MD5
+    Distribution.Utils.NubList
     Distribution.Utils.Progress
-    Distribution.Utils.UnionFind
-    Distribution.Types.DumpBuildInfo
-    Distribution.Utils.Path
-    Distribution.Backpack
-    Distribution.Backpack.ComponentsGraph
-    Distribution.Backpack.Configure
-    Distribution.Backpack.ConfiguredComponent
-    Distribution.Backpack.DescribeUnitId
-    Distribution.Backpack.FullUnitId
-    Distribution.Backpack.Id
-    Distribution.Backpack.LinkedComponent
-    Distribution.Backpack.MixLink
-    Distribution.Backpack.ModSubst
-    Distribution.Backpack.ModuleScope
-    Distribution.Backpack.ModuleShape
-    Distribution.Backpack.PreExistingComponent
-    Distribution.Backpack.PreModuleShape
-    Distribution.Backpack.ReadyComponent
-    Distribution.Backpack.UnifyM
-    Distribution.Make
-    Distribution.Compat.GetShortPathName
-    Distribution.Compat.ResponseFile
-    Distribution.Compat.Async
-    Distribution.Compat.CopyFile
-    Distribution.Compat.CreatePipe
-    Distribution.Compat.DList
-    Distribution.Compat.Exception
-    Distribution.Compat.FilePath
-    Distribution.Compat.Internal.TempFile
-    Distribution.Compat.MonadFail
-    Distribution.Compat.Newtype
-    Distribution.Compat.Parsing
-    Distribution.Compat.Prelude
-    Distribution.Compat.Process
-    Language.Haskell.Extension
+    Distribution.Verbosity
+    Distribution.Verbosity.Internal
 
   other-modules:
-    Distribution.Compat.Semigroup
+    Distribution.Backpack.Id
+    Distribution.Backpack.MixLink
+    Distribution.Backpack.ModuleScope
+    Distribution.Backpack.PreExistingComponent
+    Distribution.Backpack.ReadyComponent
+    Distribution.Backpack.UnifyM
+    Distribution.Compat.Async
+    Distribution.Compat.CopyFile
+    Distribution.Compat.GetShortPathName
+--     Distribution.Compat.SnocList
     Distribution.GetOpt
     Distribution.Lex
-    Distribution.PackageDescription.Check
-    Distribution.PackageDescription.FieldGrammar
-    Distribution.PackageDescription.Quirks
-    Distribution.PackageDescription.Utils
-    Distribution.Parsec.FieldLineStream
-    Distribution.SPDX.LicenseExceptionId
-    Distribution.SPDX.LicenseExpression
-    Distribution.SPDX.LicenseListVersion
-    Distribution.SPDX.LicenseReference
-    Distribution.TestSuite
-    Distribution.Verbosity.Internal
+    Distribution.Simple.Build.Macros.Z
+    Distribution.Simple.Build.PathsModule.Z
+    Distribution.Simple.GHC.EnvironmentParser
+    Distribution.Simple.GHC.Internal
+    Distribution.Simple.GHC.ImplInfo
+    Distribution.Utils.UnionFind
     Distribution.ZinzaPrelude
     Paths_Cabal
+
+  other-extensions:
+    BangPatterns
+    CPP
+    DefaultSignatures
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveTraversable
+    ExistentialQuantification
+    FlexibleContexts
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    ImplicitParams
+    KindSignatures
+    LambdaCase
+    NondecreasingIndentation
+    OverloadedStrings
+    PatternSynonyms
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    StandaloneDeriving
+    Trustworthy
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
+    UndecidableInstances
 
 library hackport-external-libs-hackage-security
   import:             no-warnings
   default-language:   Haskell2010
   hs-source-dirs:     hackage-security/hackage-security/src
   build-depends:
-    , base                          >=4.10
+    , hackport-external-libs-Cabal-syntax
+    , base                          >=4.5
     , base16-bytestring             >=0.1.1
     , base64-bytestring             >=1.0
     , bytestring                    >=0.9
@@ -362,10 +424,10 @@ library hackport-external-libs-hackage-security
     , ed25519                       >=0.0
     , filepath                      >=1.2
     , ghc-prim
-    , hackport-external-libs-Cabal
+    , lukko                         >=0.1
     , mtl                           >=2.2
     , network                       >=3.0
-    , network-uri                   >=2.5
+    , network-uri                   >=2.6
     , parsec                        >=3.1
     , pretty                        >=1.0
     , tar                           >=0.5
@@ -374,59 +436,32 @@ library hackport-external-libs-hackage-security
     , transformers                  >=0.3
     , zlib                          >=0.5
 
-  default-extensions:
-    NoMonomorphismRestriction
-    NoImplicitPrelude
-    DefaultSignatures
-    DeriveDataTypeable
-    DeriveFunctor
-    FlexibleContexts
-    FlexibleInstances
-    GADTs
-    GeneralizedNewtypeDeriving
-    KindSignatures
-    MultiParamTypeClasses
-    NamedFieldPuns
-    RankNTypes
-    RecordWildCards
-    ScopedTypeVariables
-    StandaloneDeriving
-    TupleSections
-    TypeFamilies
-    TypeOperators
-    ViewPatterns
-
-  other-extensions:
-    BangPatterns
-    CPP
-    OverlappingInstances
-    PackageImports
-    UndecidableInstances
-
   exposed-modules:
     Hackage.Security.Client
+    Hackage.Security.Client.Formats
+    Hackage.Security.Client.Repository
     Hackage.Security.Client.Repository.Cache
     Hackage.Security.Client.Repository.HttpLib
     Hackage.Security.Client.Repository.Local
     Hackage.Security.Client.Repository.Remote
+    Hackage.Security.Client.Verify
+    Hackage.Security.JSON
+    Hackage.Security.Key.Env
+--     Hackage.Security.Server
+    Hackage.Security.TUF.FileMap
+    Hackage.Security.Trusted
     Hackage.Security.Util.Checked
     Hackage.Security.Util.Path
     Hackage.Security.Util.Pretty
     Hackage.Security.Util.Some
+    Text.JSON.Canonical
 
   other-modules:
-    Hackage.Security.Client.Formats
-    Hackage.Security.Client.Repository
-    Hackage.Security.Client.Verify
-    Hackage.Security.JSON
     Hackage.Security.Key
-    Hackage.Security.Key.Env
-    Hackage.Security.Trusted
     Hackage.Security.Trusted.TCB
     Hackage.Security.TUF
     Hackage.Security.TUF.Common
     Hackage.Security.TUF.FileInfo
-    Hackage.Security.TUF.FileMap
     Hackage.Security.TUF.Header
     Hackage.Security.TUF.Layout.Cache
     Hackage.Security.TUF.Layout.Index
@@ -447,146 +482,58 @@ library hackport-external-libs-hackage-security
     Hackage.Security.Util.Stack
     Hackage.Security.Util.TypedEmbedded
     MyPrelude
-    Text.JSON.Canonical
 
-library hackport-external-libs-cabal-install
+  default-extensions:
+    DefaultSignatures
+    DeriveDataTypeable
+    DeriveFunctor
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    KindSignatures
+    MultiParamTypeClasses
+    NamedFieldPuns
+    NoImplicitPrelude
+    NoMonomorphismRestriction
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    StandaloneDeriving
+    TupleSections
+    TypeFamilies
+    TypeOperators
+    ViewPatterns
+
+  other-extensions:
+    BangPatterns
+    CPP
+    OverlappingInstances
+    PackageImports
+    UndecidableInstances
+
+library hackport-external-libs-cabal-install-solver
   import:           no-warnings
   default-language: Haskell2010
-  hs-source-dirs:   cabal cabal/cabal-install/src cabal/cabal-install-solver/src cabal/cabal-install-solver/src-assertion
+  hs-source-dirs:
+    cabal/cabal-install-solver/src
+    cabal/cabal-install-solver/src-assertion
   build-depends:
-    , array                                    >=0.4
-    , async                                    >=2.0
-    , base                                     >=4.8
-    , base16-bytestring                        >=0.1.1
-    , binary                                   >=0.7.3
-    , bytestring                               >=0.10.6.0
-    , containers                               >=0.5.6.2
-    , cryptohash-sha256                        >=0.11
-    , deepseq                                  >=1.4.1.1
-    , directory                                >=1.2.2.0
-    , echo                                     >=0.1.3
-    , edit-distance                            >=0.2.2
-    , filepath                                 >=1.4.0.0
     , hackport-external-libs-Cabal
-    , hackport-external-libs-hackage-security
-    , hashable                                 >=1.0
-    , HTTP                                     >=4000.1.5
-    , mtl                                      >=2.0
-    , network                                  >=2.6
-    , network-uri                              >=2.6.0.2
-    , parsec                                   >=3.1.13.0
-    , pretty                                   >=1.1
-    , process                                  >=1.2.3.0
-    , random                                   >=1
-    , regex-base                               >=0.94.0.0
-    , regex-posix                              >=0.96.0.0
-    , resolv                                   >=0.1.1
-    , stm                                      >=2.0
-    , tar                                      >=0.5.0.3
-    , text                                     >=1.2.3
-    , time                                     >=1.5.0.1
-    , transformers                             >=0.4.2.0
-    , zlib                                     >=0.5.3
-    , exceptions                               >=0.10.4
-    , safe-exceptions                          >=0.1.7.3
+    , hackport-external-libs-Cabal-syntax
+    , array         >=0.4
+    , base          >=4.10
+    , bytestring    >=0.10.6.0
+    , containers    >=0.5.6.2
+    , edit-distance >=0.2.2
+    , filepath      >=1.4.0.0
+    , mtl           >=2.0
+    , pretty        >=1.1
+    , transformers  >=0.4.2.0
 
   exposed-modules:
-    Distribution.Client.CmdUpdate
-    Distribution.Client.Config
-    Distribution.Client.GlobalFlags
-    Distribution.Client.IndexUtils
-    Distribution.Client.Setup
-    Distribution.Client.Types
-    Distribution.Solver.Types.PackageIndex
-    Distribution.Solver.Types.SourcePackage
-    Paths_cabal_install
-
-  other-modules:
     Distribution.Client.Utils.Assertion
-    Distribution.Client.BuildReports.Types
-    Distribution.Client.CmdInstall.ClientInstallFlags
-    Distribution.Client.Compat.Directory
-    Distribution.Client.Compat.Orphans
-    Distribution.Client.Compat.Prelude
-    Distribution.Client.Compat.Semaphore
-    Distribution.Client.Dependency.Types
-    Distribution.Client.FetchUtils
-    Distribution.Client.GZipUtils
-    Distribution.Client.HashValue
-    Distribution.Client.HttpUtils
-    Distribution.Client.IndexUtils.ActiveRepos
-    Distribution.Client.IndexUtils.IndexState
-    Distribution.Client.IndexUtils.Timestamp
-    Distribution.Client.Init.Defaults
-    Distribution.Client.Init.Types
-    Distribution.Client.JobControl
-    Distribution.Client.ManpageFlags
-    Distribution.Client.ParseUtils
-    Distribution.Client.ProjectFlags
-    Distribution.Client.Security.DNS
-    Distribution.Client.Security.HTTP
-    Distribution.Client.Tar
-    Distribution.Client.Targets
-    Distribution.Client.Types.AllowNewer
-    Distribution.Client.Types.BuildResults
-    Distribution.Client.Types.ConfiguredId
-    Distribution.Client.Types.ConfiguredPackage
-    Distribution.Client.Types.Credentials
-    Distribution.Client.Types.InstallMethod
-    Distribution.Client.Types.OverwritePolicy
-    Distribution.Client.Types.PackageLocation
-    Distribution.Client.Types.PackageSpecifier
-    Distribution.Client.Types.ReadyPackage
-    Distribution.Client.Types.Repo
-    Distribution.Client.Types.RepoName
-    Distribution.Client.Types.SourcePackageDb
-    Distribution.Client.Types.SourceRepo
-    Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
-    Distribution.Client.Utils
-    Distribution.Deprecated.ParseUtils
-    Distribution.Deprecated.ReadP
-    Distribution.Deprecated.ViewAsFieldDescr
     Distribution.Solver.Compat.Prelude
-    Distribution.Solver.Types.ComponentDeps
-    Distribution.Solver.Types.ConstraintSource
-    Distribution.Solver.Types.LabeledPackageConstraint
-    Distribution.Solver.Types.OptionalStanza
-    Distribution.Solver.Types.PackageConstraint
-    Distribution.Solver.Types.PackageFixedDeps
-    Distribution.Solver.Types.PackagePath
-    Distribution.Solver.Types.Settings
-    Distribution.Client.Version
-    Distribution.Client.BuildReports.Anonymous
-    Distribution.Client.BuildReports.Lens
-    Distribution.Client.BuildReports.Storage
-    Distribution.Client.Compat.ExecutablePath
-    Distribution.Client.Dependency
-    Distribution.Client.DistDirLayout
-    Distribution.Client.FileMonitor
-    Distribution.Client.Glob
-    Distribution.Client.InstallPlan
-    Distribution.Client.NixStyleOptions
-    Distribution.Client.PackageHash
-    Distribution.Client.ProjectBuilding
-    Distribution.Client.ProjectBuilding.Types
-    Distribution.Client.ProjectConfig
-    Distribution.Client.ProjectConfig.Legacy
-    Distribution.Client.ProjectConfig.Types
-    Distribution.Client.ProjectOrchestration
-    Distribution.Client.ProjectPlanOutput
-    Distribution.Client.ProjectPlanning
-    Distribution.Client.ProjectPlanning.Types
-    Distribution.Client.RebuildMonad
-    Distribution.Client.SetupWrapper
-    Distribution.Client.SolverInstallPlan
-    Distribution.Client.SourceFiles
-    Distribution.Client.SrcDist
-    Distribution.Client.Store
-    Distribution.Client.TargetProblem
-    Distribution.Client.TargetSelector
-    Distribution.Client.Utils.Json
-    Distribution.Client.Utils.Parsec
-    Distribution.Client.VCS
     Distribution.Solver.Modular
     Distribution.Solver.Modular.Assignment
     Distribution.Solver.Modular.Builder
@@ -614,34 +561,221 @@ library hackport-external-libs-cabal-install
     Distribution.Solver.Modular.Var
     Distribution.Solver.Modular.Version
     Distribution.Solver.Modular.WeightedPSQ
+    Distribution.Solver.Types.ComponentDeps
+    Distribution.Solver.Types.ConstraintSource
     Distribution.Solver.Types.DependencyResolver
     Distribution.Solver.Types.Flag
     Distribution.Solver.Types.InstSolverPackage
     Distribution.Solver.Types.InstalledPreference
+    Distribution.Solver.Types.LabeledPackageConstraint
+    Distribution.Solver.Types.OptionalStanza
+    Distribution.Solver.Types.PackageConstraint
+    Distribution.Solver.Types.PackageFixedDeps
+    Distribution.Solver.Types.PackageIndex
+    Distribution.Solver.Types.PackagePath
     Distribution.Solver.Types.PackagePreferences
     Distribution.Solver.Types.PkgConfigDb
     Distribution.Solver.Types.Progress
     Distribution.Solver.Types.ResolverPackage
+    Distribution.Solver.Types.Settings
     Distribution.Solver.Types.SolverId
     Distribution.Solver.Types.SolverPackage
+    Distribution.Solver.Types.SourcePackage
     Distribution.Solver.Types.Variable
 
+library hackport-external-libs-cabal-install
+  import:           no-warnings
+  default-language: Haskell2010
+  hs-source-dirs:   cabal cabal/cabal-install/src
+  build-depends:
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-Cabal-syntax
+    , hackport-external-libs-hackage-security
+    , hackport-external-libs-cabal-install-solver
+    , base                                     >=4.10
+    , array                                    >=0.4
+    , async                                    >=2.0
+    , base16-bytestring                        >=0.1.1
+    , binary                                   >=0.7.3
+    , bytestring                               >=0.10.6.0
+    , containers                               >=0.5.6.2
+    , cryptohash-sha256                        >=0.11
+    , deepseq                                  >=1.4.1.1
+    , directory                                >=1.2.2.0
+    , echo                                     >=0.1.3
+    , edit-distance                            >=0.2.2
+    , exceptions                               >=0.10.4
+    , filepath                                 >=1.4.0.0
+    , hashable                                 >=1.0
+    , HTTP                                     >=4000.1.5
+    , lukko                                    >=0.1
+    , mtl                                      >=2.0
+    , network-uri                              >=2.6.0.2
+    , parsec                                   >=3.1.13.0
+    , pretty                                   >=1.1
+    , process                                  >=1.6.15.0
+    , random                                   >=1.2
+    , regex-base                               >=0.94.0.0
+    , regex-posix                              >=0.96.0.0
+    , resolv                                   >=0.1.1
+    , safe-exceptions                          >=0.1.7.0
+    , stm                                      >=2.0
+    , tar                                      >=0.5.0.3
+    , text                                     >=1.2.3
+    , time                                     >=1.5.0.1
+    , zlib                                     >=0.5.3
+
+  exposed-modules:
+    Distribution.Client.BuildReports.Anonymous
+    Distribution.Client.BuildReports.Lens
+    Distribution.Client.BuildReports.Storage
+    Distribution.Client.BuildReports.Types
+--     Distribution.Client.BuildReports.Upload
+--     Distribution.Client.Check
+--     Distribution.Client.CmdBench
+--     Distribution.Client.CmdBuild
+--     Distribution.Client.CmdClean
+--     Distribution.Client.CmdConfigure
+--     Distribution.Client.CmdErrorMessages
+--     Distribution.Client.CmdExec
+--     Distribution.Client.CmdFreeze
+--     Distribution.Client.CmdHaddock
+--     Distribution.Client.CmdInstall
+    Distribution.Client.CmdInstall.ClientInstallFlags
+--     Distribution.Client.CmdInstall.ClientInstallTargetSelector
+--     Distribution.Client.CmdLegacy
+--     Distribution.Client.CmdListBin
+--     Distribution.Client.CmdOutdated
+--     Distribution.Client.CmdRepl
+--     Distribution.Client.CmdRun
+--     Distribution.Client.CmdSdist
+--     Distribution.Client.CmdTest
+    Distribution.Client.CmdUpdate
+    Distribution.Client.Compat.Directory
+    Distribution.Client.Compat.ExecutablePath
+    Distribution.Client.Compat.Orphans
+    Distribution.Client.Compat.Prelude
+--     Distribution.Client.Compat.Process
+    Distribution.Client.Compat.Semaphore
+    Distribution.Client.Config
+--     Distribution.Client.Configure
+    Distribution.Client.Dependency
+    Distribution.Client.Dependency.Types
+    Distribution.Client.DistDirLayout
+--     Distribution.Client.Fetch
+    Distribution.Client.FetchUtils
+    Distribution.Client.FileMonitor
+--     Distribution.Client.Freeze
+    Distribution.Client.GZipUtils
+--     Distribution.Client.GenBounds
+--     Distribution.Client.Get
+    Distribution.Client.Glob
+    Distribution.Client.GlobalFlags
+--     Distribution.Client.Haddock
+    Distribution.Client.HashValue
+    Distribution.Client.HttpUtils
+    Distribution.Client.IndexUtils
+    Distribution.Client.IndexUtils.ActiveRepos
+    Distribution.Client.IndexUtils.IndexState
+    Distribution.Client.IndexUtils.Timestamp
+--     Distribution.Client.Init
+    Distribution.Client.Init.Defaults
+--     Distribution.Client.Init.FileCreators
+--     Distribution.Client.Init.FlagExtractors
+--     Distribution.Client.Init.Format
+--     Distribution.Client.Init.Interactive.Command
+--     Distribution.Client.Init.Licenses
+--     Distribution.Client.Init.NonInteractive.Command
+--     Distribution.Client.Init.NonInteractive.Heuristics
+--     Distribution.Client.Init.Prompt
+--     Distribution.Client.Init.Simple
+    Distribution.Client.Init.Types
+--     Distribution.Client.Init.Utils
+--     Distribution.Client.Install
+    Distribution.Client.InstallPlan
+--     Distribution.Client.InstallSymlink
+    Distribution.Client.JobControl
+--     Distribution.Client.List
+--     Distribution.Client.Manpage
+    Distribution.Client.ManpageFlags
+--     Distribution.Client.Nix
+    Distribution.Client.NixStyleOptions
+    Distribution.Client.PackageHash
+    Distribution.Client.ParseUtils
+    Distribution.Client.ProjectBuilding
+    Distribution.Client.ProjectBuilding.Types
+    Distribution.Client.ProjectConfig
+    Distribution.Client.ProjectConfig.Legacy
+    Distribution.Client.ProjectConfig.Types
+    Distribution.Client.ProjectFlags
+    Distribution.Client.ProjectOrchestration
+    Distribution.Client.ProjectPlanOutput
+    Distribution.Client.ProjectPlanning
+    Distribution.Client.ProjectPlanning.Types
+    Distribution.Client.RebuildMonad
+--     Distribution.Client.Reconfigure
+--     Distribution.Client.Run
+--     Distribution.Client.Sandbox
+--     Distribution.Client.Sandbox.PackageEnvironment
+--     Distribution.Client.SavedFlags
+--     Distribution.Client.ScriptUtils
+    Distribution.Client.Security.DNS
+    Distribution.Client.Security.HTTP
+    Distribution.Client.Setup
+    Distribution.Client.SetupWrapper
+    Distribution.Client.SolverInstallPlan
+    Distribution.Client.SourceFiles
+    Distribution.Client.SrcDist
+    Distribution.Client.Store
+    Distribution.Client.Tar
+    Distribution.Client.TargetProblem
+    Distribution.Client.TargetSelector
+    Distribution.Client.Targets
+    Distribution.Client.Types
+    Distribution.Client.Types.AllowNewer
+    Distribution.Client.Types.BuildResults
+    Distribution.Client.Types.ConfiguredId
+    Distribution.Client.Types.ConfiguredPackage
+    Distribution.Client.Types.Credentials
+    Distribution.Client.Types.InstallMethod
+    Distribution.Client.Types.OverwritePolicy
+    Distribution.Client.Types.PackageLocation
+    Distribution.Client.Types.PackageSpecifier
+    Distribution.Client.Types.ReadyPackage
+    Distribution.Client.Types.Repo
+    Distribution.Client.Types.RepoName
+    Distribution.Client.Types.SourcePackageDb
+    Distribution.Client.Types.SourceRepo
+    Distribution.Client.Types.WriteGhcEnvironmentFilesPolicy
+--     Distribution.Client.Upload
+    Distribution.Client.Utils
+    Distribution.Client.Utils.Json
+    Distribution.Client.Utils.Parsec
+    Distribution.Client.VCS
+    Distribution.Client.Version
+--     Distribution.Client.Win32SelfUpgrade
+    Distribution.Deprecated.ParseUtils
+    Distribution.Deprecated.ReadP
+    Distribution.Deprecated.ViewAsFieldDescr
+    Paths_cabal_install
 
 library hackport-internal
   import:             warnings
   default-language:   Haskell2010
   hs-source-dirs:     src
   build-depends:
-    , async
+    , hackport-external-libs-Cabal-syntax
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-cabal-install-solver
+    , hackport-external-libs-cabal-install
     , base
+    , async
     , bytestring
     , containers
     , deepseq
     , directory
     , extensible-exceptions
     , filepath
-    , hackport-external-libs-Cabal
-    , hackport-external-libs-cabal-install
     , lifted-base
     , monad-control
     , mtl
@@ -719,12 +853,13 @@ executable hackport
   default-language: Haskell2010
   hs-source-dirs:   exe
   build-depends:
-    , base
-    , directory
-    , filepath
+    , hackport-external-libs-Cabal-syntax
     , hackport-external-libs-Cabal
     , hackport-external-libs-cabal-install
     , hackport-internal
+    , base
+    , directory
+    , filepath
     , optparse-applicative
     , parsec
     , parser-combinators
@@ -746,8 +881,11 @@ test-suite test-resolve-category
   main-is:            Main.hs
   hs-source-dirs:     tests/resolveCat
   build-depends:
-    , array
+    , hackport-external-libs-Cabal-syntax
+    , hackport-external-libs-Cabal
+    , hackport-internal
     , base
+    , array
     , binary
     , bytestring
     , containers
@@ -755,8 +893,6 @@ test-suite test-resolve-category
     , directory
     , extensible-exceptions
     , filepath
-    , hackport-external-libs-Cabal
-    , hackport-internal
     , HUnit
     , parsec
     , pretty
@@ -902,17 +1038,18 @@ test-suite spec
     QuickCheck.Instances
 
   build-depends:
-    , async
+    , hackport-external-libs-Cabal-syntax
+    , hackport-external-libs-Cabal
+    , hackport-external-libs-cabal-install
+    , hackport-internal
     , base
+    , async
     , bytestring
     , containers
     , deepseq
     , directory
     , extensible-exceptions
     , filepath
-    , hackport-external-libs-Cabal
-    , hackport-external-libs-cabal-install
-    , hackport-internal
     , hspec                                 >=2.0
     , network-uri
     , parallel
