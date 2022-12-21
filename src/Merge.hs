@@ -496,8 +496,8 @@ mergeEbuild
   -> E.EBuild
   -> [Cabal.PackageFlag]
   -> Env env ()
-mergeEbuild existing_meta pkgdir ebuild flags
-  = ask >>= \(_, useHackageRemote -> useHackageRemoteId) -> do
+mergeEbuild existing_meta pkgdir ebuild flags = do
+  (_globalEnv, localEnv) <- ask
 
   let edir = pkgdir
       elocal = E.name ebuild ++"-"++ E.version ebuild <.> "ebuild"
@@ -511,15 +511,30 @@ mergeEbuild existing_meta pkgdir ebuild flags
   current_meta <- if yet_meta
                   then liftIO $ T.readFile mpath
                   else return T.empty
-  -- Either create an object of the 'Portage.Metadata' type from a valid @current_meta@,
-  -- or supply a default minimal metadata object. Note the difference to @current_meta@:
-  -- @current_meta@ is of type 'T.Text', @current_meta'@ is of type 'Portage.Metadata'.
-  let current_meta' = fromMaybe (Portage.minimalMetadata useHackageRemoteId ebuild)
+  let
+      -- Either create an object of the 'Portage.Metadata' type from a valid @current_meta@,
+      -- or supply a default minimal metadata object. Note the difference to @current_meta@:
+      -- @current_meta@ is of type 'T.Text', @current_meta'@ is of type 'Portage.Metadata'.
+      current_meta' = fromMaybe (Portage.minimalMetadata (useHackageRemote localEnv) ebuild)
                       (Portage.parseMetadataXML current_meta)
+
+      -- The remote-id for hackage is always added, unless 'useHackageRemote' returns False
+      -- (generally disabled on the command line with the --not-on-hackage flag for the
+      -- make-ebuild command).
       hackageRemoteId =
-        if useHackageRemoteId
+        if useHackageRemote localEnv
           then S.singleton $ Portage.RemoteIdHackage $ E.hackage_name ebuild
           else S.empty
+
+      -- Sometimes the .cabal file will explicitly list source repos
+      sourceRemoteIds =
+        let r = Portage.matchURIs (E.sourceURIs ebuild)
+        in 
+            if S.null r
+              -- If the list of source remote-ids is empty, we fall back to using the homepage
+              then Portage.matchURIs [E.homepage ebuild]
+              else r
+
       -- Create the @metadata.xml@ string, adding new USE flags (if any) to those of
       -- the existing @metadata.xml@. If an existing flag has a new and old description,
       -- the new one takes precedence.
@@ -527,7 +542,7 @@ mergeEbuild existing_meta pkgdir ebuild flags
                       current_meta' <> mempty
                         { Portage.metadataUseFlags = Merge.metaFlags flags
                         , Portage.metadataRemoteIds =
-                            Portage.matchURIs (E.sourceURIs ebuild) <> hackageRemoteId
+                            hackageRemoteId <> sourceRemoteIds
                         }
       -- Create a 'Map.Map' of USE flags with updated descriptions.
       new_flags = Map.differenceWith (\new old -> if (new /= old)
