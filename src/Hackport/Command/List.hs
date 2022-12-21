@@ -20,7 +20,7 @@ import Hackport.Env
 listAction :: Env ListEnv ()
 listAction = do
   (GlobalEnv verbosity _ _, ListEnv pkgList) <- ask
-  withHackportContext $ \repoContext -> do
+  withHackportContext $ \_ repoContext -> do
     overlayPath <- getOverlayPath
     index <- fmap CabalInstall.packageIndex
       $ liftIO $ CabalInstall.getSourcePackages verbosity repoContext

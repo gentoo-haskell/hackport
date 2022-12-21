@@ -9,5 +9,5 @@ import Hackport.Env
 
 mergeAction :: Env MergeEnv ()
 mergeAction = askEnv >>= \(MergeEnv flags pkg) -> do
-  withHackportContext $ \repoContext ->
+  withHackportContext $ \_ repoContext ->
     merge repoContext pkg flags

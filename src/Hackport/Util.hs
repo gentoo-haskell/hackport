@@ -33,7 +33,9 @@ getPortageDir = do
     warn verbosity $ "Looks like an invalid portage directory: " ++ portagePath
   return portagePath
 
-withHackportContext :: (DCG.RepoContext -> Env env a) -> Env env a
+-- Some commands (e.g. "update") need access to the 'DCG.GlobalFlags', so we pass
+-- them in as a part of the callback.
+withHackportContext :: (DCG.GlobalFlags -> DCG.RepoContext -> Env env a) -> Env env a
 withHackportContext callback = do
     (GlobalEnv verbosity _ _, _) <- ask
     overlayPath <- getOverlayPath
@@ -43,7 +45,7 @@ withHackportContext callback = do
                 }
     control
       $ \runInIO -> DCG.withRepoContext verbosity flags
-      $ runInIO . (callback <=< restoreM)
+      $ runInIO . (callback flags <=< restoreM)
 
 -- | Default remote repository. Defaults to [hackage](hackage.haskell.org).
 defaultRemoteRepo :: DCT.RemoteRepo

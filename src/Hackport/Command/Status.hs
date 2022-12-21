@@ -8,4 +8,4 @@ import Hackport.Env
 import Hackport.Util
 
 statusAction :: Env StatusEnv ()
-statusAction = withHackportContext runStatus
+statusAction = withHackportContext (\_ -> runStatus)
