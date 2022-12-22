@@ -8,8 +8,9 @@ import Distribution.Client.Compat.Prelude (Verbosity)
 import Distribution.Client.NixStyleOptions
   (NixStyleFlags(configFlags, projectFlags), defaultNixStyleFlags)
 import Distribution.Client.ProjectFlags (ProjectFlags(flagIgnoreProject))
-import Distribution.Client.Setup (ConfigFlags(configVerbosity))
+import Distribution.Client.Setup (ConfigFlags(configVerbosity), GlobalFlags(globalRemoteRepos))
 import Distribution.Simple.Flag (Flag(Flag))
+import Distribution.Utils.NubList (toNubList)
 
 import Hackport.Util (withHackportContext)
 import Hackport.Env
@@ -19,7 +20,14 @@ updateAction  = askGlobalEnv >>= \(GlobalEnv verbosity _ _) ->
   withHackportContext $ \globalFlags _repoContext -> do
     let nixFlags = ignoreProjectInNixFlags 
                         $ addVerbosityToNixFlags verbosity (defaultNixStyleFlags ())
-    liftIO $ CabalInstall.updateAction nixFlags [] globalFlags
+
+    -- We need to unset the globalRemoteRepos set in 'withHackportContext' or
+    -- we get a duplicate hackage repo. This creates a "file is locked" error.
+    -- TODO: The cabal-install code needs to be examined further to see if
+    -- there is a better way to do this (starting with Distribution.Client.CmdUpdate)
+    let globalFlags' = globalFlags { globalRemoteRepos = toNubList [] }
+
+    liftIO $ CabalInstall.updateAction nixFlags [] globalFlags'
 
 -- | There is no verbosity argument for 'CabalInstall.updateAction'. It expects
 --   the verbosity to be passed in via 'NixStyleFlags'.
