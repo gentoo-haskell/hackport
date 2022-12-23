@@ -51,5 +51,5 @@ jobs:
         cabal build --only-dependencies
     - name: Build
       run: cabal build
-    - name: Run all enabled tests
-      run: cabal test --test-option=--color --test-show-details=streaming
+    - name: Run spec test
+      run: cabal test --test-option=--color --test-show-details=streaming spec
