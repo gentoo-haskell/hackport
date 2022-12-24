@@ -5,7 +5,12 @@ Maintainer  : haskell@gentoo.org
 
 Merge a package from @hackage@ to an ebuild.
 -}
+
 {-# LANGUAGE CPP #-}
+
+-- TODO: Rearrange things so we don't have to disable this warning
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+
 module Merge.Dependencies
   ( EDep(..)
   , RetroPackageDescription(..)

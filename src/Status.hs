@@ -1,3 +1,7 @@
+
+-- TODO: Rearrange things so we don't have to disable this warning
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+
 module Status
     ( status
     , runStatus

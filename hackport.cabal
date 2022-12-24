@@ -38,10 +38,15 @@ flag pedantic
 
 -- Turn off all warnings (for external libs and doctests-v2)
 common no-warnings
-  ghc-options: -Wno-default
+  ghc-options: -Wno-default -Wno-incomplete-uni-patterns
 
 common warnings
-  ghc-options: -Wall
+  ghc-options:
+    -Wall
+
+    -- ghc-9.2 turns this on for -Wall, so let's enable it to be consistent
+    -- across ghc versions
+    -Wincomplete-uni-patterns
 
   if flag(pedantic)
     ghc-options: -Werror
