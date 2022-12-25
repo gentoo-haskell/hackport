@@ -60,7 +60,7 @@ cabalFromGHC ver = lookup ver table
           , ([8,8,4],  Cabal.mkVersion [3,0,1,0])
           , ([8,10,1], Cabal.mkVersion [3,2,0,0])
           , ([8,10,4], Cabal.mkVersion [3,2,1,0])
-          , ([9,0,2], Cabal.mkVersion [3,4,1,0])          
+          , ([9,0,2], Cabal.mkVersion [3,4,1,0])
           ]
 
 platform :: Platform
@@ -200,7 +200,7 @@ ghc902_pkgs =
   , p "mtl" [2,2,2]  -- used by exceptions
   , p "parsec" [3,1,14,0]  -- used by exceptions
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,13,2]
+--   , p "process" [1,6,13,2]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,17,0,0] -- used by libghc
   , p "terminfo" [0,4,1,5] -- used by libghc
@@ -235,7 +235,7 @@ ghc8104_pkgs =
   , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,14,0]  -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,9,0]
+--   , p "process" [1,6,9,0]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
@@ -270,7 +270,7 @@ ghc8101_pkgs =
   , p "mtl" [2,2,2]  -- used by libghc in ghc-9.0.2 
   , p "parsec" [3,1,14,0]  -- used by libghc in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,8,2]
+--   , p "process" [1,6,8,2]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4]  -- used by libghc in ghc-9.0.2
@@ -303,7 +303,7 @@ ghc884_pkgs =
   , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,9,0]
+--   , p "process" [1,6,9,0]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
@@ -336,7 +336,7 @@ ghc883_pkgs =
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,8,0]
+--   , p "process" [1,6,8,0]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
@@ -369,7 +369,7 @@ ghc881_pkgs =
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,5,1]
+--   , p "process" [1,6,5,1]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
@@ -402,7 +402,7 @@ ghc865_pkgs =
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,13,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,5,0]
+--   , p "process" [1,6,5,0]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,14,0,0] -- used by libghc
   , p "terminfo" [0,4,1,2] -- used by libghc in ghc-9.0.2
@@ -435,7 +435,7 @@ ghc863_pkgs =
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,13,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,3,0]
+--   , p "process" [1,6,3,0]  package is upgradeable
   --  , p "stm" [2,5,0,0]  package is upgradeable(?)
   , p "template-haskell" [2,14,0,0] -- used by libghc
   , p "terminfo" [0,4,1,2] -- used by libghc in ghc-9.0.2
@@ -468,7 +468,7 @@ ghc843_pkgs =
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
   , p "parsec" [3,1,13,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,3,0]
+--   , p "process" [1,6,3,0]  package is upgradeable
   --  , p "stm" [2,4,5,0]  package is upgradeable(?)
   , p "template-haskell" [2,13,0,0] -- used by libghc
   , p "terminfo" [0,4,1,1] -- used by libghc in ghc-9.0.2
