@@ -8,6 +8,7 @@ maintainer:    Gentoo Haskell team <haskell@gentoo.org>
 copyright:     Copyright 1999-2022 Gentoo Authors
 category:      Distribution
 synopsis:      Hackage and Portage integration tool
+homepage:      https://github.com/gentoo-haskell/hackport#readme
 description:
   A command line tool to manage an overlay of Gentoo ebuilds
   that are generated from a hackage repo of Cabal packages.
