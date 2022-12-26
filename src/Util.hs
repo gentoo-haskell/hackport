@@ -11,6 +11,7 @@ module Util
     , debug
     , notice
     , info
+    , die
     ) where
 
 import System.IO
@@ -43,3 +44,7 @@ notice s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.notice v s
 
 info :: (HasGlobalEnv m, MonadIO m) => String -> m ()
 info s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.info v s
+
+-- | Terminate with an error message
+die :: (HasGlobalEnv m, MonadIO m) => String -> m a
+die s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.die' v s

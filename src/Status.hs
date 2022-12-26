@@ -29,7 +29,7 @@ import Control.Monad
 
 -- cabal
 import qualified Distribution.Package as Cabal (pkgName)
-import qualified Distribution.Simple.Utils as Cabal (die', equating)
+import qualified Distribution.Simple.Utils as Cabal (equating)
 import Distribution.Pretty (prettyShow)
 import Distribution.Parsec (simpleParsec)
 
@@ -43,6 +43,7 @@ import Overlays
 import Status.Types
 import Hackport.Env
 import Hackport.Util
+import Util
 
 
 
@@ -116,14 +117,14 @@ lookupEbuildWith overlay pkgid = do
 
 runStatus :: CabalInstall.RepoContext -> Env StatusEnv ()
 runStatus repoContext =
-  ask >>= \(GlobalEnv verbosity _ _, StatusEnv direction pkgs) -> do
+  ask >>= \(_, StatusEnv direction pkgs) -> do
   let pkgFilter = case direction of
                       OverlayToPortage   -> toPortageFilter
                       PortagePlusOverlay -> id
                       HackageToOverlay   -> fromHackageFilter
   pkgs' <- forM pkgs $ \p ->
             case simpleParsec p of
-              Nothing -> liftIO $ Cabal.die' verbosity ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
+              Nothing -> die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
               Just pn -> return pn
   tree0 <- status repoContext
   let tree = pkgFilter tree0

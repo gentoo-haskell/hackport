@@ -52,7 +52,7 @@ import           System.Directory ( getCurrentDirectory
                         )
 import           System.Process
 import           System.FilePath ((</>),(<.>))
-import           System.Exit
+import           System.Exit (ExitCode(ExitSuccess), exitSuccess)
 
 -- hackport
 import qualified AnsiColor as A
@@ -514,7 +514,7 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
         t <- liftIO $ T.readFile mpath
         case Portage.parseMetadataXML t of
           Just m  -> pure $ Just (t, m)
-          Nothing -> fail "Could not parse the existing metadata.xml"
+          Nothing -> die "Could not parse the existing metadata.xml"
       else pure Nothing
 
   let
