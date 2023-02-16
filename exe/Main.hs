@@ -22,6 +22,7 @@ import Hackport.Command.MakeEbuild
 import Hackport.Command.Update
 import Hackport.Command.Status
 import Hackport.Command.Merge
+import Hackport.Completion
 
 import Data.Version (showVersion)
 import Distribution.Pretty (prettyShow)
@@ -192,8 +193,12 @@ makeEbuildParser = Opt.info parser infoMod
   where
     parser :: Opt.Parser MakeEbuildEnv
     parser = do
-      cat <- Opt.strArgument $ Opt.metavar "<CATEGORY>"
-      cabalFiles <- CNE.some $ Opt.strArgument $ Opt.metavar "[EBUILD FILE]"
+      cat <- Opt.strArgument
+        $  Opt.metavar "<CATEGORY>"
+        <> Opt.completer categoryCompleter
+      cabalFiles <- CNE.some $ Opt.strArgument
+        $  Opt.metavar "[EBUILD FILE]"
+        <> Opt.completer (Opt.bashCompleter "file")
       flags <- optional cabalFlagsParser
       notOnHackage <- Opt.switch
         $  Opt.long "not-on-hackage"
@@ -259,7 +264,9 @@ mergeParser = Opt.info parser infoMod
     parser :: Opt.Parser MergeEnv
     parser = do
       flags <- optional $ cabalFlagsParser
-      pkg <- Opt.strArgument $ Opt.metavar "PACKAGE"
+      pkg <- Opt.strArgument
+        $  Opt.metavar "PACKAGE"
+        <> Opt.completer cabalPackageCompleter
 
       pure $ MergeEnv flags pkg
 
@@ -285,3 +292,4 @@ cabalFlagsParser = Opt.strOption
           [ "Set cabal flags to certain state. Example:"
           , "--flags=-all_extensions"
           ]
+

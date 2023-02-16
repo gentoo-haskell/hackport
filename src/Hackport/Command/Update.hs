@@ -2,6 +2,8 @@ module Hackport.Command.Update
   ( updateAction
   ) where
 
+import System.Directory (removeFile)
+
 import qualified Distribution.Client.CmdUpdate as CabalInstall
 
 import Distribution.Client.Compat.Prelude (Verbosity)
@@ -9,16 +11,18 @@ import Distribution.Client.NixStyleOptions
   (NixStyleFlags(configFlags, projectFlags), defaultNixStyleFlags)
 import Distribution.Client.ProjectFlags (ProjectFlags(flagIgnoreProject))
 import Distribution.Client.Setup (ConfigFlags(configVerbosity), GlobalFlags(globalRemoteRepos))
+import Distribution.Compat.Parsing (skipOptional)
 import Distribution.Simple.Flag (Flag(Flag))
 import Distribution.Utils.NubList (toNubList)
 
+import Hackport.Completion (trieFile)
 import Hackport.Util (withHackportContext)
 import Hackport.Env
 
 updateAction :: Env env ()
 updateAction  = askGlobalEnv >>= \(GlobalEnv verbosity _ _) ->
   withHackportContext $ \globalFlags _repoContext -> do
-    let nixFlags = ignoreProjectInNixFlags 
+    let nixFlags = ignoreProjectInNixFlags
                         $ addVerbosityToNixFlags verbosity (defaultNixStyleFlags ())
 
     -- We need to unset the globalRemoteRepos set in 'withHackportContext' or
@@ -26,8 +30,12 @@ updateAction  = askGlobalEnv >>= \(GlobalEnv verbosity _ _) ->
     -- TODO: The cabal-install code needs to be examined further to see if
     -- there is a better way to do this (starting with Distribution.Client.CmdUpdate)
     let globalFlags' = globalFlags { globalRemoteRepos = toNubList [] }
+    f <- trieFile
 
-    liftIO $ CabalInstall.updateAction nixFlags [] globalFlags'
+    liftIO $ do
+      -- Remove the file but ignore any errors
+      skipOptional $ removeFile f
+      CabalInstall.updateAction nixFlags [] globalFlags'
 
 -- | There is no verbosity argument for 'CabalInstall.updateAction'. It expects
 --   the verbosity to be passed in via 'NixStyleFlags'.

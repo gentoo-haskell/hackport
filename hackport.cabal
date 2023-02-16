@@ -782,16 +782,20 @@ library hackport-internal
     , hackport-external-libs-cabal-install
     , base
     , async
+    , binary
     , bytestring
     , containers
     , deepseq
     , directory
+    , dlist
     , extensible-exceptions
     , filepath
+    , ghc-compact
     , lifted-base
     , monad-control
     , mtl
     , network-uri
+    , optparse-applicative
     , parallel                              >=3.2.1.0
     , parsec
     , pretty
@@ -801,6 +805,7 @@ library hackport-internal
     , template-haskell
     , text
     , time
+    , transformers
     , xml
 
   -- Needed for doctests-v2 to work
@@ -818,12 +823,14 @@ library hackport-internal
   exposed-modules:
     AnsiColor
     Cabal2Ebuild
+    Data.Trie
     Error
     Hackport.Command.List
     Hackport.Command.MakeEbuild
     Hackport.Command.Merge
     Hackport.Command.Status
     Hackport.Command.Update
+    Hackport.Completion
     Hackport.Env
     Hackport.Util
     Merge
@@ -876,7 +883,7 @@ executable hackport
     , optparse-applicative
     , parsec
     , parser-combinators
-
+    , process
   other-modules:    Paths_hackport
   other-extensions:
     ApplicativeDo
