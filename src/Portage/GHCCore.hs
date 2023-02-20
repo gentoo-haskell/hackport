@@ -167,6 +167,10 @@ ghc881 = (ghc [8,8,1], mkIndex ghc881_pkgs)
 --      example: https://downloads.haskell.org/~ghc/8.6.5/docs/html/users_guide/8.6.5-notes.html
 --  * our binary tarballs (package.conf.d.initial subdir)
 --  * ancient: http://haskell.org/haskellwiki/Libraries_released_with_GHC
+--  * https://github.com/gentoo-haskell/gentoo-haskell/issues/1386
+--  * https://gitlab.haskell.org/ghc/ghc/-/blob/ghc-9.0.2-release/compiler/ghc.cabal.in#L60-77
+--  * https://flora.pm/packages/%40hackage/ghc/9.0.2/dependencies
+--  * https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history
 ghc902_pkgs :: [Cabal.PackageIdentifier]
 ghc902_pkgs =
   [ p "array" [0,5,4,0]
