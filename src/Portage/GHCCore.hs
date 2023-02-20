@@ -196,7 +196,7 @@ ghc902_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,17,0,0] -- used by libghc
   , p "terminfo" [0,4,1,5] -- used by libghc
-  , p "text" [1,2,5,0] -- used by libghc
+--   , p "text" [1,2,5,0] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -231,7 +231,7 @@ ghc8106_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,4,1] -- used by libghc in ghc-9.0.2
+--   , p "text" [1,2,4,1] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -266,7 +266,7 @@ ghc8104_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,4,1] -- used by libghc in ghc-9.0.2
+--   , p "text" [1,2,4,1] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -301,7 +301,7 @@ ghc8101_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4]  -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,3,2]  -- used by libghc in ghc-9.0.2
+--   , p "text" [1,2,3,2]  -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -334,7 +334,7 @@ ghc884_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2
+--   , p "text" [1,2,4,0] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -367,7 +367,7 @@ ghc883_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2 
+--   , p "text" [1,2,4,0] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
@@ -400,7 +400,7 @@ ghc881_pkgs =
   , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
-  , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2
+--   , p "text" [1,2,4,0] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
