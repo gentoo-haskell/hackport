@@ -190,7 +190,7 @@ ghc902_pkgs =
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
   , p "mtl" [2,2,2]  -- used by exceptions
-  , p "parsec" [3,1,14,0]  -- used by exceptions
+--   , p "parsec" [3,1,14,0]  -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,16,0]
   , p "stm" [2,5,0,0]
@@ -225,7 +225,7 @@ ghc8106_pkgs =
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,0,3,0]
   , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
-  , p "parsec" [3,1,14,0]  -- used by exceptions in ghc-9.0.2
+--   , p "parsec" [3,1,14,0]  -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,16,0]
   , p "stm" [2,5,0,0]
@@ -260,7 +260,7 @@ ghc8104_pkgs =
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,0,3,0]
   , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
-  , p "parsec" [3,1,14,0]  -- used by exceptions in ghc-9.0.2
+--   , p "parsec" [3,1,14,0]  -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
   , p "stm" [2,5,0,0]
@@ -295,7 +295,7 @@ ghc8101_pkgs =
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,0,3,0]
   , p "mtl" [2,2,2]  -- used by libghc in ghc-9.0.2 
-  , p "parsec" [3,1,14,0]  -- used by libghc in ghc-9.0.2
+--   , p "parsec" [3,1,14,0]  -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,2]
   , p "stm" [2,5,0,0]
@@ -328,7 +328,7 @@ ghc884_pkgs =
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
   , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
-  , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
+--   , p "parsec" [3,1,14,0] -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
   , p "stm" [2,5,0,0]
@@ -361,7 +361,7 @@ ghc883_pkgs =
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
-  , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
+--   , p "parsec" [3,1,14,0] -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,0]
   , p "stm" [2,5,0,0]
@@ -394,7 +394,7 @@ ghc881_pkgs =
   , p "hpc" [0,6,0,3] -- used by libghc
   , p "integer-gmp" [1,0,2,0]
   , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
-  , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
+--   , p "parsec" [3,1,14,0] -- package is upgradeable
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,5,1]
   , p "stm" [2,5,0,0]
