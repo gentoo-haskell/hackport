@@ -193,7 +193,7 @@ ghc902_pkgs =
   , p "parsec" [3,1,14,0]  -- used by exceptions
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,16,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,17,0,0] -- used by libghc
   , p "terminfo" [0,4,1,5] -- used by libghc
   , p "text" [1,2,5,0] -- used by libghc
@@ -228,7 +228,7 @@ ghc8106_pkgs =
   , p "parsec" [3,1,14,0]  -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,16,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
   , p "text" [1,2,4,1] -- used by libghc in ghc-9.0.2
@@ -263,7 +263,7 @@ ghc8104_pkgs =
   , p "parsec" [3,1,14,0]  -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
   , p "text" [1,2,4,1] -- used by libghc in ghc-9.0.2
@@ -298,7 +298,7 @@ ghc8101_pkgs =
   , p "parsec" [3,1,14,0]  -- used by libghc in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,2]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4]  -- used by libghc in ghc-9.0.2
   , p "text" [1,2,3,2]  -- used by libghc in ghc-9.0.2
@@ -331,7 +331,7 @@ ghc884_pkgs =
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,9,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
   , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2
@@ -364,7 +364,7 @@ ghc883_pkgs =
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,8,0]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
   , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2 
@@ -397,7 +397,7 @@ ghc881_pkgs =
   , p "parsec" [3,1,14,0] -- used by exceptions in ghc-9.0.2
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,5,1]
-  --  , p "stm" [2,5,0,0]  package is upgradeable(?)
+  , p "stm" [2,5,0,0]
   , p "template-haskell" [2,15,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
   , p "text" [1,2,4,0] -- used by libghc in ghc-9.0.2
