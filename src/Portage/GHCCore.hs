@@ -142,7 +142,7 @@ ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (mkVersion nrs)
 
 ghc926 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc926 = (ghc [9,0,2], mkIndex ghc926_pkgs)
+ghc926 = (ghc [9,2,6], mkIndex ghc926_pkgs)
 
 ghc902 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc902 = (ghc [9,0,2], mkIndex ghc902_pkgs)
