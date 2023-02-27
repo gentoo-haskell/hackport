@@ -39,8 +39,10 @@ import Debug.Trace
 -- | Try each @GHC@ version in the specified order, from left to right.
 -- The first @GHC@ version in this list is a minimum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
-ghcs = modern_ghcs
-  where modern_ghcs  = [ghc881, ghc883, ghc884, ghc8101, ghc8104, ghc8106, ghc902, ghc926]
+ghcs =
+    [ ghc881, ghc883, ghc884, ghc8101, ghc8104, ghc8106, ghc902, ghc924
+    , ghc925, ghc926
+    ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
 -- from a given @GHC@ version.
@@ -59,6 +61,7 @@ cabalFromGHC ver = lookup ver table
           , ([8,10,4], Cabal.mkVersion [3,2,1,0])
           , ([8,10,6], Cabal.mkVersion [3,2,1,0])
           , ([9,0,2], Cabal.mkVersion [3,4,1,0])
+          , ([9,2,4], Cabal.mkVersion [3,6,3,0])
           , ([9,2,6], Cabal.mkVersion [3,6,3,0])
           ]
 
@@ -144,6 +147,12 @@ ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
 ghc926 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc926 = (ghc [9,2,6], mkIndex ghc926_pkgs)
 
+ghc925 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc925 = (ghc [9,2,5], mkIndex ghc925_pkgs)
+
+ghc924 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc924 = (ghc [9,2,4], mkIndex ghc924_pkgs)
+
 ghc902 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc902 = (ghc [9,0,2], mkIndex ghc902_pkgs)
 
@@ -194,6 +203,78 @@ ghc926_pkgs =
   , p "ghc-prim" [0,8,0]
   , p "ghc-heap" [9,2,6]
   , p "ghci" [9,2,6]
+--  , p "haskeline" [0,8,2]  package is upgradeable
+  , p "hpc" [0,6,1,0] -- used by libghc
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,2,2]  -- used by exceptions
+--   , p "parsec" [3,1,15,0]  -- package is upgradeable
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,16,0]
+  , p "stm" [2,5,0,2]
+  , p "template-haskell" [2,18,0,0] -- used by libghc
+  , p "terminfo" [0,4,1,5] -- used by libghc
+--   , p "text" [1,2,5,0] -- package is upgradeable
+  , p "time" [1,11,1,1] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+  , p "transformers" [0,5,6,2] -- used by libghc
+  , p "unix" [2,7,2,2]
+--  , p "xhtml" [3000,2,2,1]
+  ]
+
+ghc925_pkgs :: [Cabal.PackageIdentifier]
+ghc925_pkgs =
+  [ p "array" [0,5,4,0]
+  , p "base" [4,16,4,0]
+  , p "binary" [0,8,9,0] -- used by libghc
+  , p "bytestring" [0,11,3,1]
+--  , p "Cabal" [3,6,3,0]  package is upgradeable
+  , p "containers" [0,6,5,1]
+  , p "deepseq" [1,4,6,1] -- used by time
+  , p "directory" [1,3,6,2]
+  , p "exceptions" [0,10,4] -- used by libghc
+  , p "filepath" [1,4,2,1]
+  , p "ghc-bignum" [1,2]
+  , p "ghc-boot" [9,2,5]
+  , p "ghc-boot-th" [9,2,5]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,8,0]
+  , p "ghc-heap" [9,2,5]
+  , p "ghci" [9,2,5]
+--  , p "haskeline" [0,8,2]  package is upgradeable
+  , p "hpc" [0,6,1,0] -- used by libghc
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,2,2]  -- used by exceptions
+--   , p "parsec" [3,1,15,0]  -- package is upgradeable
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,16,0]
+  , p "stm" [2,5,0,2]
+  , p "template-haskell" [2,18,0,0] -- used by libghc
+  , p "terminfo" [0,4,1,5] -- used by libghc
+--   , p "text" [1,2,5,0] -- package is upgradeable
+  , p "time" [1,11,1,1] -- used by unix, directory, hpc, ghc. unsafe to upgrade
+  , p "transformers" [0,5,6,2] -- used by libghc
+  , p "unix" [2,7,2,2]
+--  , p "xhtml" [3000,2,2,1]
+  ]
+
+ghc924_pkgs :: [Cabal.PackageIdentifier]
+ghc924_pkgs =
+  [ p "array" [0,5,4,0]
+  , p "base" [4,16,3,0]
+  , p "binary" [0,8,9,0] -- used by libghc
+  , p "bytestring" [0,11,3,1]
+--  , p "Cabal" [3,6,3,0]  package is upgradeable
+  , p "containers" [0,6,5,1]
+  , p "deepseq" [1,4,6,1] -- used by time
+  , p "directory" [1,3,6,2]
+  , p "exceptions" [0,10,4] -- used by libghc
+  , p "filepath" [1,4,2,1]
+  , p "ghc-bignum" [1,2]
+  , p "ghc-boot" [9,2,4]
+  , p "ghc-boot-th" [9,2,4]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,8,0]
+  , p "ghc-heap" [9,2,4]
+  , p "ghci" [9,2,4]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
