@@ -19,9 +19,9 @@ data LocalInfo =
               } deriving (Read, Show)
 
 defaultInfo :: LocalInfo
-defaultInfo = LocalInfo { distfiles_dir = "/usr/portage/distfiles"
+defaultInfo = LocalInfo { distfiles_dir = "/var/cache/distfiles"
                         , overlay_list  = []
-                        , portage_dir   = "/usr/portage"
+                        , portage_dir   = "/var/db/repos/gentoo"
                         }
 
 -- query paludis and then emerge
