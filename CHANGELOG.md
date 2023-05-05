@@ -1,3 +1,17 @@
+## v0.8.3.0 (2023-05-06)
+
+Release v0.8.3.0
+
+- Add `[profile?]` by default to dev-lang/ghc in RDEPEND
+
+  Packages that require profiling and depend on the 'base' library
+  (e.g. all of them) will need USE=profile on ghc.
+
+- Only add current ARCH to KEYWORDS
+
+  No longer pass KEYWORDS forward from previous ebuilds. Only add
+  current ARCH by default.
+
 ## v0.8.2.2 (2023-04-29)
 
 v0.8.2.2
