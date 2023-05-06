@@ -13,6 +13,7 @@ module Portage.EMeta
   ) where
 
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Char (isSpace)
 import qualified Data.List as L
 
@@ -84,24 +85,28 @@ data EMeta = EMeta { keywords :: Maybe [String]
                    }
 
 -- | Find the existing package metadata from the last available ebuild.
-findExistingMeta :: FilePath -> IO EMeta
-findExistingMeta pkgdir =
-    do ebuilds <- filter (L.isSuffixOf ".ebuild") `fmap` do b <- doesDirectoryExist pkgdir
-                                                            if b then getDirectoryContents pkgdir
-                                                                 else return []
-       -- TODO: version sort
-       e_metas <- forM ebuilds $ \e ->
-                      do let e_path = pkgdir </> e
-                         e_conts <- readFile e_path
-                         return EMeta { keywords = extractKeywords e e_conts
-                                      , license = extractLicense  e e_conts
-                                      , cabal_flags = extractCabalFlags e e_conts
-                                      , description = extractDescription e e_conts
-                                      }
-       let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
-           aggregated_meta = EMeta { keywords = get_latest $ map keywords e_metas
-                                   , license = get_latest $ map license e_metas
-                                   , cabal_flags = get_latest $ map cabal_flags e_metas
-                                   , description = get_latest $ map description e_metas
-                                   }
-       return aggregated_meta
+findExistingMeta :: MonadIO m => FilePath -> m EMeta
+findExistingMeta pkgdir = liftIO $ do
+    ebuilds <- filter (L.isSuffixOf ".ebuild") <$> do
+        b <- doesDirectoryExist pkgdir
+        if b
+            then getDirectoryContents pkgdir
+            else pure []
+    -- TODO: version sort
+    eMetas <- forM ebuilds $ \e -> do
+        let ePath = pkgdir </> e
+        eConts <- readFile ePath
+        pure EMeta
+            { keywords = extractKeywords e eConts
+            , license = extractLicense e eConts
+            , cabal_flags = extractCabalFlags e eConts
+            , description = extractDescription e eConts
+            }
+    let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
+        aggregated_meta = EMeta
+            { keywords = get_latest $ map keywords eMetas
+            , license = get_latest $ map license eMetas
+            , cabal_flags = get_latest $ map cabal_flags eMetas
+            , description = get_latest $ map description eMetas
+            }
+    pure aggregated_meta

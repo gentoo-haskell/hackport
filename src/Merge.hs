@@ -14,6 +14,7 @@ module Merge
   , mergeGenericPackageDescription
   ) where
 
+import           Control.Applicative
 import           Control.Monad
 import           Control.Exception.Lifted
 import qualified Data.Text as T
@@ -211,7 +212,7 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
       merged_PN = Portage.cabal_pn_to_PN merged_cabal_pkg_name
       pkgdir    = overlayPath </> Portage.unCategory cat </> merged_PN
   existing_meta <- liftIO $ EM.findExistingMeta pkgdir
-  let requested_cabal_flags = Merge.first_just_of [users_cabal_flags, EM.cabal_flags existing_meta]
+  let requested_cabal_flags = users_cabal_flags <|> EM.cabal_flags existing_meta
 
       -- accepts things, like: "cabal_flag:iuse_name", "+cabal_flag", "-cabal_flag"
       read_fas :: Maybe String -> (CabalFlags, [(String, String)])
@@ -402,6 +403,12 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
   forM_ ghc_packages $
       \name -> info $ "Excluded packages (comes with ghc): " ++ Cabal.unPackageName name
 
+  -- We only add the current arch to KEYWORDS
+  thisArch <- run_cmd "portageq envvar ARCH" >>=
+      maybe
+          (die "Error running 'portageq envvar ARCH'")
+          (pure . head . lines)
+
   let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
           where b True  = ""
                 b False = "-"
@@ -430,17 +437,19 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
                       p  = if Cabal.flagDefault x then "+" else ""
                   in p ++ cfn_to_iuse fn
 
-      ebuild =   (\e -> e { E.depend        =            Merge.dep tdeps} )
-               . (\e -> e { E.depend_extra  = S.toList $ Merge.dep_e tdeps } )
-               . (\e -> e { E.rdepend       =            Merge.rdep tdeps} )
-               . (\e -> e { E.rdepend_extra = S.toList $ Merge.rdep_e tdeps } )
-               . (\e -> e { E.src_configure = build_configure_call $
-                                                  selected_flags (active_flags, user_specified_fas) } )
-               . (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
+      ebuild =   (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
                . ( case requested_cabal_flags of
                        Nothing  -> id
                        Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
-               $ C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc)
+               $ (C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc))
+                  { E.depend        =            Merge.dep tdeps
+                  , E.depend_extra  = S.toList $ Merge.dep_e tdeps
+                  , E.rdepend       =            Merge.rdep tdeps
+                  , E.rdepend_extra = S.toList $ Merge.rdep_e tdeps
+                  , E.src_configure = build_configure_call $
+                      selected_flags (active_flags, user_specified_fas)
+                  , E.keywords      = [ '~' : thisArch ]
+                  }
 
   let active_flag_descs_renamed =
         (\f -> f { Cabal.flagName = Cabal.mkFlagName . cfn_to_iuse . Cabal.unFlagName
@@ -539,19 +548,16 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
   liftIO $ createDirectoryIfMissing True edir
   now <- liftIO $ TC.getCurrentTime
 
-  let (existing_keywords, existing_license) = (EM.keywords existing_meta, EM.license existing_meta)
-      new_keywords = maybe (E.keywords ebuild) (map Merge.to_unstable) existing_keywords
+  let existing_license = EM.license existing_meta
       new_license  = either (\err -> maybe (Left err)
                                            Right
                                            existing_license)
                             Right
                             (E.license ebuild)
-      ebuild'      = ebuild { E.keywords = new_keywords
-                            , E.license = new_license
+      ebuild'      = ebuild { E.license = new_license
                             }
       s_ebuild'    = E.showEBuild now ebuild'
 
-  notice $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
   notice $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice $ "Writing " ++ elocal

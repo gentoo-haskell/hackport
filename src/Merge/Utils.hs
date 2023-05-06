@@ -8,7 +8,6 @@ Internal helper functions for "Merge".
 module Merge.Utils
   ( readPackageString
   , getPreviousPackageId
-  , first_just_of
   , drop_prefix
   , squash_debug
   , convert_underscores
@@ -21,7 +20,6 @@ module Merge.Utils
   ) where
 
 import qualified Control.Applicative as A
-import qualified Control.Monad as M
 import qualified Data.Char as C
 import           Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.List as L
@@ -80,12 +78,6 @@ getPreviousPackageId pkgDir newPkgId = do
   case pkgIds of
     x:_ -> Just x
     _ -> Nothing
-
--- | Alias for 'msum'.
--- 
--- prop> \a -> first_just_of a == M.msum a
-first_just_of :: [Maybe a] -> Maybe a
-first_just_of = M.msum
 
 -- | Remove @with@ or @use@ prefixes from flag names.
 --
