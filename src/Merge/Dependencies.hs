@@ -125,7 +125,7 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
     cabal_dep :: Portage.Dependency
     cabal_dep = cabalDependency overlay (packageDescription pkg) compiler_info
     ghc_dep :: Portage.Dependency
-    ghc_dep = add_profile $ compilerInfoToDependency compiler_info
+    ghc_dep = compilerInfoToDependency compiler_info
     extra_libs :: Portage.Dependency
     extra_libs = Portage.DependAllOf $ findCLibs (packageDescription pkg)
     pkg_config_libs :: [Portage.Dependency]
