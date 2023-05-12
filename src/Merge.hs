@@ -548,16 +548,19 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
   liftIO $ createDirectoryIfMissing True edir
   now <- liftIO $ TC.getCurrentTime
 
-  let existing_license = EM.license existing_meta
+  let (existing_keywords, existing_license) = (EM.keywords existing_meta, EM.license existing_meta)
+      new_keywords = maybe (E.keywords ebuild) (map Merge.to_unstable) existing_keywords
       new_license  = either (\err -> maybe (Left err)
                                            Right
                                            existing_license)
                             Right
                             (E.license ebuild)
-      ebuild'      = ebuild { E.license = new_license
+      ebuild'      = ebuild { E.keywords = new_keywords
+                            , E.license = new_license
                             }
       s_ebuild'    = E.showEBuild now ebuild'
 
+  notice $ "Current keywords: " ++ show existing_keywords ++ " -> " ++ show new_keywords
   notice $ "Current license:  " ++ show existing_license ++ " -> " ++ show new_license
 
   notice $ "Writing " ++ elocal
