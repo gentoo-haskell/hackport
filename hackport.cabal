@@ -868,7 +868,7 @@ executable hackport
   import:           warnings
   ghc-options:      -threaded +RTS -N -RTS -with-rtsopts=-N
   if flag(profile)
-    ghc-prof-options: -caf-all -auto-all -rtsopts
+    ghc-prof-options: -fprof-cafs -fprof-auto -rtsopts
   main-is:          Main.hs
   default-language: Haskell2010
   hs-source-dirs:   exe
