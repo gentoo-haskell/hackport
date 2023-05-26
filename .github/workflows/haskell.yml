@@ -22,10 +22,15 @@ jobs:
           , "8.10"
           , "9.0"
           , "9.2"
+          , "9.4"
           ]
         exclude:
           - cabal: "3.4"
             ghc: "9.2"
+          - cabal: "3.4"
+            ghc: "9.4"
+          - cabal: "3.6"
+            ghc: "9.4"
     steps:
     - uses: actions/checkout@v3
       with:
