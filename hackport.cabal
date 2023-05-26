@@ -883,6 +883,7 @@ executable hackport
     , optparse-applicative
     , parsec
     , parser-combinators
+    , prettyprinter
     , process
   other-modules:    Paths_hackport
   other-extensions:

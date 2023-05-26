@@ -6,10 +6,11 @@ module Main (main) where
 import Control.Applicative.Combinators
 import qualified Control.Applicative.Combinators.NonEmpty as CNE
 import Control.Monad
-import Data.Bitraversable
+import qualified Data.List as L
 import Data.Monoid (Endo(..))
 import qualified Options.Applicative as Opt
 import qualified Options.Applicative.Help as Opt
+import qualified Prettyprinter as PP
 import qualified Text.Parsec as P
 import qualified Text.Parsec.String as P
 import qualified Distribution.Verbosity as V
@@ -144,7 +145,7 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
                 $  Opt.long "verbosity"
                 <> helpMulti
                   [ "Set verbosity level "
-                  , "(0-3 or (silent,normal,verbose,deafening))"
+                  , "(0-3) or (" ++ L.intercalate "," (show . fst <$> verbs) ++ ")"
                   ]
               where
                 readm :: Opt.ReadM V.Verbosity
@@ -153,21 +154,18 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
                   . P.runParser verbosityString () "command line option"
 
                 err :: P.ParseError -> String
-                err _ = ($ "") $ Opt.displayS $ Opt.renderCompact $ Opt.extractChunk $ Opt.vsepChunks
-                  [ Opt.stringChunk "Takes a number (0-3) or one of the following values:"
-                  , Opt.tabulate
-#if MIN_VERSION_optparse_applicative(0,17,0)
-                    (Opt.prefColumns Opt.defaultPrefs)
-#endif
-                    =<< traverse (bitraverse Opt.stringChunk Opt.stringChunk)
-                      [ ("silent", "No output")
-                      , ("normal", "Default verbosity")
-                      , ("verbose", "Increased verbosity")
-                      , ("deafening", "Maximum verbosity")
-                      ]
-                  ]
+                err _ = show $ PP.vsep $
+                    PP.pretty "Takes a number (0-3) or one of the following values:" :
+                    ((\(k,v) -> PP.hsep [PP.pretty (show k), PP.pretty "=", PP.pretty v])
+                        <$> verbs
+                    )
 
-
+                verbs =
+                    [ ("silent", "No output")
+                    , ("normal", "Default verbosity")
+                    , ("verbose", "Increased verbosity")
+                    , ("deafening", "Maximum verbosity")
+                    ]
 
 -----------------------------------------------------------------------
 -- List
