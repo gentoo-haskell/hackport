@@ -1,65 +1,76 @@
 name: Haskell CI
-
 on:
   push:
-    branches: [ master ]
+    branches: [main, master]
   pull_request:
-    branches: [ master ]
+    branches: [main, master]
+
+permissions:
+  contents: read
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    name: GHC ${{ matrix.ghc-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        cabal:
-          [ "3.4"
-          , "3.6"
-          , "3.8"
-          ]
-        ghc:
+        os: [ubuntu-latest]
+        ghc-version:
           [ "8.8"
           , "8.10"
           , "9.0"
           , "9.2"
           , "9.4"
           ]
-        exclude:
-          - cabal: "3.4"
-            ghc: "9.2"
-          - cabal: "3.4"
-            ghc: "9.4"
-          - cabal: "3.6"
-            ghc: "9.4"
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - uses: haskell/actions/setup@v2
-      with:
-        ghc-version: ${{ matrix.ghc }}
-        cabal-version: ${{ matrix.cabal }}
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
 
-    - name: Cache
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+      - name: Set up GHC ${{ matrix.ghc-version }}
+        uses: haskell/actions/setup@v2
+        id: setup
+        with:
+          ghc-version: ${{ matrix.ghc-version }}
+          # Defaults, added for clarity:
+          cabal-version: 'latest'
+          cabal-update: true
 
-    - name: Configure
-      run: |
-        cabal update
-        cabal configure --enable-tests --enable-benchmarks --flag=pedantic
-    - name: Install dependencies
-      run: |
-        cabal build --only-dependencies
-    - name: Build
-      run: cabal build
-    - name: Run spec test
-      run: cabal test --test-option=--color --test-show-details=streaming spec
+      - name: Check cabal file
+        run: cabal check
+
+      - name: Configure the build
+        run: |
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation --flag=pedantic
+          cabal build --dry-run
+        # The last step generates dist-newstyle/cache/plan.json for the cache key.
+
+      - name: Restore cached dependencies
+        uses: actions/cache/restore@v3
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: Install dependencies
+        run: cabal build all --only-dependencies
+
+      # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+      - name: Save cached dependencies
+        uses: actions/cache/save@v3
+        # Caches are immutable, trying to save with the same key would error.
+        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Build
+        run: cabal build all
+
+      - name: Run tests
+        run: cabal test all --test-option=--color --test-show-details=streaming --jobs=1

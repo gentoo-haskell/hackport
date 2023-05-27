@@ -1026,9 +1026,6 @@ test-suite doctests
 
 test-suite doctests-v2
   import:             warnings
-  -- doctests-v2 is causing problems, looking for ghc lib and alex on
-  -- github CI. This may be fixable.
-  buildable:          False
   type:               exitcode-stdio-1.0
   default-language:   Haskell98
   hs-source-dirs:     tests/doctests-v2
@@ -1038,7 +1035,7 @@ test-suite doctests-v2
     , process
 
   build-tool-depends:
-    , cabal-install:cabal  >=3.4
+    -- cabal-install should already be installed if this is being built...
     , doctest:doctest      >=0.8
 
   if flag(cabal-v1)
