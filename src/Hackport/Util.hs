@@ -2,12 +2,17 @@ module Hackport.Util
   ( getPortageDir
   , withHackportContext
   , defaultRemoteRepo
+  , hackportDir
   ) where
 
 import Control.Monad.Trans.Control
 import Data.Maybe (fromJust)
 import qualified Network.URI as NU
-import System.Directory ( doesDirectoryExist )
+import System.Directory
+    ( doesDirectoryExist
+    , getHomeDirectory
+    , createDirectoryIfMissing
+    )
 import System.FilePath ( (</>) )
 
 import Distribution.Simple.Utils (warn)
@@ -54,3 +59,11 @@ defaultRemoteRepo = DCC.addInfoForKnownRepos
    where
     uri  = fromJust $ NU.parseURI "https://hackage.haskell.org/"
     name = "hackage.haskell.org"
+
+-- | Return the path to @~/.hackport/@ and create it if it doesn't exist.
+hackportDir :: MonadIO m => m FilePath
+hackportDir = do
+    h <- liftIO $ getHomeDirectory
+    let d = h </> ".hackport"
+    liftIO $ createDirectoryIfMissing True d
+    pure d
