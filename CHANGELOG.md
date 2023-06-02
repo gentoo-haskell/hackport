@@ -1,3 +1,32 @@
+## v0.8.4.0 (2023-06-03)
+
+Release v0.8.4.0
+
+- Do not add `[profile]` to dev-lang/ghc
+
+  The needed changes have been addressed in haskell-cabal.eclass and
+  should not be handled by hackport
+
+- KEYWORDs are now automatically passed forward between version bumps
+
+  This functionality was removed in the last version and has been added
+  back. Any "stable" keywords should automatically become "testing"
+  when passed forward.
+
+- Add shell completion functionality
+
+  Use optparse-applicative's functionality to generate bash, zsh, and
+  fish completion scripts. Because autocompletion for `hackport merge`
+  requires searching the list of package/version strings from Hackage,
+  this data is stored in a trie which is cached in
+  ~/.hackport/packages.cache (which is removed when `hackport update`
+  is run).
+
+- Fix doctests
+
+  Doctests should now work with cabal-v1 (Setup.hs), cabal-v2, and
+  GitHub CI setups.
+
 ## v0.8.3.0 (2023-05-06)
 
 Release v0.8.3.0
