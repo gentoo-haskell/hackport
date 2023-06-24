@@ -312,7 +312,10 @@ staticTranslateExtraLib lib = lookup lib m
       , ("m", any_c_p "virtual" "libc")
       , ("asound", any_c_p "media-libs" "alsa-lib")
       , ("sqlite3", at_least_c_p_v "dev-db" "sqlite" [3,0])
-      , ("stdc++", any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse (Portage.Use "cxx")])
+      , ("stdc++", Portage.DependAnyOf
+            [ any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse (Portage.Use "cxx")]
+            , any_c_p "sys-devel" "clang"
+            ])
       , ("crack", any_c_p "sys-libs" "cracklib")
       , ("exif", any_c_p "media-libs" "libexif")
       , ("IL", any_c_p "media-libs" "devil")
