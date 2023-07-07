@@ -44,6 +44,11 @@ flag profile
   default:     False
   manual:      True
 
+flag threads
+  description: Enable threading and rtsopts
+  default:     True
+  manual:      True
+
 -- Turn off all warnings (for external libs and doctests-v2)
 common no-warnings
   ghc-options: -Wno-default -Wno-incomplete-uni-patterns
@@ -866,7 +871,8 @@ library hackport-internal
 
 executable hackport
   import:           warnings
-  ghc-options:      -threaded +RTS -N -RTS -with-rtsopts=-N
+  if flag(threads)
+    ghc-options:      -threaded -rtsopts -with-rtsopts=-N
   if flag(profile)
     ghc-prof-options: -fprof-cafs -fprof-auto -rtsopts
   main-is:          Main.hs
