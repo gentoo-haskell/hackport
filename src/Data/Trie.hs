@@ -7,19 +7,16 @@ module Data.Trie
     , singleton
     , lookup
     , toList
-    , buildCompact
     ) where
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.IO.Class
 import Data.Binary
 import qualified Data.DList as DList
 import Data.DList (DList)
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
-import GHC.Compact
 import GHC.Generics
 
 import Prelude hiding (lookup)
@@ -67,17 +64,3 @@ singleton l x = go l
   where
     go (k:ks) = Nothing :< Map.singleton k (go ks)
     go []     = Just x :< Map.empty
-
--- | Build a 'Trie' within a compact region
-buildCompact :: (MonadIO m, Ord k)
-    => (a -> ([k], b))
-    -> [a]
-    -> m (Compact (Trie k b))
-buildCompact _ [] = liftIO $ compact mempty
-buildCompact f (x:xs) = do
-    ct <- buildCompact f xs
-    cs <- liftIO $ compactAdd ct (f x)
-    let (t,(s,b)) = (getCompact ct, getCompact cs)
-    cq <- liftIO $ compactAdd ct $ t <> singleton s b
-    pure cq
-

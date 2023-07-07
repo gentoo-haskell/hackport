@@ -791,7 +791,6 @@ library hackport-internal
     , dlist
     , extensible-exceptions
     , filepath
-    , ghc-compact
     , lifted-base
     , monad-control
     , mtl

@@ -13,7 +13,6 @@ import qualified Data.List as L
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
 import Data.Set (Set)
-import GHC.Compact
 import qualified Options.Applicative as Opt
 import System.Exit (ExitCode(..))
 import System.FilePath
@@ -98,24 +97,24 @@ cabalPackageCompleter = Opt.mkCompleter $ \s -> do
         ]
 
     let endings = map fst $ maybe [] Trie.toList
-            $ Trie.lookup (getCompact trie) s
+            $ Trie.lookup trie s
 
     pure $ map (s ++) endings
 
   where
 
     -- A (Trie Char ()) is useful for storing/searching a list of strings
-    createTrie :: Env () (Compact (Trie Char ()))
+    createTrie :: Env () (Trie Char ())
     createTrie = withHackportContext $ \_ repoContext -> do
         pkgs <- allPV repoContext
-        trie <- Trie.buildCompact (,()) pkgs
-        writeTrie (getCompact trie)
+        let trie = foldMap (\s -> Trie.singleton s ()) pkgs
+        writeTrie trie
         pure trie
 
     readTrie :: MonadIO m
-        => MaybeT m (Compact (Trie Char ()))
+        => MaybeT m (Trie Char ())
     readTrie = MaybeT $ liftIO $ optional
-        $ trieFile >>= decodeFile >>= compact
+        $ trieFile >>= decodeFile
 
     writeTrie :: MonadIO m => Trie Char () -> m ()
     writeTrie t = do
