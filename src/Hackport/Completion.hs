@@ -89,24 +89,24 @@ categoryCompleter = Opt.mkCompleter $ \s -> do
 --   This is used exclusively for shell completion for the @merge@
 --   subcommand.
 cabalPackageCompleter :: Opt.Completer
-cabalPackageCompleter = Opt.mkCompleter $ \s ->
-    runEnv (go s) () $ GlobalEnv V.silent Nothing Nothing
+cabalPackageCompleter = Opt.mkCompleter $ \s -> do
+    Just trie <- runMaybeT $ choice
+        [ -- Check to see if there is an existing cache.
+          readTrie
+          -- Otherwise, create a new trie from the Hackage database
+        , lift $ runEnv createTrie () $ GlobalEnv V.silent Nothing Nothing
+        ]
+
+    let endings = map fst $ maybe [] Trie.toList
+            $ Trie.lookup (getCompact trie) s
+
+    pure $ map (s ++) endings
+
   where
-    go s = withHackportContext $ \_ repoContext -> do
-        Just trie <- runMaybeT $ choice
-            [ -- Check to see if there is an existing cache.
-              readTrie
-              -- Otherwise, create a new trie from the Hackage database
-            , lift $ createTrie repoContext
-            ]
-
-        let endings = map fst $ maybe [] Trie.toList
-                $ Trie.lookup (getCompact trie) s
-
-        pure $ map (s ++) endings
 
     -- A (Trie Char ()) is useful for storing/searching a list of strings
-    createTrie repoContext = do
+    createTrie :: Env () (Compact (Trie Char ()))
+    createTrie = withHackportContext $ \_ repoContext -> do
         pkgs <- allPV repoContext
         trie <- Trie.buildCompact (,()) pkgs
         writeTrie (getCompact trie)
