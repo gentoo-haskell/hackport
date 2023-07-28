@@ -11,7 +11,7 @@ spec :: Spec
 spec = do
   describe "cabalFromGHC" $ do
     it "returns the corresponding Cabal version for a valid GHC version" $ do
-      cabalFromGHC [8,8,3] `shouldBe` Just (Cabal.mkVersion [3,0,1,0])
+      cabalFromGHC [9,2,7] `shouldBe` Just (Cabal.mkVersion [3,6,3,0])
     it "returns Nothing for an invalid GHC version" $ do
       cabalFromGHC [9,9,9,9] `shouldBe` Nothing
   describe "packageIsCoreInAnyGHC" $ do

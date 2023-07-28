@@ -40,26 +40,20 @@ import Debug.Trace
 -- The first @GHC@ version in this list is a minimum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs =
-    [ ghc881, ghc883, ghc884, ghc8101, ghc8104, ghc8106, ghc902, ghc924
-    , ghc925, ghc926, ghc927, ghc945
+    [ ghc8106, ghc902, ghc924, ghc925, ghc926, ghc927, ghc945
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
 -- from a given @GHC@ version.
 --
--- >>> cabalFromGHC [8,8,3]
--- Just (mkVersion [3,0,1,0])
+-- >>> cabalFromGHC [9,2,7]
+-- Just (mkVersion [3,6,3,0])
 -- >>> cabalFromGHC [9,9,9,9]
 -- Nothing
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
   where
-  table = [ ([8,8,1],  Cabal.mkVersion [3,0,0,0])
-          , ([8,8,3],  Cabal.mkVersion [3,0,1,0])
-          , ([8,8,4],  Cabal.mkVersion [3,0,1,0])
-          , ([8,10,1], Cabal.mkVersion [3,2,0,0])
-          , ([8,10,4], Cabal.mkVersion [3,2,1,0])
-          , ([8,10,6], Cabal.mkVersion [3,2,1,0])
+  table = [ ([8,10,6], Cabal.mkVersion [3,2,1,0])
           , ([9,0,2], Cabal.mkVersion [3,4,1,0])
           , ([9,2,4], Cabal.mkVersion [3,6,3,0])
           , ([9,2,6], Cabal.mkVersion [3,6,3,0])
@@ -72,9 +66,9 @@ platform = Platform X86_64 Linux
 
 -- | Is the package a core dependency of a specific version of @GHC@?
 --
--- >>> packageIsCore (mkIndex ghc883_pkgs) (Cabal.mkPackageName "binary")
+-- >>> packageIsCore (mkIndex ghc927_pkgs) (Cabal.mkPackageName "binary")
 -- True
--- >>> all (== True) ((packageIsCore (mkIndex ghc883_pkgs)) <$> (packageNamesFromPackageIndex (mkIndex ghc883_pkgs)))
+-- >>> all (== True) ((packageIsCore (mkIndex ghc927_pkgs)) <$> (packageNamesFromPackageIndex (mkIndex ghc927_pkgs)))
 -- True
 packageIsCore :: InstalledPackageIndex -> Cabal.PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
@@ -166,21 +160,6 @@ ghc902 = (ghc [9,0,2], mkIndex ghc902_pkgs)
 
 ghc8106 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc8106 = (ghc [8,10,6], mkIndex ghc8106_pkgs)
-
-ghc8104 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc8104 = (ghc [8,10,4], mkIndex ghc8104_pkgs)
-
-ghc8101 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc8101 = (ghc [8,10,1], mkIndex ghc8101_pkgs)
-
-ghc884 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc884 = (ghc [8,8,4], mkIndex ghc884_pkgs)
-
-ghc883 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc883 = (ghc [8,8,3], mkIndex ghc883_pkgs)
-
-ghc881 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc881 = (ghc [8,8,1], mkIndex ghc881_pkgs)
 
 -- | Non-upgradeable core packages
 -- Sources:
@@ -437,175 +416,6 @@ ghc8106_pkgs =
   , p "template-haskell" [2,16,0,0] -- used by libghc
   , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
 --   , p "text" [1,2,4,1] -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc8104_pkgs :: [Cabal.PackageIdentifier]
-ghc8104_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,14,1,0]
-  , p "binary" [0,8,8,0] -- used by libghc
-  , p "bytestring" [0,10,12,0]
---  , p "Cabal" [3,2,1,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,6,0]
-  , p "filepath" [1,4,2,1]
-  , p "exceptions" [0,10,4] -- used by libghc in ghc-9.0.2
-  , p "ghc-boot" [8,10,4]
-  , p "ghc-boot-th" [8,10,4]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,6,1,0]
-  , p "ghc-heap" [8,10,4]
-  , p "ghci" [8,10,4]
---  , p "haskeline" [0,8,0,1]  package is upgradeable
-  , p "hpc" [0,6,1,0] -- used by libghc
-  , p "integer-gmp" [1,0,3,0]
-  , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
---   , p "parsec" [3,1,14,0]  -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,9,0]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,16,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,4,1] -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc8101_pkgs :: [Cabal.PackageIdentifier]
-ghc8101_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,14,0,0]
-  , p "binary" [0,8,8,0] -- used by libghc
-  , p "bytestring" [0,10,10,0]
---  , p "Cabal" [3,2,0,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,6,0]
-  , p "filepath" [1,4,2,1]
-  , p "exceptions" [0,10,4] -- used by libghc in ghc-9.0.2
-  , p "ghc-boot" [8,10,1]
-  , p "ghc-boot-th" [8,10,1]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,6,1,0]
-  , p "ghc-heap" [8,10,1]
-  , p "ghci" [8,10,1]
---  , p "haskeline" [0,8,0,0]  package is upgradeable
-  , p "hpc" [0,6,1,0] -- used by libghc
-  , p "integer-gmp" [1,0,3,0]
-  , p "mtl" [2,2,2]  -- used by libghc in ghc-9.0.2 
---   , p "parsec" [3,1,14,0]  -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,8,2]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,16,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4]  -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,3,2]  -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc884_pkgs :: [Cabal.PackageIdentifier]
-ghc884_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,13,0,0]
-  , p "binary" [0,8,7,0] -- used by libghc
-  , p "bytestring" [0,10,10,1]
---  , p "Cabal" [3,0,1,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,6,0]
-  , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,8,4]
-  , p "ghc-boot-th" [8,8,4]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,5,3,0]
-  , p "ghci" [8,8,4]
---  , p "haskeline" [0,7,5,0]  package is upgradeable
-  , p "hpc" [0,6,0,3] -- used by libghc
-  , p "integer-gmp" [1,0,2,0]
-  , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
---   , p "parsec" [3,1,14,0] -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,9,0]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,15,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,4,0] -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc883_pkgs :: [Cabal.PackageIdentifier]
-ghc883_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,13,0,0]
-  , p "binary" [0,8,7,0] -- used by libghc
-  , p "bytestring" [0,10,10,0]
---  , p "Cabal" [3,0,1,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,6,0]
-  , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,8,3]
-  , p "ghc-boot-th" [8,8,3]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,5,3,0]
-  , p "ghci" [8,8,3]
---  , p "haskeline" [0,7,5,0]  package is upgradeable
-  , p "hpc" [0,6,0,3] -- used by libghc
-  , p "integer-gmp" [1,0,2,0]
-  , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
---   , p "parsec" [3,1,14,0] -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,8,0]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,15,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,4,0] -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc881_pkgs :: [Cabal.PackageIdentifier]
-ghc881_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,13,0,0]
-  , p "binary" [0,8,7,0] -- used by libghc
-  , p "bytestring" [0,10,9,0]
---  , p "Cabal" [3,0,0,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,3,2]
-  , p "filepath" [1,4,2,1]
-  , p "ghc-boot" [8,8,1]
-  , p "ghc-boot-th" [8,8,1]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,5,3,0]
-  , p "ghci" [8,8,1]
---  , p "haskeline" [0,7,4,3]  package is upgradeable
-  , p "hpc" [0,6,0,3] -- used by libghc
-  , p "integer-gmp" [1,0,2,0]
-  , p "mtl" [2,2,2] -- used by exceptions in ghc-9.0.2
---   , p "parsec" [3,1,14,0] -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,5,1]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,15,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,4,0] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
