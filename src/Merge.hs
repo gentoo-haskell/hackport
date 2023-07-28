@@ -16,6 +16,7 @@ module Merge
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.Writer
 import           Control.Exception.Lifted
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -392,6 +393,12 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
   debug $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
   debug $ "buildDepends pkgDesc:  " ++ show (map prettyShow (Merge.buildDepends pkgDesc))
 
+  -- <https://github.com/gentoo-haskell/hackport/issues/116>
+  warnings <- errorWarnOnUnbuildable
+    (prettyShow merged_cabal_pkg_name)
+    (prettyShow cat)
+    pkgDesc0
+
   notice $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
   notice $ "Skipped  depends: " ++ show (map prettyShow skipped_deps)
   notice $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
@@ -462,6 +469,8 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
     fetchDigestAndCheck (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
+
+  forM_ warnings $ notice . ("\n" ++)
 
 -- | Run @ebuild@ and @pkgcheck@ commands in the directory of the
 -- newly-generated ebuild.
@@ -584,3 +593,51 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
   when metadataNeedsWriting $ do
     notice $ "Writing " ++ emeta
     liftIO $ T.writeFile mpath updatedMetaText
+
+-- <https://github.com/gentoo-haskell/hackport/issues/116>
+-- TODO: Make it so this is automatically fixed instead of requiring manual
+-- intervention
+errorWarnOnUnbuildable
+    :: String -- Category name
+    -> String -- Package name
+    -> Cabal.PackageDescription
+    -> Env env [String]
+errorWarnOnUnbuildable cn pn pkgdesc = execWriterT $ do
+  let lib = Cabal.library pkgdesc            -- Main library
+      subLibs = Cabal.subLibraries pkgdesc   -- sub-libraries
+      exes = Cabal.executables pkgdesc       -- executables
+      tests = Cabal.testSuites pkgdesc       -- test-suites
+      ubLib = findUnbuildable Cabal.libName Cabal.libBuildInfo lib
+      ubSubLibs = findUnbuildable Cabal.libName Cabal.libBuildInfo subLibs
+      ubExes = findUnbuildable Cabal.exeName Cabal.buildInfo exes
+      ubTests = findUnbuildable Cabal.testName Cabal.testBuildInfo tests
+      ubErrs = execWriter $ do
+        forM_ ubLib $ \_ ->
+          tell ["main library"]
+        forM_ ubSubLibs $ \l ->
+          tell ["sub-library: " ++ Cabal.showLibraryName l]
+      ubWarns = execWriter $ do
+        forM_ ubExes $ \e ->
+          tell ["executable: " ++ Cabal.unUnqualComponentName e]
+        forM_ ubTests $ \t ->
+          tell ["test-suite: " ++ Cabal.unUnqualComponentName t]
+
+  unless (null ubWarns) $ tell $ pure $ unlines
+    $  [ "WARNING: The following components are unbuildable!" ]
+    ++ map ("  - " ++) ubWarns
+
+  unless (null ubErrs) $ error $ unlines
+    $  [ "FATAL: The following library components are unbuildable!" ]
+    ++ map ("  - " ++) ubErrs
+    ++ [ ""
+       , "You can edit the .cabal file to make the needed components buildable,"
+       , "then merge the package manually:"
+       , "  $ cabal get " ++ pn
+       , "  $ cd " ++ pn ++ "*/"
+       , "  # fix " ++ pn ++ ".cabal"
+       , "  $ hackport make-ebuild " ++ cn ++ " " ++ pn ++ ".cabal"
+       ]
+
+  where
+    findUnbuildable toName toBuildable
+        = fmap toName . mfilter (not . Cabal.buildable . toBuildable)
