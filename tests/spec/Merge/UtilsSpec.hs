@@ -1,10 +1,14 @@
+{-# LANGUAGE CPP #-}
+
 module Merge.UtilsSpec (spec) where
 
 import           Test.Hspec
 import           Test.Hspec.QuickCheck
 import           QuickCheck.Instances
 
+#if !MIN_VERSION_base(4,18,0)
 import           Control.Applicative (liftA2)
+#endif
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (catMaybes)
 import qualified Data.List as L
