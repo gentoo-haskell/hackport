@@ -1,7 +1,12 @@
+{-# LANGUAGE CPP #-}
+
 module Hackport.Command.MakeEbuild
   ( makeEbuildAction
   ) where
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+#endif
 import qualified Distribution.Simple.PackageDescription as Cabal
 import Distribution.Parsec (simpleParsec)
 import qualified Distribution.Verbosity as V

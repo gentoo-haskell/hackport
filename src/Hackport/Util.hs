@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Hackport.Util
   ( getPortageDir
   , withHackportContext
@@ -5,6 +7,9 @@ module Hackport.Util
   , hackportDir
   ) where
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+#endif
 import Control.Monad.Trans.Control
 import Data.Maybe (fromJust)
 import qualified Network.URI as NU
