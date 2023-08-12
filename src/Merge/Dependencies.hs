@@ -390,6 +390,8 @@ staticTranslateExtraLib lib = lookup lib m
       , ("SDL2_mixer", any_c_p "media-libs" "sdl2-mixer")
       , ("blas", any_c_p "virtual" "blas")
       , ("lapack", any_c_p "virtual" "lapack")
+      , ("libbrotlidec", any_c_p "app-arch" "brotli")
+      , ("libbrotlienc", any_c_p "app-arch" "brotli")
       ]
 
 ---------------------------------------------------------------
