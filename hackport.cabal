@@ -21,7 +21,8 @@ tested-with:
   , GHC == 9.8.2
 
 data-files:
-  , tests/data/golden/**
+  , tests/data/golden/*.out
+  , tests/data/golden/*.ebuild
 
 source-repository head
   type:     git
