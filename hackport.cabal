@@ -20,6 +20,9 @@ tested-with:
   , GHC == 9.6.4
   , GHC == 9.8.2
 
+data-files:
+  , tests/data/golden/**
+
 source-repository head
   type:     git
   location: git://github.com/gentoo-haskell/hackport.git
@@ -1069,12 +1072,14 @@ test-suite spec
     Portage.CabalSpec
     Portage.Dependency.PrintSpec
     Portage.EBuildSpec
+    Portage.EBuild.Golden
     Portage.GHCCoreSpec
     Portage.Metadata.RemoteIdSpec
     Portage.MetadataSpec
     Portage.PackageIdSpec
     Portage.VersionSpec
     QuickCheck.Instances
+    Paths_hackport
 
   build-depends:
     , hackport-external-libs-Cabal-syntax
@@ -1098,6 +1103,7 @@ test-suite spec
     , QuickCheck                            >=2.0
     , split
     , tasty
+    , tasty-golden
     , tasty-hspec
     , text
     , time

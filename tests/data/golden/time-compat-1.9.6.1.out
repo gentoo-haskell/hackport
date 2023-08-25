@@ -1,0 +1,481 @@
+EBuild
+    { name = "time-compat"
+    , category = "dev-haskell"
+    , hackage_name = "time-compat"
+    , version = "1.9.6.1"
+    , revision = "5"
+    , hackportVersion = "0.8.4.0"
+    , sourceURIs = [ "https://github.com/haskellari/time-compat.git" ]
+    , description = "Compatibility package for time"
+    , homepage = "https://github.com/haskellari/time-compat"
+    , license = Right "BSD"
+    , slot = "0/${PV}"
+    , keywords = [ "~amd64" ]
+    , iuse = []
+    , depend = DependAllOf
+        [ DependAtom
+            ( Atom
+                ( PackageName
+                    { category = Category
+                        { unCategory = "dev-haskell" }
+                    , cabalPkgName = PackageName "cabal"
+                    }
+                )
+                ( DRange
+                    ( NonstrictLB
+                        ( Version
+                            { versionNumber =
+                                [ 3
+                                , 2
+                                , 1
+                                , 0
+                                ]
+                            , versionChar = Nothing
+                            , versionSuffix = []
+                            , versionRevision = 0
+                            }
+                        )
+                    ) InfinityB
+                )
+                ( DAttr AnySlot [] )
+            )
+        , DependAllOf []
+        , DependAllOf
+            [ DependAllOf [] ]
+        , DependIfUse
+            ( Use "test" )
+            ( DependAllOf
+                [ DependAnyOf
+                    [ DependAtom
+                        ( Atom
+                            ( PackageName
+                                { category = Category
+                                    { unCategory = "dev-haskell" }
+                                , cabalPkgName = PackageName "hunit"
+                                }
+                            )
+                            ( DRange
+                                ( NonstrictLB
+                                    ( Version
+                                        { versionNumber =
+                                            [ 1
+                                            , 3
+                                            , 1
+                                            ]
+                                        , versionChar = Nothing
+                                        , versionSuffix = []
+                                        , versionRevision = 0
+                                        }
+                                    )
+                                )
+                                ( StrictUB
+                                    ( Version
+                                        { versionNumber =
+                                            [ 1
+                                            , 3
+                                            , 2
+                                            ]
+                                        , versionChar = Nothing
+                                        , versionSuffix = []
+                                        , versionRevision = 0
+                                        }
+                                    )
+                                )
+                            )
+                            ( DAttr AnySlot [] )
+                        )
+                    , DependAtom
+                        ( Atom
+                            ( PackageName
+                                { category = Category
+                                    { unCategory = "dev-haskell" }
+                                , cabalPkgName = PackageName "hunit"
+                                }
+                            )
+                            ( DRange
+                                ( NonstrictLB
+                                    ( Version
+                                        { versionNumber =
+                                            [ 1
+                                            , 6
+                                            , 0
+                                            , 0
+                                            ]
+                                        , versionChar = Nothing
+                                        , versionSuffix = []
+                                        , versionRevision = 0
+                                        }
+                                    )
+                                )
+                                ( StrictUB
+                                    ( Version
+                                        { versionNumber =
+                                            [ 1
+                                            , 7
+                                            ]
+                                        , versionChar = Nothing
+                                        , versionSuffix = []
+                                        , versionRevision = 0
+                                        }
+                                    )
+                                )
+                            )
+                            ( DAttr AnySlot [] )
+                        )
+                    ]
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "quickcheck"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 2
+                                        , 13
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 2
+                                        , 15
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "base-compat"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 10
+                                        , 5
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 14
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "tagged"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 8
+                                        , 6
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 9
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "tasty"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 1
+                                        , 2
+                                        , 1
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 1
+                                        , 5
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "tasty-hunit"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 10
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 11
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                , DependAtom
+                    ( Atom
+                        ( PackageName
+                            { category = Category
+                                { unCategory = "dev-haskell" }
+                            , cabalPkgName = PackageName "tasty-quickcheck"
+                            }
+                        )
+                        ( DRange
+                            ( NonstrictLB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 10
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                            ( StrictUB
+                                ( Version
+                                    { versionNumber =
+                                        [ 0
+                                        , 11
+                                        ]
+                                    , versionChar = Nothing
+                                    , versionSuffix = []
+                                    , versionRevision = 0
+                                    }
+                                )
+                            )
+                        )
+                        ( DAttr AnySlot [] )
+                    )
+                ]
+            )
+            ( DependAllOf [] )
+        ]
+    , depend_extra = [ "${RDEPEND}" ]
+    , rdepend = DependAllOf
+        [ DependAtom
+            ( Atom
+                ( PackageName
+                    { category = Category
+                        { unCategory = "dev-lang" }
+                    , cabalPkgName = PackageName "ghc"
+                    }
+                )
+                ( DRange
+                    ( NonstrictLB
+                        ( Version
+                            { versionNumber =
+                                [ 8
+                                , 10
+                                , 6
+                                ]
+                            , versionChar = Nothing
+                            , versionSuffix = []
+                            , versionRevision = 0
+                            }
+                        )
+                    ) InfinityB
+                )
+                ( DAttr AnyBuildTimeSlot [] )
+            )
+        , DependAllOf
+            [ DependAtom
+                ( Atom
+                    ( PackageName
+                        { category = Category
+                            { unCategory = "dev-haskell" }
+                        , cabalPkgName = PackageName "base-orphans"
+                        }
+                    )
+                    ( DRange
+                        ( NonstrictLB
+                            ( Version
+                                { versionNumber =
+                                    [ 0
+                                    , 8
+                                    , 4
+                                    ]
+                                , versionChar = Nothing
+                                , versionSuffix = []
+                                , versionRevision = 0
+                                }
+                            )
+                        )
+                        ( StrictUB
+                            ( Version
+                                { versionNumber =
+                                    [ 0
+                                    , 10
+                                    ]
+                                , versionChar = Nothing
+                                , versionSuffix = []
+                                , versionRevision = 0
+                                }
+                            )
+                        )
+                    )
+                    ( DAttr AnyBuildTimeSlot
+                        [ Q
+                            ( UseFlag
+                                ( Use "profile" )
+                            )
+                        ]
+                    )
+                )
+            , DependAtom
+                ( Atom
+                    ( PackageName
+                        { category = Category
+                            { unCategory = "dev-haskell" }
+                        , cabalPkgName = PackageName "hashable"
+                        }
+                    )
+                    ( DRange
+                        ( NonstrictLB
+                            ( Version
+                                { versionNumber =
+                                    [ 1
+                                    , 3
+                                    , 2
+                                    , 0
+                                    ]
+                                , versionChar = Nothing
+                                , versionSuffix = []
+                                , versionRevision = 0
+                                }
+                            )
+                        )
+                        ( StrictUB
+                            ( Version
+                                { versionNumber =
+                                    [ 1
+                                    , 5
+                                    ]
+                                , versionChar = Nothing
+                                , versionSuffix = []
+                                , versionRevision = 0
+                                }
+                            )
+                        )
+                    )
+                    ( DAttr AnyBuildTimeSlot
+                        [ Q
+                            ( UseFlag
+                                ( Use "profile" )
+                            )
+                        ]
+                    )
+                )
+            ]
+        , DependAllOf []
+        , DependAllOf []
+        ]
+    , rdepend_extra = []
+    , features =
+        [ Lib
+        , Profile
+        , Haddock
+        , Hoogle
+        , HsColour
+        , TestSuite
+        ]
+    , cabal_pn = Nothing
+    , src_prepare = []
+    , src_configure = []
+    , used_options = []
+    }
