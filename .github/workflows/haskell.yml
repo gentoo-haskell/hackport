@@ -75,7 +75,7 @@ jobs:
         run: cabal build all
 
       - name: Run tests
-        run: cabal test all --test-option=--color --test-show-details=streaming --jobs=1
+        run: cabal test all --test-option=--color=always --test-option=--size-cutoff=999999 --test-show-details=streaming --jobs=1
 
       - name: Build documentation
         run: cabal haddock all

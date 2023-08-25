@@ -15,6 +15,8 @@ import qualified Portage.MetadataSpec
 import qualified Portage.PackageIdSpec
 import qualified Portage.VersionSpec
 
+import qualified Portage.EBuild.Golden
+
 specs :: [(Tasty.TestName, Hspec.Spec)]
 specs =
     [ ("merge", Merge.UtilsSpec.spec)
@@ -31,6 +33,8 @@ specs =
 main :: IO ()
 main = do
     hspecTrees <- traverse (uncurry testSpec) specs
+    goldenTests <- Portage.EBuild.Golden.goldenTests
     Tasty.defaultMain $ Tasty.testGroup "hackport"
         [ Tasty.testGroup "hspec" hspecTrees
+        , goldenTests
         ]
