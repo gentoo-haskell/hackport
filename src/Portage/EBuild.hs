@@ -63,6 +63,7 @@ data EBuild = EBuild
     , used_options :: [(String, String)] -- ^ hints to ebuild writers/readers
                                          --   on what hackport options were used to produce an ebuild
     }
+    deriving (Show, Read, Eq)
 
 getHackportVersion :: Version -> String
 getHackportVersion Version {versionBranch=(x:s)} = foldl (\y z -> y ++ "." ++ (show z)) (show x) s
