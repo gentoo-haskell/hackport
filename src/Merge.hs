@@ -12,6 +12,7 @@ Core functionality of the @merge@ command of @HackPort@.
 module Merge
   ( merge
   , mergeGenericPackageDescription
+  , mkEbuild
   ) where
 
 import           Control.Applicative
@@ -425,47 +426,16 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
           Just [] -> die "No output from 'portageq envvar ARCH'"
           Just (l:_) -> pure l
 
-  let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
-          where b True  = ""
-                b False = "-"
-
-      -- appends 's' to each line except the last one
-      --  handy to build multiline shell expressions
-      icalate _s []     = []
-      icalate _s [x]    = [x]
-      icalate  s (x:xs) = (x ++ s) : icalate s xs
-
-      build_configure_call :: [String] -> [String]
-      build_configure_call [] = []
-      build_configure_call conf_args = icalate " \\" $
-                                           "haskell-cabal_src_configure" :
-                                           map ('\t':) conf_args
-
-      -- returns list USE-parameters to './setup configure'
-      selected_flags :: ([Cabal.FlagName], CabalFlags) -> [String]
-      selected_flags ([], []) = []
-      selected_flags (active_fns, users_fas) = map snd (L.sortBy (compare `on` fst) flag_pairs)
-          where flag_pairs :: [(String, String)]
-                flag_pairs = active_pairs ++ users_pairs
-                active_pairs = map (\fn -> (fn,                    "$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map Cabal.unFlagName active_fns
-                users_pairs  = map (\fa -> ((Cabal.unFlagName . fst) fa, "--flag=" ++ pp_fn fa)) users_fas
-      to_iuse x = let fn = Cabal.unFlagName $ Cabal.flagName x
-                      p  = if Cabal.flagDefault x then "+" else ""
-                  in p ++ cfn_to_iuse fn
-
-      ebuild =   (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
-               . ( case requested_cabal_flags of
-                       Nothing  -> id
-                       Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
-               $ (C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc))
-                  { E.depend        =            Merge.dep tdeps
-                  , E.depend_extra  = S.toList $ Merge.dep_e tdeps
-                  , E.rdepend       =            Merge.rdep tdeps
-                  , E.rdepend_extra = S.toList $ Merge.rdep_e tdeps
-                  , E.src_configure = build_configure_call $
-                      selected_flags (active_flags, user_specified_fas)
-                  , E.keywords      = [ '~' : thisArch ]
-                  }
+  let ebuild = mkEbuild
+                  requested_cabal_flags
+                  cat
+                  pkgDesc
+                  tdeps
+                  active_flags
+                  user_specified_fas
+                  cf_to_iuse_rename
+                  thisArch
+                  active_flag_descs
 
   let active_flag_descs_renamed =
         (\f -> f { Cabal.flagName = Cabal.mkFlagName . cfn_to_iuse . Cabal.unFlagName
@@ -600,6 +570,76 @@ mergeEbuild existing_meta pkgdir ebuild flags = do
   when metadataNeedsWriting $ do
     notice $ "Writing " ++ emeta
     liftIO $ T.writeFile mpath updatedMetaText
+
+mkEbuild
+    :: Maybe String
+    -> Portage.Category
+    -> Merge.RetroPackageDescription
+    -> Merge.EDep
+    -> [Cabal.FlagName]
+    -> CabalFlags
+    -> [(String, String)]
+    -> String
+    -> [Cabal.PackageFlag]
+    -> E.EBuild
+mkEbuild
+    requested_cabal_flags
+    cat
+    pkgDesc
+    tdeps
+    active_flags
+    user_specified_fas
+    cf_to_iuse_rename
+    thisArch
+    active_flag_descs
+    = (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
+               . ( case requested_cabal_flags of
+                       Nothing  -> id
+                       Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
+               $ (C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc))
+                  { E.depend        =            Merge.dep tdeps
+                  , E.depend_extra  = S.toList $ Merge.dep_e tdeps
+                  , E.rdepend       =            Merge.rdep tdeps
+                  , E.rdepend_extra = S.toList $ Merge.rdep_e tdeps
+                  , E.src_configure = build_configure_call $
+                      selected_flags (active_flags, user_specified_fas)
+                  , E.keywords      = [ '~' : thisArch ]
+                  }
+  where
+    icalate :: [a] -> [[a]] -> [[a]]
+    icalate _s []     = []
+    icalate _s [x]    = [x]
+    icalate  s (x:xs) = (x ++ s) : icalate s xs
+
+    build_configure_call :: [String] -> [String]
+    build_configure_call [] = []
+    build_configure_call conf_args = icalate " \\" $
+                                          "haskell-cabal_src_configure" :
+                                          map ('\t':) conf_args
+
+    selected_flags :: ([Cabal.FlagName], CabalFlags) -> [String]
+    selected_flags ([], []) = []
+    selected_flags (active_fns, users_fas) = map snd (L.sortBy (compare `on` fst) flag_pairs)
+        where flag_pairs :: [(String, String)]
+              flag_pairs = active_pairs ++ users_pairs
+              active_pairs = map (\fn -> (fn,                    "$(cabal_flag " ++ cfn_to_iuse fn ++ " " ++ fn ++ ")")) $ map Cabal.unFlagName active_fns
+              users_pairs  = map (\fa -> ((Cabal.unFlagName . fst) fa, "--flag=" ++ pp_fn fa)) users_fas
+
+    to_iuse :: Cabal.PackageFlag -> String
+    to_iuse x = let fn = Cabal.unFlagName $ Cabal.flagName x
+                    p  = if Cabal.flagDefault x then "+" else ""
+                in p ++ cfn_to_iuse fn
+
+    cfn_to_iuse :: String -> String
+    cfn_to_iuse cfn =
+        case lookup cfn cf_to_iuse_rename of
+            Nothing  -> Merge.mangle_iuse cfn
+            Just ein -> ein
+
+    pp_fn :: (Cabal.FlagName, Bool) -> String
+    pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
+          where b True  = ""
+                b False = "-"
 
 ---
 
