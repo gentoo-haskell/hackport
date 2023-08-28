@@ -24,17 +24,18 @@ RDEPEND="
 	>=dev-lang/ghc-8.8.1:=
 	|| (
 		( >=dev-haskell/aeson-0.11 <dev-haskell/aeson-1.6 )
-		( >=dev-haskell/aeson-2.0.0.0 <dev-haskell/aeson-2.2 )
+		( >=dev-haskell/aeson-2 <dev-haskell/aeson-2.2 )
 	)
 	dev-haskell/aeson:=[profile?]
 	|| (
-		( >=dev-haskell/text-1.2.3.0 <dev-haskell/text-1.3 )
-		( >=dev-haskell/text-2.0 <dev-haskell/text-2.1 )
+		( >=dev-haskell/text-1.2.3 <dev-haskell/text-1.3 )
+		( =dev-haskell/text-2.0* )
 	)
 	dev-haskell/text:=[profile?]
 "
-DEPEND="${RDEPEND}
-	>=dev-haskell/cabal-3.0.0.0
+DEPEND="
+	${RDEPEND}
+	>=dev-haskell/cabal-3
 	test? (
 		>=dev-haskell/base-orphans-0.8.7 <dev-haskell/base-orphans-0.9
 		>=dev-haskell/tasty-1.4.0.1 <dev-haskell/tasty-1.5
