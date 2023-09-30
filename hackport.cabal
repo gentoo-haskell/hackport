@@ -795,6 +795,7 @@ library hackport-internal
     , binary
     , bytestring
     , containers
+    , data-default-class
     , deepseq
     , directory
     , dlist
