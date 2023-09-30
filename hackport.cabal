@@ -29,6 +29,11 @@ flag cabal-v1
   manual:      True
   default:     False
 
+flag doctests
+  description: Build doctests
+  default:     True
+  manual:      True
+
 flag gentoo-tests
   description: Build tests that require a running Gentoo system
   manual:      True
@@ -1025,7 +1030,7 @@ test-suite doctests
 
   other-modules:        Paths_hackport
 
-  if !flag(cabal-v1)
+  if !flag(doctests) || !flag(cabal-v1)
     buildable: False
 
 test-suite doctests-v2
@@ -1042,7 +1047,7 @@ test-suite doctests-v2
     -- cabal-install should already be installed if this is being built...
     , doctest:doctest      >=0.8
 
-  if flag(cabal-v1)
+  if !flag(doctests) || flag(cabal-v1)
     buildable: False
 
 test-suite spec
