@@ -24,6 +24,7 @@ import           Portage.PackageId
 import           Portage.Use
 
 import           Control.DeepSeq (NFData(..))
+import           Data.Default.Class
 
 -- | Type of SLOT dependency of a dependency.
 data SlotDepend = AnySlot          -- ^ nothing special
@@ -111,6 +112,9 @@ data DAttr = DAttr SlotDepend [UseFlag]
 
 instance NFData DAttr where
   rnf (DAttr sd uf) = rnf sd `seq` rnf uf
+
+instance Default DAttr where
+  def = DAttr AnySlot []
 
 data Dependency = DependAtom Atom
                 | DependAnyOf         [Dependency]
