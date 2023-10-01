@@ -57,7 +57,7 @@ showModificator (N u)     = Disp.char '-' <> pretty u
 
 dispUses :: [UseFlag] -> Disp.Doc
 dispUses [] = Disp.empty
-dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ", ")) $ map pretty us
+dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ",")) $ map pretty us
 
 newtype Use = Use String
     deriving (Eq, Read, Show)
