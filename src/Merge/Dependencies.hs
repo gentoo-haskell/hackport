@@ -482,7 +482,7 @@ pkgconfig_table :: [(String, (String, String, Portage.DAttr))]
 pkgconfig_table =
   [
    ("alsa",         ("media-libs", "alsa-lib", def))
-  ,("atk",          ("dev-libs", "atk", def))
+  ,("atk",          ("dev-libs", "atk", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("gconf-2.0",    ("gnome-base", "gconf", def))
 
   ,("gio-2.0",                ("dev-libs", "glib", Portage.DAttr (Portage.GivenSlot "2") []))
@@ -508,6 +508,9 @@ pkgconfig_table =
   ,("gtk+-3.0",            ("x11-libs", "gtk+", Portage.DAttr (Portage.GivenSlot "3") []))
   ,("webkitgtk-3.0",       ("net-libs", "webkit-gtk", Portage.DAttr (Portage.GivenSlot "3") []))
 
+  ,("gtk4",                ("gui-libs", "gtk", Portage.DAttr (Portage.GivenSlot "4") [Portage.mkUse $ Portage.Use "introspection"]))
+  ,("gtk4-x11",            ("gui-libs", "gtk", Portage.DAttr (Portage.GivenSlot "4") [Portage.mkUse $ Portage.Use "introspection", Portage.mkUse $ Portage.Use "X"]))
+
   ,("cairo",            ("x11-libs", "cairo", def))
   ,("cairo-gobject",    ("x11-libs", "cairo", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "glib"])) -- need [glib] for dev-haskell/cairo
   ,("cairo-ft",         ("x11-libs", "cairo", def))
@@ -523,7 +526,7 @@ pkgconfig_table =
 
   ,("pangocairo",       ("x11-libs", "pango", def))
   ,("pangoft2",         ("x11-libs", "pango", def))
-  ,("pango",            ("x11-libs", "pango", def))
+  ,("pango",            ("x11-libs", "pango", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("pangoxft",         ("x11-libs", "pango", def))
   ,("pangox",           ("x11-libs", "pango", def))
 
@@ -592,4 +595,8 @@ pkgconfig_table =
   ,("SDL2_mixer",                  ("media-libs", "sdl2-mixer", def))
   ,("zlib",                        ("sys-libs", "zlib", def))
   ,("libpcre",                     ("dev-libs", "libpcre", def))
+  ,("graphene-gobject-1.0",        ("media-libs", "graphene", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
+  ,("harfbuzz",                    ("media-libs", "harfbuzz", def))
+  ,("harfbuzz-gobject",            ("media-libs", "harfbuzz", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
+  ,("x11",                         ("x11-libs", "libX11", def))
   ]
