@@ -482,7 +482,7 @@ pkgconfig_table :: [(String, (String, String, Portage.DAttr))]
 pkgconfig_table =
   [
    ("alsa",         ("media-libs", "alsa-lib", def))
-  ,("atk",          ("dev-libs", "atk", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
+  ,("atk",          ("app-accessibility", "at-spi2-core", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("gconf-2.0",    ("gnome-base", "gconf", def))
 
   ,("gio-2.0",                ("dev-libs", "glib", Portage.DAttr (Portage.GivenSlot "2") []))
@@ -556,7 +556,7 @@ pkgconfig_table =
 
   ,("curl",                        ("net-misc", "curl", def))
   ,("libxml2",                     ("dev-libs", "libxml2", def))
-  ,("libgsasl",                    ("virtual", "gsasl", def))
+  ,("libgsasl",                    ("net-misc", "gsasl", def))
   ,("libzip",                      ("dev-libs", "libzip", def))
   ,("gnutls",                      ("net-libs", "gnutls", def))
   ,("libidn",                      ("net-dns", "libidn", def))
