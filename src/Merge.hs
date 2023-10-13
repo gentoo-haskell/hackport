@@ -395,8 +395,8 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
 
   -- <https://github.com/gentoo-haskell/hackport/issues/116>
   warnings <- errorWarnOnUnbuildable
-    (prettyShow merged_cabal_pkg_name)
     (prettyShow cat)
+    (prettyShow merged_cabal_pkg_name)
     pkgDesc0
 
   notice $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
