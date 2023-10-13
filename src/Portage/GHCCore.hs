@@ -40,7 +40,7 @@ import Debug.Trace
 -- The first @GHC@ version in this list is a minimum default.
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs =
-    [ ghc8106, ghc902, ghc924, ghc925, ghc926, ghc927, ghc945, ghc946, ghc962
+    [ ghc902, ghc924, ghc925, ghc926, ghc927, ghc945, ghc946, ghc962
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
@@ -53,8 +53,7 @@ ghcs =
 cabalFromGHC :: [Int] -> Maybe Cabal.Version
 cabalFromGHC ver = lookup ver table
   where
-  table = [ ([8,10,6], Cabal.mkVersion [3,2,1,0])
-          , ([9,0,2], Cabal.mkVersion [3,4,1,0])
+  table = [ ([9,0,2], Cabal.mkVersion [3,4,1,0])
           , ([9,2,4], Cabal.mkVersion [3,6,3,0])
           , ([9,2,6], Cabal.mkVersion [3,6,3,0])
           , ([9,2,7], Cabal.mkVersion [3,6,3,0])
@@ -165,9 +164,6 @@ ghc924 = (ghc [9,2,4], mkIndex ghc924_pkgs)
 
 ghc902 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc902 = (ghc [9,0,2], mkIndex ghc902_pkgs)
-
-ghc8106 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc8106 = (ghc [8,10,6], mkIndex ghc8106_pkgs)
 
 -- | Non-upgradeable core packages
 -- Sources:
@@ -462,41 +458,6 @@ ghc902_pkgs =
   , p "template-haskell" [2,17,0,0] -- used by libghc
   , p "terminfo" [0,4,1,5] -- used by libghc
 --   , p "text" [1,2,5,0] -- package is upgradeable
-  , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
-  , p "transformers" [0,5,6,2] -- used by libghc
-  , p "unix" [2,7,2,2]
---  , p "xhtml" [3000,2,2,1]
-  ]
-
-ghc8106_pkgs :: [Cabal.PackageIdentifier]
-ghc8106_pkgs =
-  [ p "array" [0,5,4,0]
-  , p "base" [4,14,1,0]
-  , p "binary" [0,8,8,0] -- used by libghc
-  , p "bytestring" [0,10,12,0]
---  , p "Cabal" [3,2,1,0]  package is upgradeable
-  , p "containers" [0,6,2,1]
-  , p "deepseq" [1,4,4,0] -- used by time
-  , p "directory" [1,3,6,0]
-  , p "filepath" [1,4,2,1]
-  , p "exceptions" [0,10,4] -- used by libghc in ghc-9.0.2
-  , p "ghc-boot" [8,10,4]
-  , p "ghc-boot-th" [8,10,4]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,6,1,0]
-  , p "ghc-heap" [8,10,4]
-  , p "ghci" [8,10,4]
---  , p "haskeline" [0,8,0,1]  package is upgradeable
-  , p "hpc" [0,6,1,0] -- used by libghc
-  , p "integer-gmp" [1,0,3,0]
-  , p "mtl" [2,2,2]  -- used by exceptions in ghc-9.0.2
---   , p "parsec" [3,1,14,0]  -- package is upgradeable
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,16,0]
-  , p "stm" [2,5,0,0]
-  , p "template-haskell" [2,16,0,0] -- used by libghc
-  , p "terminfo" [0,4,1,4] -- used by libghc in ghc-9.0.2
---   , p "text" [1,2,4,1] -- package is upgradeable
   , p "time" [1,9,3,0] -- used by unix, directory, hpc, ghc. unsafe to upgrade
   , p "transformers" [0,5,6,2] -- used by libghc
   , p "unix" [2,7,2,2]
