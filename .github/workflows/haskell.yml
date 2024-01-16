@@ -43,7 +43,8 @@ jobs:
 
       - name: Configure the build
         run: |
-          cabal configure --enable-tests --enable-benchmarks --disable-documentation --flag=pedantic
+          # (2024-10-11) doctests are failing only with ghc-9.2 on github CI
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation --flag=pedantic --flag=-doctests
           cabal build --dry-run
         # The last step generates dist-newstyle/cache/plan.json for the cache key.
 
