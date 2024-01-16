@@ -436,13 +436,13 @@ library hackport-external-libs-hackage-security
   hs-source-dirs:     hackage-security/hackage-security/src
   build-depends:
     , hackport-external-libs-Cabal-syntax
-    , base                          >=4.5
+    , base                          >=4.9
     , base16-bytestring             >=0.1.1
     , base64-bytestring             >=1.0
     , bytestring                    >=0.9
     , containers                    >=0.4
     , cryptohash-sha256             >=0.11
-    , directory                     >=1.2
+    , directory                     >=1.2.2
     , ed25519                       >=0.0
     , filepath                      >=1.2
     , ghc-prim
@@ -454,7 +454,7 @@ library hackport-external-libs-hackage-security
     , pretty                        >=1.0
     , tar                           >=0.5
     , template-haskell              >=2.7
-    , time                          >=1.2
+    , time                          >=1.5
     , transformers                  >=0.3
     , zlib                          >=0.5
 
@@ -463,15 +463,15 @@ library hackport-external-libs-hackage-security
     Hackage.Security.Client.Formats
     Hackage.Security.Client.Repository
     Hackage.Security.Client.Repository.Cache
-    Hackage.Security.Client.Repository.HttpLib
     Hackage.Security.Client.Repository.Local
     Hackage.Security.Client.Repository.Remote
+    Hackage.Security.Client.Repository.HttpLib
     Hackage.Security.Client.Verify
     Hackage.Security.JSON
     Hackage.Security.Key.Env
 --     Hackage.Security.Server
-    Hackage.Security.TUF.FileMap
     Hackage.Security.Trusted
+    Hackage.Security.TUF.FileMap
     Hackage.Security.Util.Checked
     Hackage.Security.Util.Path
     Hackage.Security.Util.Pretty
@@ -503,7 +503,6 @@ library hackport-external-libs-hackage-security
     Hackage.Security.Util.Lens
     Hackage.Security.Util.Stack
     Hackage.Security.Util.TypedEmbedded
-    MyPrelude
 
   default-extensions:
     DefaultSignatures
@@ -518,6 +517,7 @@ library hackport-external-libs-hackage-security
     NamedFieldPuns
     NoImplicitPrelude
     NoMonomorphismRestriction
+    PatternSynonyms
     RankNTypes
     RecordWildCards
     ScopedTypeVariables
@@ -528,10 +528,14 @@ library hackport-external-libs-hackage-security
     ViewPatterns
 
   other-extensions:
+    AllowAmbiguousTypes
     BangPatterns
     CPP
+    DeriveLift
     OverlappingInstances
     PackageImports
+    RoleAnnotations
+    StaticPointers
     UndecidableInstances
 
 library hackport-external-libs-cabal-install-solver
