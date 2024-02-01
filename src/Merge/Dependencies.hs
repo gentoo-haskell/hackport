@@ -43,7 +43,6 @@ import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
-import qualified Portage.Tables as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore
@@ -156,8 +155,8 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                               ],
                     dep_e = S.singleton "${RDEPEND}",
                     rdep = Portage.DependAllOf
-                               [ Portage.set_build_slot ghc_dep
-                               , Portage.set_build_slot $ add_profile $ raw_haskell_deps
+                               [ ghc_dep
+                               , add_profile $ raw_haskell_deps
                                , extra_libs
                                , Portage.DependAllOf pkg_config_libs
                                ]
@@ -172,8 +171,8 @@ resolveDependencies overlay pkg compiler_info ghc_package_names merged_cabal_pkg
                               ],
                     dep_e = S.singleton "${RDEPEND}",
                     rdep = Portage.DependAllOf
-                               [ Portage.set_build_slot ghc_dep
-                               , Portage.set_build_slot $ raw_haskell_deps
+                               [ ghc_dep
+                               , raw_haskell_deps
                                , extra_libs
                                , Portage.DependAllOf pkg_config_libs
                                ]
