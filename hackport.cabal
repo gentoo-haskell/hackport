@@ -14,11 +14,10 @@ description:
   that are generated from a hackage repo of Cabal packages.
 
 tested-with:
-  , GHC == 8.10.7
   , GHC == 9.0.2
   , GHC == 9.2.8
-  , GHC == 9.4.5
-  , GHC == 9.6.2
+  , GHC == 9.4.8
+  , GHC == 9.6.4
 
 source-repository head
   type:     git
