@@ -67,9 +67,12 @@ platform = Platform X86_64 Linux
 
 -- | Is the package a core dependency of a specific version of @GHC@?
 --
--- >>> packageIsCore (mkIndex ghc927_pkgs) (Cabal.mkPackageName "binary")
+-- >>> packageIsCore (mkIndex [9,2,7] ghc927_pkgs) (Cabal.mkPackageName "binary")
 -- True
--- >>> all (== True) ((packageIsCore (mkIndex ghc927_pkgs)) <$> (packageNamesFromPackageIndex (mkIndex ghc927_pkgs)))
+-- >>> :{
+--   let idx = mkIndex [9,2,7] ghc927_pkgs
+--   in  all (== True) $ packageIsCore idx <$> packageNamesFromPackageIndex idx
+-- :}
 -- True
 packageIsCore :: InstalledPackageIndex -> Cabal.PackageName -> Bool
 packageIsCore index pn = not . null $ lookupPackageName index pn
@@ -126,13 +129,24 @@ minimumGHCVersionToBuildPackage gpd user_specified_fas =
 -- | Create an 'InstalledPackageIndex' from a ['Cabal.PackageIdentifier'].
 -- This is used to generate an index of core @GHC@ packages from the provided
 -- ['Cabal.PackageIdentifier'] functions, e.g. 'ghc883_pkgs'.
-mkIndex :: [Cabal.PackageIdentifier] -> InstalledPackageIndex
-mkIndex pids = fromList
-  [ emptyInstalledPackageInfo
-      { sourcePackageId = pindex
-      , exposed = True
-      }
-  | pindex@(Cabal.PackageIdentifier _name _version) <- pids ]
+--
+-- This takes the version of GHC as the first parameter, and uses it to
+-- automatically add @ghc-boot@, @ghc-boot-th@, @ghc-heap@, and @ghci@ (all of
+-- which share the same version number as GHC).
+mkIndex :: [Int] -> [Cabal.PackageIdentifier] -> InstalledPackageIndex
+mkIndex ghcVer pids = fromList
+      [ emptyInstalledPackageInfo
+          { sourcePackageId = pindex
+          , exposed = True
+          }
+      | pindex@(Cabal.PackageIdentifier _name _version) <- pids' ]
+  where
+    pids' =
+        p "ghc-boot" ghcVer
+      : p "ghc-boot-th" ghcVer
+      : p "ghc-heap" ghcVer
+      : p "ghci" ghcVer
+      : pids
 
 packageNamesFromPackageIndex :: InstalledPackageIndex -> [Cabal.PackageName]
 packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
@@ -141,29 +155,36 @@ ghc :: [Int] -> DC.CompilerInfo
 ghc nrs = DC.unknownCompilerInfo c_id DC.NoAbiTag
     where c_id = CompilerId GHC (mkVersion nrs)
 
+-- | Convenience function to combine the outputs of 'mkIndex' and 'ghc'
+mkInfoIndex
+  :: [Int]
+  -> [Cabal.PackageIdentifier]
+  -> (DC.CompilerInfo, InstalledPackageIndex)
+mkInfoIndex ghcVer pids = (ghc ghcVer, mkIndex ghcVer pids)
+
 ghc962 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc962 = (ghc [9,6,2], mkIndex ghc962_pkgs)
+ghc962 = mkInfoIndex [9,6,2] ghc962_pkgs
 
 ghc946 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc946 = (ghc [9,4,6], mkIndex ghc946_pkgs)
+ghc946 = mkInfoIndex [9,4,6] ghc946_pkgs
 
 ghc945 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc945 = (ghc [9,4,5], mkIndex ghc945_pkgs)
+ghc945 = mkInfoIndex [9,4,5] ghc945_pkgs
 
 ghc927 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc927 = (ghc [9,2,7], mkIndex ghc927_pkgs)
+ghc927 = mkInfoIndex [9,2,7] ghc927_pkgs
 
 ghc926 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc926 = (ghc [9,2,6], mkIndex ghc926_pkgs)
+ghc926 = mkInfoIndex [9,2,6] ghc926_pkgs
 
 ghc925 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc925 = (ghc [9,2,5], mkIndex ghc925_pkgs)
+ghc925 = mkInfoIndex [9,2,5] ghc925_pkgs
 
 ghc924 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc924 = (ghc [9,2,4], mkIndex ghc924_pkgs)
+ghc924 = mkInfoIndex [9,2,4] ghc924_pkgs
 
 ghc902 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc902 = (ghc [9,0,2], mkIndex ghc902_pkgs)
+ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 
 -- | Non-upgradeable core packages
 -- Sources:
@@ -188,12 +209,8 @@ ghc962_pkgs =
   , p "exceptions" [0,10,7] -- used by libghc
   , p "filepath" [1,4,100,1]
   , p "ghc-bignum" [1,3]
-  , p "ghc-boot" [9,6,2]
-  , p "ghc-boot-th" [9,6,2]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,10,0]
-  , p "ghc-heap" [9,6,2]
-  , p "ghci" [9,6,2]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,2,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -224,12 +241,8 @@ ghc946_pkgs =
   , p "exceptions" [0,10,5] -- used by libghc
   , p "filepath" [1,4,2,2]
   , p "ghc-bignum" [1,3]
-  , p "ghc-boot" [9,4,6]
-  , p "ghc-boot-th" [9,4,6]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,9,1]
-  , p "ghc-heap" [9,4,6]
-  , p "ghci" [9,4,6]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -261,12 +274,8 @@ ghc945_pkgs =
   , p "exceptions" [0,10,5] -- used by libghc
   , p "filepath" [1,4,2,2]
   , p "ghc-bignum" [1,3]
-  , p "ghc-boot" [9,4,5]
-  , p "ghc-boot-th" [9,4,5]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,9,0]
-  , p "ghc-heap" [9,4,5]
-  , p "ghci" [9,4,5]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -297,12 +306,8 @@ ghc927_pkgs =
   , p "exceptions" [0,10,4] -- used by libghc
   , p "filepath" [1,4,2,2]
   , p "ghc-bignum" [1,2]
-  , p "ghc-boot" [9,2,7]
-  , p "ghc-boot-th" [9,2,7]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,8,0]
-  , p "ghc-heap" [9,2,7]
-  , p "ghci" [9,2,7]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -333,12 +338,8 @@ ghc926_pkgs =
   , p "exceptions" [0,10,4] -- used by libghc
   , p "filepath" [1,4,2,1]
   , p "ghc-bignum" [1,2]
-  , p "ghc-boot" [9,2,6]
-  , p "ghc-boot-th" [9,2,6]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,8,0]
-  , p "ghc-heap" [9,2,6]
-  , p "ghci" [9,2,6]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -369,12 +370,8 @@ ghc925_pkgs =
   , p "exceptions" [0,10,4] -- used by libghc
   , p "filepath" [1,4,2,1]
   , p "ghc-bignum" [1,2]
-  , p "ghc-boot" [9,2,5]
-  , p "ghc-boot-th" [9,2,5]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,8,0]
-  , p "ghc-heap" [9,2,5]
-  , p "ghci" [9,2,5]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -405,12 +402,8 @@ ghc924_pkgs =
   , p "exceptions" [0,10,4] -- used by libghc
   , p "filepath" [1,4,2,1]
   , p "ghc-bignum" [1,2]
-  , p "ghc-boot" [9,2,4]
-  , p "ghc-boot-th" [9,2,4]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,8,0]
-  , p "ghc-heap" [9,2,4]
-  , p "ghci" [9,2,4]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
@@ -441,12 +434,8 @@ ghc902_pkgs =
   , p "filepath" [1,4,2,1]
   , p "exceptions" [0,10,4] -- used by libghc
   , p "ghc-bignum" [1,1]
-  , p "ghc-boot" [9,0,2]
-  , p "ghc-boot-th" [9,0,2]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,7,0]
-  , p "ghc-heap" [9,0,2]
-  , p "ghci" [9,0,2]
 --  , p "haskeline" [0,8,2]  package is upgradeable
   , p "hpc" [0,6,1,0] -- used by libghc
   , p "integer-gmp" [1,1]
