@@ -1,3 +1,30 @@
+## v0.8.5.0 (2023-02-05)
+
+Release v0.8.5.0
+
+- Add a warning for when a particular component of a package is unbuildable
+  for the automatically-chosen GHC version. This is upgraded to a fatal error
+  if any of the libraries in the package are unbuildable. (This should help a
+  bit to prevent #116 from biting people).
+
+- Add support for USE flags when resolving 'pkgconfig' dependencies in cabal to 
+  portage dependencies.
+
+- Update supported GHC versions when resolving the minimal GHC required for a
+  package:
+    - Versions 8.10.6 and earlier were removed
+    - Added 9.2.7, 9.2.8, 9.4.5, 9.4.6, 9.4.7, 9.4.8, 9.6.3, and 9.6.4
+
+  (Not defaulting to very old GHC versions will help avoid #116 as well).
+
+- Stop adding special slot numbers to `dev-haskell/quickcheck` and 
+  `dev-haskell/hdbd`. The functionality for adding special slot numbers for
+  packages was scrapped.
+
+  (See: https://github.com/gentoo-haskell/gentoo-haskell/issues/1502)
+
+- Update bundled `hackage-security` to newer commit.
+
 ## v0.8.4.0 (2023-06-03)
 
 Release v0.8.4.0
