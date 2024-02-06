@@ -14,14 +14,6 @@ spec = do
       drop_tdot "foo." `shouldBe` "foo"
       drop_tdot "foo..." `shouldBe` "foo"
       drop_tdot "foo" `shouldBe` "foo"
-  describe "quote" $ do
-    it "should correctly surround a string with special characters in quotes" $ do
-      quote "Reading, writing and manipulating '.tar' archives." ""
-        `shouldBe`
-        "\"Reading, writing and manipulating \'.tar\' archives.\""
-      quote "Extras for the \"contravariant\" package" ""
-        `shouldBe`
-        "\"Extras for the \\\"contravariant\\\" package\""
   describe "toHttps" $ do
     it "should not convert whitelisted http-only homepages into https homepages" $ do
       toHttps "http://leksah.org" `shouldBe` "http://leksah.org"

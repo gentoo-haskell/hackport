@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Portage.Use (
   -- * main structures
@@ -11,9 +12,11 @@ module Portage.Use (
   mkQUse
   ) where
 
-import qualified Text.PrettyPrint as Disp
-import Text.PrettyPrint ((<>))
-import Distribution.Pretty (Pretty(..))
+-- import qualified Text.PrettyPrint as Disp
+-- import Text.PrettyPrint ((<>))
+-- import Distribution.Pretty (Pretty(..), prettyShow)
+-- import qualified Prettyprinter as PP
+import           Prettyprinter
 
 import           Control.DeepSeq (NFData(..))
 
@@ -48,16 +51,16 @@ mkNotUse = N . UseFlag
 mkQUse :: Use -> UseFlag
 mkQUse = Q . UseFlag
 
-showModificator :: UseFlag -> Disp.Doc
+showModificator :: UseFlag -> Doc ann
 showModificator (UseFlag u) = pretty u
-showModificator (X u)     = Disp.char '!' <> pretty u
-showModificator (Q u)     = pretty u <> Disp.char '?'
-showModificator (E u)     = pretty u <> Disp.char '='
-showModificator (N u)     = Disp.char '-' <> pretty u
+showModificator (X u)     = "!" <> pretty u
+showModificator (Q u)     = pretty u <> "?"
+showModificator (E u)     = pretty u <> "="
+showModificator (N u)     = "-" <> pretty u
 
-dispUses :: [UseFlag] -> Disp.Doc
-dispUses [] = Disp.empty
-dispUses us = Disp.brackets $ Disp.hcat $ (Disp.punctuate (Disp.text ",")) $ map pretty us
+dispUses :: [UseFlag] -> Doc ann
+dispUses [] = emptyDoc
+dispUses us = brackets $ hcat $ (punctuate ",") $ map pretty us
 
 newtype Use = Use String
     deriving (Eq, Read, Show)
@@ -66,7 +69,7 @@ instance NFData Use where
   rnf (Use s) = rnf s
 
 instance Pretty Use where
-  pretty (Use u) = Disp.text u
+  pretty (Use u) = pretty u
 
 instance Ord Use where
     compare (Use a) (Use b) = case (a,b) of

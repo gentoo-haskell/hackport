@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
     Author      :  Andres Loeh <kosmikus@gentoo.org>
     Stability   :  provisional
@@ -19,19 +20,12 @@ module Portage.Version (
 
 import qualified Distribution.Version as Cabal
 
-import           Distribution.Pretty (Pretty(..))
-
 import           Distribution.Parsec (Parsec(..))
 import qualified Distribution.Compat.CharParsing as P
-import qualified Text.PrettyPrint as Disp
-import           Text.PrettyPrint ((<>))
 import qualified Data.List.NonEmpty as NE
+import           Prettyprinter
 
 import           Control.DeepSeq (NFData(..))
-
-#if MIN_VERSION_base(4,11,0)
-import Prelude hiding ((<>))
-#endif
 
 -- | Portage-style version type.
 data Version = Version { versionNumber   :: [Int]        -- ^ @[1,42,3]@ ~= 1.42.3
@@ -49,11 +43,11 @@ instance Pretty Version where
   pretty (Version ver c suf rev) =
     dispVer ver <> dispC c <> dispSuf suf <> dispRev rev
     where
-      dispVer   = Disp.hcat . Disp.punctuate (Disp.char '.') . map Disp.int
-      dispC     = maybe Disp.empty Disp.char
-      dispSuf   = Disp.hcat . map pretty
-      dispRev 0 = Disp.empty
-      dispRev n = Disp.text "-r" <> Disp.int n
+      dispVer   = hcat . punctuate "." . map pretty
+      dispC     = maybe emptyDoc pretty
+      dispSuf   = hcat . map pretty
+      dispRev 0 = emptyDoc
+      dispRev n = "-r" <> pretty n
 
 -- | 'Version' parser using 'Parsec'.
 instance Parsec Version where
@@ -105,16 +99,16 @@ instance NFData Suffix where
 
 instance Pretty Suffix where
   pretty suf = case suf of
-    Alpha n -> Disp.text "_alpha" <> dispPos n
-    Beta n  -> Disp.text "_beta"  <> dispPos n
-    Pre n   -> Disp.text "_pre"   <> dispPos n
-    RC n    -> Disp.text "_rc"    <> dispPos n
-    P  n    -> Disp.text "_p"     <> dispPos n
+    Alpha n -> "_alpha" <> dispPos n
+    Beta n  -> "_beta"  <> dispPos n
+    Pre n   -> "_pre"   <> dispPos n
+    RC n    -> "_rc"    <> dispPos n
+    P  n    -> "_p"     <> dispPos n
 
     where
-      dispPos :: Int -> Disp.Doc
-      dispPos 0 = Disp.empty
-      dispPos n = Disp.int n
+      dispPos :: Int -> Doc ann
+      dispPos 0 = emptyDoc
+      dispPos n = pretty n
 
 instance Parsec Suffix where
   parsec = P.char '_'
