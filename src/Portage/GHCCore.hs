@@ -207,7 +207,9 @@ ghc924 = mkInfoIndex [9,2,4] ghc924_pkgs
 ghc902 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 
--- | Non-upgradeable core packages
+-- | Non-upgradeable core packages. Some packages are not included for
+-- simplicity (see 'mkIndex').
+--
 -- Sources:
 --  * release notes
 --      example: https://downloads.haskell.org/~ghc/8.6.5/docs/html/users_guide/8.6.5-notes.html
@@ -217,6 +219,7 @@ ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 --  * https://gitlab.haskell.org/ghc/ghc/-/blob/ghc-9.0.2-release/compiler/ghc.cabal.in#L60-77
 --  * https://flora.pm/packages/%40hackage/ghc/9.0.2/dependencies
 --  * https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history
+--  * @./scripts/scan-ghc-library-versions.bash@ in the gentoo-haskell tree
 ghc964_pkgs :: [Cabal.PackageIdentifier]
 ghc964_pkgs =
   [ p "array" [0,5,5,0]
