@@ -833,6 +833,7 @@ library hackport-internal
     , parallel                              >=3.2.1.0
     , parsec
     , pretty
+    , prettyprinter
     , process
     , QuickCheck
     , split
@@ -867,6 +868,7 @@ library hackport-internal
     Hackport.Completion
     Hackport.Dirs
     Hackport.Env
+    Hackport.Pretty
     Hackport.Util
     Merge
     Merge.Dependencies
