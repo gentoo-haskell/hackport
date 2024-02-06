@@ -30,8 +30,9 @@ import Control.Monad
 -- cabal
 import qualified Distribution.Package as Cabal (pkgName)
 import qualified Distribution.Simple.Utils as Cabal (equating)
-import Distribution.Pretty (prettyShow)
+import qualified Distribution.Pretty as Disp
 import Distribution.Parsec (simpleParsec)
+import Hackport.Pretty (prettyShow)
 
 import qualified Distribution.Client.GlobalFlags as CabalInstall
 import qualified Distribution.Client.IndexUtils as CabalInstall
@@ -182,7 +183,7 @@ statusPrinter packages = liftIO $ do
         let (PackageName c p) = pkg
         putStr (bold (show ix))
         putStr " "
-        putStr $ prettyShow c ++ '/' : bold (prettyShow p)
+        putStr $ prettyShow c ++ '/' : bold (Disp.prettyShow p)
         putStr " "
         forM_ ebuilds $ \e -> do
             putStr $ toColor (fmap (prettyShow . pkgVersion . ebuildId) e)

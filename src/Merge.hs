@@ -38,7 +38,8 @@ import qualified Distribution.PackageDescription.PrettyPrint as Cabal (showPacka
 import qualified Distribution.Solver.Types.SourcePackage as CabalInstall
 import qualified Distribution.Solver.Types.PackageIndex as CabalInstall
 
-import           Distribution.Pretty (prettyShow)
+import qualified Distribution.Pretty as Disp
+import           Hackport.Pretty (prettyShow)
 
 
 -- cabal-install
@@ -157,7 +158,7 @@ merge repoContext packageString users_cabal_flags
           notice $ "Ambiguous names: " ++ L.intercalate ", " names
           forM_ pkgs $ \ps -> do
               let p_name = (cabal_pkg_to_pn . NE.head) ps
-                  showPkg = prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId
+                  showPkg = Disp.prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId
               notice $ p_name ++ ": " ++ L.intercalate ", " (map showPkg (NE.toList ps))
           return $ pkgs >>= NE.toList
 
@@ -168,7 +169,7 @@ merge repoContext packageString users_cabal_flags
       Nothing -> do
         putStrLn "No such version for that package, available versions:"
         forM_ availablePkgs $ \ avail ->
-          putStrLn (prettyShow . CabalInstall.srcpkgPackageId $ avail)
+          putStrLn (Disp.prettyShow . CabalInstall.srcpkgPackageId $ avail)
         throw (ArgumentError "no such version for that package")
       Just avail -> return avail
 
@@ -179,7 +180,7 @@ merge repoContext packageString users_cabal_flags
   forM_ availablePkgs $ \ avail -> do
     let match_text | CabalInstall.srcpkgPackageId avail == CabalInstall.srcpkgPackageId selectedPkg = "* "
                   | otherwise = "- "
-    info $ match_text ++ (prettyShow . CabalInstall.srcpkgPackageId $ avail)
+    info $ match_text ++ (Disp.prettyShow . CabalInstall.srcpkgPackageId $ avail)
 
   let cabal_pkgId = CabalInstall.srcpkgPackageId selectedPkg
       norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
@@ -254,7 +255,7 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
   debug "searching for minimal suitable ghc version"
   (compiler_info, ghc_packages, pkgDesc0, _flags, pix) <- case GHCCore.minimumGHCVersionToBuildPackage pkgGenericDesc (Cabal.mkFlagAssignment user_specified_fas) of
               Just v  -> return v
-              Nothing -> let pn = prettyShow merged_cabal_pkg_name
+              Nothing -> let pn = Disp.prettyShow merged_cabal_pkg_name
                              cn = prettyShow cat
                          in error $ unlines [ "mergeGenericPackageDescription: failed to find suitable GHC for " ++ pn
                                             , "  You can try to merge the package manually:"
@@ -398,17 +399,17 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
     A.inColor A.Yellow True A.Default "This may take a while."
 
   debug $ "buildDepends pkgDesc0 raw: " ++ Cabal.showPackageDescription pkgDesc0
-  debug $ "buildDepends pkgDesc0: " ++ show (map prettyShow (Merge.exeAndLibDeps pkgDesc0))
-  debug $ "buildDepends pkgDesc:  " ++ show (map prettyShow (Merge.buildDepends pkgDesc))
+  debug $ "buildDepends pkgDesc0: " ++ show (map Disp.prettyShow (Merge.exeAndLibDeps pkgDesc0))
+  debug $ "buildDepends pkgDesc:  " ++ show (map Disp.prettyShow (Merge.buildDepends pkgDesc))
 
   -- <https://github.com/gentoo-haskell/hackport/issues/116>
   errorWarnOnUnbuildable
     (prettyShow cat)
-    (prettyShow merged_cabal_pkg_name)
+    (Disp.prettyShow merged_cabal_pkg_name)
     pkgDesc0
 
-  notice $ "Accepted depends: " ++ show (map prettyShow accepted_deps)
-  notice $ "Skipped  depends: " ++ show (map prettyShow skipped_deps)
+  notice $ "Accepted depends: " ++ show (map Disp.prettyShow accepted_deps)
+  notice $ "Skipped  depends: " ++ show (map Disp.prettyShow skipped_deps)
   notice $ "Dead flags: " ++ show (map pp_fa irresolvable_flag_assignments)
   notice $ "Dropped  flags: " ++ show (map (Cabal.unFlagName.fst) common_fa)
   notice $ "Active flags: " ++ show (map Cabal.unFlagName active_flags)
@@ -446,7 +447,7 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
   when fetch $ do
     let cabal_pkgId = Cabal.packageId (Merge.packageDescription pkgDesc)
         norm_pkgName = Cabal.packageName (Portage.normalizeCabalPackageId cabal_pkgId)
-    fetchDigestAndCheck (overlayPath </> prettyShow cat </> prettyShow norm_pkgName)
+    fetchDigestAndCheck (overlayPath </> prettyShow cat </> Disp.prettyShow norm_pkgName)
       $ Portage.fromCabalPackageId cat cabal_pkgId
 
 -- | Run @ebuild@ and @pkgcheck@ commands in the directory of the
@@ -459,7 +460,7 @@ fetchDigestAndCheck
   -> Portage.PackageId -- ^ newest ebuild
   -> Env env ()
 fetchDigestAndCheck ebuildDir pkgId = do
-  let ebuild = prettyShow (Portage.cabalPkgName . Portage.packageId $ pkgId)
+  let ebuild = Disp.prettyShow (Portage.cabalPkgName . Portage.packageId $ pkgId)
                ++ "-" ++ prettyShow (Portage.pkgVersion pkgId) <.> "ebuild"
   withWorkingDirectory ebuildDir $ do
     notice "Recalculating digests..."

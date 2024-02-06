@@ -10,9 +10,9 @@ import qualified Portage.Overlay as Overlay
 import qualified Portage.PackageId as Portage
 
 import Distribution.Verbosity
-import Distribution.Pretty (prettyShow)
 import qualified Distribution.Package as Cabal
 import Distribution.Simple.Utils
+import Hackport.Pretty (prettyShow)
 
 import qualified Data.Map as Map
 

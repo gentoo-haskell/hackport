@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Portage.PackageId
 License     : GPL-3+
@@ -25,15 +26,17 @@ module Portage.PackageId (
 import qualified Distribution.Compat.CharParsing as P
 import qualified Distribution.Package as Cabal
 import           Distribution.Parsec (CabalParsing(..), Parsec(..), explicitEitherParsec)
-import           Distribution.Pretty (Pretty(..), prettyShow)
+import qualified Distribution.Pretty as Disp
 
 import qualified Portage.Version as Portage
 
 import           Control.DeepSeq (NFData(..))
 import qualified Data.Char as Char
-import qualified Text.PrettyPrint as Disp
-import           Text.PrettyPrint ((<>))
+-- import qualified Text.PrettyPrint as Disp
+-- import           Text.PrettyPrint ((<>))
 import           System.FilePath ((</>))
+import           Prettyprinter hiding (cat)
+import           Prettyprinter.Render.String
 
 #if MIN_VERSION_base(4,11,0)
 import Prelude hiding ((<>))
@@ -54,7 +57,7 @@ instance NFData Category where
   rnf (Category c) = rnf c
 
 instance Pretty Category where
-  pretty (Category c) = Disp.text c
+  pretty (Category c) = pretty c
 
 instance Parsec Category where
   parsec = Category <$> P.munch1 categoryChar
@@ -66,7 +69,7 @@ instance NFData PackageName where
 
 instance Pretty PackageName where
   pretty (PackageName cat name) =
-    pretty cat <> Disp.char '/' <> pretty name
+    pretty cat <> "/" <> pretty (Disp.prettyShow name)
 
 instance Parsec PackageName where
   parsec = do
@@ -80,7 +83,7 @@ instance NFData PackageId where
 
 instance Pretty PackageId where
   pretty (PackageId name version) =
-    pretty name <> Disp.char '-' <> pretty version
+    pretty name <> "-" <> pretty version
 
 instance Parsec PackageId where
   parsec = do
@@ -95,7 +98,7 @@ instance Parsec PackageId where
 -- "dev-haskell/foo-bar2/foo-bar2-3.0.0b_rc2-r1.ebuild"
 packageIdToFilePath :: PackageId -> FilePath
 packageIdToFilePath (PackageId (PackageName cat pn) version) =
-  prettyShow cat </> prettyShow pn </> prettyShow pn <-> prettyShow version <.> "ebuild"
+  prettyShow cat </> Disp.prettyShow pn </> Disp.prettyShow pn <-> prettyShow version <.> "ebuild"
   where
     a <-> b = a ++ '-':b
     a <.> b = a ++ '.':b
@@ -200,4 +203,10 @@ parseCabalPackageName = do
 -- >>> cabal_pn_to_PN (Cabal.mkPackageName "FooBar1")
 -- "foobar1"
 cabal_pn_to_PN :: Cabal.PackageName -> String
-cabal_pn_to_PN = map Char.toLower . prettyShow
+cabal_pn_to_PN = map Char.toLower . Disp.prettyShow
+
+prettyShow :: Pretty a => a -> String
+prettyShow
+  = renderString
+  . layoutPretty defaultLayoutOptions { layoutPageWidth = Unbounded }
+  . pretty

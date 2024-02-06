@@ -7,7 +7,8 @@ import           QuickCheck.Instances
 
 import qualified Data.Char as Char
 import qualified Distribution.Package as Cabal
-import           Distribution.Pretty (prettyShow)
+import qualified Distribution.Pretty as Disp
+import           Hackport.Pretty (prettyShow)
 
 import           Portage.PackageId
 
@@ -20,7 +21,7 @@ spec = do
         in \(ComplexVersion version) ->
              packageIdToFilePath (PackageId (PackageName cat name) version)
              `shouldBe`
-             "dev-haskell/" ++ prettyShow name ++ "/" ++ prettyShow name ++ "-" ++
+             "dev-haskell/" ++ Disp.prettyShow name ++ "/" ++ Disp.prettyShow name ++ "-" ++
              prettyShow version ++ ".ebuild"
 
   describe "filePathToPackageId" $ do
@@ -29,14 +30,14 @@ spec = do
           name = Cabal.mkPackageName "foo-bar2+"
         in \(ComplexVersion version) ->
              filePathToPackageId cat
-             (prettyShow name ++ "-" ++ prettyShow version)
+             (Disp.prettyShow name ++ "-" ++ prettyShow version)
              `shouldBe`
              Just (PackageId (PackageName cat name) version)
     prop "returns Nothing on a malformed FilePath" $ do
       let cat = Category "dev-haskell"
           name = Cabal.mkPackageName "foo-bar-2+"
         in \(ComplexVersion version) ->
-             filePathToPackageId cat (prettyShow name ++ "-" ++ prettyShow version)
+             filePathToPackageId cat (Disp.prettyShow name ++ "-" ++ prettyShow version)
              `shouldBe`
              Nothing
 
@@ -50,7 +51,7 @@ spec = do
       let cat = Category "dev-haskell"
           name = Cabal.mkPackageName "package-name1+"
         in \(ComplexVersion version) ->
-             parseFriendlyPackage (prettyShow cat ++ "/" ++ prettyShow name
+             parseFriendlyPackage (prettyShow cat ++ "/" ++ Disp.prettyShow name
                                     ++ "-" ++ prettyShow version)
              `shouldBe`
              Right (Just cat, name, Just version)
@@ -58,7 +59,7 @@ spec = do
       let cat = Category "dev-haskell"
           name = Cabal.mkPackageName "package-name-1+"
         in \(ComplexVersion version) ->
-             parseFriendlyPackage (prettyShow cat ++ "/" ++ prettyShow name
+             parseFriendlyPackage (prettyShow cat ++ "/" ++ Disp.prettyShow name
                                    ++ "-" ++ prettyShow version)
              `shouldNotBe`
              Right (Just cat, name, Just version)
