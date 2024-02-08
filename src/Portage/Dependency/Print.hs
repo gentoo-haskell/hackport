@@ -13,6 +13,8 @@ import Portage.Use
 
 import Portage.PackageId
 
+import Data.Default.Class
+import Data.Maybe (catMaybes)
 import Hackport.Pretty
 
 import Portage.Dependency.Types
@@ -62,20 +64,31 @@ showDepend (DependAtom (Atom pn range dattr))
         DRange lb InfinityB    -> dispLBound pn lb <> dispDAttr dattr
         -- TODO: handle >=foo-0    special case
         -- TODO: handle =foo-x.y.* special case
-        DRange lb ub          ->    showDepend (DependAtom (Atom pn (DRange lb InfinityB) dattr))
-                                 <> " "
-                                 <> showDepend (DependAtom (Atom pn (DRange ZeroB ub)    dattr))
+        DRange lb ub          ->     showDepend (DependAtom (Atom pn (DRange lb InfinityB) dattr))
+                                 <+> showDepend (DependAtom (Atom pn (DRange ZeroB ub) def))
         DExact v              -> "~" <> pretty pn <-> pretty v { versionRevision = 0 } <> dispDAttr dattr
 
-showDepend (DependIfUse u td fd)  = valign $ vcat [td_doc, fd_doc]
+showDepend (DependIfUse u td fd)  = valign $ vcat $ catMaybes [td_doc, fd_doc]
     where td_doc
-              | is_empty_dependency td = emptyDoc
-              | otherwise = pretty u <> "?" <> sp <> sparens (showDepend td)
+              | is_empty_dependency td = Nothing
+              | otherwise = Just $ vcat
+                  [ pretty u <> "?" <+> "("
+                  , indent 1 (emptyDoc <> showDepend td)
+                  , ")"
+                  ]
           fd_doc
-              | is_empty_dependency fd = emptyDoc
-              | otherwise = "!" <> pretty u <> "?" <> sp <> sparens (showDepend fd)
-showDepend (DependAnyOf deps)   = "||" <> sp <> sparens (vcat $ map showDependInAnyOf deps)
-showDepend (DependAllOf deps)   = valign $ vcat $ map showDepend deps
+              | is_empty_dependency fd = Nothing
+              | otherwise = Just $ vcat
+                  [ "!" <> pretty u <> "?" <+> "("
+                  , indent 1 (emptyDoc <> showDepend fd)
+                  , ")"
+                  ]
+showDepend (DependAnyOf deps)   = vcat $
+    [ "||" <+> "("
+    , indent 1 (vcat (map showDependInAnyOf deps))
+    , ")"
+    ]
+showDepend (DependAllOf deps)   = vcat $ map showDepend deps
 
 -- needs special grouping
 showDependInAnyOf :: Dependency -> Doc ann
