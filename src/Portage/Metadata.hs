@@ -78,13 +78,9 @@ updateMetadata cmdEnv ebuild flags currentMeta =
         else S.empty
 
     -- Sometimes the .cabal file will explicitly list source repos
-    sourceRemoteIds =
-      let r = matchURIs (EBuild.sourceURIs ebuild)
-      in 
-          if S.null r
-            -- If the list of source remote-ids is empty, we fall back to using the homepage
-            then matchURIs [EBuild.homepage ebuild]
-            else r
+    sourceRemoteIds = matchURIs (EBuild.sourceURIs ebuild)
+        -- Try to extract a remote id using the homepage
+        <> matchURIs [EBuild.homepage ebuild]
 
     -- Create the new metadata, adding new USE flags (if any) to those of the
     -- existing metadata. If an existing flag has a new and old description,
