@@ -9,7 +9,11 @@ as understood by the Portage package manager.
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-} -- Needed to get OverloadedStrings to work
+
+-- Needed to get OverloadedStrings to work
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Portage.EBuild
         ( EBuild(..)
         , ebuildTemplate
@@ -259,9 +263,18 @@ fromDoc = fromDocs . (:[])
 fromDocs :: Foldable t => t (Doc ann) -> LinesBuilder ann ()
 fromDocs = LinesBuilder . tell . Endo . (\x -> (toList x ++))
 
+-- | Builds up a list of @prettyprinter@ 'Doc's and then concats them with
+--   'vcat'. It is helpful for when a logical piece of the ebuild may use a
+--   variable number of lines, including no lines at all.
+--
+--   Since it is a 'Monad', it can be used in a @do@ block.
+--
+--   Uses 'Endo' internally for more efficient list concats
 newtype LinesBuilder ann a = LinesBuilder (Writer (Endo [Doc ann]) a)
     deriving (Functor, Applicative, Monad)
 
+-- TypeFamilies/TypeOperators needs to be used here otherwise we get errors
+-- when we go try to use OverloadedStrings
 instance (a ~ ()) => IsString (LinesBuilder ann a) where
     fromString = fromDoc . fromString
 
