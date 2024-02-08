@@ -36,14 +36,6 @@ data Example = Example
 contrivedExamples :: [Example]
 contrivedExamples =
     [ Example
-        "https://cran.r-project.org/web/packages/foo/"
-        cranParser
-        (RemoteIdCRAN "foo")
-    , Example
-        "https://ctan.org/pkg/foo"
-        ctanParser
-        (RemoteIdCTAN "foo")
-    , Example
         "https://gitweb.gentoo.org/foo.git/"
         gentooParser
         (RemoteIdGentoo "foo")
@@ -64,25 +56,9 @@ contrivedExamples =
         osdnParser
         (RemoteIdOSDN "foo")
     , Example
-        "https://pecl.php.net/package/foo"
-        peclParser
-        (RemoteIdPECL "foo")
-    , Example
-        "https://pypi.org/project/foo/"
-        pypiParser
-        (RemoteIdPyPI "foo")
-    , Example
-        "https://rubygems.org/gems/foo"
-        rubygemsParser
-        (RemoteIdRubygems "foo")
-    , Example
         "https://sourceforge.net/projects/foo/"
         sourceforgeParser
         (RemoteIdSourceforge "foo")
-    , Example
-        "https://vim.org/scripts/script.php?script_id=foo"
-        vimParser
-        (RemoteIdVim "foo")
     ]
 
 realWorldExamples :: [Example]
