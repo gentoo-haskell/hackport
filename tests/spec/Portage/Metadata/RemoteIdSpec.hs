@@ -29,6 +29,10 @@ data Example = Example
     , exampleRemoteId :: RemoteId
     }
 
+-- | Since many parsers are nearly identical, and many of the hosts will never
+--   source haskell code, these tests don't have to be exhaustive. If you run
+--   into a URL that does not parse correctly, be sure to add it and the
+--   expected result to 'realWorldExamples'.
 contrivedExamples :: [Example]
 contrivedExamples =
     [ Example
@@ -99,4 +103,28 @@ realWorldExamples =
         "https://github.com/gentoo-haskell/hackport#readme"
         githubParser
         (RemoteIdGithub "gentoo-haskell" "hackport")
+    , Example
+        "https://codeberg.org/xmobar/xmobar"
+        codebergParser
+        (RemoteIdCodeberg "xmobar" "xmobar")
+    , Example
+        "git://codeberg.org/xmobar/xmobar.git"
+        codebergParser
+        (RemoteIdCodeberg "xmobar" "xmobar")
+    , Example
+        "https://invent.kde.org/plasma/sddm-kcm"
+        kdeParser
+        (RemoteIdKDE "plasma" "sddm-kcm")
+    , Example
+        "https://bitbucket.org/multicoreware/x265_git/"
+        bitbucketParser
+        (RemoteIdBitbucket "multicoreware" "x265_git")
+    , Example
+        "https://git.sr.ht/~steef/snixembed"
+        sourcehutParser
+        (RemoteIdSourcehut "~steef" "snixembed")
+    , Example
+        "https://sr.ht/~emersion/basu/"
+        sourcehutParser
+        (RemoteIdSourcehut "~emersion" "basu")
     ]

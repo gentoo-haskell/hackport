@@ -21,17 +21,26 @@ module Portage.Metadata.RemoteId
     , definedParsers
       -- ** Individual parsers
     , hackageParser
+    , bitbucketParser
+    , codebergParser
+    , cpanParser
     , cranParser
     , ctanParser
+    , freedesktopParser
     , gentooParser
     , githubParser
     , gitlabParser
+    , gnomeParser
+    , kdeParser
     , launchpadParser
     , osdnParser
     , peclParser
     , pypiParser
     , rubygemsParser
+    , savannahParser
+    , savannahNonGnuParser
     , sourceforgeParser
+    , sourcehutParser
     , vimParser
       -- ** Utility
       -- *** URI scheme
@@ -60,19 +69,31 @@ import System.FilePath.Posix
 import Text.Parsec
 import Text.Parsec.String
 
+-- | Many of these are unlikely to source any Haskell code, but they are added
+-- for completeness. The full list can be seen at:
+-- <https://github.com/pkgcore/pkgcheck/blob/master/src/pkgcheck/checks/network.py>
 data RemoteId
     = RemoteIdHackage String       -- ^ Hackage package
+    | RemoteIdBitbucket String String -- ^ Bitbucket project
+    | RemoteIdCodeberg String String -- ^ Codeberg project
+    | RemoteIdCPAN String          -- ^ Perl package
     | RemoteIdCRAN String          -- ^ CRAN package
     | RemoteIdCTAN String          -- ^ CTAN package
+    | RemoteIdFreedesktop String String -- ^ Freedesktop GitLab project
     | RemoteIdGentoo String        -- ^ Gentoo project
     | RemoteIdGithub String String -- ^ Github user and repo
     | RemoteIdGitlab String String -- ^ Gitlab user and repo
+    | RemoteIdGnome String String  -- ^ Gnome GitLab project
+    | RemoteIdKDE String String    -- ^ KDE Invent project
     | RemoteIdLaunchpad String     -- ^ Launchpad project
     | RemoteIdOSDN String          -- ^ OSDN project
     | RemoteIdPECL String          -- ^ PECL package
     | RemoteIdPyPI String          -- ^ PyPI project
     | RemoteIdRubygems String      -- ^ Rubygems gem
+    | RemoteIdSavannah String      -- ^ GNU Savannah project
+    | RemoteIdSavannahNonGNU String -- ^ NonGNU Savannah project
     | RemoteIdSourceforge String   -- ^ Sourceforge project
+    | RemoteIdSourcehut String String -- ^ sourcehut project
     | RemoteIdVim String           -- ^ Vim script
     deriving (Show, Eq, Ord)
 
@@ -108,17 +129,26 @@ prettyPrintRemoteIds set
 prettyPrintRemoteId :: RemoteId -> String
 prettyPrintRemoteId = \case
     RemoteIdHackage p     -> pp "hackage"     p
+    RemoteIdBitbucket u r -> pp "bitbucket"   $ u ++ "/" ++ r
+    RemoteIdCodeberg u r  -> pp "codeberg"    $ u ++ "/" ++ r
+    RemoteIdCPAN p        -> pp "cpan"        p
     RemoteIdCRAN p        -> pp "cran"        p
     RemoteIdCTAN p        -> pp "ctan"        p
+    RemoteIdFreedesktop u r -> pp "freedesktop-gitlab" $ u ++ "/" ++ r
     RemoteIdGentoo p      -> pp "gentoo"      p
     RemoteIdGithub u r    -> pp "github"      $ u ++ "/" ++ r
     RemoteIdGitlab u r    -> pp "gitlab"      $ u ++ "/" ++ r
+    RemoteIdGnome u r     -> pp "gnome-gitlab" $ u ++ "/" ++ r
     RemoteIdLaunchpad p   -> pp "launchpad"   p
+    RemoteIdKDE u r       -> pp "kde-invent"  $ u ++ "/" ++ r
     RemoteIdOSDN p        -> pp "osdn"        p
     RemoteIdPECL p        -> pp "pecl"        p
     RemoteIdPyPI p        -> pp "pypi"        p
     RemoteIdRubygems g    -> pp "rubygems"    g
+    RemoteIdSavannah p    -> pp "savannah"    p
+    RemoteIdSavannahNonGNU p -> pp "savannah-nongnu" p
     RemoteIdSourceforge p -> pp "sourceforge" p
+    RemoteIdSourcehut u r -> pp "sourcehut"   $ u ++ "/" ++ r
     RemoteIdVim s         -> pp "vim"         s
   where
     pp t v = "\t\t<remote-id type=\"" ++ t ++ "\">" ++ v ++ "</remote-id>"
@@ -144,17 +174,26 @@ matchURI str = asum $ map runUriP definedParsers
 definedParsers :: [URIParser]
 definedParsers =
     [ hackageParser
+    , bitbucketParser
+    , codebergParser
+    , cpanParser
     , cranParser
     , ctanParser
+    , freedesktopParser
     , gentooParser
     , githubParser
     , gitlabParser
+    , gnomeParser
+    , kdeParser
     , launchpadParser
     , osdnParser
     , peclParser
     , pypiParser
     , rubygemsParser
+    , savannahParser
+    , savannahNonGnuParser
     , sourceforgeParser
+    , sourcehutParser
     , vimParser
     ]
 
@@ -172,6 +211,51 @@ hackageParser = URIParser
     ignore
     ignore
     (\_ _ _ _ p _ _ -> RemoteIdHackage p)
+
+-- | @"bitbucket": "https://bitbucket.org/{project}"@
+bitbucketParser :: URIParser
+bitbucketParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (domainOrWWW "bitbucket.org")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdBitbucket u r)
+
+-- | @"codeberg": "https://codeberg.org/{project}"@
+codebergParser :: URIParser
+codebergParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (domainOrWWW "codeberg.org")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdCodeberg u r)
+
+-- | @"cpan": "https://metacpan.org/dist/{project}"@
+cpanParser :: URIParser
+cpanParser = URIParser
+    httpScheme
+    ignore
+    (string "metacpan.org")
+    ignore
+    (do
+        (p:_) <- stripPrefixP "/dist"
+        pure p
+    )
+    ignore
+    ignore
+    (\_ _ _ _ p _ _ -> RemoteIdCPAN p)
 
 -- | @'cran': 'https://cran.r-project.org/web/packages/{project}/'@
 cranParser :: URIParser
@@ -202,6 +286,21 @@ ctanParser = URIParser
     ignore
     ignore
     (\_ _ _ _ p _ _ -> RemoteIdCTAN p)
+
+-- | @"freedesktop-gitlab": "https://gitlab.freedesktop.org/{project}.git/"@
+freedesktopParser :: URIParser
+freedesktopParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (domainOrWWW "gitlab.freedesktop.org")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdFreedesktop u r)
 
 -- | @'gentoo': 'https://gitweb.gentoo.org/{project}.git/'@
 gentooParser :: URIParser
@@ -247,6 +346,36 @@ gitlabParser = URIParser
     ignore
     ignore
     (\_ _ _ _ (u,r) _ _ -> RemoteIdGitlab u r)
+
+-- | @"gnome-gitlab": "https://gitlab.gnome.org/{project}.git/"@
+gnomeParser :: URIParser
+gnomeParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (domainOrWWW "gitlab.gnome.org")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdGnome u r)
+
+-- | @"kde-invent": "https://invent.kde.org/{project}"@
+kdeParser :: URIParser
+kdeParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (domainOrWWW "invent.kde.org")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdKDE u r)
 
 -- | @'launchpad': 'https://launchpad.net/{project}'@
 launchpadParser :: URIParser
@@ -323,6 +452,36 @@ rubygemsParser = URIParser
     ignore
     (\_ _ _ _ g _ _ -> RemoteIdRubygems g)
 
+-- | @"savannah": "https://savannah.gnu.org/projects/{project}"@
+savannahParser :: URIParser
+savannahParser = URIParser
+    httpScheme
+    ignore
+    (string "savannah.gnu.org")
+    ignore
+    (do
+        (p:_) <- stripPrefixP "/projects"
+        pure p
+    )
+    ignore
+    ignore
+    (\_ _ _ _ p _ _ -> RemoteIdSavannah p)
+
+-- | @"savannah-nongnu": "https://savannah.nongnu.org/projects/{project}"@
+savannahNonGnuParser :: URIParser
+savannahNonGnuParser = URIParser
+    httpScheme
+    ignore
+    (string "savannah.nongnu.org")
+    ignore
+    (do
+        (p:_) <- stripPrefixP "/projects"
+        pure p
+    )
+    ignore
+    ignore
+    (\_ _ _ _ p _ _ -> RemoteIdSavannahNonGNU p)
+
 -- | @'sourceforge': 'https://sourceforge.net/projects/{project}/'@
 sourceforgeParser :: URIParser
 sourceforgeParser = URIParser
@@ -337,6 +496,21 @@ sourceforgeParser = URIParser
     ignore
     ignore
     (\_ _ _ _ p _ _ -> RemoteIdSourceforge p)
+
+-- | @"sourcehut": "https://sr.ht/{project}/"@
+sourcehutParser :: URIParser
+sourcehutParser = URIParser
+    (choice [httpScheme, string "git:"])
+    ignore
+    (subdomain "sr.ht")
+    ignore
+    (do
+        (u:r:_) <- stripPrefixP "/"
+        (u,) <$> gitPath r
+    )
+    ignore
+    ignore
+    (\_ _ _ _ (u,r) _ _ -> RemoteIdSourcehut u r)
 
 -- | @'vim': 'https://vim.org/scripts/script.php?script_id={project}'@
 vimParser :: URIParser
