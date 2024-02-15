@@ -1,3 +1,12 @@
+## v0.8.5.1 (2023-02-14)
+
+Release v0.8.5.1
+
+- Fix bug where dependencies do not get a `:=` slot operator
+
+- Improve `remote-id` generation for `metadata.xml` by adding some relevant
+  repository types and removing irrelevant ones.
+
 ## v0.8.5.0 (2023-02-05)
 
 Release v0.8.5.0

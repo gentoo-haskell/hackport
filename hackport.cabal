@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name:          hackport
-version:       0.8.5.0
+version:       0.8.5.1
 license:       GPL-3.0-or-later
 license-file:  LICENSE
 author:        Henning Günther, Duncan Coutts, Lennart Kolmodin
