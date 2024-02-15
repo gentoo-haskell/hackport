@@ -869,7 +869,7 @@ library hackport-internal
     Portage.Overlay
     Portage.PackageId
     Portage.Resolve
-    Portage.Tables
+    Portage.Slots
     Portage.Use
     Portage.Version
     Status

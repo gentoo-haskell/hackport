@@ -43,7 +43,7 @@ import qualified Portage.Dependency.Normalize as PN
 import qualified Portage.Overlay as Portage
 import qualified Portage.PackageId as Portage
 import qualified Portage.Use as Portage
-import qualified Portage.Tables as Portage
+import qualified Portage.Slots as Portage
 import qualified Cabal2Ebuild as C2E
 
 import qualified Portage.GHCCore as GHCCore

@@ -5,7 +5,7 @@ Maintainer  : haskell@gentoo.org
 
 Tables of Portage-specific conversions.
 -}
-module Portage.Tables
+module Portage.Slots
   ( set_build_slot
   ) where
 
