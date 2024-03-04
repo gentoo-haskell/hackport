@@ -394,6 +394,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("libbrotlidec", any_c_p "app-arch" "brotli")
       , ("libbrotlienc", any_c_p "app-arch" "brotli")
       , ("libarchive", at_least_c_p_v "app-arch" "libarchive" [3,5,2])
+      , ("double-conversion", any_c_p "dev-libs" "double-conversion")
       ]
 
 ---------------------------------------------------------------
