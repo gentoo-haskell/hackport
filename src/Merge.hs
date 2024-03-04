@@ -24,6 +24,7 @@ import           Data.Function (on)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Set as S
 import qualified Data.Time.Clock as TC
 
@@ -144,17 +145,21 @@ merge repoContext packageString users_cabal_flags
   index <- fmap packageIndex $ liftIO $ getSourcePackages verbosity repoContext
 
   -- find all packages that maches the user specified package name
+  let searchResults = CabalInstall.searchByName index user_pname_str
   availablePkgs <-
-    case map snd (CabalInstall.searchByName index user_pname_str) of
+    case mapMaybe (NE.nonEmpty . snd) searchResults of
       [] -> throw (PackageNotFound user_pname_str)
-      [pkg] -> return pkg
-      pkgs  -> do let cabal_pkg_to_pn pkg = Cabal.unPackageName $ Cabal.pkgName (CabalInstall.srcpkgPackageId pkg)
-                      names      = map (cabal_pkg_to_pn . L.head) pkgs
-                  notice $ "Ambiguous names: " ++ L.intercalate ", " names
-                  forM_ pkgs $ \ps ->
-                      do let p_name = (cabal_pkg_to_pn . L.head) ps
-                         notice $ p_name ++ ": " ++ (L.intercalate ", " $ map (prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId) ps)
-                  return $ concat pkgs
+      [pkg] -> return (NE.toList pkg)
+      pkgs -> do
+          let cabal_pkg_to_pn pkg = Cabal.unPackageName $
+                  Cabal.pkgName (CabalInstall.srcpkgPackageId pkg)
+              names      = map (cabal_pkg_to_pn . NE.head) pkgs
+          notice $ "Ambiguous names: " ++ L.intercalate ", " names
+          forM_ pkgs $ \ps -> do
+              let p_name = (cabal_pkg_to_pn . NE.head) ps
+                  showPkg = prettyShow . Cabal.pkgVersion . CabalInstall.srcpkgPackageId
+              notice $ p_name ++ ": " ++ L.intercalate ", " (map showPkg (NE.toList ps))
+          return $ pkgs >>= NE.toList
 
 
   -- select a single package taking into account the user specified version
@@ -411,10 +416,12 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
       \name -> info $ "Excluded packages (comes with ghc): " ++ Cabal.unPackageName name
 
   -- We only add the current arch to KEYWORDS
-  thisArch <- run_cmd "portageq envvar ARCH" >>=
-      maybe
-          (die "Error running 'portageq envvar ARCH'")
-          (pure . head . lines)
+  thisArch <- do
+      result <- run_cmd "portageq envvar ARCH"
+      case fmap lines result of
+          Nothing -> die "Error running 'portageq envvar ARCH'"
+          Just [] -> die "No output from 'portageq envvar ARCH'"
+          Just (l:_) -> pure l
 
   let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
           where b True  = ""

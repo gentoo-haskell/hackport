@@ -81,7 +81,7 @@ parsePaludisInfo text =
     name <- case words firstLine of
                 ["Repository", nm] -> return (init nm)
                 _ -> fail "not a repository chunk"
-    let dict = [ (head ln, unwords (tail ln)) | ln <- map words lns ]
+    let dict = [ (lnHead, unwords lnTail) | (lnHead:lnTail) <- map words lns ]
     location <- lookup "location" dict
     distfiles <- lookup "distdir" dict
     return (name, (location, distfiles))

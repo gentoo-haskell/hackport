@@ -271,11 +271,12 @@ getRestIfPrefix _ [] = Nothing
 subStr :: String                -- ^ the search string
        -> String                -- ^ the string to be searched
        -> Maybe (String,String) -- ^ Just (pre,post) if string is found
-subStr sstr str = case getRestIfPrefix sstr str of
-    Nothing -> if null str then Nothing else case subStr sstr (tail str) of
-        Nothing -> Nothing
-        Just (pre,post) -> Just (head str:pre,post)
-    Just rest -> Just ([],rest)
+subStr sstr str = case (getRestIfPrefix sstr str, str) of
+    (Just rest, _) -> Just ("",rest)
+    (Nothing, "") -> Nothing
+    (Nothing, strHead:strTail) -> do
+        (pre, post) <- subStr sstr strTail
+        Just (strHead:pre, post)
 
 replaceMultiVars ::
     [(String,String)] -- ^ pairs of variable name and content

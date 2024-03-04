@@ -10,6 +10,8 @@ module Portage.Dependency.Normalize
 import qualified Control.Arrow as A
 import           Control.Monad
 import qualified Data.List as L
+import           Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Set as S
 import           Data.Maybe
 
@@ -169,19 +171,24 @@ combine_use_guards d =
     where go = combine_use_guards
 
 find_use_intersections :: [Dependency] -> [Dependency]
-find_use_intersections = map merge_use_intersections . L.groupBy is_use_mergeable
+find_use_intersections = map merge_use_intersections . NE.groupBy is_use_mergeable
     where
         is_use_mergeable :: Dependency -> Dependency -> Bool
         is_use_mergeable (DependIfUse lu _ltd _lfd) (DependIfUse ru _rtd _rfd)
             | lu == ru       = True
         is_use_mergeable _ _ = False
 
-        merge_use_intersections :: [Dependency] -> Dependency
-        merge_use_intersections [x] = x
-        merge_use_intersections ds = pop_common $ DependIfUse u (DependAllOf tds) (DependAllOf fds)
-            where DependIfUse u _tf _fd = head ds
+        merge_use_intersections :: NonEmpty Dependency -> Dependency
+        -- Dependency was not grouped by is_use_mergable; no optimization is
+        -- possible.
+        merge_use_intersections (x :| []) = x
+        -- When two or more dependencies are grouped together by
+        -- is_use_mergable, they can be optimized.
+        merge_use_intersections ds = pop_common $
+            DependIfUse u (DependAllOf tds) (DependAllOf fds)
+            where DependIfUse u _tf _fd = NE.head ds
                   tfdeps ~(DependIfUse _u td fd) = (td, fd)
-                  (tds, fds) = unzip $ map tfdeps ds
+                  (tds, fds) = unzip $ map tfdeps (NE.toList ds)
 
 pop_common :: Dependency -> Dependency
 -- depend
