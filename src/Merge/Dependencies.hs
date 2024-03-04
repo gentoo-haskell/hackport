@@ -600,4 +600,5 @@ pkgconfig_table =
   ,("harfbuzz",                    ("media-libs", "harfbuzz", def))
   ,("harfbuzz-gobject",            ("media-libs", "harfbuzz", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("x11",                         ("x11-libs", "libX11", def))
+  ,("icu-i18n",                    ("dev-libs", "icu", def))
   ]
