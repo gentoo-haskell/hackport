@@ -30,7 +30,7 @@ import           Data.Default.Class
 data SlotDepend = AnySlot          -- ^ nothing special
                 | AnyBuildTimeSlot -- ^ ':='
                 | GivenSlot String -- ^ ':slotno'
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Show, Read, Ord)
 
 instance NFData SlotDepend where
   rnf AnySlot = ()
@@ -41,7 +41,7 @@ instance NFData SlotDepend where
 data LBound = StrictLB    Version -- ^ greater than (>)
             | NonstrictLB Version -- ^ greater than or equal to (>=)
             | ZeroB               -- ^ no lower bound
-    deriving (Eq, Show)
+    deriving (Eq, Show, Read)
 
 instance NFData LBound where
   rnf (StrictLB v) = rnf v
@@ -64,7 +64,7 @@ instance Ord LBound where
 data UBound = StrictUB Version    -- ^ less than (<)
             | NonstrictUB Version -- ^ less than or equal to (<=)
             | InfinityB           -- ^ no upper bound
-    deriving (Eq, Show)
+    deriving (Eq, Show, Read)
 
 instance NFData UBound where
   rnf (StrictUB v) = rnf v
@@ -90,7 +90,7 @@ instance Ord UBound where
 -- version range between a given 'LBound' and 'UBound'.
 data DRange = DRange LBound UBound
             | DExact Version
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Show, Read, Ord)
 
 instance NFData DRange where
   rnf (DRange l u) = rnf l `seq` rnf u
@@ -108,7 +108,7 @@ range_as_broad_as (DRange llow lup) (DRange rlow rup)
 range_as_broad_as _ _ = False
 
 data DAttr = DAttr SlotDepend [UseFlag]
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Show, Read, Ord)
 
 instance NFData DAttr where
   rnf (DAttr sd uf) = rnf sd `seq` rnf uf
@@ -120,7 +120,7 @@ data Dependency = DependAtom Atom
                 | DependAnyOf         [Dependency]
                 | DependAllOf         [Dependency]
                 | DependIfUse Use      Dependency Dependency -- u? ( td ) !u? ( fd )
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Show, Read, Ord)
 
 instance NFData Dependency where
   rnf (DependAtom a) = rnf a
@@ -128,7 +128,7 @@ instance NFData Dependency where
   rnf (DependAllOf ds) = rnf ds
   rnf (DependIfUse u d d') = rnf u `seq` rnf d `seq` rnf d'
 
-data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Ord)
+data Atom = Atom PackageName DRange DAttr deriving (Eq, Show, Read, Ord)
 
 instance NFData Atom where
   rnf (Atom pn dr da) = rnf pn `seq` rnf dr `seq` rnf da

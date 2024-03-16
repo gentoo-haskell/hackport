@@ -13,7 +13,7 @@ data CabalFeature = Lib
                   | Hoogle
                   | HsColour
                   | TestSuite
-    deriving Eq
+    deriving (Show, Read, Eq)
 
 instance Render CabalFeature where
     render = \case

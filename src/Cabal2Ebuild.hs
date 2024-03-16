@@ -30,7 +30,8 @@ import qualified Distribution.Version as Cabal  ( VersionRange
                                                 , cataVersionRange, normaliseVersionRange
                                                 , majorUpperBound, mkVersion )
 import Distribution.Version (VersionRangeF(..))
-import Distribution.Pretty (prettyShow)
+import qualified Distribution.Pretty as Disp
+import Hackport.Pretty (prettyShow)
 
 import qualified Distribution.Utils.ShortText as ST
 
@@ -54,7 +55,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
     E.name        = Portage.cabal_pn_to_PN cabal_pn,
     E.category    = prettyShow cat,
     E.hackage_name= cabalPkgName,
-    E.version     = prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
+    E.version     = Disp.prettyShow (Cabal.pkgVersion (Cabal.package pkg)),
     E.revision    = getHackageRevision,
     E.sourceURIs  = getSourceURIs,
     E.description = ST.fromShortText $ if ST.null (Cabal.synopsis pkg)
@@ -78,7 +79,7 @@ cabal2ebuild cat pkg = Portage.ebuildTemplate {
                                    else [])
   } where
         cabal_pn = Cabal.pkgName $ Cabal.package pkg
-        cabalPkgName = prettyShow cabal_pn
+        cabalPkgName = Disp.prettyShow cabal_pn
         hasLibs = isJust (Cabal.library pkg)
         hasTests = (not . null) (Cabal.testSuites pkg)
         getHackageRevision =
