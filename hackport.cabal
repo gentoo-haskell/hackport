@@ -846,6 +846,7 @@ library hackport-internal
     Hackport.Command.Status
     Hackport.Command.Update
     Hackport.Completion
+    Hackport.Dirs
     Hackport.Env
     Hackport.Util
     Merge

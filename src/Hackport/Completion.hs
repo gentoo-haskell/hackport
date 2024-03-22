@@ -22,8 +22,9 @@ import Text.PrettyPrint (render)
 
 import qualified Data.Trie as Trie
 import Data.Trie (Trie)
+import Hackport.Dirs (hackportDir)
 import Hackport.Env
-import Hackport.Util (withHackportContext, hackportDir)
+import Hackport.Util (withHackportContext)
 import Util
 
 import Distribution.Client.GlobalFlags (RepoContext(..))
