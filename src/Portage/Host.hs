@@ -9,6 +9,7 @@ import Data.Maybe (fromJust, isJust, mapMaybe)
 
 import qualified System.Directory as D
 import           System.FilePath ((</>))
+import           Hackport.Dirs (hackportDir)
 
 import System.IO
 
@@ -48,17 +49,17 @@ showAnnoyingWarning info = do
                              ]
     return info
 
--- relative to home dir
+-- relative to hackport config dir
 hackport_config :: FilePath
-hackport_config = ".hackport" </> "repositories"
+hackport_config = "repositories"
 
 --------------------------
 -- fastest: config reading
 --------------------------
 readConfig :: IO (Maybe LocalInfo)
 readConfig =
-    do home_dir <- D.getHomeDirectory
-       let config_path  = home_dir </> hackport_config
+    do hackportConfigDir <- hackportDir
+       let config_path  = hackportConfigDir </> hackport_config
        exists <- D.doesFileExist config_path
        if exists then read <$> readFile config_path else return Nothing
 
