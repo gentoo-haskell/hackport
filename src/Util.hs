@@ -11,14 +11,19 @@ module Util
     , debug
     , notice
     , info
+    , warn
+    , displayWarnings
     , die
     ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.State.Strict
+import qualified Data.DList as DL
 import System.IO
 import System.Process
 import System.Exit (ExitCode(..))
 import qualified Distribution.Simple.Utils as Cabal
+import qualified Distribution.Verbosity as Cabal
 import Hackport.Env
 
 -- | 'run_cmd' executes command and returns it's standard output
@@ -38,14 +43,28 @@ run_cmd cmd = liftIO $ do
         else Just output
 
 debug :: (HasGlobalEnv m, MonadIO m) => String -> m ()
-debug s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.debug v s
+debug s = withVerbosity $ \v -> liftIO $ Cabal.debug v s
 
 notice :: (HasGlobalEnv m, MonadIO m) => String -> m ()
-notice s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.notice v s
+notice s = withVerbosity $ \v -> liftIO $ Cabal.notice v s
 
 info :: (HasGlobalEnv m, MonadIO m) => String -> m ()
-info s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.info v s
+info s = withVerbosity $ \v -> liftIO $ Cabal.info v s
 
--- | Terminate with an error message
-die :: (HasGlobalEnv m, MonadIO m) => String -> m a
-die s = askGlobalEnv >>= \(GlobalEnv v _ _) -> liftIO $ Cabal.die' v s
+-- | Display a warning, then add a it to the global 'WarningBuffer', so that
+--   it will be displayed at the end of hackport's output.
+warn :: (HasGlobalEnv m, MonadIO m, MonadState WarningBuffer m) => String -> m ()
+warn s = withVerbosity $ \v -> do
+    liftIO $ Cabal.warn v s
+    modifyWarningBuffer (<> DL.singleton s)
+
+-- | Display all pending warnings, then terminate with an error message
+die :: (MonadState WarningBuffer m, HasGlobalEnv m, MonadIO m) => String -> m a
+die s = withVerbosity $ \v -> getWarningBuffer >>= \dl -> do
+    displayWarnings v dl
+    liftIO $ error s
+
+withVerbosity :: (Monad m, HasGlobalEnv m) => (Cabal.Verbosity -> m a) -> m a
+withVerbosity f = do
+    verbosity <- globalVerbosity <$> askGlobalEnv
+    f (Cabal.verboseNoWrap verbosity)

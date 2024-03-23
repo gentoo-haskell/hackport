@@ -43,14 +43,15 @@ getPortageDir = do
 withHackportContext :: (DCG.GlobalFlags -> DCG.RepoContext -> Env env a) -> Env env a
 withHackportContext callback = do
     (GlobalEnv verbosity _ _, _) <- ask
+    warnBuffer <- getWarningBuffer
     overlayPath <- getOverlayPath
     let flags = DCG.defaultGlobalFlags {
                     DCG.globalRemoteRepos = DUN.toNubList [defaultRemoteRepo]
                   , DCG.globalCacheDir    = DSS.Flag $ overlayPath </> ".hackport"
                 }
     control
-      $ \runInIO -> DCG.withRepoContext verbosity flags
-      $ runInIO . (callback flags <=< restoreM)
+        $ \runInIO -> DCG.withRepoContext verbosity flags
+        $ \ctx -> runInIO $ restoreM (ctx, warnBuffer) >>= callback flags
 
 -- | Default remote repository. Defaults to [hackage](hackage.haskell.org).
 defaultRemoteRepo :: DCT.RemoteRepo
