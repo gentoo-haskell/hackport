@@ -300,7 +300,7 @@ ghc964_pkgs =
   , p "integer-gmp" [1,1]
   , p "mtl" [2,3,1]
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,17,0]
+  , p "process" [1,6,18,0] -- bumped via BUMP_LIBRARIES
   , p "stm" [2,5,1,0]
   , p "template-haskell" [2,20,0,0]
   , p "terminfo" [0,4,1,6]
@@ -327,7 +327,7 @@ ghc963_pkgs =
   , p "integer-gmp" [1,1]
   , p "mtl" [2,3,1]
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,17,0]
+  , p "process" [1,6,18,0] -- bumped via BUMP_LIBRARIES
   , p "stm" [2,5,1,0]
   , p "template-haskell" [2,20,0,0]
   , p "terminfo" [0,4,1,6]
