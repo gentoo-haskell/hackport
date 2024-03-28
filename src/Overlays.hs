@@ -5,6 +5,7 @@ module Overlays
     ) where
 
 import Control.Monad
+import Control.Monad.State.Strict (MonadState)
 import Data.List (nub, inits)
 import Data.Maybe (maybeToList, listToMaybe, isJust, fromJust)
 import qualified System.Directory as SD
@@ -48,10 +49,11 @@ getOverlayPath = askGlobalEnv >>= \(GlobalEnv _ override_overlay _) -> do
     info "Override my decision with hackport --overlay /my/overlay"
     return overlay
 
-getOverlays :: MonadIO m => m [String]
+getOverlays :: (HasGlobalEnv m, MonadIO m, MonadState WarningBuffer m)
+    => m [String]
 getOverlays = do
   local    <- getLocalOverlay
-  overlays <- liftIO $ overlay_list `fmap` getInfo
+  overlays <- overlay_list <$> getInfo
   return $ nub $ map clean $
                  maybeToList local
               ++ overlays

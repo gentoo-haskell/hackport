@@ -31,7 +31,7 @@ getPortageDir :: Env env FilePath
 getPortageDir = do
   (GlobalEnv verbosity _ portagePathM, _) <- ask
   portagePath <- case portagePathM of
-                   Nothing -> liftIO $ Host.portage_dir <$> Host.getInfo
+                   Nothing -> Host.portage_dir <$> Host.getInfo
                    Just path -> return path
   exists <- liftIO $ doesDirectoryExist $ portagePath </> "dev-haskell"
   unless exists $ liftIO $

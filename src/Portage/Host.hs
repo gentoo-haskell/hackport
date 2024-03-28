@@ -5,13 +5,19 @@ module Portage.Host
 
 import Util (run_cmd)
 import qualified Data.List.Split as DLS
-import Data.Maybe (fromJust, isJust, mapMaybe)
+import Data.Maybe (fromJust, isJust, mapMaybe, fromMaybe)
 
 import qualified System.Directory as D
 import           System.FilePath ((</>))
 import           Hackport.Dirs (hackportDir)
 
-import System.IO
+import Control.Applicative ((<|>))
+import Control.Monad (guard)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State.Strict (MonadState)
+import Control.Monad.Trans.Maybe (MaybeT(..))
+import Hackport.Env (HasGlobalEnv, WarningBuffer)
+import Util (warn)
 
 data LocalInfo =
     LocalInfo { distfiles_dir :: String
@@ -26,49 +32,41 @@ defaultInfo = LocalInfo { distfiles_dir = "/var/cache/distfiles"
                         }
 
 -- query paludis and then emerge
-getInfo :: IO LocalInfo
-getInfo = fromJust `fmap`
-    performMaybes [ readConfig
-                  , performMaybes [ getPaludisInfo
-                                  , askPortageq
-                                  , return (Just defaultInfo)
-                                  ] >>= showAnnoyingWarning
-                  ]
-    where performMaybes [] = return Nothing
-          performMaybes (act:acts) =
-              do r <- act
-                 if isJust r
-                     then return r
-                     else performMaybes acts
+getInfo :: (HasGlobalEnv m, MonadIO m, MonadState WarningBuffer m)
+    => m LocalInfo
+getInfo = fromMaybe defaultInfo <$> runMaybeT (readConfig <|> getInfoWithWarning)
+  where
+    getInfoWithWarning = MaybeT $ do
+        configPath <- hackportConfig
+        info <- runMaybeT $ getPaludisInfo <|> askPortageq
+        warn $ configWarning configPath info
+        pure info
 
-showAnnoyingWarning :: Maybe LocalInfo -> IO (Maybe LocalInfo)
-showAnnoyingWarning info = do
-    hPutStr stderr $ unlines [ "-- Consider creating ~/" ++ hackport_config ++ " file with contents:"
-                             , show info
-                             , "-- It will speed hackport startup time a bit."
-                             ]
-    return info
+    configWarning configPath info = unlines
+        [ "-- Consider creating " ++ configPath ++ " file with contents:"
+        , show info
+        , "-- It will speed hackport startup time a bit."
+        ]
 
--- relative to hackport config dir
-hackport_config :: FilePath
-hackport_config = "repositories"
+-- | Where @repositories@ config file is located
+hackportConfig :: MonadIO m => m FilePath
+hackportConfig = (</> "repositories") <$> hackportDir
 
 --------------------------
 -- fastest: config reading
 --------------------------
-readConfig :: IO (Maybe LocalInfo)
-readConfig =
-    do hackportConfigDir <- hackportDir
-       let config_path  = hackportConfigDir </> hackport_config
-       exists <- D.doesFileExist config_path
-       if exists then read <$> readFile config_path else return Nothing
+readConfig :: MonadIO m => MaybeT m LocalInfo
+readConfig = do
+    configPath <- hackportConfig
+    liftIO (D.doesFileExist configPath) >>= guard
+    MaybeT $ liftIO $ read <$> readFile configPath
 
 ----------
 -- Paludis
 ----------
 
-getPaludisInfo :: IO (Maybe LocalInfo)
-getPaludisInfo = fmap parsePaludisInfo <$> run_cmd "cave info"
+getPaludisInfo :: MonadIO m => MaybeT m LocalInfo
+getPaludisInfo = MaybeT $ fmap parsePaludisInfo <$> run_cmd "cave info"
 
 parsePaludisInfo :: String -> LocalInfo
 parsePaludisInfo text =
@@ -101,22 +99,21 @@ parsePaludisInfo text =
 -- Emerge
 ---------
 
-askPortageq :: IO (Maybe LocalInfo)
+askPortageq :: MonadIO m => MaybeT m LocalInfo
 askPortageq = do
     distdir <- run_cmd "portageq distdir"
     portdir <- run_cmd "portageq get_repo_path / gentoo"
     hsRepo  <- run_cmd "portageq get_repo_path / haskell"
     --There really ought to be both distdir and portdir,
     --but maybe no hsRepo defined yet.
-    let info = if Nothing `elem` [distdir,portdir]
-               then Nothing
-               else Just LocalInfo
-                      { distfiles_dir = grab distdir
-                      , portage_dir = grab portdir
-                      , overlay_list = iffy hsRepo
-                      }
-                 --init: kill newline char
-                 where grab = init . fromJust
-                       iffy Nothing     = []
-                       iffy (Just repo) = [init repo]
-    return info
+    guard $ all isJust [distdir,portdir]
+    pure LocalInfo
+        { distfiles_dir = grab distdir
+        , portage_dir = grab portdir
+        , overlay_list = iffy hsRepo
+        }
+  where
+    --init: kill newline char
+    grab = init . fromJust
+    iffy Nothing     = []
+    iffy (Just repo) = [init repo]
