@@ -1,5 +1,6 @@
 import qualified Distribution.Package as Cabal
 
+import Hackport.Env (runEnv)
 import qualified Portage.Overlay as Portage
 import qualified Portage.Resolve as Portage
 import qualified Portage.PackageId as Portage
@@ -16,8 +17,8 @@ tests = TestList [ TestLabel "resolve cabal" (test_resolveCategory "dev-haskell"
 
 test_resolveCategory :: String -> String -> Test
 test_resolveCategory cat pkg = TestCase $ do
-  portage_dir <- Portage.portage_dir `fmap` Portage.getInfo
-  portage <- Portage.loadLazy portage_dir
+  info <- runEnv Portage.getInfo () mempty
+  portage <- Portage.loadLazy (Portage.portage_dir info)
   let cabal = Cabal.mkPackageName pkg
       hits = Portage.resolveFullPortageName portage cabal
       expected = Just (Portage.PackageName (Portage.Category cat) (Portage.normalizeCabalPackageName cabal))
