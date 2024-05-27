@@ -177,7 +177,6 @@ toHttps x =
     -- add to this list with any non https-aware websites
     httpOnlyHomepages = Just <$> [ "leksah.org"
                                  , "darcs.net"
-                                 , "khumba.net"
                                  ]
 
 -- | Sort IUSE alphabetically
