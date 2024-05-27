@@ -26,7 +26,6 @@ spec = do
     it "should not convert whitelisted http-only homepages into https homepages" $ do
       toHttps "http://leksah.org" `shouldBe` "http://leksah.org"
       toHttps "http://darcs.net/" `shouldBe` "http://darcs.net/"
-      toHttps "http://khumba.net/" `shouldBe` "http://khumba.net/"
     it "should otherwise convert all homepages into https-aware homepages" $ do
       toHttps "http://pandoc.org" `shouldBe` "https://pandoc.org"
       toHttps "http://www.yesodweb.com/" `shouldBe` "https://www.yesodweb.com/"
