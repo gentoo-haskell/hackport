@@ -70,7 +70,7 @@ cabalFromGHC ver = lookup ver table
           , ([9,6,4], Cabal.mkVersion [3,10,1,0])
           , ([9,6,5], Cabal.mkVersion [3,10,3,0])
           , ([9,8,1], Cabal.mkVersion [3,10,2,0])
-          , ([9,8,2], Cabal.mkVersion [3,10,2,0])
+          , ([9,8,2], Cabal.mkVersion [3,10,3,0]) -- bumped via BUMP_LIBRARIES
           ]
 
 platform :: Platform
@@ -265,15 +265,17 @@ ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 --  * @./scripts/scan-ghc-library-versions.bash@ in the gentoo-haskell tree
 ghc982_pkgs :: [Cabal.PackageIdentifier]
 ghc982_pkgs =
-  [ p "array" [0,5,6,0]
+  [ p "Cabal-syntax" [3,10,3,0] -- bumped via BUMP_LIBRARIES
+  , p "Cabal" [3,10,3,0] -- bumped via BUMP_LIBRARIES
+  , p "array" [0,5,6,0]
   , p "base" [4,19,1,0]
   , p "binary" [0,8,9,1]
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,6,8]
   , p "deepseq" [1,5,0,0]
-  , p "directory" [1,3,8,1]
+  , p "directory" [1,3,8,4] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
-  , p "filepath" [1,4,200,1]
+  , p "filepath" [1,4,300,1] -- bumped via BUMP_LIBRARIES
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,11,0]
@@ -281,7 +283,7 @@ ghc982_pkgs =
   , p "integer-gmp" [1,1]
   , p "mtl" [2,3,1]
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,18,0]
+  , p "process" [1,6,19,0] -- bumped via BUMP_LIBRARIES
   , p "stm" [2,5,2,1]
   , p "template-haskell" [2,21,0,0]
   , p "terminfo" [0,4,1,6]
