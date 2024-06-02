@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-} -- For Cabal.PackageName
+
 {-|
 Module      : Portage.GHCCore
 License     : GPL-3+
@@ -41,7 +43,7 @@ import Debug.Trace
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs =
     [ ghc902, ghc924, ghc925, ghc926, ghc927, ghc928, ghc945, ghc946, ghc947
-    , ghc948, ghc962, ghc963, ghc964, ghc981, ghc982
+    , ghc948, ghc962, ghc963, ghc964, ghc965, ghc981, ghc982
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
@@ -66,6 +68,7 @@ cabalFromGHC ver = lookup ver table
           , ([9,6,2], Cabal.mkVersion [3,10,1,0])
           , ([9,6,3], Cabal.mkVersion [3,10,1,0])
           , ([9,6,4], Cabal.mkVersion [3,10,1,0])
+          , ([9,6,5], Cabal.mkVersion [3,10,3,0])
           , ([9,8,1], Cabal.mkVersion [3,10,2,0])
           , ([9,8,2], Cabal.mkVersion [3,10,2,0])
           ]
@@ -154,7 +157,36 @@ mkIndex ghcVer pids = fromList
       : p "ghc-boot-th" ghcVer
       : p "ghc-heap" ghcVer
       : p "ghci" ghcVer
-      : pids
+      : filter filtUpgradeable pids
+
+    -- | only include 'Cabal.PackageIdentifier's whose 'Cabal.packageName' does
+    --   not match anything from 'upgradeablePkgs'
+    filtUpgradeable :: Cabal.PackageIdentifier -> Bool
+    filtUpgradeable pid =
+        all (Cabal.packageName pid /=) (upgradeablePkgs ghcVer)
+
+-- | These bundled packages are "upgradeable" and should not be present in the
+--   generated 'InstalledPackageIndex'. If they are, they will /not/ show up
+--   in the generated list of dependencies (@RDEPEND@ and/or @DEPEND@), which
+--   is undesireable (since this is where required version ranges are found).
+--
+--   Takes the '[Int]' representation of the GHC version as an argument to
+--   determine if any extra upgradeable packages are bundled.
+--
+--   See: <https://github.com/gentoo-haskell/gentoo-haskell/issues/1386>
+upgradeablePkgs :: [Int] -> [Cabal.PackageName]
+upgradeablePkgs ghcVer
+    -- Upgradeable package @Cabal-syntax@ gets bundled with >=ghc-9.4
+    | ghcVer >= [9,4] = "Cabal-syntax" : upgradeablePkgs [9,0]
+    -- These have been bundled since at least ghc-9.0
+    | otherwise =
+        [ "Cabal"
+        , "haskeline"
+        , "parsec"
+        , "text"
+        , "xhtml"
+        ]
+
 
 packageNamesFromPackageIndex :: InstalledPackageIndex -> [Cabal.PackageName]
 packageNamesFromPackageIndex pix = nub $ map fst $ allPackagesByName pix
@@ -175,6 +207,9 @@ ghc982 = mkInfoIndex [9,8,2] ghc982_pkgs
 
 ghc981 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc981 = mkInfoIndex [9,8,1] ghc981_pkgs
+
+ghc965 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc965 = mkInfoIndex [9,6,5] ghc965_pkgs
 
 ghc964 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc964 = mkInfoIndex [9,6,4] ghc964_pkgs
@@ -281,6 +316,40 @@ ghc981_pkgs =
   , p "transformers" [0,6,1,0]
   , p "unix" [2,8,3,0]
   ]
+
+ghc965_pkgs :: [Cabal.PackageIdentifier]
+ghc965_pkgs =
+  [ p "Cabal-syntax" [3,10,3,0]
+  , p "Cabal" [3,10,3,0]
+  , p "array" [0,5,6,0]
+  , p "base" [4,18,2,1]
+  , p "binary" [0,8,9,1]
+  , p "bytestring" [0,11,5,3]
+  , p "containers" [0,6,7]
+  , p "deepseq" [1,4,8,1]
+  , p "directory" [1,3,8,4]
+  , p "exceptions" [0,10,7]
+  , p "filepath" [1,4,300,1]
+  , p "ghc-bignum" [1,3]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,10,0]
+  , p "haskeline" [0,8,2,1]
+  , p "hpc" [0,6,2,0]
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,3,1]
+  , p "parsec" [3,1,16,1]
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,19,0]
+  , p "stm" [2,5,1,0]
+  , p "template-haskell" [2,20,0,0]
+  , p "terminfo" [0,4,1,6]
+  , p "text" [2,0,2]
+  , p "time" [1,12,2]
+  , p "transformers" [0,6,1,0]
+  , p "unix" [2,8,4,0]
+  , p "xhtml" [3000,2,2,1]
+  ]
+
 
 ghc964_pkgs :: [Cabal.PackageIdentifier]
 ghc964_pkgs =
