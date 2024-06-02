@@ -1,15 +1,14 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Hackport.Env
   (
     -- * Env monad
-    MonadEnv
-  , HasEnv (..)
-  , HasGlobalEnv (..)
-  , Env
+    Env
   , runEnv
+  , HasGlobalEnv(..)
+  , HasEnv (..)
+    -- ** Warning buffer
   , WarningBuffer
   , getWarningBuffer
   , modifyWarningBuffer
@@ -48,70 +47,74 @@ import Status.Types (StatusDirection)
 --   warnings.
 type WarningBuffer = DL.DList String
 
-type MonadEnv env m =
-    ( HasGlobalEnv m
-    , HasEnv env m
-    , MonadIO m
-    , MonadState WarningBuffer m
-    )
+-- | Monad that carries command line information and 'WarningBuffer' state
 type Env env = ReaderT (GlobalEnv, env) (StateT WarningBuffer IO)
 
 class HasGlobalEnv m where
+  -- | Convenient way to grab the 'GlobalEnv'
   askGlobalEnv :: m GlobalEnv
 
 instance Monad m => HasGlobalEnv (ReaderT (GlobalEnv,env) m) where
   askGlobalEnv = asks fst
 
 class HasEnv env m where
+  -- | Convenient way to grab the custom @env@ data
   askEnv :: m env
 
 instance Monad m => HasEnv env (ReaderT (a,env) m) where
   askEnv = asks snd
 
+-- | Convenient way to get the current 'WarningBuffer' state
 getWarningBuffer :: MonadState WarningBuffer m => m WarningBuffer
 getWarningBuffer = get
 
+-- | Convenient way to modify the current 'WarningBuffer' state
 modifyWarningBuffer :: MonadState WarningBuffer m
   => (WarningBuffer -> WarningBuffer) -> m ()
 modifyWarningBuffer = modify
 
 -- | Read the warning buffer and output using 'Cabal.warn'.
 displayWarnings :: MonadIO m => V.Verbosity -> WarningBuffer -> m ()
-displayWarnings v dl =
-    liftIO $ Cabal.warn v $ unlines $ L.intercalate [""] $
-        ["hackport emitted the following warnings:"]
-            : (indent <$> DL.toList dl)
+displayWarnings v dl = liftIO . Cabal.warn v
+  $ unlines
+    -- insert an empty line between each paragraph
+    $ L.intercalate [""]
+      -- A list of strings forms a paragraph
+      $ ["hackport emitted the following warnings:"]
+        -- Add indentation to each string in the warning buffer
+        -- This forms a list of paragraphs (one for each warning)
+        : (indent <$> DL.toList dl)
   where
     indent :: String -> [String]
     indent = map ("  " ++) . lines
 
+-- | Environment info that every @hackport@ subcommand needs
 data GlobalEnv = GlobalEnv
   { globalVerbosity :: V.Verbosity
   , globalPathToOverlay :: Maybe FilePath
   , globalPathToPortage :: Maybe FilePath
   }
   deriving (Show, Eq, Ord)
-
-instance Semigroup GlobalEnv where
-  GlobalEnv v1 po1 pp1 <> GlobalEnv v2 po2 pp2 =
-    GlobalEnv
-      (getLast (Last v1 <> Last v2))
-      (getLast <$> ((Last <$> po1) <> (Last <$> po2)))
-      (getLast <$> ((Last <$> pp1) <> (Last <$> pp2)))
+  deriving Semigroup via Last GlobalEnv
 
 instance Monoid GlobalEnv where
   mempty = GlobalEnv V.normal Nothing Nothing
 
+-- | Environment info specific to the @list@ subcommand
 newtype ListEnv = ListEnv
   { listPackages :: [String]
   }
   deriving (Show, Eq, Ord)
 
+-- | Class for the @make-ebuild@ and @merge@ subcommands, which write to
+--   @metadata.xml@
 class WritesMetadata a where
+  -- | Should @hackport@ write @hackage@ remote info to @metadata.xml@?
   useHackageRemote :: a -> UseHackageRemote
 
 type UseHackageRemote = Bool
 
+-- | Environment info specific to the @make-ebuild@ subcommand
 data MakeEbuildEnv = MakeEbuildEnv
   { makeEbuildCategory :: String
   , makeEbuildCabalFiles :: NonEmpty FilePath
@@ -123,12 +126,14 @@ data MakeEbuildEnv = MakeEbuildEnv
 instance WritesMetadata MakeEbuildEnv where
   useHackageRemote = makeEbuildUseHackageRemote
 
+-- | Environment info specific to the @status@ subcommand
 data StatusEnv = StatusEnv
   { statusDirection :: StatusDirection
   , statusPackages :: [String]
   }
   deriving (Eq)
 
+-- | Environment info specific to the @merge@ subcommand
 data MergeEnv = MergeEnv
   { mergeCabalFlags :: Maybe String
   , mergePackage :: String
