@@ -43,7 +43,7 @@ import Debug.Trace
 ghcs :: [(DC.CompilerInfo, InstalledPackageIndex)]
 ghcs =
     [ ghc902, ghc924, ghc925, ghc926, ghc927, ghc928, ghc945, ghc946, ghc947
-    , ghc948, ghc962, ghc963, ghc964, ghc965, ghc981, ghc982
+    , ghc948, ghc962, ghc963, ghc964, ghc965, ghc982
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
@@ -69,7 +69,6 @@ cabalFromGHC ver = lookup ver table
           , ([9,6,3], Cabal.mkVersion [3,10,1,0])
           , ([9,6,4], Cabal.mkVersion [3,10,1,0])
           , ([9,6,5], Cabal.mkVersion [3,10,3,0])
-          , ([9,8,1], Cabal.mkVersion [3,10,2,0])
           , ([9,8,2], Cabal.mkVersion [3,10,3,0]) -- bumped via BUMP_LIBRARIES
           ]
 
@@ -205,9 +204,6 @@ mkInfoIndex ghcVer pids = (ghc ghcVer, mkIndex ghcVer pids)
 ghc982 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc982 = mkInfoIndex [9,8,2] ghc982_pkgs
 
-ghc981 :: (DC.CompilerInfo, InstalledPackageIndex)
-ghc981 = mkInfoIndex [9,8,1] ghc981_pkgs
-
 ghc965 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc965 = mkInfoIndex [9,6,5] ghc965_pkgs
 
@@ -290,33 +286,6 @@ ghc982_pkgs =
   , p "time" [1,12,2]
   , p "transformers" [0,6,1,0]
   , p "unix" [2,8,4,0]
-  ]
-
-ghc981_pkgs :: [Cabal.PackageIdentifier]
-ghc981_pkgs =
-  [ p "array" [0,5,6,0]
-  , p "base" [4,19,0,0]
-  , p "binary" [0,8,9,1]
-  , p "bytestring" [0,12,0,2]
-  , p "containers" [0,6,8]
-  , p "deepseq" [1,5,0,0]
-  , p "directory" [1,3,8,1]
-  , p "exceptions" [0,10,7]
-  , p "filepath" [1,4,100,4]
-  , p "ghc-bignum" [1,3]
-  , p "ghc-compact" [0,1,0,0]
-  , p "ghc-prim" [0,11,0]
-  , p "hpc" [0,7,0,0]
-  , p "integer-gmp" [1,1]
-  , p "mtl" [2,3,1]
-  , p "pretty" [1,1,3,6]
-  , p "process" [1,6,18,0]
-  , p "stm" [2,5,2,1]
-  , p "template-haskell" [2,21,0,0]
-  , p "terminfo" [0,4,1,6]
-  , p "time" [1,12,2]
-  , p "transformers" [0,6,1,0]
-  , p "unix" [2,8,3,0]
   ]
 
 ghc965_pkgs :: [Cabal.PackageIdentifier]
