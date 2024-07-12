@@ -436,7 +436,7 @@ library hackport-external-libs-hackage-security
   hs-source-dirs:     hackage-security/hackage-security/src
   build-depends:
     , hackport-external-libs-Cabal-syntax
-    , base                          >=4.9
+    , base                          >=4.9 && <5
     , base16-bytestring             >=0.1.1
     , base64-bytestring             >=1.0
     , bytestring                    >=0.9
@@ -548,7 +548,7 @@ library hackport-external-libs-cabal-install-solver
     , hackport-external-libs-Cabal
     , hackport-external-libs-Cabal-syntax
     , array         >=0.4
-    , base          >=4.10
+    , base          >=4.10 && <5
     , bytestring    >=0.10.6.0
     , containers    >=0.5.6.2
     , edit-distance >=0.2.2
@@ -618,7 +618,7 @@ library hackport-external-libs-cabal-install
     , hackport-external-libs-Cabal-syntax
     , hackport-external-libs-hackage-security
     , hackport-external-libs-cabal-install-solver
-    , base                                     >=4.10
+    , base                                     >=4.10 && <5
     , array                                    >=0.4
     , async                                    >=2.0
     , base16-bytestring                        >=0.1.1
@@ -795,7 +795,7 @@ library hackport-internal
     , hackport-external-libs-Cabal
     , hackport-external-libs-cabal-install-solver
     , hackport-external-libs-cabal-install
-    , base
+    , base <5
     , async
     , binary
     , bytestring
@@ -894,7 +894,7 @@ executable hackport
     , hackport-external-libs-Cabal
     , hackport-external-libs-cabal-install
     , hackport-internal
-    , base
+    , base <5
     , directory
     , filepath
     , optparse-applicative
@@ -922,7 +922,7 @@ test-suite test-resolve-category
     , hackport-external-libs-Cabal-syntax
     , hackport-external-libs-Cabal
     , hackport-internal
-    , base
+    , base <5
     , array
     , binary
     , bytestring
@@ -958,7 +958,7 @@ test-suite test-print-deps
   hs-source-dirs:     tests/print_deps
   build-depends:
     , array
-    , base
+    , base <5
     , binary
     , bytestring
     , containers
@@ -993,7 +993,7 @@ test-suite test-normalize-deps
   hs-source-dirs:     tests/normalize_deps
   build-depends:
     , array
-    , base
+    , base <5
     , binary
     , bytestring
     , containers
@@ -1025,7 +1025,7 @@ test-suite doctests
   default-language:     Haskell98
   main-is:              Main.hs
   build-depends:
-    , base
+    , base <5
     , base-compat
     , cabal-doctest
     , directory
@@ -1047,7 +1047,7 @@ test-suite doctests-v2
   hs-source-dirs:     tests/doctests-v2
   main-is:            Main.hs
   build-depends:
-    , base
+    , base <5
     , process
 
   build-tool-depends:
@@ -1080,7 +1080,7 @@ test-suite spec
     , hackport-external-libs-Cabal
     , hackport-external-libs-cabal-install
     , hackport-internal
-    , base
+    , base <5
     , async
     , bytestring
     , containers

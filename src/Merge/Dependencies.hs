@@ -539,7 +539,11 @@ pkgconfig_table =
   ,("gtksourceview-3.0", ("x11-libs", "gtksourceview", Portage.DAttr (Portage.GivenSlot "3.0") []))
 
   ,("gstreamer-0.10",              ("media-libs", "gstreamer", def))
+  ,("gstreamer-1.0",               ("media-libs", "gstreamer",
+      Portage.DAttr (Portage.GivenSlot "1.0") [Portage.mkUse (Portage.Use "introspection")]))
   ,("gstreamer-base-0.10",         ("media-libs", "gstreamer", def))
+  ,("gstreamer-base-1.0",          ("media-libs", "gstreamer",
+      Portage.DAttr (Portage.GivenSlot "1.0") [Portage.mkUse (Portage.Use "introspection")]))
   ,("gstreamer-check-0.10",        ("media-libs", "gstreamer", def))
   ,("gstreamer-controller-0.10",   ("media-libs", "gstreamer", def))
   ,("gstreamer-dataprotocol-0.10", ("media-libs", "gstreamer", def))
@@ -548,6 +552,8 @@ pkgconfig_table =
   ,("gstreamer-app-0.10",          ("media-libs", "gst-plugins-base", def))
   ,("gstreamer-audio-0.10",        ("media-libs", "gst-plugins-base", def))
   ,("gstreamer-video-0.10",        ("media-libs", "gst-plugins-base", def))
+  ,("gstreamer-video-1.0",         ("media-libs", "gst-plugins-base",
+      Portage.DAttr (Portage.GivenSlot "1.0") [Portage.mkUse (Portage.Use "introspection")]))
   ,("gstreamer-plugins-base-0.10", ("media-libs", "gst-plugins-base", def))
 
   ,("gtksourceview-2.0",           ("x11-libs", "gtksourceview", Portage.DAttr (Portage.GivenSlot "2.0") []))
@@ -601,4 +607,5 @@ pkgconfig_table =
   ,("harfbuzz-gobject",            ("media-libs", "harfbuzz", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("x11",                         ("x11-libs", "libX11", def))
   ,("icu-i18n",                    ("dev-libs", "icu", def))
+  ,("libtelnet",                   ("net-libs", "libtelnet", def))
   ]
