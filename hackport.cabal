@@ -430,6 +430,8 @@ library hackport-external-libs-Cabal
     TypeSynonymInstances
     UndecidableInstances
 
+  autogen-modules: Paths_Cabal
+
 library hackport-external-libs-hackage-security
   import:             no-warnings
   default-language:   Haskell2010
@@ -785,6 +787,8 @@ library hackport-external-libs-cabal-install
     Distribution.Deprecated.ReadP
     Distribution.Deprecated.ViewAsFieldDescr
     Paths_cabal_install
+
+  autogen-modules: Paths_cabal_install
 
 library hackport-internal
   import:             warnings
