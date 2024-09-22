@@ -28,11 +28,13 @@ module Hackport.Env
   , WritesMetadata (..)
   , UseHackageRemote
     -- * Re-exports
+  , module Control.Monad
   , module Control.Monad.Reader
   ) where
 
+import Control.Monad
 import Control.Monad.Reader
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict (StateT, MonadState, runStateT, get, modify)
 import qualified Data.DList as DL
 import qualified Data.List as L
 import Data.List.NonEmpty (NonEmpty (..))
@@ -75,7 +77,7 @@ modifyWarningBuffer = modify
 
 -- | Read the warning buffer and output using 'Cabal.warn'.
 displayWarnings :: MonadIO m => V.Verbosity -> WarningBuffer -> m ()
-displayWarnings v dl = liftIO . Cabal.warn v
+displayWarnings v dl = unless (null dl) $ liftIO . Cabal.warn v
   $ unlines
     -- insert an empty line between each paragraph
     $ L.intercalate [""]
