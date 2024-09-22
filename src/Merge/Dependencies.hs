@@ -610,4 +610,6 @@ pkgconfig_table =
   ,("libtelnet",                   ("net-libs", "libtelnet", def))
   ,("zstd",                        ("app-arch", "zstd", def))
   ,("libarchive",                  ("app-arch", "libarchive", def))
+  ,("libbrotlidec",                ("app-arch", "brotli", def))
+  ,("libbrotlienc",                ("app-arch", "bortli", def))
   ]
