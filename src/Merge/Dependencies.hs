@@ -608,4 +608,5 @@ pkgconfig_table =
   ,("x11",                         ("x11-libs", "libX11", def))
   ,("icu-i18n",                    ("dev-libs", "icu", def))
   ,("libtelnet",                   ("net-libs", "libtelnet", def))
+  ,("zstd",                        ("app-arch", "zstd", def))
   ]
