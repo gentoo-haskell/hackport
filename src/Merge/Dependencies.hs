@@ -611,5 +611,5 @@ pkgconfig_table =
   ,("zstd",                        ("app-arch", "zstd", def))
   ,("libarchive",                  ("app-arch", "libarchive", def))
   ,("libbrotlidec",                ("app-arch", "brotli", def))
-  ,("libbrotlienc",                ("app-arch", "bortli", def))
+  ,("libbrotlienc",                ("app-arch", "brotli", def))
   ]
