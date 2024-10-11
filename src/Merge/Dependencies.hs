@@ -614,4 +614,5 @@ pkgconfig_table =
   ,("libbrotlienc",                ("app-arch", "brotli", def))
   ,("gdk-x11-3.0",                 ("x11-libs", "gtk+", Portage.DAttr (Portage.GivenSlot "3")
     (Portage.mkUse <$> [Portage.Use "X", Portage.Use "introspection"])))
+  ,("dbusmenu-glib-0.4",           ("dev-libs", "libdbusmenu", Portage.DAttr Portage.AnySlot [Portage.mkUse $ Portage.Use "introspection"]))
   ]
