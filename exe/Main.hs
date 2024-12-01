@@ -25,11 +25,12 @@ import Hackport.Command.Status
 import Hackport.Command.Merge
 import Hackport.Completion
 
-import Data.Version (showVersion)
 import Distribution.Pretty (prettyShow)
 import Distribution.Simple.Utils (cabalVersion)
 
-import qualified Paths_cabal_install
+import Data.Version (showVersion, makeVersion)
+import Distribution.Version (versionNumbers)
+import Distribution.Client.Version (cabalInstallVersion)
 import qualified Paths_hackport
 
 main :: IO ()
@@ -69,7 +70,7 @@ globalParser = Opt.info (Opt.helper <*> parser) infoMod
               $  "hackport version "
               ++ showVersion Paths_hackport.version
               ++ "\nusing cabal-install "
-              ++ showVersion Paths_cabal_install.version
+              ++ showVersion (makeVersion (versionNumbers cabalInstallVersion))
               ++ " and the Cabal library version "
               ++ prettyShow cabalVersion
 

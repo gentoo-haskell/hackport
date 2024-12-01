@@ -405,7 +405,6 @@ library hackport-external-libs-Cabal
     Distribution.Simple.GHC.ImplInfo
     Distribution.Utils.UnionFind
     Distribution.ZinzaPrelude
-    Paths_Cabal
 
   other-extensions:
     BangPatterns
@@ -435,8 +434,6 @@ library hackport-external-libs-Cabal
     TypeOperators
     TypeSynonymInstances
     UndecidableInstances
-
-  autogen-modules: Paths_Cabal
 
 library hackport-external-libs-hackage-security
   import:             no-warnings
@@ -792,9 +789,6 @@ library hackport-external-libs-cabal-install
     Distribution.Deprecated.ParseUtils
     Distribution.Deprecated.ReadP
     Distribution.Deprecated.ViewAsFieldDescr
-    Paths_cabal_install
-
-  autogen-modules: Paths_cabal_install
 
 library hackport-internal
   import:             warnings
@@ -916,6 +910,8 @@ executable hackport
   other-extensions:
     ApplicativeDo
     CPP
+
+  autogen-modules:  Paths_hackport
 
 test-suite test-resolve-category
   import:             warnings
@@ -1046,6 +1042,8 @@ test-suite doctests
     , template-haskell
 
   other-modules:        Paths_hackport
+
+  autogen-modules:      Paths_hackport
 
   if !flag(doctests) || !flag(cabal-v1)
     buildable: False
