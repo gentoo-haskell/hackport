@@ -38,8 +38,8 @@ jobs:
           cabal-version: 'latest'
           cabal-update: true
 
-#      - name: Check cabal file
-#        run: cabal check
+      - name: Check cabal file
+        run: cabal check
 
       - name: Configure the build
         run: |
