@@ -5,13 +5,17 @@ license:       GPL-3.0-or-later
 license-file:  LICENSE
 author:        Henning Günther, Duncan Coutts, Lennart Kolmodin
 maintainer:    Gentoo Haskell team <haskell@gentoo.org>
-copyright:     Copyright 1999-2023 Gentoo Authors
+copyright:     Copyright 1999-2024 Gentoo Authors
 category:      Distribution
 synopsis:      Hackage and Portage integration tool
 homepage:      https://github.com/gentoo-haskell/hackport#readme
 description:
   A command line tool to manage an overlay of Gentoo ebuilds
   that are generated from a hackage repo of Cabal packages.
+
+extra-doc-files:
+  , ./CHANGELOG.md
+  , ./README.rst
 
 -- Tested with github CI using specific versions chosen by
 -- <https://github.com/haskell-actions/setup>
