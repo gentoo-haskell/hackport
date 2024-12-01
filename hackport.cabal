@@ -13,11 +13,13 @@ description:
   A command line tool to manage an overlay of Gentoo ebuilds
   that are generated from a hackage repo of Cabal packages.
 
+-- Tested with github CI using specific versions chosen by
+-- <https://github.com/haskell-actions/setup>
 tested-with:
   , GHC == 9.0.2
   , GHC == 9.2.8
   , GHC == 9.4.8
-  , GHC == 9.6.4
+  , GHC == 9.6.6
   , GHC == 9.8.2
 
 source-repository head
