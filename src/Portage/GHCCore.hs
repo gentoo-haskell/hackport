@@ -46,7 +46,7 @@ ghcs =
     , ghc924, ghc925, ghc926, ghc927, ghc928
     , ghc945, ghc946, ghc947, ghc948
     , ghc962, ghc963, ghc964, ghc965, ghc966
-    , ghc982
+    , ghc982, ghc983
     , ghc9101
     ]
 
@@ -75,6 +75,7 @@ cabalFromGHC ver = lookup ver table
           , ([9,6,5], Cabal.mkVersion [3,10,3,0])
           , ([9,6,6], Cabal.mkVersion [3,10,3,0])
           , ([9,8,2], Cabal.mkVersion [3,10,3,0]) -- bumped via BUMP_LIBRARIES
+          , ([9,8,3], Cabal.mkVersion [3,10,3,0])
           , ([9,10,1], Cabal.mkVersion [3,12,0,0])
           ]
 
@@ -210,6 +211,9 @@ mkInfoIndex ghcVer pids = (ghc ghcVer, mkIndex ghcVer pids)
 ghc9101 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc9101 = mkInfoIndex [9,10,1] ghc9101_pkgs
 
+ghc983 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc983 = mkInfoIndex [9,8,3] ghc983_pkgs
+
 ghc982 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc982 = mkInfoIndex [9,8,2] ghc982_pkgs
 
@@ -301,6 +305,40 @@ ghc9101_pkgs =
   , p "time" [1,12,2]
   , p "transformers" [0,6,1,1]
   , p "unix" [2,8,5,1]
+  , p "xhtml" [3000,2,2,1]
+  ]
+
+ghc983_pkgs :: [Cabal.PackageIdentifier]
+ghc983_pkgs =
+  [ p "Cabal-syntax" [3,10,3,0]
+  , p "Cabal" [3,10,3,0]
+  , p "array" [0,5,8,0]
+  , p "base" [4,19,2,0]
+  , p "binary" [0,8,9,1]
+  , p "bytestring" [0,12,1,0]
+  , p "containers" [0,6,8]
+  , p "deepseq" [1,5,1,0]
+  , p "directory" [1,3,8,5]
+  , p "exceptions" [0,10,7]
+  , p "filepath" [1,4,200,1] -- needs to be bumped to 1.4.300.1
+  , p "ghc-bignum" [1,3]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,11,0]
+  , p "haskeline" [0,8,2,1]
+  , p "hpc" [0,7,0,0]
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,3,1]
+  , p "parsec" [3,1,17,0]
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,25,0]
+  , p "semaphore-compat" [1,0,0]
+  , p "stm" [2,5,3,1]
+  , p "template-haskell" [2,21,0,0]
+  , p "terminfo" [0,4,1,6]
+  , p "text" [2,1,1]
+  , p "time" [1,12,2]
+  , p "transformers" [0,6,1,0]
+  , p "unix" [2,8,4,0]
   , p "xhtml" [3000,2,2,1]
   ]
 
