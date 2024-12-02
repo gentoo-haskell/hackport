@@ -1,3 +1,14 @@
+## v0.9.0.0 (2024-12-02)
+
+Release v0.9.0.0
+
+- Migrate to cabal-3.10 branch. This introduces a dependency on
+  `directory >=1.3.7.0`. This effectively means that, moving forward,
+  >=dev-lang/ghc-9.4 is required for newer versions of hackport on
+  Gentoo.
+
+- Hackport now builds with ghc-9.10
+
 ## v0.8.5.2 (2024-12-01)
 
 Release v0.8.5.2
