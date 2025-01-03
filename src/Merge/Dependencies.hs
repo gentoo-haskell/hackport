@@ -315,7 +315,7 @@ staticTranslateExtraLib lib = lookup lib m
       , ("sqlite3", at_least_c_p_v "dev-db" "sqlite" [3,0])
       , ("stdc++", Portage.DependAnyOf
             [ any_c_p_s_u "sys-devel" "gcc" Portage.AnySlot [Portage.mkUse (Portage.Use "cxx")]
-            , any_c_p "sys-devel" "clang"
+            , any_c_p "llvm-core" "clang"
             ])
       , ("crack", any_c_p "sys-libs" "cracklib")
       , ("exif", any_c_p "media-libs" "libexif")
@@ -430,7 +430,7 @@ buildToolsTable =
   , ("gtk2hsC2hs",          any_c_p "dev-haskell" "gtk2hs-buildtools")
   , ("hsb2hs",              any_c_p "dev-haskell" "hsb2hs")
   , ("hsx2hs",              any_c_p "dev-haskell" "hsx2hs")
-  , ("llvm-config",         any_c_p "sys-devel" "llvm")
+  , ("llvm-config",         any_c_p "llvm-core" "llvm")
   ]
 
 -- tools that are provided by ghc or some other existing program
