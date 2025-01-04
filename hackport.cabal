@@ -29,7 +29,7 @@ tested-with:
 
 source-repository head
   type:     git
-  location: git://github.com/gentoo-haskell/hackport.git
+  location: https://github.com/gentoo-haskell/hackport.git
 
 flag cabal-v1
   description: Build for cabal-v1 (Setup.hs/gentoo-haskell) compatibility
