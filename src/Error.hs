@@ -32,7 +32,7 @@ data HackPortError
     -- | InvalidCache
     | InvalidServer String
     deriving (
-             , Show
+             Show
              , Eq -- ^ needed for spec test-suite
              )
 
