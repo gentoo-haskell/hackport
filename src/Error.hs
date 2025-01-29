@@ -7,7 +7,6 @@ module Error
     , catch
     ) where
 
-import Data.Typeable
 import Control.Exception
 
 -- | Type holding all of the 'HackPortError' constructors.
@@ -32,7 +31,7 @@ data HackPortError
     -- | WrongCacheVersion
     -- | InvalidCache
     | InvalidServer String
-    deriving (Typeable
+    deriving (
              , Show
              , Eq -- ^ needed for spec test-suite
              )
