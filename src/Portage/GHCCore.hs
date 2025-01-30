@@ -294,10 +294,13 @@ ghc9101_pkgs =
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,11,0]
+  , p "ghc-platform" [0,1,0,0]
+  , p "ghc-toolchain" [0,1,0,0]
   , p "haskeline" [0,8,2,1]
   , p "hpc" [0,7,0,1]
   , p "integer-gmp" [1,1]
   , p "mtl" [2,3,1]
+  , p "os-string" [2,0,7] -- bumped via BUMP_LIBRARIES
   , p "parsec" [3,1,17,0]
   , p "pretty" [1,1,3,6]
   , p "process" [1,6,25,0] -- bumped via BUMP_LIBRARIES
