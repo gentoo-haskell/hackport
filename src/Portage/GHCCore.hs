@@ -185,6 +185,8 @@ mkIndex ghcVer pids = fromList
 --   See: <https://github.com/gentoo-haskell/gentoo-haskell/issues/1386>
 upgradeablePkgs :: [Int] -> [Cabal.PackageName]
 upgradeablePkgs ghcVer
+    -- Upgradeable packages bundled with >=ghc-9.10
+    | ghcVer >= [9,10] = "ghc-platform" : "ghc-toolchain" : upgradeablePkgs [9,8]
     -- Upgradeable package @Cabal-syntax@ gets bundled with >=ghc-9.4
     | ghcVer >= [9,4] = "Cabal-syntax" : upgradeablePkgs [9,0]
     -- These have been bundled since at least ghc-9.0
