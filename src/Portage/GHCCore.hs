@@ -282,12 +282,12 @@ ghc9101_pkgs :: [Cabal.PackageIdentifier]
 ghc9101_pkgs =
   [ p "Cabal-syntax" [3,12,0,0]
   , p "Cabal" [3,12,0,0]
-  , p "array" [0,5,7,0]
+  , p "array" [0,5,8,0] -- bumped via BUMP_LIBRARIES
   , p "base" [4,20,0,0]
   , p "binary" [0,8,9,2]
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,7]
-  , p "deepseq" [1,5,0,0]
+  , p "deepseq" [1,5,1,0] -- bumped via BUMP_LIBRARIES
   , p "directory" [1,3,8,5] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
   , p "filepath" [1,5,2,0]
@@ -300,7 +300,7 @@ ghc9101_pkgs =
   , p "mtl" [2,3,1]
   , p "parsec" [3,1,17,0]
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,19,0]
+  , p "process" [1,6,25,0] -- bumped via BUMP_LIBRARIES
   , p "semaphore-compat" [1,0,0]
   , p "stm" [2,5,3,1]
   , p "template-haskell" [2,22,0,0]
@@ -358,7 +358,7 @@ ghc983_pkgs =
   , p "deepseq" [1,5,1,0]
   , p "directory" [1,3,8,5]
   , p "exceptions" [0,10,7]
-  , p "filepath" [1,4,200,1] -- needs to be bumped to 1.4.300.1
+  , p "filepath" [1,4,300,1] -- bumped via BUMP_LIBRARIES
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,11,0]
@@ -402,9 +402,9 @@ ghc982_pkgs =
   , p "mtl" [2,3,1]
   , p "parsec" [3,1,17,0]
   , p "pretty" [1,1,3,6]
-  , p "process" [1,6,19,0] -- bumped via BUMP_LIBRARIES
+  , p "process" [1,6,25,0] -- bumped via BUMP_LIBRARIES
   , p "semaphore-compat" [1,0,0]
-  , p "stm" [2,5,2,1]
+  , p "stm" [2,5,3,1] -- bumped via BUMP_LIBRARIES
   , p "template-haskell" [2,21,0,0]
   , p "terminfo" [0,4,1,6]
   , p "text" [2,1,1]
