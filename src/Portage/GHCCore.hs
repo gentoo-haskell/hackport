@@ -35,6 +35,7 @@ import Distribution.Pretty (prettyShow)
 
 import Data.Maybe
 import Data.List ( nub )
+import qualified Data.Set as S
 
 import Debug.Trace
 
@@ -154,6 +155,8 @@ minimumGHCVersionToBuildPackage gpd user_specified_fas =
 -- automatically add @ghc-boot@, @ghc-boot-th@, @ghc-heap@, and @ghci@ (all of
 -- which share the same version number as GHC). In addition, it generates
 -- what seems to be standard versioning for @ghc-experimental@ and @ghc-internal@.
+-- A Default library number will only be applied if it is not already present
+-- in @pids@.
 mkIndex :: [Int] -> [Cabal.PackageIdentifier] -> InstalledPackageIndex
 mkIndex ghcVer pids = fromList
       [ emptyInstalledPackageInfo
@@ -162,14 +165,17 @@ mkIndex ghcVer pids = fromList
           }
       | pindex@(Cabal.PackageIdentifier _name _version) <- pids' ]
   where
-    pids' =
-        p "ghc-boot" ghcVer
-      : p "ghc-boot-th" ghcVer
-      : p "ghc-heap" ghcVer
-      : p "ghci" ghcVer
-      : ghcExp "ghc-experimental" ghcVer
-      : ghcExp "ghc-internal" ghcVer
-      : filter filtUpgradeable pids
+    pids' = S.toAscList $ S.union
+      ( S.fromList (filter filtUpgradeable pids) )
+      -- These defaults will be ignored if they are already defined in 'pids'
+      ( S.fromList
+          [ p "ghc-boot" ghcVer
+          , p "ghc-boot-th" ghcVer
+          , p "ghc-heap" ghcVer
+          , p "ghci" ghcVer
+          , ghcExp "ghc-experimental" ghcVer
+          , ghcExp "ghc-internal" ghcVer
+          ] )
 
     -- | only include 'Cabal.PackageIdentifier's whose 'Cabal.packageName' does
     --   not match anything from 'upgradeablePkgs'
