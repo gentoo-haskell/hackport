@@ -152,7 +152,8 @@ minimumGHCVersionToBuildPackage gpd user_specified_fas =
 --
 -- This takes the version of GHC as the first parameter, and uses it to
 -- automatically add @ghc-boot@, @ghc-boot-th@, @ghc-heap@, and @ghci@ (all of
--- which share the same version number as GHC).
+-- which share the same version number as GHC). In addition, it generates
+-- what seems to be standard versioning for @ghc-experimental@ and @ghc-internal@.
 mkIndex :: [Int] -> [Cabal.PackageIdentifier] -> InstalledPackageIndex
 mkIndex ghcVer pids = fromList
       [ emptyInstalledPackageInfo
@@ -166,6 +167,8 @@ mkIndex ghcVer pids = fromList
       : p "ghc-boot-th" ghcVer
       : p "ghc-heap" ghcVer
       : p "ghci" ghcVer
+      : ghcExp "ghc-experimental" ghcVer
+      : ghcExp "ghc-internal" ghcVer
       : filter filtUpgradeable pids
 
     -- | only include 'Cabal.PackageIdentifier's whose 'Cabal.packageName' does
@@ -173,6 +176,13 @@ mkIndex ghcVer pids = fromList
     filtUpgradeable :: Cabal.PackageIdentifier -> Bool
     filtUpgradeable pid =
         all (Cabal.packageName pid /=) (upgradeablePkgs ghcVer)
+
+    -- e.g. foo-9.1201.0 from: ghcExp "foo" [9,12,1]
+    ghcExp :: String -> [Int] -> Cabal.PackageIdentifier
+    ghcExp s (v:vs) = p s [v, read (concat (map pad vs)), 0]
+        where pad i | i < 10 = "0" ++ show i
+                    | otherwise = show i
+    ghcExp s _ = p s [0]
 
 -- | These bundled packages are "upgradeable" and should not be present in the
 --   generated 'InstalledPackageIndex'. If they are, they will /not/ show up
