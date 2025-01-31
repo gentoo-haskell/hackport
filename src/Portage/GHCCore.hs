@@ -175,7 +175,7 @@ mkIndex ghcVer pids = fromList
     --   not match anything from 'upgradeablePkgs'
     filtUpgradeable :: Cabal.PackageIdentifier -> Bool
     filtUpgradeable pid =
-        all (Cabal.packageName pid /=) (upgradeablePkgs ghcVer)
+        all (Cabal.packageName pid /=) upgradeablePkgs
 
     -- e.g. foo-9.1201.0 from: ghcExp "foo" [9,12,1]
     ghcExp :: String -> [Int] -> Cabal.PackageIdentifier
@@ -189,26 +189,24 @@ mkIndex ghcVer pids = fromList
 --   in the generated list of dependencies (@RDEPEND@ and/or @DEPEND@), which
 --   is undesireable (since this is where required version ranges are found).
 --
---   Takes the '[Int]' representation of the GHC version as an argument to
---   determine if any extra upgradeable packages are bundled.
---
 --   See: <https://github.com/gentoo-haskell/gentoo-haskell/issues/1386>
-upgradeablePkgs :: [Int] -> [Cabal.PackageName]
-upgradeablePkgs ghcVer
-    -- Upgradeable packages bundled with >=ghc-9.12
-    | ghcVer >= [9,12] = "haddock-api" : "haddock-library" : upgradeablePkgs [9,10]
-    -- Upgradeable packages bundled with >=ghc-9.10
-    | ghcVer >= [9,10] = "ghc-platform" : "ghc-toolchain" : upgradeablePkgs [9,8]
-    -- Upgradeable package @Cabal-syntax@ gets bundled with >=ghc-9.4
-    | ghcVer >= [9,4] = "Cabal-syntax" : upgradeablePkgs [9,0]
-    -- These have been bundled since at least ghc-9.0
-    | otherwise =
-        [ "Cabal"
-        , "haskeline"
-        , "parsec"
-        , "text"
-        , "xhtml"
-        ]
+upgradeablePkgs :: [Cabal.PackageName]
+upgradeablePkgs =
+    [ -- Upgradeable packages bundled with >=ghc-9.12
+      "haddock-api"
+    , "haddock-library"
+      -- Upgradeable packages bundled with >=ghc-9.10
+    , "ghc-platform"
+    , "ghc-toolchain"
+      -- Upgradeable packages bundled with >=ghc-9.4
+    , "Cabal-syntax"
+      -- The rest
+    , "Cabal"
+    , "haskeline"
+    , "parsec"
+    , "text"
+    , "xhtml"
+    ]
 
 
 packageNamesFromPackageIndex :: InstalledPackageIndex -> [Cabal.PackageName]
