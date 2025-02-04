@@ -80,7 +80,7 @@ cabalFromGHC ver = lookup ver table
           , ([9,8,3], Cabal.mkVersion [3,10,3,0])
           , ([9,8,4], Cabal.mkVersion [3,10,3,0])
           , ([9,10,1], Cabal.mkVersion [3,12,0,0])
-          , ([9,12,1], Cabal.mkVersion [3,14,1,0])
+          , ([9,12,1], Cabal.mkVersion [3,14,1,1]) -- bumped via BUMP_LIBRARIES
           ]
 
 platform :: Platform
@@ -304,7 +304,7 @@ ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 ghc9121_pkgs :: [Cabal.PackageIdentifier]
 ghc9121_pkgs =
   [ p "Cabal-syntax" [3,14,1,0]
-  , p "Cabal" [3,14,1,0]
+  , p "Cabal" [3,14,1,1] -- bumped via BUMP_LIBRARIES
   , p "array" [0,5,8,0]
   , p "base" [4,21,0,0]
   , p "binary" [0,8,9,2]
