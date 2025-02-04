@@ -201,6 +201,9 @@ upgradeablePkgs =
     [ -- Upgradeable packages bundled with >=ghc-9.12
       "haddock-api"
     , "haddock-library"
+      -- NOT upgradeable in ghc-9.12, but needs to be added to the ebuild for
+      -- earlier versions of ghc.
+    , "os-string"
       -- Upgradeable packages bundled with >=ghc-9.10
     , "ghc-platform"
     , "ghc-toolchain"
