@@ -30,8 +30,8 @@ DEPEND="
 		>=dev-haskell/quickcheck-2.13 <dev-haskell/quickcheck-2.15
 		>=dev-haskell/tagged-0.8.6 <dev-haskell/tagged-0.9
 		>=dev-haskell/tasty-1.2.1 <dev-haskell/tasty-1.5
-		=dev-haskell/tasty-hunit-0.10*
-		=dev-haskell/tasty-quickcheck-0.10*
+		>=dev-haskell/tasty-hunit-0.10 <dev-haskell/tasty-hunit-0.11
+		>=dev-haskell/tasty-quickcheck-0.10 <dev-haskell/tasty-quickcheck-0.11
 		|| (
 			( >=dev-haskell/hunit-1.3.1 <dev-haskell/hunit-1.3.2 )
 			( >=dev-haskell/hunit-1.6 <dev-haskell/hunit-1.7 )

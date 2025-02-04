@@ -21,9 +21,9 @@ RDEPEND="
 	>=dev-haskell/blaze-markup-0.5.1:=[profile?] <dev-haskell/blaze-markup-0.9
 	>=dev-haskell/data-default-0.4:=[profile?] <dev-haskell/data-default-0.8
 	>=dev-haskell/file-embed-0.0.10.1:=[profile?] <dev-haskell/file-embed-0.0.16
-	=dev-haskell/hashable-1*:=[profile?]
+	>=dev-haskell/hashable-1:=[profile?] <dev-haskell/hashable-2
 	>=dev-haskell/lrucache-1.1.1:=[profile?] <dev-haskell/lrucache-1.3
-	=dev-haskell/network-uri-2.6*:=[profile?]
+	>=dev-haskell/network-uri-2.6:=[profile?] <dev-haskell/network-uri-2.7
 	>=dev-haskell/optparse-applicative-0.12:=[profile?] <dev-haskell/optparse-applicative-0.19
 	>=dev-haskell/parsec-3:=[profile?] <dev-haskell/parsec-3.2
 	>=dev-haskell/random-1:=[profile?] <dev-haskell/random-1.3
@@ -31,10 +31,10 @@ RDEPEND="
 	>=dev-haskell/resourcet-1.1:=[profile?] <dev-haskell/resourcet-1.4
 	>=dev-haskell/scientific-0.3.4:=[profile?] <dev-haskell/scientific-0.4
 	>=dev-haskell/tagsoup-0.13.1:=[profile?] <dev-haskell/tagsoup-0.15
-	=dev-haskell/time-locale-compat-0.1*:=[profile?]
-	=dev-haskell/unordered-containers-0.2*:=[profile?]
+	>=dev-haskell/time-locale-compat-0.1:=[profile?] <dev-haskell/time-locale-compat-0.2
+	>=dev-haskell/unordered-containers-0.2:=[profile?] <dev-haskell/unordered-containers-0.3
 	>=dev-haskell/vector-0.11:=[profile?] <dev-haskell/vector-0.14
-	=dev-haskell/wai-app-static-3.1*:=[profile?]
+	>=dev-haskell/wai-app-static-3.1:=[profile?] <dev-haskell/wai-app-static-3.2
 	>=dev-haskell/yaml-0.8.11:=[profile?] <dev-haskell/yaml-0.12
 	>=dev-lang/ghc-8.10.6:=
 	|| (
@@ -44,7 +44,7 @@ RDEPEND="
 	dev-haskell/aeson:=[profile?]
 	|| (
 		( >=dev-haskell/text-0.11 <dev-haskell/text-1.3 )
-		( =dev-haskell/text-2.0* )
+		( >=dev-haskell/text-2.0 <dev-haskell/text-2.1 )
 	)
 	dev-haskell/text:=[profile?]
 	buildwebsite? (
@@ -60,7 +60,7 @@ RDEPEND="
 	previewserver? (
 		>=dev-haskell/fsnotify-0.2:=[profile?] <dev-haskell/fsnotify-0.5
 		>=dev-haskell/http-types-0.9:=[profile?] <dev-haskell/http-types-0.13
-		=dev-haskell/wai-3.2*:=[profile?]
+		>=dev-haskell/wai-3.2:=[profile?] <dev-haskell/wai-3.3
 		>=dev-haskell/warp-3.2:=[profile?] <dev-haskell/warp-3.4
 	)
 	!previewserver? (
@@ -85,7 +85,7 @@ DEPEND="
 	test? (
 		>=dev-haskell/quickcheck-2.8 <dev-haskell/quickcheck-2.15
 		>=dev-haskell/tasty-0.11 <dev-haskell/tasty-1.5
-		=dev-haskell/tasty-golden-2.3*
+		>=dev-haskell/tasty-golden-2.3 <dev-haskell/tasty-golden-2.4
 		>=dev-haskell/tasty-hunit-0.9 <dev-haskell/tasty-hunit-0.11
 		>=dev-haskell/tasty-quickcheck-0.8 <dev-haskell/tasty-quickcheck-0.11
 	)

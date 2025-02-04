@@ -46,7 +46,7 @@ RDEPEND="
 	dev-haskell/hashable:=[profile?]
 	|| (
 		( >=dev-haskell/text-1.2.3 <dev-haskell/text-1.3 )
-		( =dev-haskell/text-2.0* )
+		( >=dev-haskell/text-2.0 <dev-haskell/text-2.1 )
 	)
 	dev-haskell/text:=[profile?]
 "
