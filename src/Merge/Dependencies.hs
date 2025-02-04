@@ -446,7 +446,8 @@ hackageBuildToolsDependencies :: Portage.Overlay -> Cabal.PackageDescription -> 
 hackageBuildToolsDependencies overlay (Cabal.PackageDescription { Cabal.library = lib, Cabal.executables = exes }) =
   haskellDependencies overlay $ L.nub $
     [ Cabal.Dependency pn versionRange $ NES.singleton Cabal.defaultLibName
-    | Cabal.ExeDependency pn _component versionRange <- cabalDeps
+    | Cabal.ExeDependency pn _component versionRange <- cabalDeps,
+      not (any (== Cabal.unPackageName pn) buildToolsProvided) -- ignore provided tools
     ]
   where
     cabalDeps = depL ++ depE
