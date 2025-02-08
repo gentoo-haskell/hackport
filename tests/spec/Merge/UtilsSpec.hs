@@ -19,7 +19,8 @@ import           Portage.PackageId
 
 import qualified Distribution.Package            as Cabal
 import qualified Distribution.PackageDescription as Cabal
-import           Distribution.Pretty (prettyShow)
+import qualified Distribution.Pretty as Disp
+import           Hackport.Pretty (prettyShow)
 
 spec :: Spec
 spec = do
@@ -28,7 +29,7 @@ spec = do
       let cat = Category "dev-haskell"
           name = Cabal.mkPackageName "package-name1"
         in \(ComplexVersion version) ->
-             readPackageString (prettyShow cat ++ "/" ++ prettyShow name ++
+             readPackageString (prettyShow cat ++ "/" ++ Disp.prettyShow name ++
                                  if (versionNumber version) == []
                                  then ""
                                  else "-" ++ prettyShow version)
@@ -38,7 +39,7 @@ spec = do
                 (versionRevision version) /= 0
              then Left (ArgumentError ("Could not parse [category/]package[-version]: "
                                         ++ prettyShow cat ++ "/" ++
-                                        prettyShow name ++
+                                        Disp.prettyShow name ++
                                         if (versionNumber version) == []
                                         then ""
                                         else "-" ++ prettyShow version))
