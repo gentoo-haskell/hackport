@@ -10,16 +10,23 @@ a new ebuild.
 module Portage.EMeta
   ( EMeta(..)
   , findExistingMeta
+  , parseExternalDepends
   ) where
 
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Char (isSpace)
 import qualified Data.List as L
-
+import qualified Data.Monoid as Monoid
 import System.Directory (doesDirectoryExist, getDirectoryContents)
 import System.FilePath ((</>))
 import Text.Printf
+
+import qualified Distribution.Parsec as Cabal
+
+import qualified Merge.Dependencies as Merge
+import qualified Portage.Dependency.Types as Portage
+import qualified Portage.PackageId as Portage
 
 -- | Extract a value of variable in \'var=\"val\"\' format.
 -- There should be exactly one variable assignment in the ebuild.
@@ -76,12 +83,65 @@ extractDescription :: FilePath -> String -> Maybe String
 extractDescription ebuild_path s_ebuild =
     extract_quoted_string ebuild_path s_ebuild "DESCRIPTION"
 
+-- | Extract information on external dependencies that cannot be specified in
+--   the .cabal file.
+extractExternalDepends :: FilePath -> String -> Maybe String
+extractExternalDepends ebuild_path s_ebuild =
+    extract_hackport_var ebuild_path s_ebuild "external-depends"
+
+-- | Parse @external-depends@ string from ebulds. These can be added to an
+--   existing 'Merge.EDep' using its 'Semigroup' instance.
+--
+--   Example of valid input:
+--
+--   @@@
+--   "rdepend:app-misc/foo,depend:app-misc/bar"
+--   @@@
+--
+--   NOTE: This does not currently support flags or version ranges on the atoms
+
+parseExternalDepends :: String -> Either String Merge.EDep
+parseExternalDepends
+    = Monoid.getAp
+    . foldMap parseEntry
+    . finalizeSplit
+    . foldr splitOnCommas ([],"")
+  where
+    finalizeSplit :: ([String], String) -> [String]
+    finalizeSplit (results,"") = results
+    finalizeSplit (results,working) = results ++ [working]
+
+    splitOnCommas :: Char -> ([String],String) -> ([String], String)
+    splitOnCommas ',' (results,working) = (results ++ [working], "")
+    splitOnCommas  c  (results,working) = (results, c : working)
+
+    parseEntry :: String -> Monoid.Ap (Either String) Merge.EDep
+    parseEntry s0 = Monoid.Ap $ case L.span (/= ':') s0 of
+        (ls, ':' : rs) -> do
+
+            pkg@(Portage.PackageName _ _) <- Cabal.eitherParsec rs
+
+            let drange = Portage.DRange Portage.ZeroB Portage.InfinityB
+                dattr = Portage.DAttr Portage.AnySlot []
+                atom = Portage.Atom pkg drange dattr
+
+            f <- case ls of
+                "rdepend" -> Right $ \a p -> p { Merge.rdep = a }
+                "depend" -> Right $ \a p -> p { Merge.dep = a }
+                s -> Left $ "could not parse dependency class: " ++ show s
+
+            pure $ f (Portage.DependAtom atom) mempty
+
+        _ -> Left $ "could not parse entry: " ++ show s0
+
+
 -- | Type representing the aggregated (best inferred) metadata for a
 -- new ebuild of a package.
 data EMeta = EMeta { keywords :: Maybe [String]
                    , license  :: Maybe String
                    , cabal_flags :: Maybe String
                    , description :: Maybe String
+                   , externalDepends :: Maybe String
                    }
 
 -- | Find the existing package metadata from the last available ebuild.
@@ -101,6 +161,7 @@ findExistingMeta pkgdir = liftIO $ do
             , license = extractLicense e eConts
             , cabal_flags = extractCabalFlags e eConts
             , description = extractDescription e eConts
+            , externalDepends = extractExternalDepends e eConts
             }
     let get_latest candidates = last (Nothing : filter (/= Nothing) candidates)
         aggregated_meta = EMeta
@@ -108,5 +169,6 @@ findExistingMeta pkgdir = liftIO $ do
             , license = get_latest $ map license eMetas
             , cabal_flags = get_latest $ map cabal_flags eMetas
             , description = get_latest $ map description eMetas
+            , externalDepends = get_latest $ map externalDepends eMetas
             }
     pure aggregated_meta

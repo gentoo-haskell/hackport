@@ -368,8 +368,16 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
                         (d1:d2:ds) -> go (mappend d1 d2 : go ds)
                         _          -> deps'
 
-      tdeps :: Merge.EDep
-      tdeps = bimerge $ map set_fa_to_ed deps1'
+      addExternalDepends :: EM.EMeta -> Merge.EDep -> Env env Merge.EDep
+      addExternalDepends emeta deps0 = case EM.externalDepends emeta of
+          Nothing -> pure deps0
+          Just eDepStr -> case EM.parseExternalDepends eDepStr of
+              Left s -> deps0 <$ warn ("external-depends: " ++ s)
+              Right d -> pure $ deps0 <> d
+
+      getTdeps :: Env env Merge.EDep
+      getTdeps = bimerge
+          <$> traverse (addExternalDepends existing_meta . set_fa_to_ed) deps1'
 
       set_fa_to_ed :: (CabalFlags, Merge.EDep) -> Merge.EDep
       set_fa_to_ed (fa, ed) = ed { Merge.rdep = liftFlags (leave_only_dynamic_fa fa) $ Merge.rdep ed
@@ -425,6 +433,8 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
           Just [] -> die "No output from 'portageq envvar ARCH'"
           Just (l:_) -> pure l
 
+  tdeps <- getTdeps
+
   let pp_fn (cabal_fn, yesno) = b yesno ++ Cabal.unFlagName cabal_fn
           where b True  = ""
                 b False = "-"
@@ -454,9 +464,12 @@ mergeGenericPackageDescription cat pkgGenericDesc fetch users_cabal_flags = do
                   in p ++ cfn_to_iuse fn
 
       ebuild =   (\e -> e { E.iuse = E.iuse e ++ map to_iuse active_flag_descs })
-               . ( case requested_cabal_flags of
-                       Nothing  -> id
-                       Just ucf -> (\e -> e { E.used_options  = E.used_options e ++ [("flags", ucf)] }))
+               . ( \e -> e { E.used_options
+                           = maybe id (\ds -> (++ [("external-depends", ds)]))
+                                 (EM.externalDepends existing_meta)
+                           $ maybe id (\ucf -> (++ [("flags",ucf)]))
+                                 requested_cabal_flags
+                           $ E.used_options e } )
                $ (C2E.cabal2ebuild cat (Merge.packageDescription pkgDesc))
                   { E.depend        =            Merge.dep tdeps
                   , E.depend_extra  = S.toList $ Merge.dep_e tdeps
