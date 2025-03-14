@@ -61,6 +61,13 @@ flag threads
   default:     True
   manual:      True
 
+-- Needed to build hackport in "offline" (gentoo-only) mode
+-- See: <https://github.com/gentoo-haskell/gentoo-haskell/issues/1074>
+flag build-tool-depends
+  description: Enable dependencies via build-tool-depends
+  default:     True
+  manual:      True
+
 -- Turn off all warnings (for external libs and doctests-v2)
 common no-warnings
   ghc-options: -Wno-default -Wno-incomplete-uni-patterns
@@ -1069,9 +1076,10 @@ test-suite doctests-v2
     , base <5
     , process
 
-  build-tool-depends:
-    -- cabal-install should already be installed if this is being built...
-    , doctest:doctest      >=0.8
+  if flag(build-tool-depends)
+    build-tool-depends:
+      -- cabal-install should already be installed if this is being built...
+      , doctest:doctest      >=0.8
 
   if !flag(doctests) || flag(cabal-v1)
     buildable: False
@@ -1119,5 +1127,7 @@ test-suite spec
     , time
     , xml
 
-  build-tool-depends: hspec-discover:hspec-discover >=2.0
   other-extensions:   DeriveDataTypeable
+
+  if flag(build-tool-depends)
+    build-tool-depends: hspec-discover:hspec-discover >=2.0
