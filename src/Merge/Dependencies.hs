@@ -618,4 +618,14 @@ pkgconfig_table =
   ,("dbusmenu-glib-0.4",           ("dev-libs", "libdbusmenu", Portage.DAttr Portage.AnySlot [Portage.mkUse $ Portage.Use "introspection"]))
   ,("dbusmenu-gtk3-0.4",           ("dev-libs", "libdbusmenu", Portage.DAttr Portage.AnySlot
     (Portage.mkUse <$> [Portage.Use "gtk3", Portage.Use "introspection"])))
+  ,("gpgme",                       ("app-crypt", "gpgme", def))
+  ,("mp3lame",                     ("media-sound", "lame", def))
+  ,("samplerate",                  ("media-libs", "libsamplerate", def))
+  ,("libavcodec",                  ("media-video", "ffmpeg", def))
+  ,("libavdevice",                 ("media-video", "ffmpeg", def))
+  ,("libavformat",                 ("media-video", "ffmpeg", def))
+  ,("libavutil",                   ("media-video", "ffmpeg", def))
+  ,("libswresample",               ("media-video", "ffmpeg", def))
+  ,("libswscal",                   ("media-video", "ffmpeg", def))
+  ,("FLAC",                        ("media-libs", "flac", def))
   ]
