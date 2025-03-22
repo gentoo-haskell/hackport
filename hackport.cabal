@@ -1080,6 +1080,10 @@ test-suite doctests-v2
     build-tool-depends:
       -- cabal-install should already be installed if this is being built...
       , doctest:doctest      >=0.8
+  else
+    build-depends:
+      directory
+    cpp-options: -DEXTERNAL_DOCTEST
 
   if !flag(doctests) || flag(cabal-v1)
     buildable: False

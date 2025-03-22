@@ -1,14 +1,27 @@
+{-# LANGUAGE CPP #-}
+
 module Main (main) where
 
 import Data.Foldable (for_)
 import System.Exit (ExitCode (..), exitWith)
-import System.Process (readProcess, createProcess, proc, waitForProcess, getProcessExitCode)
+import System.Process (createProcess, proc, waitForProcess, getProcessExitCode)
+
+#ifdef EXTERNAL_DOCTEST
+import System.Directory (findExecutable)
+#else
+import System.Process (readProcess)
+#endif
 
 
 main :: IO ()
 main = do
 
+#ifdef EXTERNAL_DOCTEST
+    doctestPath <- findExecutable "doctest"
+        >>= maybe (error "Cannot find doctest exe") pure
+#else
     doctestPath:_ <- lines <$> readProcess "cabal" ["list-bin", "doctest"] []
+#endif
 
     let components =
             [ "hackport:lib:hackport-internal"
