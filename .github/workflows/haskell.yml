@@ -1,9 +1,9 @@
 name: Haskell CI
 on:
   push:
-    branches: [main, master]
+    branches: [ master ]
   pull_request:
-    branches: [main, master]
+    branches: [ master ]
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
           ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
@@ -46,13 +46,12 @@ jobs:
 
       - name: Configure the build
         run: |
-          # (2024-10-11) doctests are failing only with ghc-9.2 on github CI
-          cabal configure --enable-tests --enable-benchmarks --disable-documentation --flag=pedantic --flag=-doctests
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation --flag=pedantic
           cabal build --dry-run
         # The last step generates dist-newstyle/cache/plan.json for the cache key.
 
       - name: Restore cached dependencies
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: cache
         env:
           key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
@@ -62,13 +61,15 @@ jobs:
           restore-keys: ${{ env.key }}-
 
       - name: Install dependencies
+        # If we had an exact cache hit, the dependencies will be up to date.
+        if: steps.cache.outputs.cache-hit != 'true'
         run: cabal build all --only-dependencies
 
       # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
       - name: Save cached dependencies
-        uses: actions/cache/save@v3
-        # Caches are immutable, trying to save with the same key would error.
-        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+        uses: actions/cache/save@v4
+        # If we had an exact cache hit, trying to save the cache would error because of key clash.
+        if: steps.cache.outputs.cache-hit != 'true'
         with:
           path: ${{ steps.setup.outputs.cabal-store }}
           key: ${{ steps.cache.outputs.cache-primary-key }}
@@ -80,4 +81,8 @@ jobs:
         run: cabal test all --test-option=--color --test-show-details=streaming --jobs=1
 
       - name: Build documentation
-        run: cabal haddock all
+        run:
+          cabal haddock all --disable-documentation
+          # --disable-documentation disables building documentation for dependencies.
+          # The package's own documentation is still built,
+          # yet contains no links to the documentation of the dependencies.
