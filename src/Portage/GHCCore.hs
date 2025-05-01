@@ -46,10 +46,10 @@ ghcs =
     [ ghc902
     , ghc924, ghc925, ghc926, ghc927, ghc928
     , ghc945, ghc946, ghc947, ghc948
-    , ghc962, ghc963, ghc964, ghc965, ghc966
+    , ghc962, ghc963, ghc964, ghc965, ghc966, ghc967
     , ghc982, ghc983, ghc984
     , ghc9101
-    , ghc9121
+    , ghc9121, ghc9122
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
@@ -76,11 +76,13 @@ cabalFromGHC ver = lookup ver table
           , ([9,6,4], Cabal.mkVersion [3,10,1,0])
           , ([9,6,5], Cabal.mkVersion [3,10,3,0])
           , ([9,6,6], Cabal.mkVersion [3,10,3,0])
+          , ([9,6,7], Cabal.mkVersion [3,10,3,0])
           , ([9,8,2], Cabal.mkVersion [3,10,3,0]) -- bumped via BUMP_LIBRARIES
           , ([9,8,3], Cabal.mkVersion [3,10,3,0])
           , ([9,8,4], Cabal.mkVersion [3,10,3,0])
           , ([9,10,1], Cabal.mkVersion [3,12,0,0])
           , ([9,12,1], Cabal.mkVersion [3,14,1,1]) -- bumped via BUMP_LIBRARIES
+          , ([9,12,2], Cabal.mkVersion [3,14,1,1]) -- bumped via BUMP_LIBRARIES
           ]
 
 platform :: Platform
@@ -232,6 +234,9 @@ mkInfoIndex
   -> (DC.CompilerInfo, InstalledPackageIndex)
 mkInfoIndex ghcVer pids = (ghc ghcVer, mkIndex ghcVer pids)
 
+ghc9122 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc9122 = mkInfoIndex [9,12,2] ghc9122_pkgs
+
 ghc9121 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc9121 = mkInfoIndex [9,12,1] ghc9121_pkgs
 
@@ -246,6 +251,9 @@ ghc983 = mkInfoIndex [9,8,3] ghc983_pkgs
 
 ghc982 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc982 = mkInfoIndex [9,8,2] ghc982_pkgs
+
+ghc967 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc967 = mkInfoIndex [9,6,7] ghc967_pkgs
 
 ghc966 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc966 = mkInfoIndex [9,6,6] ghc966_pkgs
@@ -304,6 +312,47 @@ ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 --  * https://flora.pm/packages/%40hackage/ghc/9.0.2/dependencies
 --  * https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history
 --  * @./scripts/scan-ghc-library-versions.hs@ in the gentoo-haskell tree
+ghc9122_pkgs :: [Cabal.PackageIdentifier]
+ghc9122_pkgs =
+  [ p "Cabal-syntax" [3,14,1,0]
+  , p "Cabal" [3,14,1,1] -- bumped via BUMP_LIBRARIES
+  , p "array" [0,5,8,0]
+  , p "base" [4,21,0,0]
+  , p "binary" [0,8,9,3]
+  , p "bytestring" [0,12,2,0]
+  , p "containers" [0,7]
+  , p "deepseq" [1,5,1,0]
+  , p "directory" [1,3,9,0]
+  , p "exceptions" [0,10,9]
+  , p "file-io" [0,1,5]
+  , p "filepath" [1,5,4,0]
+  , p "ghc-bignum" [1,3]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,13,0]
+  , p "ghc-platform" [0,1,0,0]
+  , p "ghc-toolchain" [0,1,0,0]
+  , p "haddock-api" [2,30,0]
+  , p "haddock-library" [1,11,0]
+  , p "haskeline" [0,8,2,1]
+  , p "hpc" [0,7,0,2]
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,3,1]
+  , p "os-string" [2,0,7]
+  , p "parsec" [3,1,18,0]
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,25,0]
+  , p "rts" [1,0,2]
+  , p "semaphore-compat" [1,0,0]
+  , p "stm" [2,5,3,1]
+  , p "template-haskell" [2,23,0,0]
+  , p "terminfo" [0,4,1,7]
+  , p "text" [2,1,2]
+  , p "time" [1,14]
+  , p "transformers" [0,6,1,2]
+  , p "unix" [2,8,6,0]
+  , p "xhtml" [3000,2,2,1]
+  ]
+
 ghc9121_pkgs :: [Cabal.PackageIdentifier]
 ghc9121_pkgs =
   [ p "Cabal-syntax" [3,14,1,0]
@@ -487,6 +536,41 @@ ghc982_pkgs =
   , p "time" [1,12,2]
   , p "transformers" [0,6,1,0]
   , p "unix" [2,8,4,0]
+  , p "xhtml" [3000,2,2,1]
+  ]
+
+ghc967_pkgs :: [Cabal.PackageIdentifier]
+ghc967_pkgs =
+  [ p "Cabal-syntax" [3,10,3,0]
+  , p "Cabal" [3,10,3,0]
+  , p "array" [0,5,8,0]
+  , p "base" [4,18,3,0]
+  , p "binary" [0,8,9,1]
+  , p "bytestring" [0,11,5,4]
+  , p "containers" [0,6,7]
+  , p "deepseq" [1,4,8,1]
+  , p "directory" [1,3,9,0] -- bumped via BUMP_LIBRARIES
+  , p "exceptions" [0,10,7]
+  , p "file-io" [0,1,5] -- added via hadrian patch and BUMP_LIBRARIES
+  , p "filepath" [1,4,301,0]
+  , p "ghc-bignum" [1,3]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,10,0]
+  , p "haskeline" [0,8,2,1]
+  , p "hpc" [0,6,2,0]
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,3,1]
+  , p "parsec" [3,1,16,1]
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,19,0]
+  , p "rts" [1,0,2]
+  , p "stm" [2,5,1,0]
+  , p "template-haskell" [2,20,0,0]
+  , p "terminfo" [0,4,1,6]
+  , p "text" [2,0,2]
+  , p "time" [1,12,2]
+  , p "transformers" [0,6,1,0]
+  , p "unix" [2,8,6,0]
   , p "xhtml" [3000,2,2,1]
   ]
 
