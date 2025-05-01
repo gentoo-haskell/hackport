@@ -404,8 +404,9 @@ ghc9101_pkgs =
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,7]
   , p "deepseq" [1,5,1,0] -- bumped via BUMP_LIBRARIES
-  , p "directory" [1,3,8,5] -- bumped via BUMP_LIBRARIES
+  , p "directory" [1,3,9,0] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
+  , p "file-io" [0,1,5] -- added via hadrian patch and BUMP_LIBRARIES
   , p "filepath" [1,5,2,0]
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
@@ -444,8 +445,9 @@ ghc984_pkgs =
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,6,8]
   , p "deepseq" [1,5,1,0]
-  , p "directory" [1,3,8,5]
+  , p "directory" [1,3,9,0] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
+  , p "file-io" [0,1,5] -- added via hadrian patch and BUMP_LIBRARIES
   , p "filepath" [1,4,301,0]
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
@@ -479,9 +481,10 @@ ghc983_pkgs =
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,6,8]
   , p "deepseq" [1,5,1,0]
-  , p "directory" [1,3,8,5]
+  , p "directory" [1,3,9,0] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
-  , p "filepath" [1,4,300,1] -- bumped via BUMP_LIBRARIES
+  , p "file-io" [0,1,5] -- added via hadrian patch and BUMP_LIBRARIES
+  , p "filepath" [1,4,301,0] -- bumped via BUMP_LIBRARIES
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,11,0]
@@ -500,7 +503,7 @@ ghc983_pkgs =
   , p "text" [2,1,1]
   , p "time" [1,12,2]
   , p "transformers" [0,6,1,0]
-  , p "unix" [2,8,4,0]
+  , p "unix" [2,8,6,0] -- bumped via BUMP_LIBRARIES
   , p "xhtml" [3000,2,2,1]
   ]
 
@@ -508,15 +511,16 @@ ghc982_pkgs :: [Cabal.PackageIdentifier]
 ghc982_pkgs =
   [ p "Cabal-syntax" [3,10,3,0] -- bumped via BUMP_LIBRARIES
   , p "Cabal" [3,10,3,0] -- bumped via BUMP_LIBRARIES
-  , p "array" [0,5,6,0]
+  , p "array" [0,5,8,0] -- bumped via BUMP_LIBRARIES
   , p "base" [4,19,1,0]
   , p "binary" [0,8,9,1]
   , p "bytestring" [0,12,1,0]
   , p "containers" [0,6,8]
   , p "deepseq" [1,5,0,0]
-  , p "directory" [1,3,8,5] -- bumped via BUMP_LIBRARIES
+  , p "directory" [1,3,9,0] -- bumped via BUMP_LIBRARIES
   , p "exceptions" [0,10,7]
-  , p "filepath" [1,4,300,1] -- bumped via BUMP_LIBRARIES
+  , p "file-io" [0,1,5] -- added via hadrian patch and BUMP_LIBRARIES
+  , p "filepath" [1,4,301,0] -- bumped via BUMP_LIBRARIES
   , p "ghc-bignum" [1,3]
   , p "ghc-compact" [0,1,0,0]
   , p "ghc-prim" [0,11,0]
@@ -535,7 +539,7 @@ ghc982_pkgs =
   , p "text" [2,1,1]
   , p "time" [1,12,2]
   , p "transformers" [0,6,1,0]
-  , p "unix" [2,8,4,0]
+  , p "unix" [2,8,6,0] -- bumped via BUMP_LIBRARIES
   , p "xhtml" [3000,2,2,1]
   ]
 
