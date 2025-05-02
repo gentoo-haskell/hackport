@@ -1,3 +1,27 @@
+## v0.9.1.0 (2025-05-02)
+
+Release v0.9.1.0
+
+- Add library versions for ghc-9.6.7, ghc-9.12.1 and ghc-9.12.2
+
+- Fix <https://github.com/gentoo-haskell/hackport/issues/134>
+
+- Test with ghc-9.12 in GitHub CI
+
+- Add support for "#hackport: external-depends: ..."
+
+  This is intended for situations where a Haskell package depends on a
+  non-Haskell executable (which does not have a canonical field in the
+  .cabal file spec).
+
+  Does not currently support flags or version ranges on the atoms. Does
+  not support BDEPEND yet as this needs to be added to
+  `Merge.Dependencies.EDep` (see <https://github.com/gentoo-haskell/hackport/issues/130>).
+
+  Random example:
+
+      #hackport: external-depends: rdepend:dev-db/postgresql,depend:app-misc/ca-certificates
+
 ## v0.9.0.0 (2024-12-02)
 
 Release v0.9.0.0
