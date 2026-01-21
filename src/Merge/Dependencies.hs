@@ -286,7 +286,7 @@ at_least_c_p_v cat pn v = Portage.DependAtom $
 staticTranslateExtraLib :: String -> Maybe Portage.Dependency
 staticTranslateExtraLib lib = lookup lib m
   where
-  m = [ ("z", any_c_p "sys-libs" "zlib")
+  m = [ ("z", any_c_p "virtual" "zlib")
       , ("bz2", any_c_p "app-arch" "bzip2")
       , ("mysqlclient", at_least_c_p_v "virtual" "mysql" [4,0])
       , ("pq", at_least_c_p_v "dev-db" "postgresql" [7])
@@ -601,7 +601,7 @@ pkgconfig_table =
   ,("sdl2",                        ("media-libs", "libsdl2", def))
   ,("SDL2_image",                  ("media-libs", "sdl2-image", def))
   ,("SDL2_mixer",                  ("media-libs", "sdl2-mixer", def))
-  ,("zlib",                        ("sys-libs", "zlib", def))
+  ,("zlib",                        ("virtual", "zlib", def))
   ,("libpcre",                     ("dev-libs", "libpcre", def))
   ,("graphene-gobject-1.0",        ("media-libs", "graphene", Portage.DAttr (Portage.AnySlot) [Portage.mkUse $ Portage.Use "introspection"]))
   ,("harfbuzz",                    ("media-libs", "harfbuzz", def))
