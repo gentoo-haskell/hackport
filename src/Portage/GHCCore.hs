@@ -49,7 +49,7 @@ ghcs =
     , ghc962, ghc963, ghc964, ghc965, ghc966, ghc967
     , ghc982, ghc983, ghc984
     , ghc9101
-    , ghc9121, ghc9122
+    , ghc9121, ghc9122, ghc9123
     ]
 
 -- | Maybe determine the appropriate 'Cabal.Version' of the @Cabal@ package
@@ -83,6 +83,7 @@ cabalFromGHC ver = lookup ver table
           , ([9,10,1], Cabal.mkVersion [3,12,0,0])
           , ([9,12,1], Cabal.mkVersion [3,14,1,1]) -- bumped via BUMP_LIBRARIES
           , ([9,12,2], Cabal.mkVersion [3,14,1,1]) -- bumped via BUMP_LIBRARIES
+          , ([9,12,3], Cabal.mkVersion [3,14,2,0])
           ]
 
 platform :: Platform
@@ -234,6 +235,9 @@ mkInfoIndex
   -> (DC.CompilerInfo, InstalledPackageIndex)
 mkInfoIndex ghcVer pids = (ghc ghcVer, mkIndex ghcVer pids)
 
+ghc9123 :: (DC.CompilerInfo, InstalledPackageIndex)
+ghc9123 = mkInfoIndex [9,12,3] ghc9123_pkgs
+
 ghc9122 :: (DC.CompilerInfo, InstalledPackageIndex)
 ghc9122 = mkInfoIndex [9,12,2] ghc9122_pkgs
 
@@ -312,6 +316,48 @@ ghc902 = mkInfoIndex [9,0,2] ghc902_pkgs
 --  * https://flora.pm/packages/%40hackage/ghc/9.0.2/dependencies
 --  * https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history
 --  * @./scripts/scan-ghc-library-versions.hs@ in the gentoo-haskell tree
+ghc9123_pkgs :: [Cabal.PackageIdentifier]
+ghc9123_pkgs =
+  [ p "Cabal-syntax" [3,14,2,0]
+  , p "Cabal" [3,14,2,0]
+  , p "array" [0,5,8,0]
+  , p "base" [4,21,1,0]
+  , p "binary" [0,8,9,3]
+  , p "bytestring" [0,12,2,0]
+  , p "containers" [0,7]
+  , p "deepseq" [1,5,1,0]
+  , p "directory" [1,3,9,0]
+  , p "exceptions" [0,10,10]
+  , p "file-io" [0,1,5]
+  , p "filepath" [1,5,4,0]
+  , p "ghc-bignum" [1,3]
+  , p "ghc-compact" [0,1,0,0]
+  , p "ghc-prim" [0,13,0]
+  , p "ghc-platform" [0,1,0,0]
+  , p "ghc-toolchain" [0,1,0,0]
+  , p "haddock-api" [2,32,0]
+  , p "haddock-library" [1,11,0]
+  , p "haskeline" [0,8,2,1]
+  , p "hpc" [0,7,0,2]
+  , p "integer-gmp" [1,1]
+  , p "mtl" [2,3,1]
+  , p "os-string" [2,0,8]
+  , p "parsec" [3,1,18,0]
+  , p "pretty" [1,1,3,6]
+  , p "process" [1,6,26,1]
+  , p "rts" [1,0,2]
+  , p "semaphore-compat" [1,0,0]
+  , p "stm" [2,5,3,1]
+  , p "template-haskell" [2,23,0,0]
+  , p "terminfo" [0,4,1,7]
+  , p "text" [2,1,3]
+  , p "time" [1,14]
+  , p "transformers" [0,6,1,2]
+  , p "unix" [2,8,7,0]
+  , p "xhtml" [3000,2,2,1]
+  ]
+
+
 ghc9122_pkgs :: [Cabal.PackageIdentifier]
 ghc9122_pkgs =
   [ p "Cabal-syntax" [3,14,1,0]
