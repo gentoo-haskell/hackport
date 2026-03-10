@@ -237,6 +237,9 @@ statusParser = Opt.info parser infoMod
         , Opt.flag' HackageToOverlay
             $  Opt.long "from-hackage"
             <> Opt.help "Print only packages likely to be interesting to move from hackage tree."
+        , Opt.flag' OverlayAndHackage
+            $ Opt.long "updates"
+            <> Opt.help "Print only packages that present in both overlay and tree (overlay)."
         , pure PortagePlusOverlay
         ]
 

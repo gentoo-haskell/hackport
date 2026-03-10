@@ -1,4 +1,3 @@
-
 -- TODO: Rearrange things so we don't have to disable this warning
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
@@ -122,6 +121,7 @@ runStatus repoContext =
                       OverlayToPortage   -> toPortageFilter
                       PortagePlusOverlay -> id
                       HackageToOverlay   -> fromHackageFilter
+                      OverlayAndHackage  -> overlayAndHackageFilter
   pkgs' <- forM pkgs $ \p ->
             case simpleParsec p of
               Nothing -> die ("Could not parse package name: " ++ p ++ ". Format cat/pkg")
@@ -154,6 +154,13 @@ toPortageFilter = Map.mapMaybe $ \ sts ->
     in if not (null inPortage) && not (null $ filter_out_lives interestingPackages)
         then Just sts
         else Nothing
+
+-- |Only return packages that exist in both the overlay and on hackage
+overlayAndHackageFilter :: Map PackageName [FileStatus ExistingEbuild] -> Map PackageName [FileStatus ExistingEbuild]
+overlayAndHackageFilter = Map.filter $ \sts ->
+    let hasOverlay = any (\st -> case st of { OverlayOnly _ -> True; Same _ -> True; Differs _ _ -> True; _ -> False }) sts
+        hasHackage = any (\st -> case st of { HackageOnly _ -> True; _ -> False }) sts
+    in hasOverlay && hasHackage
 
 -- |Only return packages that exist in overlay or portage but look outdated
 fromHackageFilter :: Map PackageName [FileStatus ExistingEbuild] -> Map PackageName [FileStatus ExistingEbuild]

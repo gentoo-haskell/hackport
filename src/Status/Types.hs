@@ -10,6 +10,7 @@ data StatusDirection
     = PortagePlusOverlay
     | OverlayToPortage
     | HackageToOverlay
+    | OverlayAndHackage
     deriving Eq
 
 data FileStatus a
